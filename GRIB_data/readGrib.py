@@ -1,6 +1,6 @@
 import xarray as xr
 
-grib_path = "./grib_examples/ECMWF-ITA_2018010100.grib"
+grib_path = "./data/ECMWF-ITA_2018010100.grib"
 
 # Specify variables one at a time for conflicting levels
 variables_to_try = [
