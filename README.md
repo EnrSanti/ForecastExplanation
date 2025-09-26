@@ -9,7 +9,7 @@ Project aiming to provide some plain explanations to weather forecasts by using 
 ## Repo structure
 
 
-|-- **GRIB_data**  -> contains the GRIB data files (ignored) and scripts to generate feature maps
+|-- **GRIB_data**  -> contains the GRIB data files (ignored) and scripts to generate feature maps <br>
 |-- **image_processing**  -> contains the generated feature maps and scripts to extract relevant features
 
 
