@@ -1,0 +1,12 @@
+Get grib data+time, and the variables (shell):
+
+grib_get -p dataDate,dataTime,step,shortName ECMWF-ITA_2018010100.grib
+
+Get grib min/max lat/long coodinates:
+
+grib_ls -p latitudeOfFirstGridPointInDegrees,longitudeOfFirstGridPointInDegrees,latitudeOfLastGridPointInDegrees,longitudeOfLastGridPointInDegrees -w count=1 ECMWF-ITA_2018010100.grib
+
+Get grib number of sample points per coordinate: 
+
+grib_get -p Ni,Nj -w count=1 ECMWF-ITA_2018010100.grib
+
