@@ -17,11 +17,11 @@ grib_path = "./GRIB/data/ECMWF-ITA_2018010200.grib"
 def save_feature_maps(coordinates,threads=4):
 
     #saves the cloud feature maps (high, medium, and low height)
+    save_wind_maps(coordinates, [1000, 700, 500, 400], threads)
     save_cloud_maps(coordinates, cloud_vars=['hcc','mcc','lcc'])
 
     #saves temperature maps at 4 different heights (pressure levels)
     save_temperature_maps(coordinates, [1000, 700, 500, 400], threads)
-    
     #save_msl_maps(coordinates, threads) #mh. useless?
 
 
@@ -48,10 +48,10 @@ def save_temperature_maps(coordinates, levels, threads=4):
 
     steps = list(ds.step)
     folderKm = {
-        1000: "temp_100m",
-        700:  "temp_3km",
-        500:  "temp_5.5km",
-        400:  "temp_7km"
+        1000: "temp_at_100m",
+        700:  "temp_at_3km",
+        500:  "temp_at_5.5km",
+        400:  "temp_at_7km"
     }
 
     for level in levels:
@@ -74,7 +74,7 @@ def save_temperature_maps(coordinates, levels, threads=4):
             futures = [executor.submit(plot_temperature, ds, coordinates, i, step, level, folder, vmin, vmax)
                        for i, step in enumerate(steps)]
             for f in concurrent.futures.as_completed(futures):
-                print(f"Finished step {f.result()}h at level {level}")
+                print(f"TEMPERATURE: Finished extraction {f.result()}h at level {level}")
 
     ds.close()
 
@@ -95,13 +95,11 @@ def plot_temperature(ds, coordinates, i, step, level_val, folderKm, vmin, vmax, 
 
     ax.coastlines(resolution='10m')
     ax.add_feature(cfeature.BORDERS, linestyle=':')
-    ax.gridlines(draw_labels=True)
 
     if coordinates[0] is not None:
         ax.set_extent([coordinates[0], coordinates[1], coordinates[2], coordinates[3]], crs=ccrs.PlateCarree())
 
     ax.set_title(f"Temperature at {level_val} hPa, step={hours}h")
-
     folder = f"./GRIB/extracted_fvg/{folderKm}" if coordinates[0] is not None else f"./GRIB/extracted_it/{folderKm}"
     plt.savefig(f"{folder}/temp_{level_val}_step_{hours}h.png", dpi=300, bbox_inches='tight')
     plt.close(fig)
@@ -138,7 +136,7 @@ def save_msl_maps(coordinates, threads=4):
     with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
         futures = [executor.submit(plot_msl, ds, coordinates, i, step, vmin, vmax) for i, step in enumerate(steps)]
         for f in concurrent.futures.as_completed(futures):
-            print(f"Finished step {f.result()}h")
+            print(f"MSL: Finished extraction {f.result()}h")
 
     ds.close()
 
@@ -156,13 +154,11 @@ def plot_msl(ds, coordinates, i, step, vmin, vmax):
 
     ax.coastlines(resolution='10m')
     ax.add_feature(cfeature.BORDERS, linestyle=':')
-    ax.gridlines(draw_labels=True)
 
     if coordinates[0] is not None:
         ax.set_extent([coordinates[0], coordinates[1], coordinates[2], coordinates[3]], crs=ccrs.PlateCarree())
 
     ax.set_title(f"MSL Pressure, step={hours}h")
-
     folder = "./GRIB/extracted_it/mean_sea_lv_pressure/"
     
     if coordinates[0] is not None:
@@ -175,7 +171,7 @@ def plot_msl(ds, coordinates, i, step, vmin, vmax):
     return hours
 
 #saves each cloud cover map (at the diff heights) 
-def save_cloud_maps(coordinates, cloud_vars=['hcc', 'mcc', 'lcc'], threads=4):
+def save_cloud_maps(coordinates, cloud_vars, threads=4):
 
     for var in cloud_vars:
         ds = xr.open_dataset(
@@ -188,22 +184,23 @@ def save_cloud_maps(coordinates, cloud_vars=['hcc', 'mcc', 'lcc'], threads=4):
         )
         steps = list(ds.step)
 
+        folder=var.replace('m','medium_').replace('h','high_').replace('l','low_').replace('cc','cloud_cover')
         if coordinates[0] is not None:
-            pathlib.Path(f'./GRIB/extracted_fvg/{var}').mkdir(exist_ok=True) 
+            pathlib.Path(f'./GRIB/extracted_fvg/{folder}').mkdir(exist_ok=True) 
         else:
-            pathlib.Path(f'./GRIB/extracted_it/{var}').mkdir(exist_ok=True) 
-        folder = f"./GRIB/extracted_fvg/{var}" if coordinates[0] is not None else f"./GRIB/extracted_it/{var}"
+            pathlib.Path(f'./GRIB/extracted_it/{folder}').mkdir(exist_ok=True) 
+        folder = f"./GRIB/extracted_fvg/{folder}" if coordinates[0] is not None else f"./GRIB/extracted_it/{folder}"
 
         # global min/max (0-1)
         vmin, vmax = 0, 1
         legend_file = f"{folder}_legend.png"
-        save_colorbar(vmin, vmax, cmap='binary', label=f"{var.upper()} fraction", outpath=legend_file)
+        save_colorbar(vmin, vmax, cmap='binary', label=f"{var.upper()} fraction (1 means fully covered by clouds, 0 none)", outpath=legend_file)
 
         # parallel plotting
         with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
             futures = [executor.submit(plot_cloud_cover, ds, coordinates, i, var, folder, vmin, vmax) for i, step in enumerate(steps)]
             for f in concurrent.futures.as_completed(futures):
-                print(f"Finished step {f.result()}h for {var}")
+                print(f"CLOUDS: Finished extraction {f.result()}h for {var}")
 
         ds.close()
 
@@ -220,13 +217,12 @@ def plot_cloud_cover(ds, coordinates, i, var, folder, vmin, vmax):
 
     ax.coastlines(resolution='10m')
     ax.add_feature(cfeature.BORDERS, linestyle=':')
-    ax.gridlines(draw_labels=True)
-
+    
     if coordinates[0] is not None:
         ax.set_extent([coordinates[0], coordinates[1], coordinates[2], coordinates[3]], crs=ccrs.PlateCarree())
 
     ax.set_title(f"{var.upper()} step={hours}h")
-
+    
     plt.savefig(f"{folder}/{var}_step_{hours}h.png", dpi=300, bbox_inches='tight')
     plt.close(fig)
     return hours
@@ -250,5 +246,121 @@ def print_grib_variables():
     print("\nUnique levels:")
     for l in sorted(levels):
         print(" -", l)
+
+def save_wind_maps(coordinates, levels, threads=6):
+
+    folderKm = {
+        1000: "winds_at_100m",
+        700:  "winds_at_3km",
+        500:  "winds_at_5.5km",
+        400:  "winds_at_7km"
+    }
+    for level in levels:
+        # We still need to open once to compute vmin/vmax across all steps
+        ds_u = xr.open_dataset(
+            grib_path,
+            engine='cfgrib',
+            backend_kwargs={
+                'filter_by_keys': {'shortName': 'u', 'typeOfLevel': 'isobaricInhPa'},
+                'decode_timedelta': True
+            }
+        )
+        ds_v = xr.open_dataset(
+            grib_path,
+            engine='cfgrib',
+            backend_kwargs={
+                'filter_by_keys': {'shortName': 'v', 'typeOfLevel': 'isobaricInhPa'},
+                'decode_timedelta': True
+            }
+        )
+
+        steps = list(ds_u.step)
+        folder = f"./GRIB/extracted_fvg/{folderKm[level]}" if coordinates[0] is not None else f"./GRIB/extracted_it/{folderKm[level]}"
+        pathlib.Path(folder).mkdir(parents=True, exist_ok=True)
+
+        # Compute global min/max for wind speed
+        u_sel = ds_u.u.sel(isobaricInhPa=level, method='nearest')
+        v_sel = ds_v.v.sel(isobaricInhPa=level, method='nearest')
+        wind_speed = np.sqrt(u_sel**2 + v_sel**2)
+        vmin, vmax = float(wind_speed.min()), float(wind_speed.max())
+
+        # Save legend
+        save_colorbar(vmin, vmax, cmap='viridis',
+                      label=f"Wind speed (m/s) at {level} hPa",
+                      outpath=f"{folder}_legend.png")
+
+        arrow_density = 3 if coordinates[0] is not None else 9
+
+        # Parallel plotting (workers reopen the GRIB file themselves)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
+            futures = [
+                executor.submit(
+                    plot_wind, grib_path, i, step, level,
+                    folder, vmin, vmax, coordinates, arrow_density
+                )
+                for i, step in enumerate(steps)
+            ]
+            for f in concurrent.futures.as_completed(futures):
+                print(f"WIND: Finished extraction {f.result()}h for level {level}")
+
+        ds_u.close()
+        ds_v.close()
+
+
+def plot_wind(grib_path, step_idx, step_val, level, folder, vmin, vmax, coordinates=None, arrow_density=5):
+    # Reopen datasets inside each worker
+    ds_u = xr.open_dataset(
+        grib_path,
+        engine='cfgrib',
+        backend_kwargs={'filter_by_keys': {'shortName': 'u', 'typeOfLevel': 'isobaricInhPa'},
+                        'decode_timedelta': True}
+    )
+    ds_v = xr.open_dataset(
+        grib_path,
+        engine='cfgrib',
+        backend_kwargs={'filter_by_keys': {'shortName': 'v', 'typeOfLevel': 'isobaricInhPa'},
+                        'decode_timedelta': True}
+    )
+
+    # Select timestep & level
+    u = ds_u.u.sel(isobaricInhPa=level, method='nearest').isel(step=step_idx)
+    v = ds_v.v.sel(isobaricInhPa=level, method='nearest').isel(step=step_idx)
+
+    lat = ds_u.latitude.values
+    lon = ds_u.longitude.values
+    wind_speed = np.sqrt(u**2 + v**2)
+
+    # Convert step to hours
+    hours = int(step_val.values / np.timedelta64(1, 'h')) if np.issubdtype(step_val.dtype, np.timedelta64) else int(step_val)
+
+    fig, ax = plt.subplots(figsize=(12, 12), subplot_kw={'projection': ccrs.PlateCarree()})
+
+    # Heatmap
+    pcm = ax.pcolormesh(lon, lat, wind_speed, cmap='viridis',
+                        shading='auto', vmin=vmin, vmax=vmax)
+
+    ax.coastlines(resolution='10m')
+    ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+    if coordinates is not None and all(c is not None for c in coordinates):
+        ax.set_extent([coordinates[0], coordinates[1], coordinates[2], coordinates[3]], crs=ccrs.PlateCarree())
+
+    # Quiver arrows (subsample for readability)
+    skip = (slice(None, None, arrow_density), slice(None, None, arrow_density))
+    ax.quiver(lon[skip[1]], lat[skip[0]],
+              u.values[skip], v.values[skip],
+              scale=None, width=0.002, color='black',
+              pivot='middle', alpha=0.8)
+
+    ax.set_title(f"Wind at {level} hPa, step={hours}h")
+    plt.savefig(f"{folder}/wind_{level}_step_{hours}h.png", dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
+    ds_u.close()
+    ds_v.close()
+
+    return hours
+
+
 
 #print_grib_variables()
