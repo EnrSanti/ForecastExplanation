@@ -15,6 +15,77 @@ import pathlib
 output_base = "./GRIB/extracted_fvg"
 
 def save_feature_maps(input_path,coordinates):
+    save_cloud_maps(input_path,coordinates)
+    save_temperature_maps(input_path,coordinates)
+
+def save_cloud_maps(input_path, coordinates):
+    levels = [1000, 700, 500, 300]        
+    folders = {1000: "cloud_at_100m", 700: "cloud_at_3km", 500: "cloud_at_5.5km", 300: "cloud_at_9km"}
+    cmap = "Blues"
+
+    ds = xr.open_dataset(input_path, decode_times=True, decode_timedelta=False)
+    if 'ccl' not in ds:
+        print("Error: 'ccl' variable not found in dataset.")
+        return
+    cloud = ds['ccl']
+
+    # ---- CREATE OUTPUT FOLDERS ----
+    for lvl in levels:
+        pathlib.Path(os.path.join(output_base, folders[lvl])).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(os.path.join(output_base, "legends")).mkdir(parents=True, exist_ok=True)
+
+    # ---- SAVE LEGEND PER LEVEL ----
+    for lvl in levels:
+        cloud_level = cloud.sel(isobaricInhPa=lvl)
+        vmin = float(cloud_level.min())
+        vmax = float(cloud_level.max())
+
+        fig, ax = plt.subplots(figsize=(6,1))
+        norm = plt.Normalize(vmin=vmin, vmax=vmax)
+        cb = plt.colorbar(
+            plt.cm.ScalarMappable(norm=norm, cmap=cmap),
+            cax=ax, orientation='horizontal'
+        )
+        cb.set_label(f'Cloud cover at {lvl} hPa [fraction]')
+        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa_cloud.png"), dpi=300, bbox_inches='tight')
+        plt.close(fig)
+
+    # ---- PLOT LOOP ----
+    for lvl in levels:
+        cloud_level = cloud.sel(isobaricInhPa=lvl)
+        vmin = float(cloud_level.min())
+        vmax = float(cloud_level.max())
+        out_dir = os.path.join(output_base, folders[lvl])
+
+        for i in range(cloud_level.sizes['time']):
+            base_time = pd.to_datetime(str(cloud_level['time'].isel(time=i).values))
+            for j in range(cloud_level.sizes['step']):
+                step_val = int(cloud_level['step'].isel(step=j).values)
+                valid_time = base_time + pd.Timedelta(hours=step_val)
+
+                cloud_slice = cloud_level.isel(time=i, step=j)
+                if not np.isfinite(cloud_slice).any():
+                    continue
+
+                fig, ax = plt.subplots(figsize=(10,8), subplot_kw={'projection': ccrs.PlateCarree()})
+                ax.set_extent(coordinates, crs=ccrs.PlateCarree())
+                pcm = ax.pcolormesh(
+                    cloud_slice['longitude'], cloud_slice['latitude'], cloud_slice,
+                    cmap=cmap, shading='auto', vmin=vmin, vmax=vmax,
+                    transform=ccrs.PlateCarree()
+                )
+                ax.coastlines(resolution='10m', linewidth=1)
+                ax.add_feature(cfeature.BORDERS, linewidth=0.8)
+                ax.set_title(f"Cloud cover at {lvl} hPa\nValid time: {valid_time}")
+
+                fname = os.path.join(out_dir, f"cloud_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
+                plt.savefig(fname, dpi=150, bbox_inches='tight')
+                plt.close(fig)
+
+    print("Finished plotting cloud maps with separate legends per level.")
+
+
+def save_temperature_maps(input_path,coordinates):
     levels = [1000, 700, 500, 300]        # pressure levels
     folders = {1000: "temp_at_100m", 700: "temp_at_3km", 500: "temp_at_5.5km", 300: "temp_at_9km"}
     cmap = "coolwarm"
@@ -29,8 +100,6 @@ def save_feature_maps(input_path,coordinates):
         out_dir = os.path.join(output_base, folder_name)
         pathlib.Path(out_dir).mkdir(parents=True, exist_ok=True)
 
-    legend_dir = os.path.join(output_base, "legends")
-    pathlib.Path(legend_dir).mkdir(parents=True, exist_ok=True)
 
     # ---- SAVE LEGENDS ONCE PER LEVEL ----
     for lvl in levels:
@@ -45,7 +114,7 @@ def save_feature_maps(input_path,coordinates):
             cax=ax, orientation='horizontal'
         )
         cb.set_label(f'Temperature at {lvl} hPa [K]')
-        plt.savefig(os.path.join(legend_dir, f"legend_{lvl}hPa.png"), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa.png"), dpi=300, bbox_inches='tight')
         plt.close(fig)
 
     # ---- PLOT LOOP ----
@@ -93,3 +162,25 @@ def save_feature_maps(input_path,coordinates):
 
 
     print("Finished plotting all levels with consistent colormap and separate folders + legends.")
+
+def print_nc_variables():
+    ds = xr.open_dataset("./GRIB/data/2_9gb_cut.nc")
+    
+    # Unique variable names and their dimensions
+    print("Variables and their dimensions:")
+    for var in ds.data_vars:
+        dims = ", ".join(ds[var].dims)
+        print(f" - {var} ({dims})")
+    
+    # Unique coordinates (like levels, time, lat/lon)
+    print("\nCoordinates and their sizes:")
+    for coord in ds.coords:
+        print(f" - {coord}: {ds.coords[coord].size}")
+
+    # Optional: print levels if they exist
+    if "level" in ds.coords:
+        levels = ds.coords["level"].values
+        print("\nUnique levels:")
+        print(levels)
+
+#print_nc_variables()
