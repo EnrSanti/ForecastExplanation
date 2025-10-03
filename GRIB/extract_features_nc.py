@@ -15,6 +15,7 @@ import pathlib
 output_base = "./GRIB/extracted_fvg"
 
 def save_feature_maps(input_path,coordinates):
+    save_wind_maps(input_path, coordinates)
     save_cloud_maps(input_path,coordinates)
     save_temperature_maps(input_path,coordinates)
 
@@ -32,7 +33,6 @@ def save_cloud_maps(input_path, coordinates):
     # ---- CREATE OUTPUT FOLDERS ----
     for lvl in levels:
         pathlib.Path(os.path.join(output_base, folders[lvl])).mkdir(parents=True, exist_ok=True)
-    pathlib.Path(os.path.join(output_base, "legends")).mkdir(parents=True, exist_ok=True)
 
     # ---- SAVE LEGEND PER LEVEL ----
     for lvl in levels:
@@ -163,24 +163,98 @@ def save_temperature_maps(input_path,coordinates):
 
     print("Finished plotting all levels with consistent colormap and separate folders + legends.")
 
-def print_nc_variables():
-    ds = xr.open_dataset("./GRIB/data/2_9gb_cut.nc")
-    
-    # Unique variable names and their dimensions
-    print("Variables and their dimensions:")
-    for var in ds.data_vars:
-        dims = ", ".join(ds[var].dims)
-        print(f" - {var} ({dims})")
-    
-    # Unique coordinates (like levels, time, lat/lon)
-    print("\nCoordinates and their sizes:")
-    for coord in ds.coords:
-        print(f" - {coord}: {ds.coords[coord].size}")
+def save_wind_maps(input_path, coordinates, levels=[1000,700,500,300]):
+    """
+    Save wind heatmaps + quiver arrows for given pressure levels,
+    plotting ALL arrows but scaled less so the map isn't too dense.
+    """
+    import pathlib, os
+    import xarray as xr
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
 
-    # Optional: print levels if they exist
-    if "level" in ds.coords:
-        levels = ds.coords["level"].values
-        print("\nUnique levels:")
-        print(levels)
+    folders = {
+        1000: "winds_at_100m",
+        700:  "winds_at_3km",
+        500:  "winds_at_5.5km",
+        300:  "winds_at_9km"
+    }
+    cmap = "viridis"
+
+    ds = xr.open_dataset(input_path, decode_times=True, decode_timedelta=False)
+    u_var = ds['u']
+    v_var = ds['v']
+
+    # ---- CREATE OUTPUT FOLDERS ----
+    for lvl in levels:
+        pathlib.Path(os.path.join(output_base, folders[lvl])).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(os.path.join(output_base, "legends")).mkdir(parents=True, exist_ok=True)
+
+    for lvl in levels:
+        u_lvl = u_var.sel(isobaricInhPa=lvl)
+        v_lvl = v_var.sel(isobaricInhPa=lvl)
+
+        # Compute wind speed for legend
+        wind_speed = np.sqrt(u_lvl**2 + v_lvl**2)
+        vmin = float(wind_speed.min())
+        vmax = float(wind_speed.max())
+
+        # ---- SAVE LEGEND PER LEVEL ----
+        fig, ax = plt.subplots(figsize=(6,1))
+        norm = plt.Normalize(vmin=vmin, vmax=vmax)
+        cb = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax, orientation='horizontal')
+        cb.set_label(f'Wind speed at {lvl} hPa [m/s]')
+        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa_wind.png"), dpi=300, bbox_inches='tight')
+        plt.close(fig)
+
+        out_dir = os.path.join(output_base, folders[lvl])
+
+        for i in range(u_lvl.sizes['time']):
+            base_time = pd.to_datetime(str(u_lvl['time'].isel(time=i).values))
+            for j in range(u_lvl.sizes['step']):
+                step_val = int(u_lvl['step'].isel(step=j).values)
+                valid_time = base_time + pd.Timedelta(hours=step_val)
+
+                u_slice = u_lvl.isel(time=i, step=j)
+                v_slice = v_lvl.isel(time=i, step=j)
+                wind_speed = np.sqrt(u_slice**2 + v_slice**2)
+
+                if not np.isfinite(wind_speed).any():
+                    continue
+
+                fig, ax = plt.subplots(figsize=(12,12), subplot_kw={'projection': ccrs.PlateCarree()})
+                ax.set_extent(coordinates, crs=ccrs.PlateCarree())
+
+                # Heatmap
+                pcm = ax.pcolormesh(u_slice['longitude'], u_slice['latitude'], wind_speed,
+                                    cmap=cmap, shading='auto', vmin=vmin, vmax=vmax,
+                                    transform=ccrs.PlateCarree())
+                ax.coastlines(resolution='10m', linewidth=1)
+                ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+                # ---- Quiver arrows (scaled with quiver's "scale") ----
+                lon2d = u_slice['longitude'].broadcast_like(u_slice).values
+                lat2d = u_slice['latitude'].broadcast_like(u_slice).values
+
+                ax.quiver(
+                    lon2d, lat2d,
+                    u_slice.values, v_slice.values,
+                    color='black',
+                    width=0.0015,    # thinner arrows
+                    pivot='middle',
+                    alpha=0.8,
+                    scale=800        # increase -> shorter arrows
+                )
+
+                ax.set_title(f"Wind at {lvl} hPa\nValid time: {valid_time}")
+                fname = os.path.join(out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
+                plt.savefig(fname, dpi=150, bbox_inches='tight')
+                plt.close(fig)
+
+    ds.close()
+    print("Finished plotting wind maps with ALL arrows per level.")
 
 #print_nc_variables()
