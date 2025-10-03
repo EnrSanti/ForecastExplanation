@@ -13,7 +13,7 @@ numClusters = 3
 
 
 
-def extract(grib_file,coordinates):
+def extract(grib_file,coordinates,coordinates_italy):
     # Build input and output paths
     grib_path = os.path.join(input_dir, grib_file)
     base_name = os.path.splitext(grib_file)[0]  # remove .grib
@@ -22,13 +22,13 @@ def extract(grib_file,coordinates):
     #if already cut skip
     if not os.path.exists(output_path):
         print(f"CUTTING CUT: {grib_path}")
-        cut_grib_long_lat(grib_path, output_path, coordinates)
+        cut_grib_long_lat(grib_path, output_path, coordinates_italy)
         print(f"GRIB CUT: {output_path}")
     else:
         print(f"ALREADY CUT: {output_path}")
 
     print(f"EXTRACTING FEATURES: {output_path}")
-    save_feature_maps(output_path, coordinates)
+    save_feature_maps(output_path, coordinates_italy)
     print(f"Processed: {grib_file} → {output_path}")
 
 if __name__ == "__main__":
@@ -62,6 +62,7 @@ if __name__ == "__main__":
     elif mode == 1:
         #longmin longmax latmin latmax
         coordinates=[11.5,14.5,44.5,48]
+        coordinates_italy=[6.5,18.5,36.5,48]
         input_dir = "./GRIB/data/original_CERRA"
         output_dir = "./GRIB/data/CERRA_cut"
         os.makedirs(output_dir, exist_ok=True)
@@ -70,15 +71,15 @@ if __name__ == "__main__":
         grib_files = [f for f in os.listdir(input_dir) if f.endswith(".grib")]
 
         #no threads, processes HDF5 has some thread issues
-        with ProcessPoolExecutor(max_workers=6) as executor:
-            futures = {executor.submit(extract, grib_file, coordinates): grib_file for grib_file in grib_files}
+        with ProcessPoolExecutor(max_workers=2) as executor:
+            futures = {executor.submit(extract, grib_file, coordinates,coordinates_italy): grib_file for grib_file in grib_files}
 
             for future in as_completed(futures):
                 grib_file = futures[future]
                 try:
                     future.result()  # raises exception if any
                 except Exception as e:
-                    print(f"⚠️ Extract failed for {grib_file}: {e}")
+                    print(f"Extract failed for {grib_file}: {e}")
 
 
     elif mode == 2:    

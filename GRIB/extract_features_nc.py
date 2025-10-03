@@ -164,10 +164,6 @@ def save_temperature_maps(input_path,coordinates):
     print("Finished plotting all levels with consistent colormap and separate folders + legends.")
 
 def save_wind_maps(input_path, coordinates, levels=[1000,700,500,300]):
-    """
-    Save wind heatmaps + quiver arrows for given pressure levels,
-    plotting ALL arrows but scaled less so the map isn't too dense.
-    """
     import pathlib, os
     import xarray as xr
     import numpy as np
@@ -236,18 +232,27 @@ def save_wind_maps(input_path, coordinates, levels=[1000,700,500,300]):
                 ax.add_feature(cfeature.BORDERS, linestyle=':')
 
                 # ---- Quiver arrows (scaled with quiver's "scale") ----
+                # ---- Quiver arrows (scaled with quiver's "scale") ----
                 lon2d = u_slice['longitude'].broadcast_like(u_slice).values
                 lat2d = u_slice['latitude'].broadcast_like(u_slice).values
 
+                # Only take a subset of arrows (1 every 10)
+                step = 10
+                lon_subset = lon2d[::step, ::step]
+                lat_subset = lat2d[::step, ::step]
+                u_subset = u_slice.values[::step, ::step]
+                v_subset = v_slice.values[::step, ::step]
+
                 ax.quiver(
-                    lon2d, lat2d,
-                    u_slice.values, v_slice.values,
+                    lon_subset, lat_subset,
+                    u_subset, v_subset,
                     color='black',
                     width=0.0015,    # thinner arrows
                     pivot='middle',
                     alpha=0.8,
                     scale=800        # increase -> shorter arrows
                 )
+
 
                 ax.set_title(f"Wind at {lvl} hPa\nValid time: {valid_time}")
                 fname = os.path.join(out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
