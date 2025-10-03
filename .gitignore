@@ -1,5 +1,5 @@
 # Ignore GRIBS directory
-GRIB/data
+GRIB/data/original_CERRA
 
 # Ignore all Python bytecode cache directories recursively
 __pycache__/
