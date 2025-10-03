@@ -1,17 +1,35 @@
 from image_processing.generateImage import generate_clustered_images, generate_heatMap, annotate_clouds_features
 from GRIB.extract_features_nc import save_feature_maps
 from GRIB.cut_long_lat import cut_grib_long_lat
-#from GRIB.extract_nc import save_feature_maps
 import sys, os
-
+import threading
+from concurrent.futures import ProcessPoolExecutor, as_completed
 cropped_dir = "image_processing/cropped"                              
 heatMap_dir = "image_processing/heatmaps"                           
 clustered_dir = "image_processing/clustered"
 
 feature_extraction_dir = "image_processing/ellipses"
-
-
 numClusters = 3 
+
+
+
+def extract(grib_file,coordinates):
+    # Build input and output paths
+    grib_path = os.path.join(input_dir, grib_file)
+    base_name = os.path.splitext(grib_file)[0]  # remove .grib
+    output_path = os.path.join(output_dir, base_name + "_cut.nc")
+    
+    #if already cut skip
+    if not os.path.exists(output_path):
+        print(f"CUTTING CUT: {grib_path}")
+        cut_grib_long_lat(grib_path, output_path, coordinates)
+        print(f"GRIB CUT: {output_path}")
+    else:
+        print(f"ALREADY CUT: {output_path}")
+
+    print(f"EXTRACTING FEATURES: {output_path}")
+    save_feature_maps(output_path, coordinates)
+    print(f"Processed: {grib_file} → {output_path}")
 
 if __name__ == "__main__":
     print("\n-------------------------------------------------\n[0] Info\n")
@@ -44,10 +62,25 @@ if __name__ == "__main__":
     elif mode == 1:
         #longmin longmax latmin latmax
         coordinates=[11.5,14.5,44.5,48]
-        grib_path = "./GRIB/data/2_9gb.grib"
-        output_path = "./GRIB/data/2_9gb_cut.nc"
-        cut_grib_long_lat(grib_path,output_path,coordinates)
-        save_feature_maps(output_path,coordinates)
+        input_dir = "./GRIB/data/original_CERRA"
+        output_dir = "./GRIB/data/CERRA_cut"
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # all grib files
+        grib_files = [f for f in os.listdir(input_dir) if f.endswith(".grib")]
+
+        #no threads, processes HDF5 has some thread issues
+        with ProcessPoolExecutor(max_workers=6) as executor:
+            futures = {executor.submit(extract, grib_file, coordinates): grib_file for grib_file in grib_files}
+
+            for future in as_completed(futures):
+                grib_file = futures[future]
+                try:
+                    future.result()  # raises exception if any
+                except Exception as e:
+                    print(f"⚠️ Extract failed for {grib_file}: {e}")
+
+
     elif mode == 2:    
         print("Generating heatmaps... (check folder " + heatMap_dir + ")")
         generate_heatMap(cropped_dir, heatMap_dir)

@@ -191,7 +191,7 @@ def save_wind_maps(input_path, coordinates, levels=[1000,700,500,300]):
     # ---- CREATE OUTPUT FOLDERS ----
     for lvl in levels:
         pathlib.Path(os.path.join(output_base, folders[lvl])).mkdir(parents=True, exist_ok=True)
-    pathlib.Path(os.path.join(output_base, "legends")).mkdir(parents=True, exist_ok=True)
+        
 
     for lvl in levels:
         u_lvl = u_var.sel(isobaricInhPa=lvl)
