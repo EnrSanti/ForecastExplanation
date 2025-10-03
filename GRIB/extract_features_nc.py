@@ -14,7 +14,12 @@ import pathlib
 
 output_base = "./GRIB/extracted_fvg"
 
-def save_feature_maps(input_path,coordinates):
+def save_feature_maps(input_path,coordinates, is_fvg):
+    global output_base
+    if(is_fvg):
+        output_base = "./GRIB/extracted_fvg"
+    else:
+        output_base = "./GRIB/extracted_it"
     save_wind_maps(input_path, coordinates)
     save_cloud_maps(input_path,coordinates)
     save_temperature_maps(input_path,coordinates)
