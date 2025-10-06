@@ -30,45 +30,28 @@ def mask_color(img, low, high, mask_color):
     return img
 
 
+
 def recolor(fileNameImg, heatMapDir):
-    palette = [(255,255,255), (240, 240, 240)]
-
-    very_low_green = [25, 0, 72]
-    low_green = [25, 55, 72]
-    high_green = [102, 255, 255]
-
-    very_low_blue = [109, 0, 50]
-    low_blue = [109, 140, 50]
-    high_blue = [130, 255, 255]
-
+    # Load image
     img = cv2.imread(fileNameImg)
-    img = cv2.resize(img, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC)
 
-    res = mask_color(img, low_green, high_green, palette[0])
-    res = mask_color(res, low_blue, high_blue, palette[0])
-    res = mask_color(res, very_low_blue, high_blue, palette[1])
-    res = mask_color(res, very_low_green, high_blue, palette[1])
+    # Convert to grayscale (intensity map)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    maskBorders = cv2.imread("image_processing/maskBorders.jpg")
-    maskBorders = cv2.cvtColor(maskBorders , cv2.COLOR_BGR2GRAY)
-    maskBorders = cv2.resize(maskBorders, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC)
-    res = cv2.inpaint(res, maskBorders, 2, cv2.INPAINT_NS)
+    # Contrast enhancement using histogram equalization
+    enhanced = cv2.equalizeHist(gray)
 
-    cv2.imwrite("image_processing/step2_to_remove.jpg", res)
-    
-    img = np.asarray(Image.open('image_processing/step2_to_remove.jpg'))
-    lum_img = img[:,:,0]
-    imgplot = plt.imshow(lum_img, cmap='PuRd')
+    # Plot with Blues colormap
+    plt.imshow(enhanced, cmap='Blues', vmin=0, vmax=255)
     plt.axis('off')
 
     # Get the original filename safely
     filename = os.path.basename(fileNameImg)
     output_path = os.path.join(heatMapDir, filename)
 
+    # Save the result
     plt.savefig(output_path, bbox_inches='tight', pad_inches=0)
-    plt.close()  # Close the figure to avoid memory issues
-    os.remove("image_processing/step2_to_remove.jpg")
-
+    plt.close()
 
 def cluster_images(n_im, numClusters, reshaped, image, image_f):
     clustering=[0 for _ in range(0, n_im)]

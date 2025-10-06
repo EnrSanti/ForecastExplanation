@@ -30,9 +30,9 @@ def extract(grib_file,coordinates_fvg,coordinates_italy, is_fvg):
     print(f"EXTRACTING FEATURES: {output_path}")
     
     if(is_fvg):
-        save_feature_maps(output_path, coordinates_fvg,True)
+        save_feature_maps(output_path, coordinates_fvg,True,True)
     else:
-        save_feature_maps(output_path, coordinates_italy,False)
+        save_feature_maps(output_path, coordinates_italy,False,True)
 
     print(f"Processed: {grib_file} → {output_path}")
 
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         grib_files = [f for f in os.listdir(input_dir) if f.endswith(".grib")]
 
         #no threads, processes HDF5 has some thread issues
-        with ProcessPoolExecutor(max_workers=2) as executor:
+        with ProcessPoolExecutor(max_workers=3) as executor:
             futures = {executor.submit(extract, grib_file, coordinates,coordinates_italy,True): grib_file for grib_file in grib_files}
 
             for future in as_completed(futures):
