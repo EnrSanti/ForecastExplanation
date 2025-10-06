@@ -14,17 +14,21 @@ import pathlib
 
 output_base = "./GRIB/extracted_fvg"
 
-def save_feature_maps(input_path,coordinates, is_fvg):
+def save_feature_maps(input_path,coordinates, is_fvg, clean_plot):
     global output_base
     if(is_fvg):
         output_base = "./GRIB/extracted_fvg"
     else:
         output_base = "./GRIB/extracted_it"
-    save_wind_maps(input_path, coordinates)
-    save_cloud_maps(input_path,coordinates)
-    save_temperature_maps(input_path,coordinates)
+    if(clean_plot):
+        output_base = output_base+"_cleaned"
+    print(f"Output base directory: {output_base}")
+    save_wind_maps(input_path, coordinates,clean_plot)
 
-def save_cloud_maps(input_path, coordinates):
+    save_cloud_maps(input_path,coordinates, clean_plot)
+    save_temperature_maps(input_path,coordinates, clean_plot)
+
+def save_cloud_maps(input_path, coordinates,clean_plot):
     levels = [1000, 700, 500, 300]        
     folders = {1000: "cloud_at_100m", 700: "cloud_at_3km", 500: "cloud_at_5.5km", 300: "cloud_at_9km"}
     cmap = "Blues"
@@ -79,18 +83,19 @@ def save_cloud_maps(input_path, coordinates):
                     cmap=cmap, shading='auto', vmin=vmin, vmax=vmax,
                     transform=ccrs.PlateCarree()
                 )
-                ax.coastlines(resolution='10m', linewidth=1)
-                ax.add_feature(cfeature.BORDERS, linewidth=0.8)
-                ax.set_title(f"Cloud cover at {lvl} hPa\nValid time: {valid_time}")
+                if not clean_plot:
+                    ax.coastlines(resolution='10m', linewidth=1)
+                    ax.add_feature(cfeature.BORDERS, linewidth=0.8)
+                    ax.set_title(f"Cloud cover at {lvl} hPa\nValid time: {valid_time}")
 
                 fname = os.path.join(out_dir, f"cloud_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                plt.savefig(fname, dpi=150, bbox_inches='tight')
+                plt.savefig(fname, dpi=300, bbox_inches='tight', pad_inches=0)
                 plt.close(fig)
 
     print("Finished plotting cloud maps with separate legends per level.")
 
 
-def save_temperature_maps(input_path,coordinates):
+def save_temperature_maps(input_path,coordinates, clean_plot):
     levels = [1000, 700, 500, 300]        # pressure levels
     folders = {1000: "temp_at_100m", 700: "temp_at_3km", 500: "temp_at_5.5km", 300: "temp_at_9km"}
     cmap = "coolwarm"
@@ -119,7 +124,7 @@ def save_temperature_maps(input_path,coordinates):
             cax=ax, orientation='horizontal'
         )
         cb.set_label(f'Temperature at {lvl} hPa [K]')
-        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa.png"), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa.png"), dpi=300, bbox_inches='tight',pad_inches=0)
         plt.close(fig)
 
     # ---- PLOT LOOP ----
@@ -155,20 +160,20 @@ def save_temperature_maps(input_path,coordinates):
                     vmax=vmax,
                     transform=ccrs.PlateCarree()
                 )
-                ax.coastlines(resolution='10m', linewidth=1)
-                ax.add_feature(cfeature.BORDERS, linewidth=0.8)
-                ax.set_title(f"Temperature at {lvl} hPa\nValid time: {valid_time}")
+                if not clean_plot:
+                    ax.coastlines(resolution='10m', linewidth=1)
+                    ax.add_feature(cfeature.BORDERS, linewidth=0.8)
+                    ax.set_title(f"Temperature at {lvl} hPa\nValid time: {valid_time}")
 
-                # <-- REMOVE colorbar here
 
                 fname = os.path.join(out_dir, f"temp_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                plt.savefig(fname, dpi=150, bbox_inches='tight')
+                plt.savefig(fname, dpi=300, bbox_inches='tight',pad_inches=0)
                 plt.close(fig)
 
 
     print("Finished plotting all levels with consistent colormap and separate folders + legends.")
 
-def save_wind_maps(input_path, coordinates, levels=[1000,700,500,300]):
+def save_wind_maps(input_path, coordinates, clean_plot, levels=[1000,700,500,300]):
     import pathlib, os
     import xarray as xr
     import numpy as np
@@ -208,7 +213,7 @@ def save_wind_maps(input_path, coordinates, levels=[1000,700,500,300]):
         norm = plt.Normalize(vmin=vmin, vmax=vmax)
         cb = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), cax=ax, orientation='horizontal')
         cb.set_label(f'Wind speed at {lvl} hPa [m/s]')
-        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa_wind.png"), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa_wind.png"), dpi=300, bbox_inches='tight',pad_inches=0)
         plt.close(fig)
 
         out_dir = os.path.join(output_base, folders[lvl])
@@ -233,8 +238,10 @@ def save_wind_maps(input_path, coordinates, levels=[1000,700,500,300]):
                 pcm = ax.pcolormesh(u_slice['longitude'], u_slice['latitude'], wind_speed,
                                     cmap=cmap, shading='auto', vmin=vmin, vmax=vmax,
                                     transform=ccrs.PlateCarree())
-                ax.coastlines(resolution='10m', linewidth=1)
-                ax.add_feature(cfeature.BORDERS, linestyle=':')
+                if not clean_plot:
+                    ax.coastlines(resolution='10m', linewidth=1)
+                    ax.add_feature(cfeature.BORDERS, linestyle=':')
+                    ax.set_title(f"Wind at {lvl} hPa\nValid time: {valid_time}")
 
                 # ---- Quiver arrows (scaled with quiver's "scale") ----
                 # ---- Quiver arrows (scaled with quiver's "scale") ----
@@ -259,9 +266,8 @@ def save_wind_maps(input_path, coordinates, levels=[1000,700,500,300]):
                 )
 
 
-                ax.set_title(f"Wind at {lvl} hPa\nValid time: {valid_time}")
                 fname = os.path.join(out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                plt.savefig(fname, dpi=150, bbox_inches='tight')
+                plt.savefig(fname, dpi=150, bbox_inches='tight',pad_inches=0)
                 plt.close(fig)
 
     ds.close()
