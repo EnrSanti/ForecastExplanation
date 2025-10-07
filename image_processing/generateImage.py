@@ -89,7 +89,8 @@ def annotate_clouds_features(input_folder="./clustered", output_folder="./ellips
 
 # https://github.com/AbhinavUtkarsh/Image-Segmentation
 def generate_clustered_images(numClusters, heatMapDir, clusteredDir):
-    import os, time, cv2
+    import os, cv2
+    import numpy as np
 
     files = os.listdir(heatMapDir)
 
@@ -101,9 +102,31 @@ def generate_clustered_images(numClusters, heatMapDir, clusteredDir):
         # Cluster this single image
         clustered_img = cluster_images(1, numClusters, [reshaped], [img], [f])[0]
 
-        # Write output
+        # Ensure single channel (or take the first channel if 3-channel)
+        if len(clustered_img.shape) == 3:
+            clustered_gray = clustered_img[:, :, 0]
+        else:
+            clustered_gray = clustered_img
+
+        # Detect unique values in the clustered image
+        unique_vals = np.unique(clustered_gray)
+        if len(unique_vals) != 3:
+            # fallback: skip swap if not exactly 3 clusters
+            swapped_img = clustered_img
+        else:
+            # sort by intensity to get black < gray < white
+            unique_vals = np.sort(unique_vals)
+            black_val, gray_val, white_val = unique_vals
+
+            swapped_img = clustered_gray.copy()
+            swapped_img[clustered_gray == gray_val] = white_val
+            swapped_img[clustered_gray == white_val] = gray_val
+
+        # Save
         filename = os.path.join(clusteredDir, f)
-        cv2.imwrite(filename, clustered_img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+        cv2.imwrite(filename, swapped_img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+
+
         
 def generate_heatMap(imageDir, heatMapDir):
     for f in os.listdir(imageDir):
