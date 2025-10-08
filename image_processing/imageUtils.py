@@ -54,24 +54,39 @@ def recolor(fileNameImg, heatMapDir):
     plt.close()
 
 def cluster_images(n_im, numClusters, reshaped, image, image_f):
-    clustering=[0 for _ in range(0, n_im)]
-    for i in range(0, n_im):
+    clustering = [0 for _ in range(n_im)]
+    for i in range(n_im):
         kmeans = KMeans(n_clusters=numClusters, n_init=40, max_iter=500).fit(reshaped[i])
-        clustering[i-1] = np.reshape(np.array(kmeans.labels_, dtype=np.uint8), (image[i].shape[0], image[i].shape[1]))
+        clustering[i] = np.reshape(np.array(kmeans.labels_, dtype=np.uint8),
+                                   (image[i].shape[0], image[i].shape[1]))
         print("processing " + image_f[i])
 
-    sortedLabels=[[] for _ in range(0, n_im)]
-    for i in range(0, n_im):
-        sortedLabels[i] = sorted([n for n in range(numClusters)],
-            key=lambda x: -np.sum(clustering[i] == x))
+    sortedLabels = [[] for _ in range(n_im)]
+    for i in range(n_im):
+        # compute mean brightness per cluster
+        gray = cv2.cvtColor(image[i], cv2.COLOR_BGR2GRAY)
+        means = []
+        for lbl in range(numClusters):
+            mask = (clustering[i] == lbl)
+            means.append(np.mean(gray[mask]) if np.any(mask) else 0)
 
+        # sort by brightness (dark → bright)
+        sortedLabels[i] = sorted(range(numClusters), key=lambda x: means[x])
 
-    kmeansImage=[0 for _ in range(0, n_im)]
-    concatImage=[[] for _ in range(0, n_im)]
-    for j in range(0, n_im):
+    kmeansImage = [0 for _ in range(n_im)]
+    concatImage = [[] for _ in range(n_im)]
+    for j in range(n_im):
         kmeansImage[j] = np.zeros(image[j].shape[:2], dtype=np.uint8)
         for i, label in enumerate(sortedLabels[j]):
-            kmeansImage[j][ clustering[j] == label ] = int((255) / (numClusters - 1)) * i
-        concatImage[j] = np.concatenate((image[j],193 * np.ones((image[j].shape[0], int(0.0625 * image[j].shape[1]), 3), dtype=np.uint8),cv2.cvtColor(kmeansImage[j], cv2.COLOR_GRAY2BGR)), axis=1)
+            # black = background, gray = border, white = core
+            kmeansImage[j][clustering[j] == label] = int((255) / (numClusters - 1)) * i
+
+        concatImage[j] = np.concatenate(
+            (image[j],
+             193 * np.ones((image[j].shape[0], int(0.0625 * image[j].shape[1]), 3), dtype=np.uint8),
+             cv2.cvtColor(kmeansImage[j], cv2.COLOR_GRAY2BGR)),
+            axis=1
+        )
 
     return kmeansImage
+
