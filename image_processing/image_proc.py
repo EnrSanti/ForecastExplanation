@@ -3,6 +3,7 @@ from skimage.measure import label, regionprops
 from skimage import draw
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
 import math, os, time
 import cv2
 from glob import glob
@@ -10,15 +11,17 @@ from glob import glob
 
 #----------- CLUSTERING ----------- 
 # https://github.com/AbhinavUtkarsh/Image-Segmentation
-def generate_clustered_images(numClusters, heatMapDir, clusteredDir):
+def generate_clustered_images(numClusters, input_dir, output_dir):
     import os, cv2
     import numpy as np
 
-    os.makedirs(clusteredDir, exist_ok=True)
-    files = os.listdir(heatMapDir)
-
+    os.makedirs(output_dir, exist_ok=True)
+    files = os.listdir(input_dir)
+    if len(os.listdir(output_dir)) >= len(os.listdir(input_dir)):
+        print(f"Output folder '{output_dir}' already contains images. Skipping clustering, assuming to be correct.")
+        return
     for f in files:
-        img_path = os.path.join(heatMapDir, f)
+        img_path = os.path.join(input_dir, f)
         img = cv2.imread(img_path)
 
         if img is None:
@@ -55,7 +58,7 @@ def generate_clustered_images(numClusters, heatMapDir, clusteredDir):
             swapped_img[clustered_gray == white_val] = 255     # full cloud
 
         # Save as high-quality JPEG
-        out_path = os.path.join(clusteredDir, f)
+        out_path = os.path.join(output_dir, f)
         cv2.imwrite(out_path, swapped_img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
         print(f"[INFO] Saved clustered image: {out_path}")
@@ -103,7 +106,10 @@ def resize_1_4(input_folder, output_folder, scale_factor=0.25):
 
     # === SETUP ===
     os.makedirs(output_folder, exist_ok=True)
-
+    #check if output folder contains as much files as input folder
+    if len(os.listdir(output_folder)) >= len(os.listdir(input_folder)):
+        print(f"Output folder '{output_folder}' already contains images. Skipping resizing.")
+        return
     # Supported image formats
     valid_extensions = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
 
