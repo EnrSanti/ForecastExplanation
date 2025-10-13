@@ -1,4 +1,6 @@
-from image_processing.generateImage import generate_clustered_images, generate_heatMap, annotate_clouds_features
+from image_processing.image_proc import generate_clustered_images
+from image_processing.image_proc import resize_1_4
+from image_processing.TOBAC.segment_track import run_tobac
 from GRIB.extract_features_nc import save_feature_maps
 from GRIB.cut_long_lat import cut_grib_long_lat
 import sys, os
@@ -44,9 +46,11 @@ if __name__ == "__main__":
     print("[2]: CUT Girb & extract IT DATA")
     
     print("-------------- Image processing -----------------")
-    print("[3]: Generate heatmap images")
-    print("[4]: Generate clusters images")
-    print("[5]: Generate ellipses feature location")
+    print("[3]: Cluster & run TOBAC on FVG clustered data")
+    print("[4]: run TOBAC on FVG data")
+    print("[5]: Cluster & run TOBAC on IT clustered data")
+    print("[6]: run TOBAC on IT data")
+
     print("\nselect: ",end='')
 
     mode = int(input())
@@ -56,13 +60,12 @@ if __name__ == "__main__":
     Command 1 then extracts feature maps for the FVG region and stores them in "./GRIB/extracted_fvg".
     Command 2 extracts feature maps for the whole itealy and stores them in "./GRIB/extracted_it". 
 
-    The remaining three commands (3,4,5) work on data under "./image_processing/":
-        [3] Generates heatmaps from images in "./image_processing/cropped" storing them in "./image_processing/heatmaps"
-        [4] Generates images clustered with 3 colors from the heatmaps (saving them in "./image_processing/clustered")
-        [5] From the clustered images locates the main 'features' marking them with ellipses ("image_processing/ellipses"). 
-
-    THE TWO PIPELINES ARE CURRENTLY DIVIDED (they work for now on different data)
-                """
+    The remaining three commands (3,4,5,6) work on data under "./image_processing/":
+        [3] 
+        [4] 
+        [5]
+        [6]  
+             """
         print(text)
 
     elif mode == 1:
@@ -111,11 +114,16 @@ if __name__ == "__main__":
 
 
     elif mode == 3:    
-        print("Generating heatmaps... (check folder " + heatMap_dir + ")")
-        generate_heatMap(cropped_dir, heatMap_dir)
+        print("Cluster & run TOBAC on FVG clustered data")
+        resize_1_4("GRIB/extracted_fvg_cleaned/cloud_at_3km", "image_processing/fvg/resized")
+        run_tobac("image_processing/fvg/resized", "image_processing/fvg/output")
+        #generate_heatMap(cropped_dir, heatMap_dir)
     elif mode == 4:
-        print("Generating clusters... (check folder " + clustered_dir + ")")
-        generate_clustered_images(numClusters, heatMap_dir, clustered_dir)
-    elif mode == 5:
-        print("Annotating features... (check folder " + feature_extraction_dir + ")")
-        annotate_clouds_features(clustered_dir, feature_extraction_dir)
+        print("run TOBAC on FVG data")
+    elif mode == 5:    
+        print("Cluster & run TOBAC on IT clustered data")
+        #generate_heatMap(cropped_dir, heatMap_dir)
+    elif mode == 6:
+        print("run TOBAC on IT data")
+        #generate_clustered_images(numClusters, heatMap_dir, clustered_dir)
+    
