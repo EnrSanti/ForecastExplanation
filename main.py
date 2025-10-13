@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
     elif mode == 3:    
         print("Cluster & run TOBAC on FVG clustered data")
-        resize_1_4("GRIB/extracted_fvg_cleaned/cloud_at_3km", "image_processing/fvg/resized")
+        #resize_1_4("GRIB/extracted_fvg_cleaned/cloud_at_3km", "image_processing/fvg/resized")
         run_tobac("image_processing/fvg/resized", "image_processing/fvg/output")
         #generate_heatMap(cropped_dir, heatMap_dir)
     elif mode == 4:

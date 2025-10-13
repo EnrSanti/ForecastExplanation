@@ -13,24 +13,7 @@ import scipy.ndimage as ndimage
 import imageio as images
 sns.set_context("talk")
 
-def locate_and_segment():
-    pass
-def track():
-    pass   
-
-
-def extract_keys(filename):
-    # match pattern like cloud_200_YYYYMMDD_HHMM.png
-    m = re.search(r'_(\d{8})_(\d+)\.png$', filename)
-    if m:
-        date = int(m.group(1))
-        num = int(m.group(2))
-        return (date, num)
-    else:
-        return (0, 0)
-
-
-def run_tobac(input_folder, output_folder):
+def locate_and_segment(input_folder, output_folder):
     
     image_files = ([os.path.join(input_folder, f) for f in os.listdir(input_folder)
                         if f.lower().endswith((".png", ".jpg", ".jpeg"))])
@@ -116,18 +99,26 @@ def run_tobac(input_folder, output_folder):
         threshold=[norm_threshold],  # single threshold in normalized space
         dxy=dxy,
         target="minimum",
-        position_threshold="center",
+        position_threshold="extreme",
         sigma_threshold=smooth
     )
+
+    features_weighted_points = tobac.feature_detection_multithreshold(
+        test_data_norm,
+        threshold=[norm_threshold],  # single threshold in normalized space
+        dxy=dxy,
+        target="minimum",
+        position_threshold="weighted_abs",
+        sigma_threshold=smooth
+    )
+
 
     os.makedirs(output_folder, exist_ok=True)  # create folder if it doesn't exist
 
     # === PLOTTING AND SAVING ===
-    
+    segments_all = []
     for i, itime in enumerate(range(0, images_no)):
         original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
-        fig, ax = plt.subplots(figsize=(6, 6))
-        
         # Smooth the frame
         smoothed_frame = ndimage.gaussian_filter(
             test_data_norm.isel(time=itime).values, sigma=smooth
@@ -136,28 +127,99 @@ def run_tobac(input_folder, output_folder):
         temp_da.data = smoothed_frame
 
         # consistent color range
-        temp_da.plot(ax=ax, vmin=0, vmax=1, cmap="viridis")
 
         # overlay detections
-        f = features[features["frame"] == itime]
-        f.plot.scatter(
+        
+        #------------------ segmentation ------------------  
+
+        temp_da = test_data_norm.isel(time=[itime]).copy()
+        temp_da.data = smoothed_frame[np.newaxis, ...]  # keep time dim
+
+
+        field_2d = temp_da
+
+        f = features[features["frame"] == itime]  # features in this frame
+        
+        if f.empty:
+            print(f"No features found for frame {itime}, skipping segmentation.")
+            segments_all.append((itime, None, None))
+            continue
+
+        # perform segmentation
+        segment_labels, segments = tobac.segmentation_2D(
+            f,
+            field_2d,
+            dxy=dxy,
+            threshold=norm_threshold,
+            target="minimum"
+            
+        )
+        # store results
+        segments_all.append((itime, segment_labels, segments))
+        
+   
+    plot_frames = range(0, images_no)
+
+    for i, itime in enumerate(plot_frames):
+        original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
+        # Get the field for this frame
+        fig, axs = plt.subplots(figsize=(6, 6))
+            
+        smoothed_frame = ndimage.gaussian_filter(test_data_norm.isel(time=itime).values, sigma=smooth)
+
+        temp_da = test_data_norm.isel(time=itime).copy()
+        temp_da.data = smoothed_frame
+
+        # consistent color range across all frames
+        temp_da.plot(ax=axs, vmin=0, vmax=1, cmap="viridis")
+        
+        f_weighted = features_weighted_points[features_weighted_points["frame"] == itime]
+        f_weighted.plot.scatter(
             x="x",
             y="y",
             s=20,
-            ax=ax,
+            ax=axs,
             color="red",
             marker="x",
         )
 
-        ax.set_title(f"timeframe = {itime}")
+        # Extract segmentation for this frame from segments_all
+        # We find the entry with matching time
+        entry = next((s for s in segments_all if s[0] == itime), None)
+        
+        if entry is not None:
+            
+            _, seg_labels, _ = entry
+            if seg_labels is not None:
+                # seg_labels may have a single-element time dimension
+                seg_labels2d = seg_labels.isel(time=0)  # drop the time dim for contour
+                # Only plot contour if there are actual segmented pixels
+                seg_labels2d.plot.contour(levels=[0.5], ax=axs, colors="k")
+            
 
-        # save figure
+        axs.set_title(f"Timeframe = {itime}")
         out_path = os.path.join(output_folder, f"{original_img_name}.png")
         plt.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)  # close the figure to free memory
 
-    locate_and_segment()
+def track():
+    pass   
+
+
+def extract_keys(filename):
+    # match pattern like cloud_200_YYYYMMDD_HHMM.png
+    m = re.search(r'_(\d{8})_(\d+)\.png$', filename)
+    if m:
+        date = int(m.group(1))
+        num = int(m.group(2))
+        return (date, num)
+    else:
+        return (0, 0)
+
+
+def run_tobac(inpu_folder, output_folder):
+    
+    locate_and_segment(inpu_folder, output_folder)
     print("Locating procedure completed")
     track()
     print("Tracking procedure completed")
-    print("Segmenting procedure completed")
