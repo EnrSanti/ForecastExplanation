@@ -13,7 +13,7 @@ import scipy.ndimage as ndimage
 import imageio as images
 sns.set_context("talk")
 
-def locate_and_segment(input_folder, output_folder):
+def locate_and_segment(input_folder, output_folder,smooth = 8):
     
     image_files = ([os.path.join(input_folder, f) for f in os.listdir(input_folder)
                         if f.lower().endswith((".png", ".jpg", ".jpeg"))])
@@ -86,8 +86,6 @@ def locate_and_segment(input_folder, output_folder):
     vmax = float(test_data.max())
     test_data_norm = (test_data - vmin) / (vmax - vmin)
 
-    # === PARAMETERS ===
-    smooth = 8
 
     # Convert original threshold (155) to normalized [0, 1] scale
     norm_threshold = 0.75
@@ -217,9 +215,9 @@ def extract_keys(filename):
         return (0, 0)
 
 
-def run_tobac(inpu_folder, output_folder):
+def run_tobac(inpu_folder, output_folder,smooth = 8):
     
-    locate_and_segment(inpu_folder, output_folder)
+    locate_and_segment(inpu_folder, output_folder,smooth)
     print("Locating procedure completed")
     track()
     print("Tracking procedure completed")

@@ -15,7 +15,7 @@ Project aiming to provide some plain explanations to weather forecasts by using 
 
 * [X] GRIB data extraction
 * [X] Feature map generation (at different heights)
-* [ ] Complete 'Cloud'/high feature extraction from featuremaps
+* [X] Complete 'Cloud'/high feature extraction from featuremaps
 * [ ] Track features through frames
 * [ ] ILP/ASP model
 * [ ] NLP translation (?)
