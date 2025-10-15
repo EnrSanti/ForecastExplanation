@@ -58,6 +58,19 @@ if __name__ == "__main__":
     print("\nselect: ",end='')
 
     mode = int(input())
+
+    folders_pref = {"cloud", "humidity", "temp", "winds"}
+    folders_suff = {
+        1000: "_at_100m", 
+        925: "_at_750m",
+        850: "_at_1.4km",
+        700: "_at_3km", 
+        500: "_at_5.5km", 
+        300: "_at_9km"
+    }
+
+
+
     if mode == 0:
         text = """
     The first two commands (1,2) cut (in latitude and long.) the gribs file under ./GRIB/data/original_CERRA, save it as .nc.
@@ -65,16 +78,16 @@ if __name__ == "__main__":
     Command 2 extracts feature maps for the whole itealy and stores them in "./GRIB/extracted_it". 
 
     The remaining three commands (3,4,5,6) work on data under "./image_processing/":
-        [3] 
-        [4] 
-        [5]
-        [6]  
+        [3] clusters the FVG images and runs TOBAC on them
+        [4] scales FVG images and runs TOBAC on them
+        [5] cluster the IT images and runs TOBAC on them
+        [6] scales IT images and runs TOBAC on them
              """
         print(text)
 
     elif mode == 1:
         #longmin longmax latmin latmax
-        coordinates=[11.5,14.5,44.5,48]
+        coordinates=[11,15,44.5,48]
         coordinates_italy=[6.5,18.5,36.5,48]
         input_dir = "./GRIB/data/original_CERRA"
         output_dir = "./GRIB/data/CERRA_cut"
@@ -96,7 +109,7 @@ if __name__ == "__main__":
 
     elif mode == 2:
         #longmin longmax latmin latmax
-        coordinates=[11.5,14.5,44.5,48]
+        coordinates=[11,15,44.5,48]
         coordinates_italy=[6.5,18.5,36.5,48]
         input_dir = "./GRIB/data/original_CERRA"
         output_dir = "./GRIB/data/CERRA_cut"
@@ -120,16 +133,16 @@ if __name__ == "__main__":
     elif mode == 3:    
         print("Cluster & run TOBAC on FVG clustered data (just clouds for now)")
             #resize_1_4("GRIB/extracted_fvg_cleaned/cloud_at_3km", "image_processing/fvg/resized")
-        folders=["cloud_at_3km","cloud_at_5.5km","cloud_at_9km","cloud_at_100m"]
-        for f in folders:
+        folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
+        for f in folder_list:
             resize_1_4(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
             generate_clustered_images(numClusters, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/clustered/{f}_clustered")
             run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}")
 
     elif mode == 4:
         print("run TOBAC on FVG data (just clouds for now)")
-        folders=["cloud_at_3km","cloud_at_5.5km","cloud_at_9km","cloud_at_100m"]
-        for f in folders:
+        folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
+        for f in folder_list:
             resize_1_4(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
             run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}")
     
@@ -137,8 +150,8 @@ if __name__ == "__main__":
         
         print("Cluster & run TOBAC on IT clustered data (just clouds for now)")
             #resize_1_4("GRIB/extracted_fvg_cleaned/cloud_at_3km", "image_processing/fvg/resized")
-        folders=["cloud_at_3km","cloud_at_5.5km","cloud_at_9km","cloud_at_100m"]
-        for f in folders:
+        folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
+        for f in folder_list:
             resize_1_4(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
             generate_clustered_images(numClusters, f"image_processing/it/resized/{f}", f"image_processing/it/clustered/{f}_clustered")
             run_tobac(f"image_processing/it/clustered/{f}_clustered", f"image_processing/it/output_clustered/{f}")
@@ -146,8 +159,8 @@ if __name__ == "__main__":
     elif mode == 6:
         print("run TOBAC on IT data (just clouds for now)")
         #resize_1_4("GRIB/extracted_fvg_cleaned/cloud_at_3km", "image_processing/fvg/resized")
-        folders=["cloud_at_3km","cloud_at_5.5km","cloud_at_9km","cloud_at_100m"]
-        for f in folders:
+        folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
+        for f in folder_list:
             resize_1_4(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
             run_tobac(f"image_processing/it/resized/{f}", f"image_processing/it/output/{f}",smooth=4)
     
