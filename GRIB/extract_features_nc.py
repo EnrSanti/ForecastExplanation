@@ -12,7 +12,16 @@ import pathlib
 
 # ---- CONFIG ----
 
-output_base = "./GRIB/extracted_fvg"
+output_base = ""
+levels = [1000, 925, 850, 700, 500, 300]
+folders = {
+    1000: "_at_100m", 
+    925: "_at_750m",
+    850: "_at_1.4km",
+    700: "_at_3km", 
+    500: "_at_5.5km", 
+    300: "_at_9km"
+}
 
 def save_feature_maps(input_path,coordinates, is_fvg, clean_plot):
     global output_base
@@ -22,15 +31,24 @@ def save_feature_maps(input_path,coordinates, is_fvg, clean_plot):
         output_base = "./GRIB/extracted_it"
     if(clean_plot):
         output_base = output_base+"_cleaned"
+    
+
+    
     print(f"Output base directory: {output_base}")
+    save_humidity_maps(input_path, coordinates,clean_plot)
     save_wind_maps(input_path, coordinates,clean_plot)
 
     save_cloud_maps(input_path,coordinates, clean_plot)
     save_temperature_maps(input_path,coordinates, clean_plot)
 
+
+
 def save_cloud_maps(input_path, coordinates,clean_plot):
-    levels = [1000, 700, 500, 300]        
-    folders = {1000: "cloud_at_100m", 700: "cloud_at_3km", 500: "cloud_at_5.5km", 300: "cloud_at_9km"}
+    global levels,folders 
+    
+    cloud_folders = {k: "cloud" + v for k, v in folders.items()}
+
+
     cmap = "Blues"
 
     ds = xr.open_dataset(input_path, decode_times=True, decode_timedelta=False)
@@ -41,7 +59,7 @@ def save_cloud_maps(input_path, coordinates,clean_plot):
 
     # ---- CREATE OUTPUT FOLDERS ----
     for lvl in levels:
-        pathlib.Path(os.path.join(output_base, folders[lvl])).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(output_base, cloud_folders[lvl])).mkdir(parents=True, exist_ok=True)
 
     # ---- SAVE LEGEND PER LEVEL ----
     for lvl in levels:
@@ -64,7 +82,7 @@ def save_cloud_maps(input_path, coordinates,clean_plot):
         cloud_level = cloud.sel(isobaricInhPa=lvl)
         vmin = float(cloud_level.min())
         vmax = float(cloud_level.max())
-        out_dir = os.path.join(output_base, folders[lvl])
+        out_dir = os.path.join(output_base, cloud_folders[lvl])
 
         for i in range(cloud_level.sizes['time']):
             base_time = pd.to_datetime(str(cloud_level['time'].isel(time=i).values))
@@ -94,10 +112,10 @@ def save_cloud_maps(input_path, coordinates,clean_plot):
 
     print("Finished plotting cloud maps with separate legends per level.")
 
-
 def save_temperature_maps(input_path,coordinates, clean_plot):
-    levels = [1000, 700, 500, 300]        # pressure levels
-    folders = {1000: "temp_at_100m", 700: "temp_at_3km", 500: "temp_at_5.5km", 300: "temp_at_9km"}
+    global levels,folders
+    temp_folders = {k: "temp" + v for k, v in folders.items()}
+
     cmap = "coolwarm"
 
     # ---- OPEN DATASET ----
@@ -106,7 +124,7 @@ def save_temperature_maps(input_path,coordinates, clean_plot):
 
     # ---- CREATE OUTPUT FOLDERS ----
     for lvl in levels:
-        folder_name = folders[lvl]
+        folder_name = temp_folders[lvl]
         out_dir = os.path.join(output_base, folder_name)
         pathlib.Path(out_dir).mkdir(parents=True, exist_ok=True)
 
@@ -132,7 +150,7 @@ def save_temperature_maps(input_path,coordinates, clean_plot):
         temp_level = temperature.sel(isobaricInhPa=lvl)
         vmin = float(temp_level.min())
         vmax = float(temp_level.max())
-        folder_name = folders[lvl]
+        folder_name = temp_folders[lvl]
         out_dir = os.path.join(output_base, folder_name)
 
         for i in range(temp_level.sizes['time']):
@@ -174,21 +192,11 @@ def save_temperature_maps(input_path,coordinates, clean_plot):
 
     print("Finished plotting all levels with consistent colormap and separate folders + legends.")
 
-def save_wind_maps(input_path, coordinates, clean_plot, levels=[1000, 700, 500, 300]):
-    import pathlib, os
-    import xarray as xr
-    import numpy as np
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    import cartopy.crs as ccrs
-    import cartopy.feature as cfeature
+def save_wind_maps(input_path, coordinates, clean_plot):
+    
 
-    folders = {
-        1000: "winds_at_100m",
-        700: "winds_at_3km",
-        500: "winds_at_5.5km",
-        300: "winds_at_9km"
-    }
+    global levels,folders
+    wind_folders = {k: "winds" + v for k, v in folders.items()}
     cmap = "viridis"
     image_dpi = 100  # Can be changed; coordinates will remain consistent
 
@@ -198,7 +206,7 @@ def save_wind_maps(input_path, coordinates, clean_plot, levels=[1000, 700, 500, 
 
     # ---- CREATE OUTPUT FOLDERS ----
     for lvl in levels:
-        pathlib.Path(os.path.join(output_base, folders[lvl])).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(output_base, wind_folders[lvl])).mkdir(parents=True, exist_ok=True)
 
     for lvl in levels:
         u_lvl = u_var.sel(isobaricInhPa=lvl)
@@ -226,7 +234,7 @@ def save_wind_maps(input_path, coordinates, clean_plot, levels=[1000, 700, 500, 
         )
         plt.close(fig)
 
-        out_dir = os.path.join(output_base, folders[lvl])
+        out_dir = os.path.join(output_base, wind_folders[lvl])
 
         for i in range(u_lvl.sizes["time"]):
             base_time = pd.to_datetime(str(u_lvl["time"].isel(time=i).values))
@@ -360,5 +368,71 @@ def save_wind_maps(input_path, coordinates, clean_plot, levels=[1000, 700, 500, 
     ds.close()
     print("Finished plotting wind maps (aligned pixel coordinates).")
 
+def save_humidity_maps(input_path, coordinates, clean_plot):
+    global levels, folders 
+    
+    humidity_folders = {k: "humidity" + v for k, v in folders.items()}
+    cmap = "YlGnBu"
 
-#print_nc_variables()
+    ds = xr.open_dataset(input_path, decode_times=True, decode_timedelta=False)
+    if 'r' not in ds and 'rhum' not in ds:
+        print("Error: 'r' (Relative Humidity) variable not found in dataset.")
+        return
+    humidity = ds['r'] if 'r' in ds else ds['rhum']
+
+    # ---- CREATE OUTPUT FOLDERS ----
+    for lvl in levels:
+        pathlib.Path(os.path.join(output_base, humidity_folders[lvl])).mkdir(parents=True, exist_ok=True)
+
+    # ---- SAVE LEGEND PER LEVEL ----
+    for lvl in levels:
+        rh_level = humidity.sel(isobaricInhPa=lvl)
+        vmin = float(rh_level.min())
+        vmax = float(rh_level.max())
+
+        fig, ax = plt.subplots(figsize=(6,1))
+        norm = plt.Normalize(vmin=vmin, vmax=vmax)
+        cb = plt.colorbar(
+            plt.cm.ScalarMappable(norm=norm, cmap=cmap),
+            cax=ax, orientation='horizontal'
+        )
+        cb.set_label(f'Relative humidity at {lvl} hPa [%]')
+        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa_humidity.png"),
+                    dpi=300, bbox_inches='tight')
+        plt.close(fig)
+
+    # ---- PLOT LOOP ----
+    for lvl in levels:
+        rh_level = humidity.sel(isobaricInhPa=lvl)
+        vmin = float(rh_level.min())
+        vmax = float(rh_level.max())
+        out_dir = os.path.join(output_base, humidity_folders[lvl])
+
+        for i in range(rh_level.sizes['time']):
+            base_time = pd.to_datetime(str(rh_level['time'].isel(time=i).values))
+            for j in range(rh_level.sizes['step']):
+                step_val = int(rh_level['step'].isel(step=j).values)
+                valid_time = base_time + pd.Timedelta(hours=step_val)
+
+                rh_slice = rh_level.isel(time=i, step=j)
+                if not np.isfinite(rh_slice).any():
+                    continue
+
+                fig, ax = plt.subplots(figsize=(10,8),
+                                       subplot_kw={'projection': ccrs.PlateCarree()})
+                ax.set_extent(coordinates, crs=ccrs.PlateCarree())
+                pcm = ax.pcolormesh(
+                    rh_slice['longitude'], rh_slice['latitude'], rh_slice,
+                    cmap=cmap, shading='auto', vmin=vmin, vmax=vmax,
+                    transform=ccrs.PlateCarree()
+                )
+                if not clean_plot:
+                    ax.coastlines(resolution='10m', linewidth=1)
+                    ax.add_feature(cfeature.BORDERS, linewidth=0.8)
+                    #ax.set_title(f"Relative humidity at {lvl} hPa\nValid time: {valid_time}")
+
+                fname = os.path.join(out_dir, f"humidity_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
+                plt.savefig(fname, dpi=300, bbox_inches='tight', pad_inches=0)
+                plt.close(fig)
+
+    print("Finished plotting humidity maps with separate legends per level.")
