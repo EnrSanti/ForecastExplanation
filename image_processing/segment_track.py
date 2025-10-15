@@ -13,8 +13,8 @@ import scipy.ndimage as ndimage
 import imageio as images
 sns.set_context("talk")
 
-def locate_and_segment(input_folder, output_folder,smooth = 8):
-    
+def locate_and_segment(input_folder, output_folder,n_min_threshold,smooth = 8):
+    print("n_min_threshold",n_min_threshold)
     image_files = ([os.path.join(input_folder, f) for f in os.listdir(input_folder)
                         if f.lower().endswith((".png", ".jpg", ".jpeg"))])
     images_no=len(image_files)
@@ -50,7 +50,7 @@ def locate_and_segment(input_folder, output_folder,smooth = 8):
     n_time, n_y, n_x = data.shape
 
     # Spatial coordinates (example: 1 pixel = 1000 m)
-    dx = dy = 3000  # adjust to your case
+    dx = dy = 3000  
     x = np.arange(n_x) * dx
     y = -np.arange(n_y) * dy
 
@@ -92,13 +92,15 @@ def locate_and_segment(input_folder, output_folder,smooth = 8):
 
 
     # === FEATURE DETECTION ===
+    #I locate twice just to get the segmentation right (i.e. with "extreme" i know the center will be inside the object)
     features = tobac.feature_detection_multithreshold(
         test_data_norm,
         threshold=[norm_threshold],  # single threshold in normalized space
         dxy=dxy,
         target="minimum",
         position_threshold="extreme",
-        sigma_threshold=smooth
+        sigma_threshold=smooth,
+        n_min_threshold=n_min_threshold
     )
 
     features_weighted_points = tobac.feature_detection_multithreshold(
@@ -107,7 +109,8 @@ def locate_and_segment(input_folder, output_folder,smooth = 8):
         dxy=dxy,
         target="minimum",
         position_threshold="weighted_abs",
-        sigma_threshold=smooth
+        sigma_threshold=smooth,
+        n_min_threshold=n_min_threshold
     )
 
 
@@ -124,9 +127,6 @@ def locate_and_segment(input_folder, output_folder,smooth = 8):
         temp_da = test_data_norm.isel(time=itime).copy()
         temp_da.data = smoothed_frame
 
-        # consistent color range
-
-        # overlay detections
         
         #------------------ segmentation ------------------  
 
@@ -200,6 +200,7 @@ def locate_and_segment(input_folder, output_folder,smooth = 8):
         plt.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)  # close the figure to free memory
 
+
 def track():
     pass   
 
@@ -215,9 +216,9 @@ def extract_keys(filename):
         return (0, 0)
 
 
-def run_tobac(inpu_folder, output_folder,smooth = 8):
+def run_tobac(inpu_folder, output_folder,n_min_threshold=0,smooth = 8):
     
-    locate_and_segment(inpu_folder, output_folder,smooth)
+    locate_and_segment(inpu_folder, output_folder,n_min_threshold,smooth)
     print("Locating procedure completed")
     track()
     print("Tracking procedure completed")
