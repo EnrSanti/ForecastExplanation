@@ -13,14 +13,12 @@ import scipy.ndimage as ndimage
 import imageio as images
 sns.set_context("talk")
 
-def locate_and_segment(input_folder, output_folder,n_min_threshold,smooth = 8):
-    print("n_min_threshold",n_min_threshold)
+def locate_track(input_folder, output_folder,n_min_threshold,smooth = 8):
+   
     image_files = ([os.path.join(input_folder, f) for f in os.listdir(input_folder)
                         if f.lower().endswith((".png", ".jpg", ".jpeg"))])
     images_no=len(image_files)
-    
     image_files = sorted(image_files, key=extract_keys)
-
     frames = [imageio.v2.imread(f) for f in image_files]
 
 
@@ -47,7 +45,7 @@ def locate_and_segment(input_folder, output_folder,n_min_threshold,smooth = 8):
 
     # Stack into 3D array (time, y, x)
     data = np.stack(frames_gray)
-    n_time, n_y, n_x = data.shape
+    _, n_y, n_x = data.shape
 
     # Spatial coordinates (example: 1 pixel = 1000 m)
     dx = dy = 3000  
@@ -80,6 +78,8 @@ def locate_and_segment(input_folder, output_folder,n_min_threshold,smooth = 8):
 
     dxy, dt = tobac.get_spacings(test_data,grid_spacing=(1, 1))
 
+    print("dxy:", dxy)
+    print("dt:", dt)
 
     # === GLOBAL NORMALIZATION ===
     vmin = float(test_data.min())
@@ -96,27 +96,34 @@ def locate_and_segment(input_folder, output_folder,n_min_threshold,smooth = 8):
     features = tobac.feature_detection_multithreshold(
         test_data_norm,
         threshold=[norm_threshold],  # single threshold in normalized space
-        dxy=dxy,
+        dxy=3000,
         target="minimum",
         position_threshold="extreme",
         sigma_threshold=smooth,
-        n_min_threshold=n_min_threshold
+        n_min_threshold=n_min_threshold,
+        min_distance=500
     )
 
     features_weighted_points = tobac.feature_detection_multithreshold(
         test_data_norm,
         threshold=[norm_threshold],  # single threshold in normalized space
-        dxy=dxy,
+        dxy=3000,
         target="minimum",
         position_threshold="weighted_abs",
         sigma_threshold=smooth,
-        n_min_threshold=n_min_threshold
+        n_min_threshold=n_min_threshold,
+        min_distance=500
     )
 
+    trajectories = tobac.linking_trackpy(features_weighted_points, test_data, dt=3600, dxy=3000, v_max=100)
 
     os.makedirs(output_folder, exist_ok=True)  # create folder if it doesn't exist
 
-    # === PLOTTING AND SAVING ===
+
+
+
+
+    #======== SEGMENTING ========
     segments_all = []
     for i, itime in enumerate(range(0, images_no)):
         original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
@@ -126,9 +133,6 @@ def locate_and_segment(input_folder, output_folder,n_min_threshold,smooth = 8):
         )
         temp_da = test_data_norm.isel(time=itime).copy()
         temp_da.data = smoothed_frame
-
-        
-        #------------------ segmentation ------------------  
 
         temp_da = test_data_norm.isel(time=[itime]).copy()
         temp_da.data = smoothed_frame[np.newaxis, ...]  # keep time dim
@@ -150,7 +154,6 @@ def locate_and_segment(input_folder, output_folder,n_min_threshold,smooth = 8):
             dxy=dxy,
             threshold=norm_threshold,
             target="minimum"
-            
         )
         # store results
         segments_all.append((itime, segment_labels, segments))
@@ -158,7 +161,11 @@ def locate_and_segment(input_folder, output_folder,n_min_threshold,smooth = 8):
    
     plot_frames = range(0, images_no)
 
+    #======== plotting ====
+    cell_ids = features["idx"].dropna().unique()
+
     for i, itime in enumerate(plot_frames):
+
         original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
         # Get the field for this frame
         fig, axs = plt.subplots(figsize=(6, 6))
@@ -170,19 +177,33 @@ def locate_and_segment(input_folder, output_folder,n_min_threshold,smooth = 8):
 
         # consistent color range across all frames
         temp_da.plot(ax=axs, vmin=0, vmax=1, cmap="viridis")
-        
-        f_weighted = features_weighted_points[features_weighted_points["frame"] == itime]
-        f_weighted.plot.scatter(
-            x="x",
-            y="y",
-            s=20,
-            ax=axs,
-            color="red",
-            marker="x",
-        )
+
+
+
+        for cell_id in cell_ids:
+            track = trajectories[trajectories["cell"] == cell_id]
+            f_weighted = features_weighted_points[(features_weighted_points["frame"] == itime) & (features_weighted_points["idx"] == cell_id)]
+            print_clouds_center(f_weighted,features_weighted_points, itime, track, axs,cell_id)      
+            
+            
+            if(len(f_weighted["x"])==0):
+                continue
+            x_pos = f_weighted["x"].values[0]
+            y_pos = f_weighted["y"].values[0]
+
+
+            axs.text(
+                x_pos -3,  # offset a bit to the right
+                y_pos -3,  # offset upward slightly
+                f"{int(cell_id)}",  # text = cloud id
+                color="white",
+                fontsize=8,
+                weight="bold",
+                bbox=dict(facecolor='black', alpha=0.3, edgecolor='none', pad=1)
+            )
 
         # Extract segmentation for this frame from segments_all
-        # We find the entry with matching time
+            
         entry = next((s for s in segments_all if s[0] == itime), None)
         
         if entry is not None:
@@ -193,16 +214,68 @@ def locate_and_segment(input_folder, output_folder,n_min_threshold,smooth = 8):
                 seg_labels2d = seg_labels.isel(time=0)  # drop the time dim for contour
                 # Only plot contour if there are actual segmented pixels
                 seg_labels2d.plot.contour(levels=[0.5], ax=axs, colors="k")
-            
+                
+
+
+
 
         axs.set_title(f"Timeframe = {itime}")
         out_path = os.path.join(output_folder, f"{original_img_name}.png")
         plt.savefig(out_path, dpi=150, bbox_inches="tight")
         plt.close(fig)  # close the figure to free memory
+    
+   
+def print_clouds_center(f_weighted,features_weighted_points, itime, track, axs,i):
+    #per capire quali siano le "nuove nuvole" cerchiamo quelle non legate a nessuna traiettoria nel frame precedente
 
-
-def track():
-    pass   
+    line=track[((track["frame"]==itime-1) | (track["frame"]==itime))] #select all previous times
+    
+    #print only if the blob exists at this time
+    if(track.iloc[-1].frame < itime):
+        return
+    axs.plot(
+        line["x"],
+        line["y"],
+        color="red",
+        linewidth=1.5,
+        alpha=0.5,
+    )
+    #gradient over the previous steps (darker more recent)
+    for jtime in range(track.iloc[0].frame, itime-1):
+        line=track[((track["frame"]==jtime) | (track["frame"]==jtime+1))]
+        alpha = 0.1 + 0.3 * (jtime - track.iloc[0].frame) / (itime - track.iloc[0].frame)
+        axs.plot(
+            line["x"],
+            line["y"],
+            color="red",
+            linewidth=1.5,
+            alpha=alpha,
+        )
+    if(len(line)<=1): #new cloud
+        f_weighted.plot.scatter(
+            x="x",
+            y="y",
+            s=40,
+            ax=axs,
+            color="white",
+            marker="^",
+        )
+        print("new cloud at frame "+str(itime)+" for cloud id "+str(i))
+    else:
+        print("tracked cloud len track: "+str(len(line))+"at frame "+str(itime)+" for cloud id "+str(i))
+        f_weighted.plot.scatter(
+            x="x",
+            y="y",
+            s=40,
+            ax=axs,
+            color="red",
+            marker="x",
+        )
+        
+        
+        
+        #last step in red
+    
 
 
 def extract_keys(filename):
@@ -218,7 +291,5 @@ def extract_keys(filename):
 
 def run_tobac(inpu_folder, output_folder,n_min_threshold=0,smooth = 8):
     
-    locate_and_segment(inpu_folder, output_folder,n_min_threshold,smooth)
-    print("Locating procedure completed")
-    track()
-    print("Tracking procedure completed")
+    locate_track(inpu_folder, output_folder,n_min_threshold,smooth)
+    print("Locating & tracking procedure completed")

@@ -15,7 +15,7 @@ warnings.filterwarnings(
     category=UserWarning
 )
 numClusters = 3 
-n_min_threshold=130
+n_min_threshold=200
 
 
 
