@@ -16,6 +16,9 @@ warnings.filterwarnings(
 )
 numClusters = 3 
 n_min_threshold=200
+coordinates=[11,15,44.5,48]
+coordinates_italy=[6.5,18.5,36.5,48]
+
 
 
 
@@ -88,8 +91,6 @@ if __name__ == "__main__":
 
     elif mode == 1:
         #longmin longmax latmin latmax
-        coordinates=[11,15,44.5,48]
-        coordinates_italy=[6.5,18.5,36.5,48]
         input_dir = "./GRIB/data/original_CERRA"
         output_dir = "./GRIB/data/CERRA_cut"
         os.makedirs(output_dir, exist_ok=True)
@@ -138,14 +139,14 @@ if __name__ == "__main__":
         for f in folder_list:
             resize_1_4(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
             generate_clustered_images(numClusters, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/clustered/{f}_clustered")
-            run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}",n_min_threshold)
+            run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
 
     elif mode == 4:
         print("run TOBAC on FVG data (just clouds for now)")
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
             resize_1_4(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
-            run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}",n_min_threshold)
+            run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
     
     elif mode == 5:    
         
@@ -155,7 +156,7 @@ if __name__ == "__main__":
         for f in folder_list:
             resize_1_4(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
             generate_clustered_images(numClusters, f"image_processing/it/resized/{f}", f"image_processing/it/clustered/{f}_clustered")
-            run_tobac(f"image_processing/it/clustered/{f}_clustered", f"image_processing/it/output_clustered/{f}",n_min_threshold)
+            run_tobac(f"image_processing/it/clustered/{f}_clustered", f"image_processing/it/output_clustered/{f}",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
 
     elif mode == 6:
         print("run TOBAC on IT data (just clouds for now)")
@@ -163,5 +164,5 @@ if __name__ == "__main__":
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
             resize_1_4(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
-            run_tobac(f"image_processing/it/resized/{f}", f"image_processing/it/output/{f}",n_min_threshold)
+            run_tobac(f"image_processing/it/resized/{f}", f"image_processing/it/output/{f}",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
     
