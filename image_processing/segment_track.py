@@ -10,10 +10,11 @@ import re
 import seaborn as sns
 import pandas as pd
 import scipy.ndimage as ndimage
+import matplotlib.patches as patches
 import imageio as images
 sns.set_context("talk")
 
-def locate_track(input_folder, output_folder,n_min_threshold,smooth = 8):
+def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon_min,lon_max,smooth = 8):
    
     image_files = ([os.path.join(input_folder, f) for f in os.listdir(input_folder)
                         if f.lower().endswith((".png", ".jpg", ".jpeg"))])
@@ -49,8 +50,8 @@ def locate_track(input_folder, output_folder,n_min_threshold,smooth = 8):
 
     # Spatial coordinates (example: 1 pixel = 1000 m)
     dx = dy = 3000  
-    x = np.arange(n_x) * dx
-    y = -np.arange(n_y) * dy
+    x = np.arange(n_x)
+    y = np.arange(n_y)
 
     #Create xarray.DataArray
     test_data = xr.DataArray(
@@ -66,8 +67,7 @@ def locate_track(input_folder, output_folder,n_min_threshold,smooth = 8):
     )
 
     #Optional: latitude / longitude (linear approximation)
-    lat_min, lat_max = 40.0, 45.0
-    lon_min, lon_max = -5.0, 0.0
+    #works on fvg coordinates
     lat = np.linspace(lat_min, lat_max, n_y)
     lon = np.linspace(lon_min, lon_max, n_x)
     latitude = np.tile(lat[:, np.newaxis], (1, n_x))
@@ -96,30 +96,32 @@ def locate_track(input_folder, output_folder,n_min_threshold,smooth = 8):
     features = tobac.feature_detection_multithreshold(
         test_data_norm,
         threshold=[norm_threshold],  # single threshold in normalized space
-        dxy=3000,
+        dxy=3000,  # 1 px 3km
         target="minimum",
         position_threshold="extreme",
         sigma_threshold=smooth,
         n_min_threshold=n_min_threshold,
-        min_distance=500
+        min_distance=500 # i guess 500m
     )
 
     features_weighted_points = tobac.feature_detection_multithreshold(
         test_data_norm,
         threshold=[norm_threshold],  # single threshold in normalized space
-        dxy=3000,
+        dxy=3000, # 1 px 3km
         target="minimum",
         position_threshold="weighted_abs",
         sigma_threshold=smooth,
         n_min_threshold=n_min_threshold,
-        min_distance=500
+        min_distance=500 #i guess 500m
     )
-
-    trajectories = tobac.linking_trackpy(features_weighted_points, test_data, dt=3600, dxy=3000, v_max=100)
+    dt=3600
+    dxy=3000
+    v_max=100
+    trajectories = tobac.linking_trackpy(features_weighted_points, test_data, dt=dt, dxy=dxy, v_max=v_max)
 
     os.makedirs(output_folder, exist_ok=True)  # create folder if it doesn't exist
 
-
+    radius=v_max*dt/dxy
 
 
 
@@ -176,31 +178,20 @@ def locate_track(input_folder, output_folder,n_min_threshold,smooth = 8):
         temp_da.data = smoothed_frame
 
         # consistent color range across all frames
-        temp_da.plot(ax=axs, vmin=0, vmax=1, cmap="viridis")
-
-
+        axs.imshow(temp_da.values, origin="upper", cmap="viridis")  # pixels are axes
+        xlim = (0, temp_da.sizes['x'])
+        ylim = (0, temp_da.sizes['y'])
 
         for cell_id in cell_ids:
             track = trajectories[trajectories["cell"] == cell_id]
             f_weighted = features_weighted_points[(features_weighted_points["frame"] == itime) & (features_weighted_points["idx"] == cell_id)]
             print_clouds_center(f_weighted,features_weighted_points, itime, track, axs,cell_id)      
             
-            
+            #print cell id numbers
             if(len(f_weighted["x"])==0):
                 continue
-            x_pos = f_weighted["x"].values[0]
-            y_pos = f_weighted["y"].values[0]
-
-
-            axs.text(
-                x_pos -3,  # offset a bit to the right
-                y_pos -3,  # offset upward slightly
-                f"{int(cell_id)}",  # text = cloud id
-                color="white",
-                fontsize=8,
-                weight="bold",
-                bbox=dict(facecolor='black', alpha=0.3, edgecolor='none', pad=1)
-            )
+            print_cloud_labels(f_weighted, cell_id,xlim, ylim, axs)
+            add_circle_slice_filled(axs, cx=f_weighted["x"].iloc[0], cy=f_weighted["y"].iloc[0], radius=radius, xlim=xlim, ylim=ylim,color='red', alpha=0.05)
 
         # Extract segmentation for this frame from segments_all
             
@@ -218,21 +209,35 @@ def locate_track(input_folder, output_folder,n_min_threshold,smooth = 8):
 
 
 
-
-        axs.set_title(f"Timeframe = {itime}")
+        axs.set_title("")
+        #axs.set_title(f"Timeframe = {itime}")
+        axs.set_xticks([])       # remove x-axis ticks
+        axs.set_yticks([])       # remove y-axis ticks
+        axs.set_xticklabels([])  # remove x-axis labels
+        axs.set_yticklabels([])  # remove y-axis labels
+        axs.axis('off')    
         out_path = os.path.join(output_folder, f"{original_img_name}.png")
-        plt.savefig(out_path, dpi=150, bbox_inches="tight")
+        axs.set_xlim(0, temp_da.sizes["x"])
+        axs.set_ylim(temp_da.sizes["y"], 0)  # since origin="upper"
+        plt.savefig(out_path, dpi=150, bbox_inches="tight",pad_inches=0)
         plt.close(fig)  # close the figure to free memory
     
-   
-def print_clouds_center(f_weighted,features_weighted_points, itime, track, axs,i):
-    #per capire quali siano le "nuove nuvole" cerchiamo quelle non legate a nessuna traiettoria nel frame precedente
 
-    line=track[((track["frame"]==itime-1) | (track["frame"]==itime))] #select all previous times
-    
-    #print only if the blob exists at this time
-    if(track.iloc[-1].frame < itime):
+def print_clouds_center(f_weighted, features_weighted_points, itime, track, axs, i,
+                        dt=3600, dxy=3000, v_max=100):
+    """
+    Plot a single cloud and its trajectory line, drawing the actual search radius circle.
+    """
+    # compute linking search radius in pixels
+    search_radius = v_max * dt / dxy
+
+    line = track[(track["frame"] == itime - 1) | (track["frame"] == itime)]  # last two frames
+
+    # stop if the blob doesn't exist yet
+    if track.iloc[-1].frame < itime:
         return
+
+    # plot main trajectory
     axs.plot(
         line["x"],
         line["y"],
@@ -240,9 +245,10 @@ def print_clouds_center(f_weighted,features_weighted_points, itime, track, axs,i
         linewidth=1.5,
         alpha=0.5,
     )
-    #gradient over the previous steps (darker more recent)
-    for jtime in range(track.iloc[0].frame, itime-1):
-        line=track[((track["frame"]==jtime) | (track["frame"]==jtime+1))]
+
+    # plot trajectory gradient (fading older)
+    for jtime in range(track.iloc[0].frame, itime - 1):
+        line = track[(track["frame"] == jtime) | (track["frame"] == jtime + 1)]
         alpha = 0.1 + 0.3 * (jtime - track.iloc[0].frame) / (itime - track.iloc[0].frame)
         axs.plot(
             line["x"],
@@ -251,7 +257,12 @@ def print_clouds_center(f_weighted,features_weighted_points, itime, track, axs,i
             linewidth=1.5,
             alpha=alpha,
         )
-    if(len(line)<=1): #new cloud
+
+    # if the cloud exists at this frame, get its coordinates
+   
+
+    # draw scatter for the cloud and print info
+    if len(line) <= 1:  # new cloud
         f_weighted.plot.scatter(
             x="x",
             y="y",
@@ -260,9 +271,8 @@ def print_clouds_center(f_weighted,features_weighted_points, itime, track, axs,i
             color="white",
             marker="^",
         )
-        print("new cloud at frame "+str(itime)+" for cloud id "+str(i))
+        
     else:
-        print("tracked cloud len track: "+str(len(line))+"at frame "+str(itime)+" for cloud id "+str(i))
         f_weighted.plot.scatter(
             x="x",
             y="y",
@@ -271,11 +281,73 @@ def print_clouds_center(f_weighted,features_weighted_points, itime, track, axs,i
             color="red",
             marker="x",
         )
-        
-        
-        
-        #last step in red
+        print(f"Tracked cloud (len={len(line)}) at frame {itime} (id={i}) | search radius = {search_radius:.2f} px")
+
+
+def print_cloud_labels(f_weighted, cell_id,xlim, ylim, axs):
     
+    x_pos = f_weighted["x"].values[0]
+    y_pos = f_weighted["y"].values[0]
+
+    if x_pos < xlim[0]+30:
+        x_pos = x_pos+20
+    if x_pos > xlim[1]-30:
+        x_pos = x_pos-20
+    
+    if y_pos < ylim[0]+30:
+        y_pos = y_pos+20
+    if y_pos > ylim[1]-30:
+        y_pos = y_pos-20
+
+    axs.text(
+        x_pos -3,  # offset a bit to the right
+        y_pos -3,  # offset upward slightly
+        f"{int(cell_id)}",  # text = cloud id
+        color="white",
+        fontsize=8,
+        weight="bold",
+        bbox=dict(facecolor='black', alpha=0.3, edgecolor='none', pad=1)
+    )
+def add_circle_slice_filled(ax, cx, cy, radius, xlim, ylim, color="red", alpha=0.5, **kwargs):
+    """
+    Draw a filled 'slice' of a circle that stays within xlim/ylim.
+    Original radius is preserved, parts outside the limits are clipped.
+    Corners are filled with triangles to handle circle at edges/corners.
+    """
+    # Sample circle points
+    theta = np.linspace(0, 2*np.pi, 300)
+    x = cx + radius * np.cos(theta)
+    y = cy + radius * np.sin(theta)
+
+    # Clip points to the box
+    x_clipped = np.clip(x, xlim[0], xlim[1])
+    y_clipped = np.clip(y, ylim[0], ylim[1])
+
+    # Create polygon from clipped points
+    polygon_points = np.column_stack([x_clipped, y_clipped])
+
+    # Add corners if any clipped point is at box edge
+    corners = []
+    if np.any(x < xlim[0]) and np.any(y < ylim[0]):
+        corners.append([xlim[0], ylim[0]])
+    if np.any(x > xlim[1]) and np.any(y < ylim[0]):
+        corners.append([xlim[1], ylim[0]])
+    if np.any(x < xlim[0]) and np.any(y > ylim[1]):
+        corners.append([xlim[0], ylim[1]])
+    if np.any(x > xlim[1]) and np.any(y > ylim[1]):
+        corners.append([xlim[1], ylim[1]])
+
+    if corners:
+        polygon_points = np.vstack([polygon_points, corners])
+
+    polygon = patches.Polygon(polygon_points, closed=True,
+                              facecolor=color, alpha=alpha,**kwargs)
+    
+    ax.add_patch(polygon)
+
+    polygon_border = patches.Polygon(polygon_points, closed=True,
+                              facecolor="none", alpha=0.3,edgecolor="red",linestyle="--",linewidth=1,**kwargs)
+    ax.add_patch(polygon_border)
 
 
 def extract_keys(filename):
@@ -289,7 +361,7 @@ def extract_keys(filename):
         return (0, 0)
 
 
-def run_tobac(inpu_folder, output_folder,n_min_threshold=0,smooth = 8):
+def run_tobac(inpu_folder, output_folder,lat_min,lat_max,lon_min,lon_max,n_min_threshold=0,smooth = 8):
     
-    locate_track(inpu_folder, output_folder,n_min_threshold,smooth)
+    locate_track(inpu_folder, output_folder,n_min_threshold,lat_min,lat_max,lon_min,lon_max,smooth)
     print("Locating & tracking procedure completed")
