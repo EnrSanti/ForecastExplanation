@@ -14,8 +14,14 @@ warnings.filterwarnings(
     message="As of v1.6.0, segmentation with time length 1",
     category=UserWarning
 )
+
+#for clustering the number of clusters to consider
 numClusters = 3 
+
+#minimum number of pixels for TOBAC (don't consider smaller blobs)
 n_min_threshold=200
+
+#longmin longmax latmin latmax of FVG and Italy
 coordinates=[11,15,44.5,48]
 coordinates_italy=[6.5,18.5,36.5,48]
 
@@ -23,14 +29,29 @@ coordinates_italy=[6.5,18.5,36.5,48]
 
 
 def extract(grib_file,coordinates_fvg,coordinates_italy, is_fvg):
+
+    """
+    Extracts the a smaller .nc data file from the grib files and saves them with the proper name (date etc...). 
+    It's used so that the all the rest of the pipeline works on smaller files.
+    It then extracts the feature maps for the given coordinates (FVG or Italy).
+
+    Parameters
+    ----------
+    grib_file: the file from which to extract the data
+    coordinates_fvg: the coordinates to cut for FVG (the grib has a lot of extra data, bigger area)
+    coordinates_italy: the coordinates to cut for Italy (the grib has a lot of extra data, bigger area)
+    is_fvg: boolean, if true extracts for FVG, else for Italy
+    
+    """
+    
+    #get the file name and paths
     grib_path = os.path.join(input_dir, grib_file)
     base_name = os.path.splitext(grib_file)[0]  #remove .grib
     output_path = os.path.join(output_dir, base_name + "_cut.nc")
     
     #if already cut skip
     if not os.path.exists(output_path):
-        print(f"CUTTING CUT: {grib_path}")
-        #always cut the big chunk
+        #always cut the big chunk, we want to keep a single file, which is still smaller than the original grib
         cut_grib_long_lat(grib_path, output_path, coordinates_italy)
         print(f"GRIB CUT: {output_path}")
     else:
@@ -38,16 +59,21 @@ def extract(grib_file,coordinates_fvg,coordinates_italy, is_fvg):
 
     print(f"EXTRACTING FEATURES: {output_path}")
     
+    #proper image extraction
     if(is_fvg):
         save_feature_maps(output_path, coordinates_fvg,True,True)
     else:
         save_feature_maps(output_path, coordinates_italy,False,True)
 
-    print(f"Processed: {grib_file} → {output_path}")
+    print(f"Processed: {grib_file} -> {output_path}")
+
+
+
+
+
 
 if __name__ == "__main__":
     print("\n-------------------------------------------------\n[0] Info\n")
-        #generate_clustered_images(numClusters, heatMap_dir, clustered_dir)
 
     print("-------------- From GRIB to images --------------")
     print("[1]: CUT Girb & extract FVG DATA")
@@ -63,7 +89,7 @@ if __name__ == "__main__":
 
     mode = int(input())
 
-    folders_pref = {"cloud"}#, "humidity"}#, "temp", "winds"}
+    folders_pref = {"cloud"} #, "humidity"}#, "temp", "winds"}
     folders_suff = {
         1000: "_at_100m", 
         925: "_at_750m",
@@ -74,6 +100,7 @@ if __name__ == "__main__":
     }
 
 
+    #print info
 
     if mode == 0:
         text = """
@@ -90,7 +117,7 @@ if __name__ == "__main__":
         print(text)
 
     elif mode == 1:
-        #longmin longmax latmin latmax
+        #extract nc from grib for FVG & save feature maps (multithreaded, beware more threads use lots of RAM) 
         input_dir = "./GRIB/data/original_CERRA"
         output_dir = "./GRIB/data/CERRA_cut"
         os.makedirs(output_dir, exist_ok=True)
@@ -110,7 +137,7 @@ if __name__ == "__main__":
                     print(f"Extract failed for {grib_file}: {e}")
 
     elif mode == 2:
-        #longmin longmax latmin latmax
+        #extract nc from grib for IT & save feature maps  (multithreaded, beware more threads use lots of RAM)
         coordinates=[11,15,44.5,48]
         coordinates_italy=[6.5,18.5,36.5,48]
         input_dir = "./GRIB/data/original_CERRA"
@@ -133,8 +160,8 @@ if __name__ == "__main__":
 
 
     elif mode == 3:    
+        #resize iamges once to work on smaller images, generate clustered images and run TOBAC (FVG)
         print("Cluster & run TOBAC on FVG clustered data (just clouds for now)")
-            #resize_1_4("GRIB/extracted_fvg_cleaned/cloud_at_3km", "image_processing/fvg/resized")
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
             resize_1_4(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
@@ -142,6 +169,7 @@ if __name__ == "__main__":
             run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
 
     elif mode == 4:
+        #resize iamges once to work on smaller images and run TOBAC (FVG)
         print("run TOBAC on FVG data (just clouds for now)")
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
@@ -149,9 +177,8 @@ if __name__ == "__main__":
             run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
     
     elif mode == 5:    
-        
+        #resize iamges once to work on smaller images, generate clustered images and run TOBAC (IT)
         print("Cluster & run TOBAC on IT clustered data (just clouds for now)")
-            #resize_1_4("GRIB/extracted_fvg_cleaned/cloud_at_3km", "image_processing/fvg/resized")
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
             resize_1_4(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
@@ -159,8 +186,9 @@ if __name__ == "__main__":
             run_tobac(f"image_processing/it/clustered/{f}_clustered", f"image_processing/it/output_clustered/{f}",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
 
     elif mode == 6:
+        #resize iamges once to work on smaller images and run TOBAC (FVG)
         print("run TOBAC on IT data (just clouds for now)")
-        #resize_1_4("GRIB/extracted_fvg_cleaned/cloud_at_3km", "image_processing/fvg/resized")
+      
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
             resize_1_4(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
