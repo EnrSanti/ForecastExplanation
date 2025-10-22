@@ -133,14 +133,16 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
     gap_features_frames=3 #for how many frames a feature can disappear and still be linked (2 full frames in this case, it reappers in the 3)
     radius=v_max*dt/dxy
 
-    #=== FEATURE TRACKING ===
+    #======== FEATURE TRACKING ========
     #using predict, i may be a little bit out of the "search raius" but ok
     trajectories = tobac.linking_trackpy(features_weighted_points, test_data, dt=dt, dxy=dxy, v_max=v_max,method_linking="predict", memory=gap_features_frames)
 
     #create folder if it doesn't exist
     os.makedirs(output_folder, exist_ok=True)  
 
+    #======== MERGING SPLITTING ========
     
+    split_and_merge(trajectories,dxy,os.path.join(output_folder, "merge_split_info.txt"))  
 
    
     #======== SEGMENTING ========
@@ -206,7 +208,7 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
 
         #all_cells_in_gap collects all the cells in the previous gap_features_frames frames (a cell may have disappeared and reappeared)
         all_cells_in_gap=set()
-        #map containing a list, for each cell in the current frame of all the frames it appeared in the previous gap_features_frames frames
+        #map containing a list, for each cell in the current frame: all the frames it appeared in the previous gap_features_frames frames
         all_frames_for_cell = {}
 
         for j in range(gap_features_frames):
@@ -293,7 +295,7 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
         axs.set_ylim(temp_da.sizes["y"], 0)  #since origin="upper"
         plt.savefig(out_path, dpi=150, bbox_inches="tight",pad_inches=0)
         plt.close(fig) 
-    
+        
 def print_clouds_center_line(printing_symbol,color,f_weighted, itime, track, axs, cell_id,persisted_cells,all_frames_for_cell):
     """
     Prints on the plot (axs) the trace and center of the cloud specified by cell_id at frame itime. 
@@ -358,6 +360,78 @@ def print_clouds_center_line(printing_symbol,color,f_weighted, itime, track, axs
             marker=printing_symbol,
         )
 
+def split_and_merge(trajectories,dxy,output_file):
+    #just split for now
+    d = tobac.merge_split.merge_split_MEST(trajectories, dxy=dxy)
+    
+    #convert to DataFrame
+    df = d.to_dataframe().reset_index()
+
+    #from the dataframe filter values (there are useless rows) and remove some duplicated columns
+    filtered_df = df[
+        (df["track"] == df["feature_parent_track_id"]) &
+        (df["cell"] == df["feature_parent_cell_id"])
+    ].drop(columns=["feature_parent_track_id", "feature_parent_cell_id","cell_child_feature_count","cell_ends_with_merge"])#add back cell_ends_with_merge
+
+    #we split the data according to the different tracks (and remove the track column, which are now the keys)
+    #groups is a map of track_id -> dataframe with the data for that track
+    groups = {
+        track_id: group.drop(columns=["track"])
+        for track_id, group in filtered_df.groupby("track")
+    }
+
+    #the first frame in which each cell appears cell -> fame
+    cell_first_frame = {}
+    #the first frame in which each track appears track -> frame
+    track_first_frame = {}
+
+    #loop through rows of trajectories, collect first appearance of each cell
+    for _, row in trajectories.iterrows():
+        cell_id = row["cell"]
+        frame = row["frame"]
+
+        if cell_id not in cell_first_frame:
+            cell_first_frame[cell_id] = frame
+
+    #loop through groups to get first frame in which each track is born
+    for track_id in groups.keys():
+        if track_id not in track_first_frame:
+            #loop through rows of groups[track_id], get the min cell
+            g = groups[track_id]
+            min_cell = g["cell"].min()
+            track_first_frame[track_id] = cell_first_frame[min_cell]
+    
+    str_to_save = ""
+    #loop through each group
+    for track_id in groups.keys():
+        str_to_save+=f"\nTrack {track_id}:"
+        
+        #get the dataframe
+        g = groups[track_id]
+
+        #cells_in_track: contains which cells are in the track, cell_id -> first frame in which it appears
+        cells_in_track = {} 
+
+        #loop through each row of that DataFrame
+        for _, row in g.iterrows():
+            #check if cells_in_track[row["cell"]] already exists
+            cell_id=row["cell"]
+            if cell_id in cells_in_track:
+                continue
+            #get the first frame in which this cell appears
+            cells_in_track[cell_id] = cell_first_frame[cell_id]
+
+
+        for keys in cells_in_track.keys():
+            str_to_save+=f"\n  Cell ID: {keys} first appears in frame: {cells_in_track[keys]}"
+
+        for keys in cells_in_track.keys():
+            if(cells_in_track[keys] != track_first_frame[track_id]):
+                parent_track_id = g.loc[g["cell"] == keys, "cell_parent_track_id"].iloc[0]
+                str_to_save+=f"\n  --> Cell {keys} split (originated) from cell {parent_track_id} at frame {cells_in_track[keys]}"
+    
+    with open(output_file, "w") as f:
+        f.write(str_to_save)
 
 def print_cloud_labels(f_weighted, cell_id,xlim, ylim, axs):
     """
@@ -484,8 +558,7 @@ def extract_keys(filename):
 
 
 
-#
-#
+
 def run_tobac(inpu_folder, output_folder,lat_min,lat_max,lon_min,lon_max,n_min_threshold=0,smooth = 8):
     """
     The main function called from outside (main).
