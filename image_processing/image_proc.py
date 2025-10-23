@@ -7,7 +7,10 @@ from sklearn.cluster import KMeans
 import math, os, time
 import cv2
 from glob import glob
-
+from PIL import Image
+from skimage import morphology, measure
+from shapely.geometry import Polygon, MultiPolygon
+from shapely.ops import unary_union
 
 #----------- CLUSTERING ----------- 
 # https://github.com/AbhinavUtkarsh/Image-Segmentation
@@ -101,44 +104,6 @@ def cluster_images(n_im, numClusters, reshaped, image, image_f):
     return kmeansImage
 
 #----------- IMG RESIZING -----------
-
-def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
-
-    # === SETUP ===
-    os.makedirs(output_folder, exist_ok=True)
-    #check if output folder contains as much files as input folder
-    if len(os.listdir(output_folder)) >= len(os.listdir(input_folder)):
-        print(f"Output folder '{output_folder}' already contains images. Skipping resizing.")
-        return
-    # Supported image formats
-    valid_extensions = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
-
-    # === PROCESS IMAGES ===
-    for filename in os.listdir(input_folder):
-        file_path = os.path.join(input_folder, filename)
-        name, ext = os.path.splitext(filename)
-
-        if ext.lower() not in valid_extensions:
-            continue  # skip non-image files
-
-        try:
-            # open image
-            img = Image.open(file_path)
-
-            # compute new size
-            new_size = (int(img.width * scale_factor), int(img.height * scale_factor))
-
-            # resize with high-quality downsampling
-            img_resized = img.resize(new_size, Image.Resampling.LANCZOS)
-
-            # save to output folder
-            output_path = os.path.join(output_folder, filename)
-            img_resized.save(output_path)
-
-            print(f"Resized: {filename} -> {new_size}")
-
-        except Exception as e:
-            print(f"Skipping {filename}: {e}")
 
 
 def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25,
