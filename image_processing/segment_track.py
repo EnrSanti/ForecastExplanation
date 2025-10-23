@@ -130,7 +130,7 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
     dt=3600
     dxy=3000
     v_max=70
-    gap_features_frames=2 #for how many frames a feature can disappear and still be linked (2 full frames in this case, it reappers in the 3)
+    gap_features_frames=2    #for how many frames a feature can disappear and still be linked (2 full frames in this case, it reappers in the 3)
     radius=v_max*dt/dxy
 
     #======== FEATURE TRACKING ========
