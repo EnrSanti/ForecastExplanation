@@ -145,8 +145,8 @@ Track 66:
   Cell ID: 71 first appears in frame: 50
 Track 67:
   Cell ID: 72 first appears in frame: 51
-  Cell ID: 84 first appears in frame: 54
-  --> Cell 84 split (originated) from cell 67 at frame 54
+  Cell ID: 83 first appears in frame: 54
+  --> Cell 83 split (originated) from cell 67 at frame 54
 Track 68:
   Cell ID: 74 first appears in frame: 51
 Track 69:
@@ -157,8 +157,6 @@ Track 71:
   Cell ID: 77 first appears in frame: 53
 Track 72:
   Cell ID: 78 first appears in frame: 53
-  Cell ID: 83 first appears in frame: 54
-  --> Cell 83 split (originated) from cell 72 at frame 54
 Track 73:
   Cell ID: 79 first appears in frame: 54
 Track 74:
@@ -167,5 +165,3 @@ Track 75:
   Cell ID: 81 first appears in frame: 54
 Track 76:
   Cell ID: 82 first appears in frame: 54
-Track 77:
-  Cell ID: 85 first appears in frame: 55

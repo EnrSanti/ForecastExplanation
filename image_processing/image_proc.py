@@ -7,10 +7,7 @@ from sklearn.cluster import KMeans
 import math, os, time
 import cv2
 from glob import glob
-from PIL import Image
-from skimage import morphology, measure
-from shapely.geometry import Polygon, MultiPolygon
-from shapely.ops import unary_union
+
 
 #----------- CLUSTERING ----------- 
 # https://github.com/AbhinavUtkarsh/Image-Segmentation
@@ -105,93 +102,40 @@ def cluster_images(n_im, numClusters, reshaped, image, image_f):
 
 #----------- IMG RESIZING -----------
 
+def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
 
-def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25,
-                               blur_sigma=1.5, morph_radius=2, simplify_tolerance=3.0):
-    """
-    Resize cloud images and simplify their shapes by merging small blobs and smoothing edges.
-
-    Parameters
-    ----------
-    input_folder : str
-        Path with original cloud images.
-    output_folder : str
-        Path to save resized & simplified outputs.
-    scale_factor : float, optional
-        Downscale factor (default 0.25).
-    blur_sigma : float, optional
-        Gaussian blur sigma for smoothing clouds before thresholding.
-    morph_radius : int, optional
-        Morphological radius to merge close blobs and fill small holes.
-    simplify_tolerance : float, optional
-        Polygon simplification tolerance (higher = smoother clouds).
-    """
-
+    # === SETUP ===
     os.makedirs(output_folder, exist_ok=True)
-    valid_exts = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
+    #check if output folder contains as much files as input folder
+    if len(os.listdir(output_folder)) >= len(os.listdir(input_folder)):
+        print(f"Output folder '{output_folder}' already contains images. Skipping resizing.")
+        return
+    # Supported image formats
+    valid_extensions = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
 
-    for fname in os.listdir(input_folder):
-        name, ext = os.path.splitext(fname)
-        if ext.lower() not in valid_exts:
-            continue
+    # === PROCESS IMAGES ===
+    for filename in os.listdir(input_folder):
+        file_path = os.path.join(input_folder, filename)
+        name, ext = os.path.splitext(filename)
 
-        input_path = os.path.join(input_folder, fname)
-        output_path = os.path.join(output_folder, fname)
+        if ext.lower() not in valid_extensions:
+            continue  # skip non-image files
 
         try:
-            # === Step 1: load and resize ===
-            img = Image.open(input_path).convert("L")
+            # open image
+            img = Image.open(file_path)
+
+            # compute new size
             new_size = (int(img.width * scale_factor), int(img.height * scale_factor))
+
+            # resize with high-quality downsampling
             img_resized = img.resize(new_size, Image.Resampling.LANCZOS)
-            img_arr = np.array(img_resized, dtype=np.float32)
 
-            # === Step 2: Gaussian smoothing ===
-            blurred = cv2.GaussianBlur(img_arr, (0, 0), blur_sigma)
+            # save to output folder
+            output_path = os.path.join(output_folder, filename)
+            img_resized.save(output_path)
 
-            # === Step 3: Normalize + adaptive threshold ===
-            norm = cv2.normalize(blurred, None, 0, 1, cv2.NORM_MINMAX)
-            thresh_val = np.percentile(norm, 70)  # keep top 30% of bright (cloudy) pixels
-            binary = norm > thresh_val
-
-            # === Step 4: Morphological smoothing ===
-            selem = morphology.disk(morph_radius)
-            binary = morphology.binary_closing(binary, selem)
-            binary = morphology.binary_opening(binary, selem)
-            binary = morphology.remove_small_objects(binary, 10)
-
-            # === Step 5: Optional shape simplification ===
-            contours = measure.find_contours(binary, 0.5)
-            polys = []
-            for c in contours:
-                if len(c) < 4:
-                    continue
-                p = Polygon(c)
-                if p.is_valid and p.area > 4:
-                    polys.append(p.simplify(simplify_tolerance))
-
-            if polys:
-                merged = unary_union(polys)
-                mask = np.zeros_like(binary, dtype=bool)
-
-                if isinstance(merged, Polygon):
-                    merged = [merged]
-                elif isinstance(merged, MultiPolygon):
-                    merged = list(merged.geoms)
-
-                for p in merged:
-                    if not p.is_valid or p.area < 1:
-                        continue
-                    rr, cc = np.round(np.array(p.exterior.coords.xy)).astype(int)
-                    rr = np.clip(rr, 0, mask.shape[1] - 1)
-                    cc = np.clip(cc, 0, mask.shape[0] - 1)
-                    mask[cc, rr] = True
-            else:
-                mask = binary
-
-            # === Step 6: Save ===
-            out_img = Image.fromarray((mask * 255).astype(np.uint8))
-            out_img.save(output_path)
-            print(f"Processed: {fname} -> {new_size}")
+            print(f"Resized: {filename} -> {new_size}")
 
         except Exception as e:
-            print(f"Skipping {fname}: {e}")
+            print(f"Skipping {filename}: {e}")
