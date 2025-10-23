@@ -1,0 +1,8 @@
+cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
+77,228,66,77,66,3,5,False,True
+77,236,66,77,66,3,5,False,True
+77,248,66,77,66,3,5,False,True
+77,259,66,77,66,3,5,False,True
+77,270,66,77,66,3,5,False,True
+94,285,66,94,66,3,1,True,False
+110,309,66,110,66,3,1,False,True

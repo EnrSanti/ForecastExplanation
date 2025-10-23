@@ -1,0 +1,17 @@
+cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
+49,374,39,49,39,1,16,False,False
+49,381,39,49,39,1,16,False,False
+49,389,39,49,39,1,16,False,False
+49,395,39,49,39,1,16,False,False
+49,402,39,49,39,1,16,False,False
+49,408,39,49,39,1,16,False,False
+49,432,39,49,39,1,16,False,False
+49,440,39,49,39,1,16,False,False
+49,447,39,49,39,1,16,False,False
+49,456,39,49,39,1,16,False,False
+49,469,39,49,39,1,16,False,False
+49,479,39,49,39,1,16,False,False
+49,484,39,49,39,1,16,False,False
+49,490,39,49,39,1,16,False,False
+49,498,39,49,39,1,16,False,False
+49,508,39,49,39,1,16,False,False

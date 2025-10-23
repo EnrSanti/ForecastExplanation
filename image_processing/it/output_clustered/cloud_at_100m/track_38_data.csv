@@ -1,0 +1,11 @@
+cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
+42,289,38,42,38,1,10,False,False
+42,307,38,42,38,1,10,False,False
+42,315,38,42,38,1,10,False,False
+42,325,38,42,38,1,10,False,False
+42,336,38,42,38,1,10,False,False
+42,346,38,42,38,1,10,False,False
+42,355,38,42,38,1,10,False,False
+42,361,38,42,38,1,10,False,False
+42,367,38,42,38,1,10,False,False
+42,375,38,42,38,1,10,False,False

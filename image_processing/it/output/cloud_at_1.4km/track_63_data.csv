@@ -1,0 +1,10 @@
+cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
+70,342,63,70,63,1,9,False,False
+70,352,63,70,63,1,9,False,False
+70,363,63,70,63,1,9,False,False
+70,371,63,70,63,1,9,False,False
+70,378,63,70,63,1,9,False,False
+70,385,63,70,63,1,9,False,False
+70,389,63,70,63,1,9,False,False
+70,396,63,70,63,1,9,False,False
+70,402,63,70,63,1,9,False,False

@@ -1,0 +1,99 @@
+
+Track 1:
+  Cell ID: 1 first appears in frame: 0
+Track 2:
+  Cell ID: 2 first appears in frame: 1
+Track 3:
+  Cell ID: 3 first appears in frame: 2
+Track 4:
+  Cell ID: 4 first appears in frame: 6
+Track 5:
+  Cell ID: 5 first appears in frame: 9
+Track 6:
+  Cell ID: 6 first appears in frame: 9
+  Cell ID: 14 first appears in frame: 13
+  --> Cell 14 split (originated) from cell 6 at frame 13
+Track 7:
+  Cell ID: 7 first appears in frame: 11
+Track 8:
+  Cell ID: 8 first appears in frame: 12
+Track 9:
+  Cell ID: 9 first appears in frame: 12
+Track 10:
+  Cell ID: 10 first appears in frame: 12
+Track 11:
+  Cell ID: 11 first appears in frame: 13
+Track 12:
+  Cell ID: 12 first appears in frame: 13
+Track 13:
+  Cell ID: 13 first appears in frame: 13
+Track 14:
+  Cell ID: 15 first appears in frame: 14
+Track 15:
+  Cell ID: 16 first appears in frame: 15
+Track 16:
+  Cell ID: 17 first appears in frame: 19
+Track 17:
+  Cell ID: 18 first appears in frame: 22
+Track 18:
+  Cell ID: 19 first appears in frame: 23
+Track 19:
+  Cell ID: 20 first appears in frame: 25
+Track 20:
+  Cell ID: 21 first appears in frame: 25
+Track 21:
+  Cell ID: 22 first appears in frame: 26
+Track 22:
+  Cell ID: 23 first appears in frame: 27
+Track 23:
+  Cell ID: 24 first appears in frame: 32
+Track 24:
+  Cell ID: 25 first appears in frame: 33
+  Cell ID: 28 first appears in frame: 38
+  --> Cell 28 split (originated) from cell 24 at frame 38
+Track 25:
+  Cell ID: 26 first appears in frame: 35
+Track 26:
+  Cell ID: 27 first appears in frame: 37
+Track 27:
+  Cell ID: 29 first appears in frame: 38
+Track 28:
+  Cell ID: 30 first appears in frame: 38
+Track 29:
+  Cell ID: 31 first appears in frame: 38
+Track 30:
+  Cell ID: 32 first appears in frame: 39
+  Cell ID: 34 first appears in frame: 41
+  --> Cell 34 split (originated) from cell 30 at frame 41
+Track 31:
+  Cell ID: 33 first appears in frame: 40
+Track 32:
+  Cell ID: 35 first appears in frame: 42
+Track 33:
+  Cell ID: 36 first appears in frame: 44
+Track 34:
+  Cell ID: 37 first appears in frame: 44
+Track 35:
+  Cell ID: 38 first appears in frame: 44
+Track 36:
+  Cell ID: 39 first appears in frame: 45
+Track 37:
+  Cell ID: 40 first appears in frame: 45
+Track 38:
+  Cell ID: 41 first appears in frame: 48
+  Cell ID: 46 first appears in frame: 54
+  --> Cell 46 split (originated) from cell 38 at frame 54
+Track 39:
+  Cell ID: 42 first appears in frame: 49
+Track 40:
+  Cell ID: 43 first appears in frame: 51
+Track 41:
+  Cell ID: 44 first appears in frame: 51
+Track 42:
+  Cell ID: 45 first appears in frame: 52
+Track 43:
+  Cell ID: 47 first appears in frame: 54
+Track 44:
+  Cell ID: 48 first appears in frame: 55
+Track 45:
+  Cell ID: 49 first appears in frame: 55

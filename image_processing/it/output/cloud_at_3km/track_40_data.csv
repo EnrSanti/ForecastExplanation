@@ -1,0 +1,6 @@
+cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
+41,203,40,41,40,1,5,False,False
+41,215,40,41,40,1,5,False,False
+41,225,40,41,40,1,5,False,False
+41,231,40,41,40,1,5,False,False
+41,243,40,41,40,1,5,False,False

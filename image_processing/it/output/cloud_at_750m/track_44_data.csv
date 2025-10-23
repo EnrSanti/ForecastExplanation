@@ -1,0 +1,10 @@
+cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
+49,429,44,49,44,1,9,False,False
+49,437,44,49,44,1,9,False,False
+49,442,44,49,44,1,9,False,False
+49,447,44,49,44,1,9,False,False
+49,454,44,49,44,1,9,False,False
+49,461,44,49,44,1,9,False,False
+49,468,44,49,44,1,9,False,False
+49,476,44,49,44,1,9,False,False
+49,485,44,49,44,1,9,False,False

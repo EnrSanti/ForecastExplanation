@@ -1,0 +1,14 @@
+cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
+19,114,17,19,17,1,13,False,False
+19,121,17,19,17,1,13,False,False
+19,126,17,19,17,1,13,False,False
+19,131,17,19,17,1,13,False,False
+19,136,17,19,17,1,13,False,False
+19,142,17,19,17,1,13,False,False
+19,145,17,19,17,1,13,False,False
+19,149,17,19,17,1,13,False,False
+19,161,17,19,17,1,13,False,False
+19,167,17,19,17,1,13,False,False
+19,173,17,19,17,1,13,False,False
+19,181,17,19,17,1,13,False,False
+19,190,17,19,17,1,13,False,False
