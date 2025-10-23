@@ -1,9 +1,0 @@
-cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
-8,8,8,8,8,1,8,False,False
-8,22,8,8,8,1,8,False,False
-8,32,8,8,8,1,8,False,False
-8,42,8,8,8,1,8,False,False
-8,55,8,8,8,1,8,False,False
-8,69,8,8,8,1,8,False,False
-8,84,8,8,8,1,8,False,False
-8,97,8,8,8,1,8,False,False

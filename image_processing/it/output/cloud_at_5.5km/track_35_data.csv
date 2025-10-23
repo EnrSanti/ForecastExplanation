@@ -1,6 +1,0 @@
-cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
-37,146,35,37,35,1,5,False,False
-37,150,35,37,35,1,5,False,False
-37,159,35,37,35,1,5,False,False
-37,165,35,37,35,1,5,False,False
-37,175,35,37,35,1,5,False,False
