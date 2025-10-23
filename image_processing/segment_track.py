@@ -99,7 +99,7 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
 
 
     #original threshold was 155 to normalized [0, 1]:
-    norm_threshold = 0.75
+    norm_threshold = 0.7
 
 
     # === FEATURE DETECTION ===
@@ -368,8 +368,8 @@ def split_and_merge(trajectories,dxy,output_file):
     df = d.to_dataframe().reset_index()
 
 
-    with open(os.path.join(os.path.dirname(output_file), f"ALL_tracks_data.csv"), "w") as f:
-        df.to_csv(f, index=False)
+    #with open(os.path.join(os.path.dirname(output_file), f"ALL_tracks_data.csv"), "w") as f:
+    #    df.to_csv(f, index=False)
     #from the dataframe filter values (there are useless rows) and remove some duplicated columns
     filtered_df = df[
         (df["track"] == df["feature_parent_track_id"]) &
@@ -413,8 +413,8 @@ def split_and_merge(trajectories,dxy,output_file):
         g = groups[track_id]
 
         #save g into a file
-        with open(os.path.join(os.path.dirname(output_file), f"track_{track_id}_data.csv"), "w") as f:
-            g.to_csv(f, index=False)
+        #with open(os.path.join(os.path.dirname(output_file), f"track_{track_id}_data.csv"), "w") as f:
+        #    g.to_csv(f, index=False)
 
         #cells_in_track: contains which cells are in the track, cell_id -> first frame in which it appears
         cells_in_track = {} 
