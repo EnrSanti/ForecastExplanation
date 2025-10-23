@@ -102,7 +102,7 @@ def cluster_images(n_im, numClusters, reshaped, image, image_f):
 
 #----------- IMG RESIZING -----------
 
-def resize_1_4(input_folder, output_folder, scale_factor=0.25):
+def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
 
     # === SETUP ===
     os.makedirs(output_folder, exist_ok=True)

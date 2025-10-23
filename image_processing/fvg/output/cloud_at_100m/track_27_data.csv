@@ -1,0 +1,16 @@
+cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
+31,144,27,31,27,2,14,True,False
+31,158,27,31,27,2,14,True,False
+31,173,27,31,27,2,14,True,False
+31,184,27,31,27,2,14,True,False
+31,198,27,31,27,2,14,True,False
+31,214,27,31,27,2,14,True,False
+31,230,27,31,27,2,14,True,False
+31,244,27,31,27,2,14,True,False
+31,257,27,31,27,2,14,True,False
+31,269,27,31,27,2,14,True,False
+31,282,27,31,27,2,14,True,False
+31,294,27,31,27,2,14,True,False
+31,301,27,31,27,2,14,True,False
+31,311,27,31,27,2,14,True,False
+44,213,27,44,27,2,1,False,True

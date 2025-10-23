@@ -1,5 +1,5 @@
 from image_processing.image_proc import generate_clustered_images
-from image_processing.image_proc import resize_1_4
+from image_processing.image_proc import resize_1_4_and_simplify
 from image_processing.segment_track import run_tobac
 from GRIB.extract_features_nc import save_feature_maps
 from GRIB.cut_long_lat import cut_grib_long_lat
@@ -164,7 +164,7 @@ if __name__ == "__main__":
         print("Cluster & run TOBAC on FVG clustered data (just clouds for now)")
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
-            resize_1_4(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
+            resize_1_4_and_simplify(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
             generate_clustered_images(numClusters, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/clustered/{f}_clustered")
             run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
 
@@ -173,7 +173,7 @@ if __name__ == "__main__":
         print("run TOBAC on FVG data (just clouds for now)")
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
-            resize_1_4(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
+            resize_1_4_and_simplify(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
             run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
     
     elif mode == 5:    
@@ -181,7 +181,7 @@ if __name__ == "__main__":
         print("Cluster & run TOBAC on IT clustered data (just clouds for now)")
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
-            resize_1_4(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
+            resize_1_4_and_simplify(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
             generate_clustered_images(numClusters, f"image_processing/it/resized/{f}", f"image_processing/it/clustered/{f}_clustered")
             run_tobac(f"image_processing/it/clustered/{f}_clustered", f"image_processing/it/output_clustered/{f}",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
 
@@ -191,6 +191,6 @@ if __name__ == "__main__":
       
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
-            resize_1_4(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
+            resize_1_4_and_simplify(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
             run_tobac(f"image_processing/it/resized/{f}", f"image_processing/it/output/{f}",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
     

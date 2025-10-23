@@ -129,13 +129,13 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
     
     dt=3600
     dxy=3000
-    v_max=100
-    gap_features_frames=3 #for how many frames a feature can disappear and still be linked (2 full frames in this case, it reappers in the 3)
+    v_max=70
+    gap_features_frames=2 #for how many frames a feature can disappear and still be linked (2 full frames in this case, it reappers in the 3)
     radius=v_max*dt/dxy
 
     #======== FEATURE TRACKING ========
     #using predict, i may be a little bit out of the "search raius" but ok
-    trajectories = tobac.linking_trackpy(features_weighted_points, test_data, dt=dt, dxy=dxy, v_max=v_max,method_linking="predict", memory=gap_features_frames)
+    trajectories = tobac.linking_trackpy(features_weighted_points, test_data, dt=dt, dxy=dxy, v_max=v_max, memory=gap_features_frames)#method_linking="predict",)
 
     #create folder if it doesn't exist
     os.makedirs(output_folder, exist_ok=True)  
@@ -367,17 +367,20 @@ def split_and_merge(trajectories,dxy,output_file):
     #convert to DataFrame
     df = d.to_dataframe().reset_index()
 
+
+    with open(os.path.join(os.path.dirname(output_file), f"ALL_tracks_data.csv"), "w") as f:
+        df.to_csv(f, index=False)
     #from the dataframe filter values (there are useless rows) and remove some duplicated columns
     filtered_df = df[
         (df["track"] == df["feature_parent_track_id"]) &
         (df["cell"] == df["feature_parent_cell_id"])
-    ].drop(columns=["feature_parent_track_id", "feature_parent_cell_id","cell_child_feature_count","cell_ends_with_merge"])#add back cell_ends_with_merge
+    ]#.drop(columns=["feature_parent_track_id", "feature_parent_cell_id","cell_child_feature_count","cell_ends_with_merge"])#add back cell_ends_with_merge
 
     #we split the data according to the different tracks (and remove the track column, which are now the keys)
     #groups is a map of track_id -> dataframe with the data for that track
     groups = {
         track_id: group.drop(columns=["track"])
-        for track_id, group in filtered_df.groupby("track")
+        for track_id, group in filtered_df.groupby("cell_parent_track_id")
     }
 
     #the first frame in which each cell appears cell -> fame
@@ -408,6 +411,10 @@ def split_and_merge(trajectories,dxy,output_file):
         
         #get the dataframe
         g = groups[track_id]
+
+        #save g into a file
+        with open(os.path.join(os.path.dirname(output_file), f"track_{track_id}_data.csv"), "w") as f:
+            g.to_csv(f, index=False)
 
         #cells_in_track: contains which cells are in the track, cell_id -> first frame in which it appears
         cells_in_track = {} 

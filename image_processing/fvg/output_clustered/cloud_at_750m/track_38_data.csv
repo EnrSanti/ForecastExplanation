@@ -1,0 +1,9 @@
+cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
+44,290,38,44,38,1,8,False,False
+44,302,38,44,38,1,8,False,False
+44,310,38,44,38,1,8,False,False
+44,319,38,44,38,1,8,False,False
+44,326,38,44,38,1,8,False,False
+44,333,38,44,38,1,8,False,False
+44,340,38,44,38,1,8,False,False
+44,348,38,44,38,1,8,False,False

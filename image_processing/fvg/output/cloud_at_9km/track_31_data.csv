@@ -1,0 +1,10 @@
+cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
+34,87,31,34,31,1,9,False,False
+34,91,31,34,31,1,9,False,False
+34,95,31,34,31,1,9,False,False
+34,98,31,34,31,1,9,False,False
+34,101,31,34,31,1,9,False,False
+34,105,31,34,31,1,9,False,False
+34,110,31,34,31,1,9,False,False
+34,114,31,34,31,1,9,False,False
+34,121,31,34,31,1,9,False,False

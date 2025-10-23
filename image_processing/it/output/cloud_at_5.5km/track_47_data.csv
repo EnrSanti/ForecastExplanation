@@ -1,0 +1,16 @@
+cell,feature,cell_parent_track_id,feature_parent_cell_id,feature_parent_track_id,track_child_cell_count,cell_child_feature_count,cell_starts_with_split,cell_ends_with_merge
+49,189,47,49,47,1,15,False,False
+49,193,47,49,47,1,15,False,False
+49,198,47,49,47,1,15,False,False
+49,204,47,49,47,1,15,False,False
+49,212,47,49,47,1,15,False,False
+49,219,47,49,47,1,15,False,False
+49,227,47,49,47,1,15,False,False
+49,232,47,49,47,1,15,False,False
+49,240,47,49,47,1,15,False,False
+49,252,47,49,47,1,15,False,False
+49,265,47,49,47,1,15,False,False
+49,270,47,49,47,1,15,False,False
+49,277,47,49,47,1,15,False,False
+49,285,47,49,47,1,15,False,False
+49,291,47,49,47,1,15,False,False
