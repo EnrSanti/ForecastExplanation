@@ -1,0 +1,79 @@
+Cell 4 split into 10 at frame 3
+Cell 4 split into 12 at frame 3
+Cell 4 split into 13 at frame 3
+Cell 4 split into 14 at frame 3
+Cell 4 split but also remained at frame 3
+-------------------
+Cell 1 split into 16 at frame 6
+Cell 1 split into 15 at frame 6
+Cell 1 split but also remained at frame 6
+Cell 13 split into 14 at frame 6
+Cell 9 split into 17 at frame 6
+Cell 9 split but also remained at frame 6
+-------------------
+Cell 23 split into 24 at frame 16
+Cell 24 split into 28 at frame 16
+Cell 21 split into 29 at frame 16
+-------------------
+Cell 24 split into 28 at frame 17
+Cell 28 split into 29 at frame 17
+-------------------
+Cell 18 split into 32 at frame 18
+Cell 18 split but also remained at frame 18
+-------------------
+Cell 28 split but also remained at frame 22
+Cell 28 split into 37 at frame 22
+-------------------
+Cell 20 split into 44 at frame 31
+Cell 20 split but also remained at frame 31
+-------------------
+Cell 46 split into 51 at frame 34
+-------------------
+Cell 38 split into 53 at frame 38
+Cell 38 split but also remained at frame 38
+-------------------
+Cell 48 split into 55 at frame 40
+-------------------
+Cell 42 split into 56 at frame 41
+Cell 42 split into 57 at frame 41
+Cell 42 split into 58 at frame 41
+Cell 42 split but also remained at frame 41
+Cell 48 split into 59 at frame 41
+-------------------
+Cell 42 split into 61 at frame 42
+-------------------
+Cell 54 split into 65 at frame 44
+Cell 54 split into 66 at frame 44
+Cell 54 split into 63 at frame 44
+Cell 52 split into 54 at frame 44
+-------------------
+Cell 54 split into 66 at frame 45
+-------------------
+Cell 61 split into 70 at frame 46
+Cell 45 split into 71 at frame 46
+Cell 45 split but also remained at frame 46
+-------------------
+Cell 65 split into 72 at frame 47
+Cell 65 split but also remained at frame 47
+Cell 66 split into 73 at frame 47
+Cell 66 split but also remained at frame 47
+-------------------
+Cell 59 split into 75 at frame 48
+Cell 59 split but also remained at frame 48
+-------------------
+Cell 65 split into 66 at frame 52
+Cell 73 split into 77 at frame 52
+Cell 73 split into 78 at frame 52
+Cell 73 split into 79 at frame 52
+Cell 73 split into 81 at frame 52
+-------------------
+Cell 77 split into 78 at frame 53
+Cell 78 split into 77 at frame 53
+-------------------
+Cell 66 split into 83 at frame 54
+Cell 66 split but also remained at frame 54
+Cell 78 split into 84 at frame 54
+-------------------
+Cell 78 split into 84 at frame 55
+Cell 79 split into 80 at frame 55
+-------------------

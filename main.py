@@ -19,7 +19,7 @@ warnings.filterwarnings(
 numClusters = 3 
 
 #minimum number of pixels for TOBAC (don't consider smaller blobs)
-n_min_threshold=200
+n_min_threshold=300
 
 #longmin longmax latmin latmax of FVG and Italy
 coordinates=[11,15,44.5,48]
