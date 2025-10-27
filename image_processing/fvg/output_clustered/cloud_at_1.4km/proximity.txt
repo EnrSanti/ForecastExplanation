@@ -1,0 +1,1 @@
+Feature 0 is close to: defaultdict(<class 'list'>, {np.int32(329): [], np.int32(330): [], np.int32(331): [], np.int32(332): [], np.int32(333): [], np.int32(334): []})

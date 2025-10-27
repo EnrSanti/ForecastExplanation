@@ -11,9 +11,15 @@ import pandas as pd
 import scipy.ndimage as ndimage
 import matplotlib.patches as patches
 import imageio as images
+import cv2
+from collections import defaultdict
+from image_processing.split_merge import plot_feature_borders, find_extended_overlap_blobs_inferred,get_splits
 
 
-def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon_min,lon_max,smooth = 8):
+DEBUG = False #True would print the circles and search radius
+
+
+def locate_track_merge(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon_min,lon_max,smooth = 8):
     
     """
     Runs the locate and tracking of the objects
@@ -62,8 +68,7 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
     data = np.stack(frames_gray)
     _, n_y, n_x = data.shape
 
-    #spatial coordinates (example: 1 pixel = 1000 m)
-    dx = dy = 3000  
+    #spatial coordinates (example: 1 pixel = 1000 m) 
     x = np.arange(n_x)
     y = np.arange(n_y)
 
@@ -112,7 +117,7 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
         position_threshold="extreme",
         sigma_threshold=smooth,
         n_min_threshold=n_min_threshold,
-        min_distance=500 #at least 500m between 2 objects
+        min_distance=1000 #at least 500m between 2 objects
     )
     #this will be used for getting the center of the objects, the one above for segmentation
     features_weighted_points = tobac.feature_detection_multithreshold(
@@ -123,31 +128,31 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
         position_threshold="weighted_abs",
         sigma_threshold=smooth,
         n_min_threshold=n_min_threshold,
-        min_distance=500 #at least 500m between 2 objects
+        min_distance=1000 #at least 1000m between 2 objects
     )
 
     
     dt=3600
-    dxy=3000
+    dxy=2500
     v_max=70
-    gap_features_frames=2    #for how many frames a feature can disappear and still be linked (2 full frames in this case, it reappers in the 3)
+    gap_features_frames=1    #for how many frames a feature can disappear and still be linked (2 full frames in this case, it reappers in the 3)
     radius=v_max*dt/dxy
 
     #======== FEATURE TRACKING ========
     #using predict, i may be a little bit out of the "search raius" but ok
-    trajectories = tobac.linking_trackpy(features_weighted_points, test_data, dt=dt, dxy=dxy, v_max=v_max, memory=gap_features_frames)#method_linking="predict",)
+    trajectories = tobac.linking_trackpy(features_weighted_points, test_data, dt=dt, dxy=dxy, v_max=v_max, memory=gap_features_frames,method_linking="predict")
 
     #create folder if it doesn't exist
     os.makedirs(output_folder, exist_ok=True)  
 
-    #======== MERGING SPLITTING ========
-    
-    split_and_merge(trajectories,dxy,os.path.join(output_folder, "merge_split_info.txt"))  
 
    
     #======== SEGMENTING ========
 
     segments_all = []
+    all_segment_labels=[]
+    new_born_at_curr={}
+
     #for all images i smooth the frame and collect the segments
     for i, itime in enumerate(range(0, images_no)):
         original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
@@ -180,8 +185,10 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
             threshold=norm_threshold,
             target="minimum"
         )
+
         #store results
         segments_all.append((itime, segment_labels, segments))
+        all_segment_labels.append(segment_labels)
         
     #getting the list with number of images
     plot_frames = range(0, images_no)
@@ -193,7 +200,7 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
     #===== PLOTTING =====
 
     #keep track of cells in previous frames for "gap_features_frames" frames
-    cells_frames_before=[set() for _ in range(gap_features_frames)]
+    cells_frames_before=[set() for _ in range(gap_features_frames+1)]
     #what cells are in the current frame
     cell_ids=set() 
 
@@ -226,6 +233,8 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
         new_cells = cell_ids - all_cells_in_gap   #new this frame (may have reappeared after too long (> gap_features_frames))
         disappeared = all_cells_in_gap - cell_ids  #disappeared clouds in this frame
 
+        new_born_at_curr[itime] = new_cells
+    
         original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
         
         #Get the field for this frame
@@ -266,7 +275,8 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
             #print cell id numbers on the plot for clarity
             print_cloud_labels(f_weighted, cell_id,xlim, ylim, axs)
             #print the radius
-            add_circle_slice_filled(axs, f_weighted, radius=radius, xlim=xlim, ylim=ylim,color='red', alpha=0.05)
+            if(DEBUG):
+                add_circle_slice_filled(axs, f_weighted, radius=radius, xlim=xlim, ylim=ylim,color='red', alpha=0.05)
 
 
         #Extract segmentation for this frame from segments_all and print it            
@@ -295,7 +305,35 @@ def locate_track(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon
         axs.set_ylim(temp_da.sizes["y"], 0)  #since origin="upper"
         plt.savefig(out_path, dpi=150, bbox_inches="tight",pad_inches=0)
         plt.close(fig) 
+    
+    #======= SPLITTING AND MERGING ========
+
+    all_splits=""
+    for i, itime in enumerate(range(1, images_no)):
+
+        plot_feature_borders(
+            segment_labels=all_segment_labels[i].isel(time=0).values,
+            ax=axs,
+            border_thickness_px=8,  # Example: 3 pixels thick border
+            border_color="red"
+        )
         
+        extended_overlap_map = find_extended_overlap_blobs_inferred(
+            segment_labels=all_segment_labels[i].isel(time=0).values,
+            trajectories=trajectories,
+            border_thickness_px=8  # Use the same thickness as your plot border
+        )
+
+        splits=get_splits(extended_overlap_map, trajectories, itime,images_no,gap_features_frames,all_segment_labels[itime],all_segment_labels[itime-1],new_born_at_curr[itime])
+        if splits != "":
+            all_splits+=splits
+            all_splits+="-------------------\n"
+        print("new frame ---------------------------- ", itime+1)
+    with open(output_folder+f"/split_merge.txt", "w") as f:
+        f.write(str(all_splits))
+
+
+
 def print_clouds_center_line(printing_symbol,color,f_weighted, itime, track, axs, cell_id,persisted_cells,all_frames_for_cell):
     """
     Prints on the plot (axs) the trace and center of the cloud specified by cell_id at frame itime. 
@@ -360,86 +398,6 @@ def print_clouds_center_line(printing_symbol,color,f_weighted, itime, track, axs
             marker=printing_symbol,
         )
 
-def split_and_merge(trajectories,dxy,output_file):
-    #just split for now
-    d = tobac.merge_split.merge_split_MEST(trajectories, dxy=dxy)
-    
-    #convert to DataFrame
-    df = d.to_dataframe().reset_index()
-
-
-    #with open(os.path.join(os.path.dirname(output_file), f"ALL_tracks_data.csv"), "w") as f:
-    #    df.to_csv(f, index=False)
-    #from the dataframe filter values (there are useless rows) and remove some duplicated columns
-    filtered_df = df[
-        (df["track"] == df["feature_parent_track_id"]) &
-        (df["cell"] == df["feature_parent_cell_id"])
-    ]#.drop(columns=["feature_parent_track_id", "feature_parent_cell_id","cell_child_feature_count","cell_ends_with_merge"])#add back cell_ends_with_merge
-
-    #we split the data according to the different tracks (and remove the track column, which are now the keys)
-    #groups is a map of track_id -> dataframe with the data for that track
-    groups = {
-        track_id: group.drop(columns=["track"])
-        for track_id, group in filtered_df.groupby("cell_parent_track_id")
-    }
-
-    #the first frame in which each cell appears cell -> fame
-    cell_first_frame = {}
-    #the first frame in which each track appears track -> frame
-    track_first_frame = {}
-
-    #loop through rows of trajectories, collect first appearance of each cell
-    for _, row in trajectories.iterrows():
-        cell_id = row["cell"]
-        frame = row["frame"]
-
-        if cell_id not in cell_first_frame:
-            cell_first_frame[cell_id] = frame
-
-    #loop through groups to get first frame in which each track is born
-    for track_id in groups.keys():
-        if track_id not in track_first_frame:
-            #loop through rows of groups[track_id], get the min cell
-            g = groups[track_id]
-            min_cell = g["cell"].min()
-            track_first_frame[track_id] = cell_first_frame[min_cell]
-    
-    str_to_save = ""
-    #loop through each group
-    for track_id in groups.keys():
-        str_to_save+=f"\nTrack {track_id}:"
-        
-        #get the dataframe
-        g = groups[track_id]
-
-        #save g into a file
-        #with open(os.path.join(os.path.dirname(output_file), f"track_{track_id}_data.csv"), "w") as f:
-        #    g.to_csv(f, index=False)
-
-        #cells_in_track: contains which cells are in the track, cell_id -> first frame in which it appears
-        cells_in_track = {} 
-
-        #loop through each row of that DataFrame
-        for _, row in g.iterrows():
-            #check if cells_in_track[row["cell"]] already exists
-            cell_id=row["cell"]
-            if cell_id in cells_in_track:
-                continue
-            #get the first frame in which this cell appears
-            cells_in_track[cell_id] = cell_first_frame[cell_id]
-
-
-        for keys in cells_in_track.keys():
-            str_to_save+=f"\n  Cell ID: {keys} first appears in frame: {cells_in_track[keys]}"
-
-        for keys in cells_in_track.keys():
-            if(cells_in_track[keys] != track_first_frame[track_id]):
-                parent_track_id = g.loc[g["cell"] == keys, "cell_parent_track_id"].iloc[0]
-                str_to_save+=f"\n  --> Cell {keys} split (originated) from cell {parent_track_id} at frame {cells_in_track[keys]}"
-    
-    with open(output_file, "w") as f:
-        f.write(str_to_save)
-
 def print_cloud_labels(f_weighted, cell_id,xlim, ylim, axs):
     """
     Prints on the plot (axs) the label (cell_id) associated to each blob, just for clarity. 
@@ -476,9 +434,6 @@ def print_cloud_labels(f_weighted, cell_id,xlim, ylim, axs):
         weight="bold",
         bbox=dict(facecolor='black', alpha=0.3, edgecolor='none', pad=1)
     )
-
-
-
 
 def add_circle_slice_filled(ax, f_weighted, radius, xlim, ylim, color="red", alpha=0.5, **kwargs):
     """
@@ -538,9 +493,6 @@ def add_circle_slice_filled(ax, f_weighted, radius, xlim, ylim, color="red", alp
                               facecolor="none", alpha=0.3,edgecolor="red",linestyle="--",linewidth=1,**kwargs)
     ax.add_patch(polygon_border)
 
-
-
-
 def extract_keys(filename):
     """
     extracts date and number from filename for sorting purposes. 
@@ -564,8 +516,6 @@ def extract_keys(filename):
         return (0, 0)
 
 
-
-
 def run_tobac(inpu_folder, output_folder,lat_min,lat_max,lon_min,lon_max,n_min_threshold=0,smooth = 8):
     """
     The main function called from outside (main).
@@ -583,5 +533,5 @@ def run_tobac(inpu_folder, output_folder,lat_min,lat_max,lon_min,lon_max,n_min_t
     smooth: smoothing factor for gaussian filter (default 8)
 
     """
-    locate_track(inpu_folder, output_folder,n_min_threshold,lat_min,lat_max,lon_min,lon_max,smooth)
+    locate_track_merge(inpu_folder, output_folder,n_min_threshold,lat_min,lat_max,lon_min,lon_max,smooth)
     print("Locating & tracking procedure completed")
