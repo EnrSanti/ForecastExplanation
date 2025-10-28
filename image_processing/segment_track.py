@@ -157,7 +157,7 @@ def locate_track_merge(input_folder, output_folder,n_min_threshold,lat_min,lat_m
     for i, itime in enumerate(range(0, images_no)):
         original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
         #Smooth the frame
-        smoothed_frame = ndimage.gaussian_filter(
+        smoothed_frame =ndimage.gaussian_filter(
             test_data_norm.isel(time=itime).values, sigma=smooth
         )
         temp_da = test_data_norm.isel(time=itime).copy()
@@ -175,6 +175,7 @@ def locate_track_merge(input_folder, output_folder,n_min_threshold,lat_min,lat_m
         if f.empty:
             print(f"No features found for frame {itime}, skipping segmentation.")
             segments_all.append((itime, None, None))
+            all_segment_labels.append(None)
             continue
 
         #perform segmentation
@@ -310,7 +311,9 @@ def locate_track_merge(input_folder, output_folder,n_min_threshold,lat_min,lat_m
 
     all_splits=""
     for i, itime in enumerate(range(1, images_no)):
-
+        if(all_segment_labels[itime-1] is None or all_segment_labels[itime] is None):
+            continue
+        
         plot_feature_borders(
             segment_labels=all_segment_labels[i].isel(time=0).values,
             ax=axs,
@@ -323,8 +326,9 @@ def locate_track_merge(input_folder, output_folder,n_min_threshold,lat_min,lat_m
             trajectories=trajectories,
             border_thickness_px=8  # Use the same thickness as your plot border
         )
-
+       
         splits=get_splits(extended_overlap_map, trajectories, itime,images_no,gap_features_frames,all_segment_labels[itime],all_segment_labels[itime-1],new_born_at_curr[itime])
+        
         if splits != "":
             all_splits+=splits
             all_splits+="-------------------\n"
