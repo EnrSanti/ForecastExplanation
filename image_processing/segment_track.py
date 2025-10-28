@@ -13,7 +13,7 @@ import matplotlib.patches as patches
 import imageio as images
 import cv2
 from collections import defaultdict
-from image_processing.split_merge import plot_feature_borders, find_extended_overlap_blobs_inferred,get_splits
+from image_processing.split_merge import plot_feature_borders, find_extended_overlap_blobs_inferred,get_splits_merges
 
 
 DEBUG = False #True would print the circles and search radius
@@ -152,6 +152,8 @@ def locate_track_merge(input_folder, output_folder,n_min_threshold,lat_min,lat_m
     segments_all = []
     all_segment_labels=[]
     new_born_at_curr={}
+    disappeared_at_curr={}
+    all_frames_for_cell = {}
 
     #for all images i smooth the frame and collect the segments
     for i, itime in enumerate(range(0, images_no)):
@@ -204,7 +206,6 @@ def locate_track_merge(input_folder, output_folder,n_min_threshold,lat_min,lat_m
     cells_frames_before=[set() for _ in range(gap_features_frames+1)]
     #what cells are in the current frame
     cell_ids=set() 
-
     for i, itime in enumerate(plot_frames):
 
         #remove the oldest frame and add the current one
@@ -235,7 +236,8 @@ def locate_track_merge(input_folder, output_folder,n_min_threshold,lat_min,lat_m
         disappeared = all_cells_in_gap - cell_ids  #disappeared clouds in this frame
 
         new_born_at_curr[itime] = new_cells
-    
+        disappeared_at_curr[itime]=disappeared
+
         original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
         
         #Get the field for this frame
@@ -309,7 +311,7 @@ def locate_track_merge(input_folder, output_folder,n_min_threshold,lat_min,lat_m
     
     #======= SPLITTING AND MERGING ========
 
-    all_splits=""
+    all_splits_merges=""
     for i, itime in enumerate(range(1, images_no)):
         if(all_segment_labels[itime-1] is None or all_segment_labels[itime] is None):
             continue
@@ -327,14 +329,14 @@ def locate_track_merge(input_folder, output_folder,n_min_threshold,lat_min,lat_m
             border_thickness_px=8  # Use the same thickness as your plot border
         )
        
-        splits=get_splits(extended_overlap_map, trajectories, itime,images_no,gap_features_frames,all_segment_labels[itime],all_segment_labels[itime-1],new_born_at_curr[itime])
+        splits,merges=get_splits_merges(extended_overlap_map, trajectories, itime,images_no,gap_features_frames,all_segment_labels[itime],all_segment_labels[itime-1],new_born_at_curr[itime],disappeared_at_curr[itime])
         
-        if splits != "":
-            all_splits+=splits
-            all_splits+="-------------------\n"
+        if splits != "" or merges !="":
+            all_splits_merges+=splits+merges
+            all_splits_merges+="-------------------\n"
         print("new frame ---------------------------- ", itime+1)
     with open(output_folder+f"/split_merge.txt", "w") as f:
-        f.write(str(all_splits))
+        f.write(str(all_splits_merges))
 
 
 

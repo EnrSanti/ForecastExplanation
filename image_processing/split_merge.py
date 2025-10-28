@@ -261,7 +261,7 @@ def plot_feature_borders(segment_labels: np.ndarray, ax: plt.Axes, border_thickn
         zorder=5 # Ensure border is on top
     )
                                                                        
-def get_splits(overlap_map, trajectories, time_step,frames_no,gap_frames,segment_labels_current, segment_labels_prev,new_born_curr):
+def get_splits_merges(overlap_map, trajectories, time_step,frames_no,gap_frames,segment_labels_current, segment_labels_prev,new_born_curr,disappeared):
     #get the cells for the next time step
     print("get_splits called")
 
@@ -295,11 +295,10 @@ def get_splits(overlap_map, trajectories, time_step,frames_no,gap_frames,segment
     cell_ids_in_prev_frame = [int(cid) for cid in cell_ids_in_prev_frame]
     cell_ids_in_frame = [int(cid) for cid in cell_ids_in_frame]
 
-    try:
+    return (detect_splits_by_area(overlap_map,map_areas_curr,map_areas_prev, cell_ids_in_frame,cell_ids_in_prev_frame,0.6,new_born_curr,time_step,segment_labels_current.isel(time=0).values, segment_labels_prev.isel(time=0).values,trajectories),
+            detect_merge_by_area(overlap_map,map_areas_curr,map_areas_prev, cell_ids_in_frame,cell_ids_in_prev_frame,0.6,disappeared,time_step,segment_labels_current.isel(time=0).values, segment_labels_prev.isel(time=0).values,trajectories))
     
-        return detect_splits_by_area(overlap_map,map_areas_curr,map_areas_prev, cell_ids_in_frame,cell_ids_in_prev_frame,0.6,new_born_curr,time_step,segment_labels_current.isel(time=0).values, segment_labels_prev.isel(time=0).values,trajectories)
-    except:
-        return ""
+    
 def detect_splits_by_area(
     overlap_map,
     map_areas_curr,
@@ -336,19 +335,26 @@ def detect_splits_by_area(
     for cell_id in cell_ids_prev:
         #può essersi splittato mantenendo o meno se stesso
         
+        alive_after=False
         mass_previous_split=map_areas_prev.get(cell_id,0)
         #overlapping_with = overlap_map.get[cell_id]
         
+        if(cell_id in map_areas_curr):
+            mass_previous_split-=map_areas_curr.get(cell_id,0)
             
+        
+        
 
         #gli altri candidati devono essere newborn e confinanti
         candidates = [
             int(c) for c in new_born_curr if c not in already_split
         ]
-
-        #if the cell also exists now we just look for the remaining mass
-        if(cell_id in map_areas_curr and cell_id not in candidates):
-            candidates.append(cell_id)
+#       if the cell also exists now we just look for the remaining mass
+        if(cell_id in map_areas_curr):
+            if(cell_id in candidates):
+                candidates.remove(cell_id)
+            alive_after=True
+        
         if len(candidates) == 0:
             continue
 
@@ -373,14 +379,95 @@ def detect_splits_by_area(
         
         for index in indexes:
             already_split.add(candidates[index])
-            if(candidates[index]!=cell_id):
+            if(len(indexes)==1):
+                splits_at_frame += f"Cell {cell_id} changed (SPLIT) into 'new' cell {candidates[index]} at frame {frame_no} (according to tobac)\n"
+            else:
                 splits_at_frame += f"Cell {cell_id} split into {candidates[index]} at frame {frame_no}\n"
-            elif(len(indexes)>1):
-                print(indexes)
-                print(candidates)
-                splits_at_frame += f"Cell {cell_id} split but also remained at frame {frame_no}\n"
+       
+        if(alive_after and len(indexes)>=1):
+            splits_at_frame += f"Cell {cell_id} split but also remained at frame {frame_no}\n"
             
     return splits_at_frame    
+
+def detect_merge_by_area(
+    overlap_map,
+    map_areas_curr,
+    map_areas_prev,
+    cell_ids_curr,
+    cell_ids_prev,
+    area_ratio_threshold,
+    disappeared_curr,
+    frame_no,
+    segment_labels_current, 
+    segment_labels_prev,
+    trajectories,
+):
+    
+    merges = []
+    already_merged = set()
+    merged_at_frame = ""
+    for cell_id in cell_ids_curr:
+
+        #può essersi splittato mantenendo o meno se stesso
+        mass_after_merge=map_areas_curr.get(cell_id,0)
+        alive_before=False
+        #if the cell also exists now we just look for the remaining mass
+        
+            
+
+        #gli altri candidati devono essere newborn e confinanti
+        candidates = [
+            int(c) for c in disappeared_curr if c not in already_merged
+        ]
+
+
+        if(cell_id in map_areas_prev):
+            mass_after_merge-=map_areas_prev.get(cell_id, 0) 
+            if(cell_id in disappeared_curr): #should be useless, but anyway
+                disappeared_curr.remove(cell_id)
+            alive_before=True
+            
+        if len(candidates) == 0:
+            continue
+
+        overlap_percentage=[]
+        mass=[]
+        #do un check ai confinanti dei confianti SE SONO NEWBORN SE AGGIUNGONO UN PO ALLA MASSA e se intersection_next_frame è alta 
+
+        #print("candidates -> -> ",candidates)
+
+        print("considering cell ",cell_id," at frame",frame_no)
+        print("merge candidates -> -> ",candidates)
+
+        for c in candidates:
+            if(c not in map_areas_prev):
+                continue
+            overlap_percentage.append(intersection_next_frame(cell_id,c, segment_labels_current, segment_labels_prev,trajectories,frame_no))
+            mass.append(int(map_areas_prev[c]))
+
+
+        print("merge overlap % ->",overlap_percentage)
+        print("merge mass -> ",mass)
+        print("merge mass to match -> ",mass_after_merge,"\n\n")
+
+        #print("overlap % ->",overlap_percentage)
+        #print("mass -> ",mass)
+        #print("mass to match -> ",mass_after_merge)
+        indexes = select_indices_best_match(overlap_percentage,mass,area_ratio_threshold,mass_after_merge)
+
+        for index in indexes:
+            already_merged.add(candidates[index])
+            
+            if(candidates[index]!=cell_id):
+                if(len(indexes)==1):
+                    merged_at_frame += f"Cell {candidates[index]} changed (MERGE) into cell {cell_id} at frame {frame_no} (according to tobac)\n"
+                else:
+                    merged_at_frame += f"Cell {candidates[index]} merged into {cell_id} at frame {frame_no}\n"
+            
+            elif(len(indexes)>=1 and alive_before):
+                merged_at_frame += f"Cell {cell_id} merged but also remained at frame {frame_no}\n"
+            
+    return merged_at_frame
         
 def features_to_cell_ids(unique_labels_ids,trajectories):
     feature_to_cell_map = trajectories.set_index("feature")["cell"].to_dict()
