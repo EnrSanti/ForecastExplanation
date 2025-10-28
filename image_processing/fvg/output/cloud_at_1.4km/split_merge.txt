@@ -6,21 +6,30 @@ Cell 14 split into 16 at frame 17
 Cell 16 split into 17 at frame 17
 -------------------
 Cell 7 split into 19 at frame 18
+Cell 7 split but also remained at frame 18
 -------------------
 Cell 18 split into 22 at frame 21
 -------------------
+Cell 16 split but also remained at frame 22
+Cell 16 split into 25 at frame 22
+-------------------
 Cell 22 split into 26 at frame 25
+Cell 22 split but also remained at frame 25
 -------------------
 Cell 22 split into 32 at frame 30
 Cell 22 split into 31 at frame 30
+Cell 22 split but also remained at frame 30
 -------------------
 Cell 7 split into 29 at frame 31
 -------------------
 Cell 31 split into 36 at frame 34
 Cell 31 split into 37 at frame 34
 Cell 31 split into 38 at frame 34
+Cell 31 split but also remained at frame 34
 Cell 20 split into 35 at frame 34
 -------------------
+Cell 29 split into 37 at frame 35
+Cell 29 split but also remained at frame 35
 Cell 20 split into 35 at frame 35
 Cell 38 split into 39 at frame 35
 -------------------
@@ -39,21 +48,32 @@ Cell 40 split into 48 at frame 40
 Cell 48 split into 50 at frame 41
 -------------------
 Cell 33 split into 51 at frame 43
+Cell 33 split but also remained at frame 43
 -------------------
 Cell 33 split into 52 at frame 44
+Cell 33 split but also remained at frame 44
 -------------------
 Cell 45 split into 54 at frame 46
+Cell 45 split but also remained at frame 46
 -------------------
+Cell 33 split but also remained at frame 47
 Cell 33 split into 55 at frame 47
 Cell 45 split into 57 at frame 47
+Cell 45 split but also remained at frame 47
+Cell 51 split but also remained at frame 47
 Cell 51 split into 56 at frame 47
 -------------------
 Cell 45 split into 60 at frame 52
 Cell 45 split into 61 at frame 52
+Cell 45 split but also remained at frame 52
 -------------------
 Cell 45 split into 64 at frame 53
+Cell 45 split but also remained at frame 53
 Cell 39 split into 63 at frame 53
+Cell 39 split but also remained at frame 53
 -------------------
 Cell 55 split into 66 at frame 54
 Cell 55 split but also remained at frame 54
+Cell 64 split but also remained at frame 54
+Cell 64 split into 67 at frame 54
 -------------------

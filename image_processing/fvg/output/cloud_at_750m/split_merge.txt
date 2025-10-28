@@ -1,9 +1,6 @@
 Cell 1 split but also remained at frame 1
 Cell 1 split into 8 at frame 1
 -------------------
-Cell 8 split but also remained at frame 2
-Cell 8 split but also remained at frame 2
--------------------
 Cell 3 split into 10 at frame 3
 Cell 3 split into 12 at frame 3
 Cell 3 split into 13 at frame 3
@@ -14,8 +11,6 @@ Cell 3 split but also remained at frame 3
 Cell 1 split into 17 at frame 5
 Cell 1 split but also remained at frame 5
 -------------------
-Cell 12 split but also remained at frame 6
-Cell 12 split but also remained at frame 6
 Cell 15 split into 18 at frame 6
 Cell 15 split but also remained at frame 6
 -------------------
@@ -29,7 +24,7 @@ Cell 28 split into 29 at frame 17
 Cell 19 split into 32 at frame 18
 Cell 19 split but also remained at frame 18
 -------------------
-Cell 28 split but also remained at frame 22
+Cell 28 split into 37 at frame 22
 Cell 28 split but also remained at frame 22
 -------------------
 Cell 42 split into 43 at frame 29
@@ -41,8 +36,6 @@ Cell 21 split but also remained at frame 31
 -------------------
 Cell 46 split into 52 at frame 34
 Cell 46 split but also remained at frame 34
-Cell 50 split but also remained at frame 34
-Cell 50 split but also remained at frame 34
 -------------------
 Cell 52 split but also remained at frame 35
 Cell 52 split into 54 at frame 35
@@ -53,7 +46,6 @@ Cell 46 split into 19 at frame 37
 -------------------
 Cell 60 split into 65 at frame 44
 Cell 60 split into 66 at frame 44
-Cell 60 split but also remained at frame 44
 Cell 60 split but also remained at frame 44
 -------------------
 Cell 54 split into 69 at frame 46
@@ -72,9 +64,6 @@ Cell 54 split into 76 at frame 52
 Cell 54 split into 77 at frame 52
 Cell 54 split into 78 at frame 52
 Cell 54 split but also remained at frame 52
--------------------
-Cell 77 split but also remained at frame 53
-Cell 77 split but also remained at frame 53
 -------------------
 Cell 56 split into 81 at frame 54
 Cell 56 split into 82 at frame 54

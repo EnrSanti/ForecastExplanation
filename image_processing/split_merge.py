@@ -295,8 +295,11 @@ def get_splits(overlap_map, trajectories, time_step,frames_no,gap_frames,segment
     cell_ids_in_prev_frame = [int(cid) for cid in cell_ids_in_prev_frame]
     cell_ids_in_frame = [int(cid) for cid in cell_ids_in_frame]
 
-    return detect_splits_by_area(overlap_map,map_areas_curr,map_areas_prev, cell_ids_in_frame,cell_ids_in_prev_frame,0.6,new_born_curr,time_step,segment_labels_current.isel(time=0).values, segment_labels_prev.isel(time=0).values,trajectories)
-
+    try:
+    
+        return detect_splits_by_area(overlap_map,map_areas_curr,map_areas_prev, cell_ids_in_frame,cell_ids_in_prev_frame,0.6,new_born_curr,time_step,segment_labels_current.isel(time=0).values, segment_labels_prev.isel(time=0).values,trajectories)
+    except:
+        return ""
 def detect_splits_by_area(
     overlap_map,
     map_areas_curr,

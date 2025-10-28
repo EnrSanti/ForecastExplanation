@@ -1,0 +1,65 @@
+Cell 2 split into 3 at frame 19
+Cell 2 split but also remained at frame 19
+-------------------
+Cell 3 split into 4 at frame 21
+Cell 3 split but also remained at frame 21
+-------------------
+Cell 2 split into 8 at frame 22
+Cell 2 split into 7 at frame 22
+-------------------
+Cell 7 split into 10 at frame 23
+-------------------
+Cell 8 split into 12 at frame 25
+-------------------
+Cell 8 split into 17 at frame 28
+Cell 8 split into 18 at frame 28
+Cell 8 split into 19 at frame 28
+Cell 8 split but also remained at frame 28
+-------------------
+Cell 13 split into 20 at frame 29
+-------------------
+Cell 19 split into 24 at frame 31
+Cell 19 split but also remained at frame 31
+-------------------
+Cell 17 split but also remained at frame 33
+Cell 17 split into 29 at frame 33
+Cell 17 split into 30 at frame 33
+Cell 17 split into 31 at frame 33
+-------------------
+Cell 19 split into 33 at frame 36
+Cell 19 split into 35 at frame 36
+Cell 19 split but also remained at frame 36
+-------------------
+Cell 19 split into 33 at frame 37
+Cell 19 split into 38 at frame 37
+Cell 19 split but also remained at frame 37
+Cell 34 split into 37 at frame 37
+-------------------
+Cell 38 split into 40 at frame 38
+Cell 38 split but also remained at frame 38
+-------------------
+Cell 35 split into 40 at frame 39
+-------------------
+Cell 37 split into 46 at frame 41
+-------------------
+Cell 37 split into 45 at frame 42
+Cell 37 split but also remained at frame 42
+Cell 33 split into 41 at frame 42
+Cell 40 split into 48 at frame 42
+-------------------
+Cell 49 split into 51 at frame 44
+-------------------
+Cell 43 split into 52 at frame 45
+-------------------
+Cell 53 split into 59 at frame 50
+Cell 53 split but also remained at frame 50
+-------------------
+Cell 56 split into 60 at frame 51
+-------------------
+Cell 55 split into 63 at frame 52
+-------------------
+Cell 60 split into 65 at frame 55
+Cell 63 split into 66 at frame 55
+Cell 63 split into 67 at frame 55
+Cell 63 split but also remained at frame 55
+-------------------

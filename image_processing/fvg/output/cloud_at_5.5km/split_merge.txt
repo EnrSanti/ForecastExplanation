@@ -1,0 +1,41 @@
+Cell 1 split into 4 at frame 19
+-------------------
+Cell 3 split into 5 at frame 21
+-------------------
+Cell 12 split into 13 at frame 25
+-------------------
+Cell 13 split into 18 at frame 27
+-------------------
+Cell 13 split into 21 at frame 28
+Cell 13 split into 22 at frame 28
+-------------------
+Cell 18 split into 23 at frame 29
+-------------------
+Cell 23 split into 25 at frame 30
+-------------------
+Cell 25 split but also remained at frame 31
+Cell 25 split into 26 at frame 31
+Cell 25 split into 28 at frame 31
+-------------------
+Cell 25 split into 29 at frame 34
+Cell 25 split but also remained at frame 34
+-------------------
+Cell 25 split into 30 at frame 35
+Cell 25 split but also remained at frame 35
+-------------------
+Cell 25 split into 33 at frame 36
+Cell 25 split into 34 at frame 36
+Cell 25 split into 31 at frame 36
+Cell 25 split but also remained at frame 36
+-------------------
+Cell 31 split into 35 at frame 37
+Cell 31 split but also remained at frame 37
+-------------------
+Cell 35 split into 37 at frame 38
+Cell 35 split into 38 at frame 38
+Cell 35 split into 39 at frame 38
+-------------------
+Cell 49 split into 50 at frame 48
+-------------------
+Cell 55 split into 60 at frame 53
+-------------------
