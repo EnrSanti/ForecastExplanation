@@ -1,8 +1,8 @@
 from image_processing.image_proc import generate_clustered_images
 from image_processing.image_proc import resize_1_4_and_simplify
 from image_processing.segment_track import run_tobac
-from GRIB.extract_features_nc import save_feature_maps
-from GRIB.cut_long_lat import cut_grib_long_lat
+from raw_data.extract_features_nc import save_feature_maps
+from raw_data.cut_long_lat import cut_grib_long_lat
 import iris
 iris.FUTURE.date_microseconds = True
 import sys, os
@@ -102,9 +102,9 @@ if __name__ == "__main__":
 
     if mode == 0:
         text = """
-    The first two commands (1,2) cut (in latitude and long.) the gribs file under ./GRIB/data/original_CERRA, save it as .nc.
-    Command 1 then extracts feature maps for the FVG region and stores them in "./GRIB/extracted_fvg".
-    Command 2 extracts feature maps for the whole itealy and stores them in "./GRIB/extracted_it". 
+    The first two commands (1,2) cut (in latitude and long.) the gribs file under ./raw_data/data/original_CERRA, save it as .nc.
+    Command 1 then extracts feature maps for the FVG region and stores them in "./raw_data/extracted_fvg".
+    Command 2 extracts feature maps for the whole itealy and stores them in "./raw_data/extracted_it". 
 
     The remaining three commands (3,4,5,6) work on data under "./image_processing/":
         [3] clusters the FVG images and runs TOBAC on them
@@ -116,8 +116,8 @@ if __name__ == "__main__":
 
     elif mode == 1:
         #extract nc from grib for FVG & save feature maps (multithreaded, beware more threads use lots of RAM) 
-        input_dir = "./GRIB/data/original_CERRA"
-        output_dir = "./GRIB/data/CERRA_cut"
+        input_dir = "./raw_data/data/original_CERRA"
+        output_dir = "./raw_data/data/CERRA_cut"
         os.makedirs(output_dir, exist_ok=True)
         
         # all grib files
@@ -138,8 +138,8 @@ if __name__ == "__main__":
         #extract nc from grib for IT & save feature maps  (multithreaded, beware more threads use lots of RAM)
         coordinates=[11,15,44.5,48]
         coordinates_italy=[6.5,18.5,36.5,48]
-        input_dir = "./GRIB/data/original_CERRA"
-        output_dir = "./GRIB/data/CERRA_cut"
+        input_dir = "./raw_data/data/original_CERRA"
+        output_dir = "./raw_data/data/CERRA_cut"
         os.makedirs(output_dir, exist_ok=True)
         
         # all grib files
@@ -162,26 +162,26 @@ if __name__ == "__main__":
         print("Cluster & run TOBAC on FVG clustered data (just clouds for now)")
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
-            resize_1_4_and_simplify(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
+            resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
             generate_clustered_images(numClusters, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/clustered/{f}_clustered")
-            run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","GRIB/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
+            run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
 
     elif mode == 4:
         #resize iamges once to work on smaller images and run TOBAC (FVG)
         print("run TOBAC on FVG data (just clouds for now)")
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
-            resize_1_4_and_simplify(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
-            run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","GRIB/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
+            resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
+            run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
     
     elif mode == 5:    
         #resize iamges once to work on smaller images, generate clustered images and run TOBAC (IT)
         print("Cluster & run TOBAC on IT clustered data (just clouds for now)")
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
-            resize_1_4_and_simplify(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
+            resize_1_4_and_simplify(f"raw_data/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
             generate_clustered_images(numClusters, f"image_processing/it/resized/{f}", f"image_processing/it/clustered/{f}_clustered")
-            run_tobac(f"image_processing/it/clustered/{f}_clustered", f"image_processing/it/output_clustered/{f}","GRIB/extracted_it_cleaned/borders.png",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
+            run_tobac(f"image_processing/it/clustered/{f}_clustered", f"image_processing/it/output_clustered/{f}","raw_data/extracted_it_cleaned/borders.png",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
 
     elif mode == 6:
         #resize iamges once to work on smaller images and run TOBAC (FVG)
@@ -189,6 +189,6 @@ if __name__ == "__main__":
       
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
-            resize_1_4_and_simplify(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
-            run_tobac(f"image_processing/it/resized/{f}", f"image_processing/it/output/{f}","GRIB/extracted_it_cleaned/borders.png",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
+            resize_1_4_and_simplify(f"raw_data/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
+            run_tobac(f"image_processing/it/resized/{f}", f"image_processing/it/output/{f}","raw_data/extracted_it_cleaned/borders.png",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
     
