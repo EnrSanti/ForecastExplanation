@@ -14,7 +14,10 @@ import imageio as images
 import cv2
 from collections import defaultdict
 from image_processing.split_merge import plot_feature_borders, find_extended_overlap_blobs_inferred,get_splits_merges
+import logging
 
+
+logging.getLogger("trackpy").setLevel(logging.WARNING)
 
 DEBUG = False #True would print the circles and search radius
 
@@ -179,7 +182,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         f = features[features["frame"] == itime]  
         
         if f.empty:
-            print(f"No features found for frame {itime}, skipping segmentation.")
+            #print(f"No features found for frame {itime}, skipping segmentation.")
             segments_all.append((itime, None, None))
             all_segment_labels.append(None)
             continue
@@ -290,7 +293,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         entry = next((s for s in segments_all if s[0] == itime), None)
         
         if entry is not None:
-            _, seg_labels, _ = entry
+            _, seg_labels, segment_labels_ = entry
             if seg_labels is not None:
                 # seg_labels may have a single-element time dimension
                 seg_labels2d = seg_labels.isel(time=0)  # drop the time dim for contour
@@ -342,9 +345,16 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
             all_splits_merges+=splits+merges
             all_splits_merges+="-------------------\n"
         print("new frame ---------------------------- ", itime+1)
+    
+    #save the merge and splits found:
     with open(output_folder+f"/split_merge.txt", "w") as f:
         f.write(str(all_splits_merges))
+    
+    #save the trajectories
+    trajectories.to_csv(output_folder+f"/trajectories.csv", index=False)
 
+    #save the segments_all:
+    np.savez_compressed(output_folder+f"/segment_labels_all.npz", *all_segment_labels)
 
 
 def print_clouds_center_line(printing_symbol,color,f_weighted, itime, track, axs, cell_id,persisted_cells,all_frames_for_cell):
