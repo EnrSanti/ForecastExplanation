@@ -9,10 +9,9 @@ import os
 import pandas as pd
 import numpy as np
 import pathlib
+from cartopy.io import shapereader
 
-# ---- CONFIG ----
-
-output_base = ""
+#define the hPa of the data considered, moreover define a more symbolic name for them
 levels = [1000, 925, 850, 700, 500, 300]
 folders = {
     1000: "_at_100m", 
@@ -22,8 +21,19 @@ folders = {
     500: "_at_5.5km", 
     300: "_at_9km"
 }
+output_base = ""
 
 def save_feature_maps(input_path,coordinates, is_fvg, clean_plot):
+    """
+       Given a .nc file path, it saves the images with the data related to the temperature,humidity,wind and clouds at all levels.
+
+       Parameters
+       ----------
+       input_path: the file from which to extract the data
+       coordinates: [longmin, longmax, latmin, latmax], are the coordinates (extrema) of the image plot)
+       is_fvg: boolean field used to store the extracted data in the prorper folder (true -> the folder will have suffix "fvg" otherwise "it")
+       clean_plot: true -> in the image no political borders of the region are plotted, false -> otherwise.       
+    """
     global output_base
     if(is_fvg):
         output_base = "./GRIB/extracted_fvg"
@@ -35,15 +45,62 @@ def save_feature_maps(input_path,coordinates, is_fvg, clean_plot):
 
     
     print(f"Output base directory: {output_base}")
+    save_borders_png(output_base,coordinates)
     save_humidity_maps(input_path, coordinates,clean_plot)
     save_wind_maps(input_path, coordinates,clean_plot)
-
     save_cloud_maps(input_path,coordinates, clean_plot)
     save_temperature_maps(input_path,coordinates, clean_plot)
 
 
 
+
+def save_borders_png(output_base, coordinates):
+    fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+    ax.set_extent(coordinates, crs=ccrs.PlateCarree())
+
+    # --- National borders and coastlines ---
+    ax.coastlines(resolution='10m', linewidth=1)
+    ax.add_feature(cfeature.BORDERS, linewidth=0.8, edgecolor='black')
+
+    # --- Regional borders (Italy only) ---
+    shpfilename = shapereader.natural_earth(
+        resolution='10m',
+        category='cultural',
+        name='admin_1_states_provinces'
+    )
+    reader = shapereader.Reader(shpfilename)
+    for record in reader.records():
+        if record.attributes.get("adm0_a3") == "ITA":  # Only Italy
+            geom = record.geometry
+            ax.add_geometries([geom],
+                              crs=ccrs.PlateCarree(),
+                              facecolor='none',
+                              edgecolor='gray',
+                              linewidth=0.6,
+                              linestyle='--')
+
+    # --- Styling and export ---
+    ax.axis("off")
+    fig.savefig(
+        output_base + "/borders.png",
+        dpi=300, #so no need to resize, we don't loose data in the borders
+        bbox_inches="tight",
+        pad_inches=0,
+        transparent=True
+    )
+    plt.close(fig)
+
+
 def save_cloud_maps(input_path, coordinates,clean_plot):
+    """
+       Given a .nc file path, it saves the images with the data related to the clouds. Data at different height is stored in different folders 
+
+       Parameters
+       ----------
+       input_path: the file from which to extract the data
+       coordinates: [longmin, longmax, latmin, latmax], are the coordinates (extrema) of the image plot)
+       clean_plot: true -> in the image no political borders of the region are plotted, false -> otherwise.       
+    """
     global levels,folders 
     
     cloud_folders = {k: "cloud" + v for k, v in folders.items()}
@@ -113,6 +170,15 @@ def save_cloud_maps(input_path, coordinates,clean_plot):
     print("Finished plotting cloud maps with separate legends per level.")
 
 def save_temperature_maps(input_path,coordinates, clean_plot):
+    """
+       Given a .nc file path, it saves the images with the data related to the temperatures. Data at different height is stored in different folders 
+
+       Parameters
+       ----------
+       input_path: the file from which to extract the data
+       coordinates: [longmin, longmax, latmin, latmax], are the coordinates (extrema) of the image plot)
+       clean_plot: true -> in the image no political borders of the region are plotted, false -> otherwise.       
+    """
     global levels,folders
     temp_folders = {k: "temp" + v for k, v in folders.items()}
 
@@ -193,12 +259,19 @@ def save_temperature_maps(input_path,coordinates, clean_plot):
     print("Finished plotting all levels with consistent colormap and separate folders + legends.")
 
 def save_wind_maps(input_path, coordinates, clean_plot):
-    
+    """
+       Given a .nc file path, it saves the images with the data related to the wind (vectors included). Data at different height is stored in different folders 
+
+       Parameters
+       ----------
+       input_path: the file from which to extract the data
+       coordinates: [longmin, longmax, latmin, latmax], are the coordinates (extrema) of the image plot)
+       clean_plot: true -> in the image no political borders of the region are plotted, false -> otherwise.       
+    """
 
     global levels,folders
     wind_folders = {k: "winds" + v for k, v in folders.items()}
     cmap = "viridis"
-    image_dpi = 100  # Can be changed; coordinates will remain consistent
 
     ds = xr.open_dataset(input_path, decode_times=True, decode_timedelta=False)
     u_var = ds["u"]
@@ -235,7 +308,8 @@ def save_wind_maps(input_path, coordinates, clean_plot):
         plt.close(fig)
 
         out_dir = os.path.join(output_base, wind_folders[lvl])
-
+    
+    for lvl in levels:
         for i in range(u_lvl.sizes["time"]):
             base_time = pd.to_datetime(str(u_lvl["time"].isel(time=i).values))
             for j in range(u_lvl.sizes["step"]):
@@ -250,12 +324,9 @@ def save_wind_maps(input_path, coordinates, clean_plot):
                     continue
 
                 # ---- FIGURE ----
-                target_height = 12  # inches
-                target_width = 12 * (1028 / 1200)  # ≈ 10.3
-
+                
                 fig, ax = plt.subplots(
-                    figsize=(target_width, target_height),
-                    dpi=image_dpi+30,
+                    figsize=(10, 8),
                     subplot_kw={"projection": ccrs.PlateCarree()},
                 )
                 ax.set_extent(coordinates, crs=ccrs.PlateCarree())
@@ -358,17 +429,27 @@ def save_wind_maps(input_path, coordinates, clean_plot):
 
                 # ---- SAVE FIGURE ----
                 ax.axis("off")
-                fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
                 fname = os.path.join(
                     out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png"
                 )
-                fig.savefig(fname, dpi=image_dpi, bbox_inches="tight", pad_inches=0)
+                fig.savefig(fname, dpi=300, bbox_inches="tight", pad_inches=0)
                 plt.close(fig)
 
     ds.close()
     print("Finished plotting wind maps (aligned pixel coordinates).")
 
 def save_humidity_maps(input_path, coordinates, clean_plot):
+
+    """
+       Given a .nc file path, it saves the images with the data related to the humidity. Data at different height is stored in different folders 
+
+       Parameters
+       ----------
+       input_path: the file from which to extract the data
+       coordinates: [longmin, longmax, latmin, latmax], are the coordinates (extrema) of the image plot)
+       clean_plot: true -> in the image no political borders of the region are plotted, false -> otherwise.       
+    """
+
     global levels, folders 
     
     humidity_folders = {k: "humidity" + v for k, v in folders.items()}

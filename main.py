@@ -21,7 +21,7 @@ numClusters = 3
 #minimum number of pixels for TOBAC (don't consider smaller blobs)
 n_min_threshold=300
 
-#longmin longmax latmin latmax of FVG and Italy
+#longmin longmax latmin latmax of FVG and Italy, longmin longmax, latmin latmax
 coordinates=[11,15,44.5,48]
 coordinates_italy=[6.5,18.5,36.5,48]
 
@@ -66,8 +66,6 @@ def extract(grib_file,coordinates_fvg,coordinates_italy, is_fvg):
         save_feature_maps(output_path, coordinates_italy,False,True)
 
     print(f"Processed: {grib_file} -> {output_path}")
-
-
 
 
 
@@ -166,7 +164,7 @@ if __name__ == "__main__":
         for f in folder_list:
             resize_1_4_and_simplify(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
             generate_clustered_images(numClusters, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/clustered/{f}_clustered")
-            run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
+            run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","GRIB/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
 
     elif mode == 4:
         #resize iamges once to work on smaller images and run TOBAC (FVG)
@@ -174,7 +172,7 @@ if __name__ == "__main__":
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
             resize_1_4_and_simplify(f"GRIB/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
-            run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
+            run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","GRIB/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
     
     elif mode == 5:    
         #resize iamges once to work on smaller images, generate clustered images and run TOBAC (IT)
@@ -183,7 +181,7 @@ if __name__ == "__main__":
         for f in folder_list:
             resize_1_4_and_simplify(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
             generate_clustered_images(numClusters, f"image_processing/it/resized/{f}", f"image_processing/it/clustered/{f}_clustered")
-            run_tobac(f"image_processing/it/clustered/{f}_clustered", f"image_processing/it/output_clustered/{f}",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
+            run_tobac(f"image_processing/it/clustered/{f}_clustered", f"image_processing/it/output_clustered/{f}","GRIB/extracted_it_cleaned/borders.png",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
 
     elif mode == 6:
         #resize iamges once to work on smaller images and run TOBAC (FVG)
@@ -192,5 +190,5 @@ if __name__ == "__main__":
         folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
         for f in folder_list:
             resize_1_4_and_simplify(f"GRIB/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
-            run_tobac(f"image_processing/it/resized/{f}", f"image_processing/it/output/{f}",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
+            run_tobac(f"image_processing/it/resized/{f}", f"image_processing/it/output/{f}","GRIB/extracted_it_cleaned/borders.png",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
     

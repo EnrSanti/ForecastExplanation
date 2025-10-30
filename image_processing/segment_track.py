@@ -18,8 +18,12 @@ from image_processing.split_merge import plot_feature_borders, find_extended_ove
 
 DEBUG = False #True would print the circles and search radius
 
+def overlay_image(path_borders, axs, temp_da):
+    img = plt.imread(path_borders)
+    axs.imshow(img, extent=(0, temp_da.sizes["x"], temp_da.sizes["y"], 0), alpha=0.6)
 
-def locate_track_merge(input_folder, output_folder,n_min_threshold,lat_min,lat_max,lon_min,lon_max,smooth = 8):
+
+def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,smooth = 8):
     
     """
     Runs the locate and tracking of the objects
@@ -306,6 +310,9 @@ def locate_track_merge(input_folder, output_folder,n_min_threshold,lat_min,lat_m
         out_path = os.path.join(output_folder, f"{original_img_name}.png")
         axs.set_xlim(0, temp_da.sizes["x"])
         axs.set_ylim(temp_da.sizes["y"], 0)  #since origin="upper"
+        
+        overlay_image(border_path, axs, temp_da)
+        
         plt.savefig(out_path, dpi=150, bbox_inches="tight",pad_inches=0)
         plt.close(fig) 
     
@@ -522,7 +529,7 @@ def extract_keys(filename):
         return (0, 0)
 
 
-def run_tobac(inpu_folder, output_folder,lat_min,lat_max,lon_min,lon_max,n_min_threshold=0,smooth = 8):
+def run_tobac(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,n_min_threshold=0,smooth = 8):
     """
     The main function called from outside (main).
     Runs the locate and tracking of the objects
@@ -539,5 +546,5 @@ def run_tobac(inpu_folder, output_folder,lat_min,lat_max,lon_min,lon_max,n_min_t
     smooth: smoothing factor for gaussian filter (default 8)
 
     """
-    locate_track_merge(inpu_folder, output_folder,n_min_threshold,lat_min,lat_max,lon_min,lon_max,smooth)
+    locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,smooth)
     print("Locating & tracking procedure completed")
