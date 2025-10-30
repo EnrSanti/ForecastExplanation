@@ -12,6 +12,15 @@ from glob import glob
 #----------- CLUSTERING ----------- 
 # https://github.com/AbhinavUtkarsh/Image-Segmentation
 def generate_clustered_images(numClusters, input_dir, output_dir):
+    """
+    clustering function, which given a number of clusters, it considers all  images in the input directory, clusters them and saves in the output directory
+    
+    Parameters
+    ----------
+        numClusters: the number of clusters which will cluster the images
+        input_dir: the path of the folder where the images to be clustered are present
+        output_dir: the path of the folder where the images clustered are saved
+    """
     import os, cv2
     import numpy as np
 
@@ -64,6 +73,10 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
         print(f"[INFO] Saved clustered image: {out_path}")
 
 def cluster_images(n_im, numClusters, reshaped, image, image_f):
+    """
+    clustering function of a single image
+    
+    """
     clustering = [0 for _ in range(n_im)]
     for i in range(n_im):
         kmeans = KMeans(n_clusters=numClusters, n_init=40, max_iter=500).fit(reshaped[i])
@@ -103,7 +116,15 @@ def cluster_images(n_im, numClusters, reshaped, image, image_f):
 #----------- IMG RESIZING -----------
 
 def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
-
+    """
+    function resizing 4 to 1 all the images in the input folder, saves them in the output folder
+    
+    Parameters
+    ----------
+        input_folder: the path of the folder where the images to be resized are present
+        output_folder: the path of the folder where the images resized are saved
+        scale_factor: the scaling factor of the image
+    """
     # === SETUP ===
     os.makedirs(output_folder, exist_ok=True)
     #check if output folder contains as much files as input folder

@@ -25,13 +25,15 @@ def select_indices_best_match(overlap_percentages, masses, threshold, X):
     Select the subset of regions whose overlap >= threshold, such that their total mass
     is closest to a target mass X (can go over or under).
 
-    Args:
+    Parameters
+    ----------
         overlap_percentages (list[float]): Overlap percentages of each region.
         masses (list[float]): Mass or size of each region.
         threshold (float): Minimum overlap percentage to consider.
         X (float): Target total mass.
 
     Returns:
+    ----------
         list[int]: Indices of the subset closest to X.
     """
     
@@ -66,6 +68,16 @@ def find_extended_overlap_blobs_inferred(
     """
     Checks for intersection between the EXTENDED (dilated) areas of all segmentations 
     by inferring the frame index from the segment_labels data.
+    
+    Parameters
+    ----------
+        segment_labels: the segments extracted by Tobac.
+        trajectories: the trajectories of the blobs extracted by Tobac.
+        border_thickness_px: the amount of pixels (thickness) of which extend each blob.
+
+    Returns:
+    ----------
+        Dict[Union[int, str], List[Union[int, str]]]: a map containing the id of the cells with the list of other blobs which interstects  
     """
     if segment_labels.ndim != 2:
         raise ValueError("segment_labels must be 2D (y, x).")
@@ -163,7 +175,8 @@ def plot_feature_borders(segment_labels: np.ndarray, ax: plt.Axes, border_thickn
     """
     Adds a border around the segmented features to a plot.
 
-    Args:
+    Parameters
+    ----------
         segment_labels (np.ndarray): The integer-labeled segmentation field
                                      (output of tobac.segmentation_2D).
         ax (plt.Axes): The Matplotlib axes object to plot the border onto.
@@ -312,12 +325,12 @@ def detect_splits_by_area(
     segment_labels_prev,
     trajectories,
 ):
-    print(overlap_map)
 
     """
     Detects 1 -> N cloud splits events between two consecutive frames.
 
-    Args:
+    Parameters
+    ----------
         overlap_map (dict[int, list[int]]): Overlap relations between current-frame cells.
         map_areas_curr (dict[int, float]): Area (or mass) of each cell in current frame.
         map_areas_next (dict[int, float]): Area (or mass) of each cell in next frame.
@@ -325,7 +338,8 @@ def detect_splits_by_area(
         cell_ids_next (list[int]): Cell IDs present in next frame.
         area_ratio_threshold (float): Minimum ratio sum(area_i)/area_next to confirm merge.
 
-    Returns:
+    Returns
+    ----------
         list[dict]: List of detected merges with details.
     """
 
