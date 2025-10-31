@@ -10,7 +10,6 @@ coordinates=[11,15,44.5,48]
 coordinates_italy=[6.5,18.5,36.5,48]
 base_path = "../image_processing/fvg/output/"
 locations_name_px_pos={}
-
 '''
 def geo_to_pixel(lon, lat, lon_min, lon_max, lat_min, lat_max, img_width, img_height):
     x = (lon - lon_min) / (lon_max - lon_min) * img_width
@@ -27,6 +26,7 @@ def load_locations(coordinates,image_input_folder):
 
     #read a file just to get the image shape (they are all =)
     first_dir=sorted(os.listdir(image_input_folder))[0]
+    first_dir=image_input_folder+first_dir
     first_file = sorted([f for f in os.listdir(first_dir) if os.path.isfile(os.path.join(first_dir, f)) and f.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff"))])[0]
 
 
@@ -46,8 +46,6 @@ def load_locations(coordinates,image_input_folder):
             width, height
         )
         locations_name_px_pos[row["Location"]]=(px,py)
-
-
 
 def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
     # Load locations
@@ -74,10 +72,10 @@ def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
         ax.imshow(img, origin="upper")
         
         # Plot each location as a red star
-        for _, row in locations.iterrows():
-            px,py=locations_name_px_pos[row["Location"]]
+        for location in locations.keys():
+            px,py=locations[location]
             ax.plot(px, py, marker=".", color="red", markersize=10)
-            ax.text(px + 5, py - 5, row["Location"], color="red", fontsize=8)
+            ax.text(px + 5, py - 5, location, color="red", fontsize=8)
         
         ax.axis("off")
         plt.tight_layout()
@@ -87,50 +85,57 @@ def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
         plt.close(fig)
         print(f"Saved {output_path}")
 
-def get_clouds_covering_locations(locations_name_px_pos, segment_labels_path="../image_processing/fvg/output/cloud_at_750m/segment_labels_all.npz"):
+def get_clouds_covering_locations(locations_name_px_pos, segment_labels_path):
     
     """
     Returns a mapping: frame_index -> { cell_id -> [locations] }.
     """
     
-    data = np.load(segment_labels_path)
-    segment_labels_list = [data[key] for key in data][0:2]
+    data = np.load(segment_labels_path,allow_pickle=True)
+    print("loading ",segment_labels_path)
+   
+    segment_labels_list = [data[key] for key in data]
 
     frame_cloud_map = {}
-    print("shaaape ->", segment_labels_list[0].shape)
+
+
     for frame_idx, seg_labels in enumerate(segment_labels_list):
         # --- Handle non-2D arrays safely ---
-        if seg_labels.ndim == 3:
-            # Common cases: (y, x, 1) or (1, y, x)
-            if seg_labels.shape[-1] == 1:
-                seg_labels = seg_labels[..., 0]
-            elif seg_labels.shape[0] == 1:
-                seg_labels = seg_labels[0]
-            else:
-                raise ValueError(f"Unexpected shape {seg_labels.shape} for frame {frame_idx}")
-        elif seg_labels.ndim != 2:
-            raise ValueError(f"Unsupported number of dimensions: {seg_labels.ndim}")
+        try: #to deal with empty frames (i.e. frames without blobs)
+            if seg_labels.ndim == 3:
+                # Common cases: (y, x, 1) or (1, y, x)
+                if seg_labels.shape[-1] == 1:
+                    seg_labels = seg_labels[..., 0]
+                elif seg_labels.shape[0] == 1:
+                    seg_labels = seg_labels[0]
+                else:
+                    raise ValueError(f"Unexpected shape {seg_labels.shape} for frame {frame_idx}")
+            elif seg_labels.ndim != 2:
+                raise ValueError(f"Unsupported number of dimensions: {seg_labels.ndim}")
 
-        height, width = seg_labels.shape
-        print("height % width:    ", height,"   ",width)
-        clouds_to_locations = defaultdict(list)
+            height, width = seg_labels.shape
+            
+            clouds_to_locations = defaultdict(list)
 
-        for loc_name, (px, py) in locations_name_px_pos.items():
-            px_i = int(round(px))
-            py_i = int(round(py))
-            if 0 <= px_i < width and 0 <= py_i < height:
-                cell_id = seg_labels[py_i, px_i]
-                if cell_id > 0:
-                    clouds_to_locations[int(cell_id)].append(loc_name)
-            else:
-                print(f"⚠️ Location {loc_name} outside frame {frame_idx} bounds (px={px_i}, py={py_i})")
+            for loc_name, (px, py) in locations_name_px_pos.items():
+                px_i = int(round(px))
+                py_i = int(round(py))
+                if 0 <= px_i < width and 0 <= py_i < height:
+                    cell_id = seg_labels[py_i, px_i]
+                    if cell_id > 0:
+                        clouds_to_locations[int(cell_id)].append(loc_name)
+                else:
+                    print(f"⚠️ Location {loc_name} outside frame {frame_idx} bounds (px={px_i}, py={py_i})")
 
-        frame_cloud_map[frame_idx] = dict(clouds_to_locations)
+            frame_cloud_map[frame_idx] = dict(clouds_to_locations)
+        except:
+            frame_cloud_map[frame_idx]={}
 
+  
+    print(frame_cloud_map)
     return frame_cloud_map
 
     
-
 
 
 load_locations(coordinates,base_path)
@@ -138,26 +143,28 @@ load_locations(coordinates,base_path)
 
 
 
-#########################################################################
+for entry in os.listdir(base_path):
+    full_path = os.path.join(base_path, entry)
+    if os.path.isdir(full_path):
+        #later this first stage can be skipped
+        plot_locations_to_map(full_path,entry,coordinates)
 
-frame_cloud_map = get_clouds_covering_locations(locations_name_px_pos)
-
-trajectories =  pd.read_csv(base_path+"cloud_at_750m/trajectories.csv")
-
-# Display first 5 rows
-print(trajectories.head())
-
-#########################################################################
+        #########################################################################
+        #compute the map that for each cloud tells me which locations I am covering
+        frame_cloud_map = get_clouds_covering_locations(locations_name_px_pos,full_path+"/segment_labels_all.npz")
+        #
+        trajectories =  pd.read_csv(full_path+"/trajectories.csv")
+        #########################################################################
 
 
+        # Example: print clouds covering each location in frame 0
+        full_str=""
+        for key in frame_cloud_map.keys():
+            for cell_id, locs in frame_cloud_map[key].items():
+                full_str+=f"[{full_path.rsplit('/', 1)[-1]}] Frame {key} — Cloud {cell_id}: covers {locs}\n"
+                print(f"[{full_path.rsplit('/', 1)[-1]}] Frame {key} — Cloud {cell_id}: covers {locs}\n")
 
-# Example: print clouds covering each location in frame 0
-full_str=""
-for key in frame_cloud_map.keys():
-    for cell_id, locs in frame_cloud_map[key].items():
-        full_str+=f"Frame {key} — Cloud {cell_id}: covers {locs}\n"
-        print(f"[750m] Frame {key} — Cloud {cell_id}: covers {locs}")
-
-with open("demofile.txt", "w") as f:
-  f.write(full_str)
+        with open(f"{full_path.rsplit('/', 1)[-1]}/clouds_covering.txt", "w") as f:
+            f.write(full_str)
+        frame_cloud_map={}
 '''
