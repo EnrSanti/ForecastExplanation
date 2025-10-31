@@ -83,7 +83,7 @@ def save_borders_png(output_base, coordinates):
     ax.axis("off")
     fig.savefig(
         output_base + "/borders.png",
-        dpi=300, #so no need to resize, we don't loose data in the borders
+        dpi=380, #so no need to resize, we don't loose data in the borders
         bbox_inches="tight",
         pad_inches=0,
         transparent=True
@@ -131,7 +131,7 @@ def save_cloud_maps(input_path, coordinates,clean_plot):
             cax=ax, orientation='horizontal'
         )
         cb.set_label(f'Cloud cover at {lvl} hPa [fraction]')
-        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa_cloud.png"), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa_cloud.png"), dpi=380, bbox_inches='tight')
         plt.close(fig)
 
     # ---- PLOT LOOP ----
@@ -164,7 +164,7 @@ def save_cloud_maps(input_path, coordinates,clean_plot):
                     #ax.set_title(f"Cloud cover at {lvl} hPa\nValid time: {valid_time}")
 
                 fname = os.path.join(out_dir, f"cloud_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                plt.savefig(fname, dpi=300, bbox_inches='tight', pad_inches=0)
+                plt.savefig(fname, dpi=380, bbox_inches='tight', pad_inches=0)
                 plt.close(fig)
 
     print("Finished plotting cloud maps with separate legends per level.")
@@ -208,7 +208,7 @@ def save_temperature_maps(input_path,coordinates, clean_plot):
             cax=ax, orientation='horizontal'
         )
         cb.set_label(f'Temperature at {lvl} hPa [K]')
-        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa.png"), dpi=300, bbox_inches='tight',pad_inches=0)
+        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa.png"), dpi=380, bbox_inches='tight',pad_inches=0)
         plt.close(fig)
 
     # ---- PLOT LOOP ----
@@ -252,7 +252,7 @@ def save_temperature_maps(input_path,coordinates, clean_plot):
 
 
                 fname = os.path.join(out_dir, f"temp_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                plt.savefig(fname, dpi=300, bbox_inches='tight',pad_inches=0)
+                plt.savefig(fname, dpi=380, bbox_inches='tight',pad_inches=0)
                 plt.close(fig)
 
 
@@ -301,7 +301,7 @@ def save_wind_maps(input_path, coordinates, clean_plot):
         cb.set_label(f"Wind speed at {lvl} hPa [m/s]")
         plt.savefig(
             os.path.join(output_base, f"legend_{lvl}hPa_wind.png"),
-            dpi=300,
+            dpi=380,
             bbox_inches="tight",
             pad_inches=0,
         )
@@ -432,7 +432,7 @@ def save_wind_maps(input_path, coordinates, clean_plot):
                 fname = os.path.join(
                     out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png"
                 )
-                fig.savefig(fname, dpi=300, bbox_inches="tight", pad_inches=0)
+                fig.savefig(fname, dpi=380, bbox_inches="tight", pad_inches=0)
                 plt.close(fig)
 
     ds.close()
@@ -479,7 +479,7 @@ def save_humidity_maps(input_path, coordinates, clean_plot):
         )
         cb.set_label(f'Relative humidity at {lvl} hPa [%]')
         plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa_humidity.png"),
-                    dpi=300, bbox_inches='tight')
+                    dpi=380, bbox_inches='tight')
         plt.close(fig)
 
     # ---- PLOT LOOP ----
@@ -513,7 +513,7 @@ def save_humidity_maps(input_path, coordinates, clean_plot):
                     #ax.set_title(f"Relative humidity at {lvl} hPa\nValid time: {valid_time}")
 
                 fname = os.path.join(out_dir, f"humidity_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                plt.savefig(fname, dpi=300, bbox_inches='tight', pad_inches=0)
+                plt.savefig(fname, dpi=380, bbox_inches='tight', pad_inches=0)
                 plt.close(fig)
 
     print("Finished plotting humidity maps with separate legends per level.")

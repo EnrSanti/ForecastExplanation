@@ -9,6 +9,8 @@ import sys, os
 import threading
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import warnings
+
+from reasoning.generate_examples import coordinates,coordinates_italy
 warnings.filterwarnings(
     "ignore",
     message="As of v1.6.0, segmentation with time length 1",
@@ -20,10 +22,6 @@ numClusters = 3
 
 #minimum number of pixels for TOBAC (don't consider smaller blobs)
 n_min_threshold=300
-
-#longmin longmax latmin latmax of FVG and Italy, longmin longmax, latmin latmax
-coordinates=[11,15,44.5,48]
-coordinates_italy=[6.5,18.5,36.5,48]
 
 
 

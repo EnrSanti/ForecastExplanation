@@ -1,0 +1,2 @@
+Frame 0 — Cloud 3: covers ['Pontebba', 'Stolvizza']
+Frame 1 — Cloud 10: covers ['Pontebba', 'Stolvizza']
