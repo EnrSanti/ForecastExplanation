@@ -74,7 +74,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
     #stack into 3D array (time, y, x)
     data = np.stack(frames_gray)
     _, n_y, n_x = data.shape
-
+    
     #spatial coordinates (example: 1 pixel = 1000 m) 
     x = np.arange(n_x)
     y = np.arange(n_y)
@@ -248,8 +248,16 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
         
         #Get the field for this frame
-        fig, axs = plt.subplots(figsize=(6, 6))
-            
+
+        fig_width_in = n_x / 100
+        fig_height_in = n_y / 100
+        fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in),dpi=100)
+        fig_width_px = fig.get_size_inches()[0] * fig.dpi
+        fig_height_px = fig.get_size_inches()[1] * fig.dpi
+        fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+
+
+        print("Figure size in pixels:", int(fig_width_px), int(fig_height_px))
         smoothed_frame = ndimage.gaussian_filter(test_data_norm.isel(time=itime).values, sigma=smooth)
 
         temp_da = test_data_norm.isel(time=itime).copy()
@@ -316,7 +324,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         
         overlay_image(border_path, axs, temp_da)
         
-        plt.savefig(out_path, dpi=150, bbox_inches="tight",pad_inches=0)
+        plt.savefig(out_path, dpi=100, bbox_inches=None,pad_inches=0)
         plt.close(fig) 
     
     #======= SPLITTING AND MERGING ========
