@@ -1,0 +1,14 @@
+Pordenone small_cloud
+Rivignano small_cloud
+Trieste small_cloud
+Tarvisio big_cloud
+Pontebba sunny_mid_cloud
+Barcis sunny_mid_cloud
+Udine sunny_mid_cloud
+Forni sunny_mid_cloud
+Villa_santina sunny_mid_cloud_rain_1
+Gemona sunny_mid_cloud_rain_1
+Palmanova sunny_mid_cloud_rain_1
+Spilinbergo small_cloud
+Codroipo sunny_mid_cloud
+Lignano sunny_small_cloud
