@@ -1,0 +1,17 @@
+Trieste -> cloud_rain_4
+Pordenone -> big_cloud_rain_2
+Udine -> cloud_rain_2
+Cividale -> cloud_rain_2
+Spilinbergo -> big_cloud_rain_1
+Tarvisio -> big_cloud_rain_1
+Barcis -> cloud_rain_1
+Pontebba -> cloud_rain_3
+Gemona -> rain_2
+Forni -> cloud_rain_1
+Stolvizza -> rain_3
+Sappada -> cloud_rain_1
+Palmanova -> cloud_rain_3
+Villa_santina -> cloud_rain_1
+Codroipo -> rain_2
+Lignano -> rain_2
+Rivignano -> cloud_rain_3

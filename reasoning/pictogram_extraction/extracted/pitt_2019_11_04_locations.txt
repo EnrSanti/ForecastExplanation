@@ -1,0 +1,17 @@
+Pontebba -> big_cloud_rain_2
+Barcis -> sunny_mid_cloud_rain_1
+Spilinbergo -> sunny_mid_cloud_rain_1
+Udine -> sunny_mid_cloud_rain_1
+Palmanova -> sunny_mid_cloud_rain_1
+Pordenone -> sunny_mid_cloud_rain_1
+Tarvisio -> sunny_mid_cloud_rain_2
+Cividale -> sunny_mid_cloud_rain_2
+Trieste -> sunny_mid_cloud_rain_2
+Stolvizza -> rain_3
+Gemona -> rain_1
+Sappada -> sunny_mid_cloud_rain_1
+Forni -> rain_1
+Villa_santina -> sunny_mid_cloud_rain_1
+Rivignano -> sunny_mid_cloud_rain_1
+Lignano -> sunny_mid_cloud_rain_1
+Codroipo -> rain_1

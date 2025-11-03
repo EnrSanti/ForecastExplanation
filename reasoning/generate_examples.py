@@ -181,7 +181,7 @@ for entry in os.listdir(base_path):
     full_path = os.path.join(base_path, entry)
     if os.path.isdir(full_path):
         #later this first stage can be skipped
-        plot_locations_to_map(full_path,entry,coordinates)
+        plot_locations_to_map(full_path,"examples_from_blobs/"+entry,coordinates)
 
         #########################################################################
         #compute the map that for each cloud tells me which locations I am covering
@@ -199,6 +199,6 @@ for entry in os.listdir(base_path):
                 full_str+=f"[{full_path.rsplit('/', 1)[-1]}] -- at {str(time)} -- Cloud {cell_id}: covers {locs}\n"
                 print(f"[{full_path.rsplit('/', 1)[-1]}] -- at {str(time)} -- Cloud {cell_id}: covers {locs}\n")
 
-        with open(f"{full_path.rsplit('/', 1)[-1]}/clouds_covering.txt", "w") as f:
+        with open(f"{"examples_from_blobs/"+full_path.rsplit('/', 1)[-1]}/clouds_covering.txt", "w") as f:
             f.write(full_str)
         frame_cloud_map={}

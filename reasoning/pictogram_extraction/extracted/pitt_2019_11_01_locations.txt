@@ -1,0 +1,14 @@
+Barcis -> small_cloud
+Pontebba -> small_cloud
+Cividale -> sunny
+Forni -> sunny
+Udine -> sunny
+Pordenone -> sunny
+Trieste -> sunny
+Villa_santina -> sunny
+Rivignano -> sunny
+Spilinbergo -> sunny
+Palmanova -> sunny
+Tarvisio -> cloud
+Sappada -> sunny
+Lignano -> sunny
