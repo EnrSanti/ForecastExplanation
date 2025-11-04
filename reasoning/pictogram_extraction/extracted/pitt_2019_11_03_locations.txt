@@ -1,17 +1,35 @@
-Gemona -> rain_4
-Pontebba -> cloud_rain_4
-Tarvisio -> cloud_rain_4
-Cividale -> cloud_rain_4
-Barcis -> cloud_rain_4
-Spilinbergo -> cloud_rain_4
-Udine -> cloud_rain_3
-Pordenone -> rain_3
-Trieste -> sunny_mid_cloud_rain_3
-Sappada -> cloud_rain_4
-Palmanova -> big_cloud_rain_4
-Stolvizza -> rain_6
-Villa_santina -> cloud_rain_4
-Lignano -> big_cloud_rain_3
-Forni -> cloud_rain_4
-Rivignano -> big_cloud_rain_3
-Codroipo -> rain_3
+date(2019,11,3).
+forecasted_rain("Gemona", 4,2019,11,3). 
+forecasted_sky("Gemona", 0,2019,11,3). 
+forecasted_rain("Pontebba", 4,2019,11,3). 
+forecasted_sky("Pontebba", 4,2019,11,3). 
+forecasted_rain("Tarvisio", 4,2019,11,3). 
+forecasted_sky("Tarvisio", 4,2019,11,3). 
+forecasted_rain("Cividale", 4,2019,11,3). 
+forecasted_sky("Cividale", 4,2019,11,3). 
+forecasted_rain("Barcis", 4,2019,11,3). 
+forecasted_sky("Barcis", 4,2019,11,3). 
+forecasted_rain("Spilinbergo", 4,2019,11,3). 
+forecasted_sky("Spilinbergo", 4,2019,11,3). 
+forecasted_rain("Udine", 3,2019,11,3). 
+forecasted_sky("Udine", 4,2019,11,3). 
+forecasted_rain("Pordenone", 3,2019,11,3). 
+forecasted_sky("Pordenone", 0,2019,11,3). 
+forecasted_rain("Trieste", 3,2019,11,3). 
+forecasted_sky("Trieste", 4,2019,11,3). 
+forecasted_rain("Sappada", 4,2019,11,3). 
+forecasted_sky("Sappada", 4,2019,11,3). 
+forecasted_rain("Palmanova", 4,2019,11,3). 
+forecasted_sky("Palmanova", 4,2019,11,3). 
+forecasted_rain("Stolvizza", 6,2019,11,3). 
+forecasted_sky("Stolvizza", 0,2019,11,3). 
+forecasted_rain("Villa_santina", 4,2019,11,3). 
+forecasted_sky("Villa_santina", 4,2019,11,3). 
+forecasted_rain("Lignano", 3,2019,11,3). 
+forecasted_sky("Lignano", 4,2019,11,3). 
+forecasted_rain("Forni", 4,2019,11,3). 
+forecasted_sky("Forni", 4,2019,11,3). 
+forecasted_rain("Rivignano", 3,2019,11,3). 
+forecasted_sky("Rivignano", 4,2019,11,3). 
+forecasted_rain("Codroipo", 3,2019,11,3). 
+forecasted_sky("Codroipo", 0,2019,11,3). 
