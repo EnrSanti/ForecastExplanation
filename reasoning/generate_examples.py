@@ -199,3 +199,6 @@ def generate_examples_from_frames():
             with open(f"{"reasoning/examples_from_blobs/"+full_path.rsplit('/', 1)[-1]}/clouds_covering.txt", "w") as f:
                 f.write(full_str)
             frame_cloud_map={}
+
+def merge_in_examples():
+    pass

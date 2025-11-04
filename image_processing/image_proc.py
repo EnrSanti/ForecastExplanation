@@ -114,7 +114,6 @@ def cluster_images(n_im, numClusters, reshaped, image, image_f):
     return kmeansImage
 
 #----------- IMG RESIZING -----------
-
 def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
     """
     function resizing 4 to 1 all the images in the input folder, saves them in the output folder
@@ -135,6 +134,7 @@ def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
     valid_extensions = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
 
     # === PROCESS IMAGES ===
+    print("considering folder "+str(os.listdir(input_folder)))
     for filename in os.listdir(input_folder):
         file_path = os.path.join(input_folder, filename)
         name, ext = os.path.splitext(filename)

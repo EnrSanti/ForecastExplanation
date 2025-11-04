@@ -25,8 +25,9 @@ def overlay_image(path_borders, axs, temp_da):
     img = plt.imread(path_borders)
     axs.imshow(img, extent=(0, temp_da.sizes["x"], temp_da.sizes["y"], 0), alpha=0.6)
 
-
-def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,smooth = 8):
+#target minimum -> upper
+#target maximum -> lower
+def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max, threshold, target ,smooth = 8):
     
     """
     Runs the locate and tracking of the objects
@@ -41,7 +42,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
     lon_max: the maximum longitude of the area in the images
     n_min_threshold: minimum number of pixels for object detection (default 0)
     smooth: smoothing factor for gaussian filter (default 8)
-    
+
     """
 
     #Load images from input folder
@@ -111,7 +112,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
 
 
     #original threshold was 155 to normalized [0, 1]:
-    norm_threshold = 0.7
+    norm_threshold = threshold
 
 
     # === FEATURE DETECTION ===
@@ -120,7 +121,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         test_data_norm,
         threshold=[norm_threshold],  #single threshold in normalized space
         dxy=3000,  #1 px 3km
-        target="minimum",
+        target=target,
         position_threshold="extreme",
         sigma_threshold=smooth,
         n_min_threshold=n_min_threshold,
@@ -131,7 +132,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         test_data_norm,
         threshold=[norm_threshold], 
         dxy=3000,
-        target="minimum",
+        target=target,
         position_threshold="weighted_abs",
         sigma_threshold=smooth,
         n_min_threshold=n_min_threshold,
@@ -193,7 +194,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
             field_2d,
             dxy=dxy,
             threshold=norm_threshold,
-            target="minimum"
+            target=target
         )
 
         #store results
@@ -363,6 +364,10 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
 
     #save the segments_all:
     np.savez_compressed(output_folder+f"/segment_labels_all.npz", *all_segment_labels)
+
+
+
+
 
 
 def print_clouds_center_line(printing_symbol,color,f_weighted, itime, track, axs, cell_id,persisted_cells,all_frames_for_cell):
@@ -547,7 +552,7 @@ def extract_keys(filename):
         return (0, 0)
 
 
-def run_tobac(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,n_min_threshold=0,smooth = 8):
+def run_tobac(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,threshold, target,n_min_threshold=0,smooth = 8):
     """
     The main function called from outside (main).
     Runs the locate and tracking of the objects
@@ -564,5 +569,5 @@ def run_tobac(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon
     smooth: smoothing factor for gaussian filter (default 8)
 
     """
-    locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,smooth)
+    locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold, target,smooth)
     print("Locating & tracking procedure completed")
