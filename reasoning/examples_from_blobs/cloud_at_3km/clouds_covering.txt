@@ -1,35 +1,177 @@
-starting date: 2019-11-01 01:00:00
-[cloud_at_3km] -- at 2019-11-01 21:00:00 -- Cloud 9: covers ['Trieste']
-[cloud_at_3km] -- at 2019-11-01 22:00:00 -- Cloud 9: covers ['Trieste']
-[cloud_at_3km] -- at 2019-11-01 23:00:00 -- Cloud 9: covers ['Trieste']
-[cloud_at_3km] -- at 2019-11-02 04:00:00 -- Cloud 25: covers ['Pordenone']
-[cloud_at_3km] -- at 2019-11-02 05:00:00 -- Cloud 26: covers ['Gorizia']
-[cloud_at_3km] -- at 2019-11-02 08:00:00 -- Cloud 30: covers ['Pordenone']
-[cloud_at_3km] -- at 2019-11-02 09:00:00 -- Cloud 36: covers ['Pordenone', 'Codroipo']
-[cloud_at_3km] -- at 2019-11-02 09:00:00 -- Cloud 37: covers ['Palmanova']
-[cloud_at_3km] -- at 2019-11-02 11:00:00 -- Cloud 37: covers ['Grado']
-[cloud_at_3km] -- at 2019-11-02 13:00:00 -- Cloud 46: covers ['Grado']
-[cloud_at_3km] -- at 2019-11-02 14:00:00 -- Cloud 45: covers ['Rivignano', 'Palmanova', 'Lignano', 'Grado']
-[cloud_at_3km] -- at 2019-11-02 15:00:00 -- Cloud 45: covers ['Rivignano', 'Palmanova', 'Gorizia', 'Lignano', 'Grado', 'Trieste']
-[cloud_at_3km] -- at 2019-11-02 16:00:00 -- Cloud 45: covers ['Pordenone', 'Rivignano', 'Gorizia', 'Lignano', 'Grado', 'Trieste']
-[cloud_at_3km] -- at 2019-11-02 17:00:00 -- Cloud 51: covers ['Udine', 'Cividale', 'Codroipo', 'Rivignano', 'Palmanova', 'Gorizia', 'Lignano']
-[cloud_at_3km] -- at 2019-11-02 18:00:00 -- Cloud 55: covers ['Udine', 'Cividale', 'Palmanova', 'Gorizia']
-[cloud_at_3km] -- at 2019-11-02 19:00:00 -- Cloud 51: covers ['Barcis', 'Spilinbergo', 'Udine', 'Pordenone', 'Codroipo', 'Rivignano', 'Palmanova', 'Lignano', 'Grado', 'Trieste']
-[cloud_at_3km] -- at 2019-11-02 20:00:00 -- Cloud 51: covers ['Pontebba', 'Stolvizza', 'Barcis', 'Gemona', 'Spilinbergo', 'Udine', 'Cividale', 'Codroipo', 'Rivignano', 'Gorizia', 'Lignano', 'Grado', 'Trieste']
-[cloud_at_3km] -- at 2019-11-02 21:00:00 -- Cloud 51: covers ['Stolvizza', 'Barcis', 'Udine', 'Cividale', 'Pordenone', 'Codroipo', 'Rivignano', 'Palmanova', 'Gorizia', 'Lignano', 'Grado', 'Trieste']
-[cloud_at_3km] -- at 2019-11-02 22:00:00 -- Cloud 51: covers ['Villa_santina', 'Forni', 'Barcis', 'Spilinbergo', 'Udine', 'Cividale', 'Codroipo', 'Rivignano', 'Palmanova', 'Gorizia', 'Lignano', 'Grado', 'Trieste']
-[cloud_at_3km] -- at 2019-11-02 23:00:00 -- Cloud 63: covers ['Sappada', 'Villa_santina', 'Forni', 'Barcis']
-[cloud_at_3km] -- at 2019-11-02 23:00:00 -- Cloud 65: covers ['Udine', 'Cividale', 'Palmanova', 'Gorizia', 'Lignano', 'Grado', 'Trieste']
-[cloud_at_3km] -- at 2019-11-03 00:00:00 -- Cloud 63: covers ['Sappada', 'Barcis']
-[cloud_at_3km] -- at 2019-11-03 00:00:00 -- Cloud 65: covers ['Spilinbergo', 'Udine', 'Cividale', 'Palmanova', 'Gorizia', 'Trieste']
-[cloud_at_3km] -- at 2019-11-03 01:00:00 -- Cloud 63: covers ['Sappada', 'Villa_santina', 'Forni', 'Barcis', 'Spilinbergo', 'Pordenone', 'Codroipo']
-[cloud_at_3km] -- at 2019-11-03 01:00:00 -- Cloud 65: covers ['Pontebba', 'Tarvisio', 'Stolvizza', 'Grado', 'Trieste']
-[cloud_at_3km] -- at 2019-11-03 02:00:00 -- Cloud 63: covers ['Sappada', 'Pontebba', 'Tarvisio', 'Forni']
-[cloud_at_3km] -- at 2019-11-03 02:00:00 -- Cloud 65: covers ['Gorizia', 'Grado', 'Trieste']
-[cloud_at_3km] -- at 2019-11-03 03:00:00 -- Cloud 65: covers ['Trieste']
-[cloud_at_3km] -- at 2019-11-03 04:00:00 -- Cloud 63: covers ['Sappada']
-[cloud_at_3km] -- at 2019-11-03 04:00:00 -- Cloud 72: covers ['Cividale']
-[cloud_at_3km] -- at 2019-11-03 05:00:00 -- Cloud 70: covers ['Sappada', 'Villa_santina', 'Pontebba', 'Tarvisio', 'Forni', 'Stolvizza', 'Barcis', 'Gemona', 'Cividale']
-[cloud_at_3km] -- at 2019-11-03 06:00:00 -- Cloud 70: covers ['Sappada', 'Villa_santina', 'Pontebba', 'Tarvisio', 'Forni', 'Stolvizza', 'Barcis', 'Gemona', 'Spilinbergo', 'Udine', 'Cividale', 'Pordenone']
-[cloud_at_3km] -- at 2019-11-03 07:00:00 -- Cloud 83: covers ['Sappada', 'Villa_santina', 'Pontebba', 'Tarvisio', 'Forni', 'Stolvizza', 'Barcis', 'Gemona', 'Udine', 'Cividale', 'Pordenone', 'Rivignano', 'Palmanova', 'Lignano', 'Trieste']
-[cloud_at_3km] -- at 2019-11-03 08:00:00 -- Cloud 83: covers ['Sappada', 'Pontebba', 'Tarvisio', 'Stolvizza', 'Barcis', 'Gemona', 'Udine', 'Cividale', 'Pordenone', 'Palmanova', 'Gorizia', 'Lignano', 'Grado', 'Trieste']
+% format: cloud_id, yyyy, mm, dd, h, locationcloud_at_3km_covers(9,2019,11,1,21,"Trieste").
+cloud_at_3km_covers(9,2019,11,1,22,"Trieste").
+cloud_at_3km_covers(9,2019,11,1,23,"Trieste").
+cloud_at_3km_covers(25,2019,11,2,4,"Pordenone").
+cloud_at_3km_covers(26,2019,11,2,5,"Gorizia").
+cloud_at_3km_covers(30,2019,11,2,8,"Pordenone").
+cloud_at_3km_covers(36,2019,11,2,9,"Pordenone").
+cloud_at_3km_covers(36,2019,11,2,9,"Codroipo").
+cloud_at_3km_covers(37,2019,11,2,9,"Palmanova").
+cloud_at_3km_covers(37,2019,11,2,11,"Grado").
+cloud_at_3km_covers(46,2019,11,2,13,"Grado").
+cloud_at_3km_covers(45,2019,11,2,14,"Rivignano").
+cloud_at_3km_covers(45,2019,11,2,14,"Palmanova").
+cloud_at_3km_covers(45,2019,11,2,14,"Lignano").
+cloud_at_3km_covers(45,2019,11,2,14,"Grado").
+cloud_at_3km_covers(45,2019,11,2,15,"Rivignano").
+cloud_at_3km_covers(45,2019,11,2,15,"Palmanova").
+cloud_at_3km_covers(45,2019,11,2,15,"Gorizia").
+cloud_at_3km_covers(45,2019,11,2,15,"Lignano").
+cloud_at_3km_covers(45,2019,11,2,15,"Grado").
+cloud_at_3km_covers(45,2019,11,2,15,"Trieste").
+cloud_at_3km_covers(45,2019,11,2,16,"Pordenone").
+cloud_at_3km_covers(45,2019,11,2,16,"Rivignano").
+cloud_at_3km_covers(45,2019,11,2,16,"Gorizia").
+cloud_at_3km_covers(45,2019,11,2,16,"Lignano").
+cloud_at_3km_covers(45,2019,11,2,16,"Grado").
+cloud_at_3km_covers(45,2019,11,2,16,"Trieste").
+cloud_at_3km_covers(51,2019,11,2,17,"Udine").
+cloud_at_3km_covers(51,2019,11,2,17,"Cividale").
+cloud_at_3km_covers(51,2019,11,2,17,"Codroipo").
+cloud_at_3km_covers(51,2019,11,2,17,"Rivignano").
+cloud_at_3km_covers(51,2019,11,2,17,"Palmanova").
+cloud_at_3km_covers(51,2019,11,2,17,"Gorizia").
+cloud_at_3km_covers(51,2019,11,2,17,"Lignano").
+cloud_at_3km_covers(55,2019,11,2,18,"Udine").
+cloud_at_3km_covers(55,2019,11,2,18,"Cividale").
+cloud_at_3km_covers(55,2019,11,2,18,"Palmanova").
+cloud_at_3km_covers(55,2019,11,2,18,"Gorizia").
+cloud_at_3km_covers(51,2019,11,2,19,"Barcis").
+cloud_at_3km_covers(51,2019,11,2,19,"Spilinbergo").
+cloud_at_3km_covers(51,2019,11,2,19,"Udine").
+cloud_at_3km_covers(51,2019,11,2,19,"Pordenone").
+cloud_at_3km_covers(51,2019,11,2,19,"Codroipo").
+cloud_at_3km_covers(51,2019,11,2,19,"Rivignano").
+cloud_at_3km_covers(51,2019,11,2,19,"Palmanova").
+cloud_at_3km_covers(51,2019,11,2,19,"Lignano").
+cloud_at_3km_covers(51,2019,11,2,19,"Grado").
+cloud_at_3km_covers(51,2019,11,2,19,"Trieste").
+cloud_at_3km_covers(51,2019,11,2,20,"Pontebba").
+cloud_at_3km_covers(51,2019,11,2,20,"Stolvizza").
+cloud_at_3km_covers(51,2019,11,2,20,"Barcis").
+cloud_at_3km_covers(51,2019,11,2,20,"Gemona").
+cloud_at_3km_covers(51,2019,11,2,20,"Spilinbergo").
+cloud_at_3km_covers(51,2019,11,2,20,"Udine").
+cloud_at_3km_covers(51,2019,11,2,20,"Cividale").
+cloud_at_3km_covers(51,2019,11,2,20,"Codroipo").
+cloud_at_3km_covers(51,2019,11,2,20,"Rivignano").
+cloud_at_3km_covers(51,2019,11,2,20,"Gorizia").
+cloud_at_3km_covers(51,2019,11,2,20,"Lignano").
+cloud_at_3km_covers(51,2019,11,2,20,"Grado").
+cloud_at_3km_covers(51,2019,11,2,20,"Trieste").
+cloud_at_3km_covers(51,2019,11,2,21,"Stolvizza").
+cloud_at_3km_covers(51,2019,11,2,21,"Barcis").
+cloud_at_3km_covers(51,2019,11,2,21,"Udine").
+cloud_at_3km_covers(51,2019,11,2,21,"Cividale").
+cloud_at_3km_covers(51,2019,11,2,21,"Pordenone").
+cloud_at_3km_covers(51,2019,11,2,21,"Codroipo").
+cloud_at_3km_covers(51,2019,11,2,21,"Rivignano").
+cloud_at_3km_covers(51,2019,11,2,21,"Palmanova").
+cloud_at_3km_covers(51,2019,11,2,21,"Gorizia").
+cloud_at_3km_covers(51,2019,11,2,21,"Lignano").
+cloud_at_3km_covers(51,2019,11,2,21,"Grado").
+cloud_at_3km_covers(51,2019,11,2,21,"Trieste").
+cloud_at_3km_covers(51,2019,11,2,22,"Villa_santina").
+cloud_at_3km_covers(51,2019,11,2,22,"Forni").
+cloud_at_3km_covers(51,2019,11,2,22,"Barcis").
+cloud_at_3km_covers(51,2019,11,2,22,"Spilinbergo").
+cloud_at_3km_covers(51,2019,11,2,22,"Udine").
+cloud_at_3km_covers(51,2019,11,2,22,"Cividale").
+cloud_at_3km_covers(51,2019,11,2,22,"Codroipo").
+cloud_at_3km_covers(51,2019,11,2,22,"Rivignano").
+cloud_at_3km_covers(51,2019,11,2,22,"Palmanova").
+cloud_at_3km_covers(51,2019,11,2,22,"Gorizia").
+cloud_at_3km_covers(51,2019,11,2,22,"Lignano").
+cloud_at_3km_covers(51,2019,11,2,22,"Grado").
+cloud_at_3km_covers(51,2019,11,2,22,"Trieste").
+cloud_at_3km_covers(63,2019,11,2,23,"Sappada").
+cloud_at_3km_covers(63,2019,11,2,23,"Villa_santina").
+cloud_at_3km_covers(63,2019,11,2,23,"Forni").
+cloud_at_3km_covers(63,2019,11,2,23,"Barcis").
+cloud_at_3km_covers(65,2019,11,2,23,"Udine").
+cloud_at_3km_covers(65,2019,11,2,23,"Cividale").
+cloud_at_3km_covers(65,2019,11,2,23,"Palmanova").
+cloud_at_3km_covers(65,2019,11,2,23,"Gorizia").
+cloud_at_3km_covers(65,2019,11,2,23,"Lignano").
+cloud_at_3km_covers(65,2019,11,2,23,"Grado").
+cloud_at_3km_covers(65,2019,11,2,23,"Trieste").
+cloud_at_3km_covers(63,2019,11,3,0,"Sappada").
+cloud_at_3km_covers(63,2019,11,3,0,"Barcis").
+cloud_at_3km_covers(65,2019,11,3,0,"Spilinbergo").
+cloud_at_3km_covers(65,2019,11,3,0,"Udine").
+cloud_at_3km_covers(65,2019,11,3,0,"Cividale").
+cloud_at_3km_covers(65,2019,11,3,0,"Palmanova").
+cloud_at_3km_covers(65,2019,11,3,0,"Gorizia").
+cloud_at_3km_covers(65,2019,11,3,0,"Trieste").
+cloud_at_3km_covers(63,2019,11,3,1,"Sappada").
+cloud_at_3km_covers(63,2019,11,3,1,"Villa_santina").
+cloud_at_3km_covers(63,2019,11,3,1,"Forni").
+cloud_at_3km_covers(63,2019,11,3,1,"Barcis").
+cloud_at_3km_covers(63,2019,11,3,1,"Spilinbergo").
+cloud_at_3km_covers(63,2019,11,3,1,"Pordenone").
+cloud_at_3km_covers(63,2019,11,3,1,"Codroipo").
+cloud_at_3km_covers(65,2019,11,3,1,"Pontebba").
+cloud_at_3km_covers(65,2019,11,3,1,"Tarvisio").
+cloud_at_3km_covers(65,2019,11,3,1,"Stolvizza").
+cloud_at_3km_covers(65,2019,11,3,1,"Grado").
+cloud_at_3km_covers(65,2019,11,3,1,"Trieste").
+cloud_at_3km_covers(63,2019,11,3,2,"Sappada").
+cloud_at_3km_covers(63,2019,11,3,2,"Pontebba").
+cloud_at_3km_covers(63,2019,11,3,2,"Tarvisio").
+cloud_at_3km_covers(63,2019,11,3,2,"Forni").
+cloud_at_3km_covers(65,2019,11,3,2,"Gorizia").
+cloud_at_3km_covers(65,2019,11,3,2,"Grado").
+cloud_at_3km_covers(65,2019,11,3,2,"Trieste").
+cloud_at_3km_covers(65,2019,11,3,3,"Trieste").
+cloud_at_3km_covers(63,2019,11,3,4,"Sappada").
+cloud_at_3km_covers(72,2019,11,3,4,"Cividale").
+cloud_at_3km_covers(70,2019,11,3,5,"Sappada").
+cloud_at_3km_covers(70,2019,11,3,5,"Villa_santina").
+cloud_at_3km_covers(70,2019,11,3,5,"Pontebba").
+cloud_at_3km_covers(70,2019,11,3,5,"Tarvisio").
+cloud_at_3km_covers(70,2019,11,3,5,"Forni").
+cloud_at_3km_covers(70,2019,11,3,5,"Stolvizza").
+cloud_at_3km_covers(70,2019,11,3,5,"Barcis").
+cloud_at_3km_covers(70,2019,11,3,5,"Gemona").
+cloud_at_3km_covers(70,2019,11,3,5,"Cividale").
+cloud_at_3km_covers(70,2019,11,3,6,"Sappada").
+cloud_at_3km_covers(70,2019,11,3,6,"Villa_santina").
+cloud_at_3km_covers(70,2019,11,3,6,"Pontebba").
+cloud_at_3km_covers(70,2019,11,3,6,"Tarvisio").
+cloud_at_3km_covers(70,2019,11,3,6,"Forni").
+cloud_at_3km_covers(70,2019,11,3,6,"Stolvizza").
+cloud_at_3km_covers(70,2019,11,3,6,"Barcis").
+cloud_at_3km_covers(70,2019,11,3,6,"Gemona").
+cloud_at_3km_covers(70,2019,11,3,6,"Spilinbergo").
+cloud_at_3km_covers(70,2019,11,3,6,"Udine").
+cloud_at_3km_covers(70,2019,11,3,6,"Cividale").
+cloud_at_3km_covers(70,2019,11,3,6,"Pordenone").
+cloud_at_3km_covers(83,2019,11,3,7,"Sappada").
+cloud_at_3km_covers(83,2019,11,3,7,"Villa_santina").
+cloud_at_3km_covers(83,2019,11,3,7,"Pontebba").
+cloud_at_3km_covers(83,2019,11,3,7,"Tarvisio").
+cloud_at_3km_covers(83,2019,11,3,7,"Forni").
+cloud_at_3km_covers(83,2019,11,3,7,"Stolvizza").
+cloud_at_3km_covers(83,2019,11,3,7,"Barcis").
+cloud_at_3km_covers(83,2019,11,3,7,"Gemona").
+cloud_at_3km_covers(83,2019,11,3,7,"Udine").
+cloud_at_3km_covers(83,2019,11,3,7,"Cividale").
+cloud_at_3km_covers(83,2019,11,3,7,"Pordenone").
+cloud_at_3km_covers(83,2019,11,3,7,"Rivignano").
+cloud_at_3km_covers(83,2019,11,3,7,"Palmanova").
+cloud_at_3km_covers(83,2019,11,3,7,"Lignano").
+cloud_at_3km_covers(83,2019,11,3,7,"Trieste").
+cloud_at_3km_covers(83,2019,11,3,8,"Sappada").
+cloud_at_3km_covers(83,2019,11,3,8,"Pontebba").
+cloud_at_3km_covers(83,2019,11,3,8,"Tarvisio").
+cloud_at_3km_covers(83,2019,11,3,8,"Stolvizza").
+cloud_at_3km_covers(83,2019,11,3,8,"Barcis").
+cloud_at_3km_covers(83,2019,11,3,8,"Gemona").
+cloud_at_3km_covers(83,2019,11,3,8,"Udine").
+cloud_at_3km_covers(83,2019,11,3,8,"Cividale").
+cloud_at_3km_covers(83,2019,11,3,8,"Pordenone").
+cloud_at_3km_covers(83,2019,11,3,8,"Palmanova").
+cloud_at_3km_covers(83,2019,11,3,8,"Gorizia").
+cloud_at_3km_covers(83,2019,11,3,8,"Lignano").
+cloud_at_3km_covers(83,2019,11,3,8,"Grado").
+cloud_at_3km_covers(83,2019,11,3,8,"Trieste").
