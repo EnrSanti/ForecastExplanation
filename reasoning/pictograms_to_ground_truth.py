@@ -5,6 +5,8 @@ import glob
 import time
 import pandas as pd
 from scipy.ndimage import maximum_filter
+import re
+
 
 # --- Configuration ---
 ICON_FOLDER_PATH = './pictogram_extraction/merged_icons/'
@@ -128,6 +130,47 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
 
     return detections_with_locations
 
+def icon_name_to_rain_level(icon_name):
+    match = re.search(r'rain_([1-4]|6)', icon_name)
+    if match:
+        return int(match.group(1))
+    return 0 # no rain
+
+def icon_name_to_sky_level(icon_name):
+    """
+    Returns a sky level based on the cloud keyword in the icon name:
+      - 'cloud'      -> 4
+      - 'big_cloud'  -> 3
+      - 'mid_cloud'  -> 2
+      - 'small_cloud' -> 1
+      - otherwise    -> 0
+    Matching is case-insensitive.
+    """
+    name = icon_name.lower()
+
+    if "cloud" in name:
+        return 4
+    elif "big_cloud" in name:
+        return 3
+    elif "mid_cloud" in name:
+        return 2
+    elif "small_cloud" in name:
+        return 1
+    else:
+        return 0
+
+
+def extract_date_from_filename(filename):
+    """
+    Extracts a date (year, month, day) from strings like 'pitt_2019_11_04.png'.
+    Returns a tuple of integers: (year, month, day)
+    If no date is found, returns None.
+    """
+    match = re.search(r'(\d{4})_(\d{2})_(\d{2})', filename)
+    if match:
+        year, month, day = map(int, match.groups())
+        return year, month, day
+    return None
 
 # --- Execution ---
 if __name__ == "__main__":
@@ -172,15 +215,20 @@ if __name__ == "__main__":
         final_img_path = f"{out_prefix}_final.png"
 
         # Save text results with location names (no .png)
+
+        yyyy,mm,dd=extract_date_from_filename(img_path)
         with open(txt_path, 'w') as f:
+            f.write(f'date({yyyy},{mm},{dd}).\n')
             for x, y, name, w, h, loc in detections:
                 icon_name = os.path.splitext(name)[0]  # remove .png/.jpg
                 if loc:
-                    f.write(f'{loc} -> {icon_name}\n')
+                    f.write(f'forecasted_rain("{loc}", {icon_name_to_rain_level(icon_name)},{yyyy},{mm},{dd}). \n')
+                    f.write(f'forecasted_sky("{loc}", {icon_name_to_sky_level(icon_name)},{yyyy},{mm},{dd}). \n')
                 else:
                     f.write(f'UNKNOWN {icon_name}\n')
 
-        visualize_detections(img_path, detections, final_img_path)
+        #i don't save images for now
+        #visualize_detections(img_path, detections, final_img_path)
         print(f"  Saved: {txt_path}, {final_img_path}\n")
 
     print(f"--- Done. Total time: {time.time() - start_total:.2f} s ---")

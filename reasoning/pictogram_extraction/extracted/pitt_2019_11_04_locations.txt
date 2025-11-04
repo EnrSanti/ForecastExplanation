@@ -1,17 +1,35 @@
-Pontebba -> big_cloud_rain_2
-Barcis -> sunny_mid_cloud_rain_1
-Spilinbergo -> sunny_mid_cloud_rain_1
-Udine -> sunny_mid_cloud_rain_1
-Palmanova -> sunny_mid_cloud_rain_1
-Pordenone -> sunny_mid_cloud_rain_1
-Tarvisio -> sunny_mid_cloud_rain_2
-Cividale -> sunny_mid_cloud_rain_2
-Trieste -> sunny_mid_cloud_rain_2
-Stolvizza -> rain_3
-Gemona -> rain_1
-Sappada -> sunny_mid_cloud_rain_1
-Forni -> rain_1
-Villa_santina -> sunny_mid_cloud_rain_1
-Rivignano -> sunny_mid_cloud_rain_1
-Lignano -> sunny_mid_cloud_rain_1
-Codroipo -> rain_1
+date(2019,11,4).
+forecasted_rain("Pontebba", 2,2019,11,4). 
+forecasted_sky("Pontebba", 4,2019,11,4). 
+forecasted_rain("Barcis", 1,2019,11,4). 
+forecasted_sky("Barcis", 4,2019,11,4). 
+forecasted_rain("Spilinbergo", 1,2019,11,4). 
+forecasted_sky("Spilinbergo", 4,2019,11,4). 
+forecasted_rain("Udine", 1,2019,11,4). 
+forecasted_sky("Udine", 4,2019,11,4). 
+forecasted_rain("Palmanova", 1,2019,11,4). 
+forecasted_sky("Palmanova", 4,2019,11,4). 
+forecasted_rain("Pordenone", 1,2019,11,4). 
+forecasted_sky("Pordenone", 4,2019,11,4). 
+forecasted_rain("Tarvisio", 2,2019,11,4). 
+forecasted_sky("Tarvisio", 4,2019,11,4). 
+forecasted_rain("Cividale", 2,2019,11,4). 
+forecasted_sky("Cividale", 4,2019,11,4). 
+forecasted_rain("Trieste", 2,2019,11,4). 
+forecasted_sky("Trieste", 4,2019,11,4). 
+forecasted_rain("Stolvizza", 3,2019,11,4). 
+forecasted_sky("Stolvizza", 0,2019,11,4). 
+forecasted_rain("Gemona", 1,2019,11,4). 
+forecasted_sky("Gemona", 0,2019,11,4). 
+forecasted_rain("Sappada", 1,2019,11,4). 
+forecasted_sky("Sappada", 4,2019,11,4). 
+forecasted_rain("Forni", 1,2019,11,4). 
+forecasted_sky("Forni", 0,2019,11,4). 
+forecasted_rain("Villa_santina", 1,2019,11,4). 
+forecasted_sky("Villa_santina", 4,2019,11,4). 
+forecasted_rain("Rivignano", 1,2019,11,4). 
+forecasted_sky("Rivignano", 4,2019,11,4). 
+forecasted_rain("Lignano", 1,2019,11,4). 
+forecasted_sky("Lignano", 4,2019,11,4). 
+forecasted_rain("Codroipo", 1,2019,11,4). 
+forecasted_sky("Codroipo", 0,2019,11,4). 
