@@ -17,7 +17,7 @@ Project aiming to provide some plain explanations to weather forecasts by using 
 * [X] Feature map generation (at different heights)
 * [X] Complete 'Cloud'/high feature extraction from featuremaps
 * [X] Track features through frames
-* [ ] Additional Image processing (simplify through polygons) 
+* [ ] Additional Image processing (simplify through polygons?) 
 * [X] Track Split/merge (by hand(?))
 * [X] Bring concepts to facts
 * [ ] Full example generation

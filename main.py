@@ -87,11 +87,11 @@ if __name__ == "__main__":
 
     mode = int(input())
 
-    folders_pref = {"cloud","humidity"} #, "humidity"}#, "temp", "winds"}
+    folders_pref = {"cloud"} #, "humidity"}#, "temp", "winds"}
     
     folder_params = {
         "cloud": (0.7, "minimum"),       # e.g. (threshold, go lower or upper)
-        "humidity": (0.4, "minimum")
+        #"humidity": (0.4, "minimum")
     }
 
     folders_suff = {
