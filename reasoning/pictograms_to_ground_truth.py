@@ -9,10 +9,10 @@ import re
 
 
 # --- Configuration ---
-ICON_FOLDER_PATH = './pictogram_extraction/merged_icons/'
-INPUT_FOLDER = './pictogram_extraction/pictograms/sky/'      # folder containing all input images
-OUTPUT_FOLDER = './pictogram_extraction/extracted'           # folder where results will be saved
-CSV_PATH = './locations.csv'                                 # path to your location CSV
+ICON_FOLDER_PATH = './reasoning/pictogram_extraction/merged_icons/'
+INPUT_FOLDER = './reasoning/pictogram_extraction/pictograms/sky/'      # folder containing all input images
+OUTPUT_FOLDER = './reasoning/pictogram_extraction/extracted'           # folder where results will be saved
+CSV_PATH = './reasoning/locations.csv'                                 # path to your location CSV
 
 # Matching Parameters
 RELAXED_THRESHOLD = 0.71
@@ -172,8 +172,8 @@ def extract_date_from_filename(filename):
         return year, month, day
     return None
 
-# --- Execution ---
-if __name__ == "__main__":
+
+def generate_ground_truth():
     start_total = time.time()
 
     # Load CSV
