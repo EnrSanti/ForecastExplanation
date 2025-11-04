@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 #longmin longmax latmin latmax of FVG and Italy, longmin longmax, latmin latmax
 coordinates=[11,15,44.5,48]
 coordinates_italy=[6.5,18.5,36.5,48]
-base_path = "../image_processing/fvg/output/"
+base_path = "./image_processing/fvg/output/"
 locations_name_px_pos={}
 
 starting_date=None
@@ -27,7 +27,7 @@ def geo_to_pixel(lon, lat, lon_min, lon_max, lat_min, lat_max, img_width, img_he
 
 def load_locations(coordinates,image_input_folder):
     global locations_name_px_pos
-    locations_data = pd.read_csv("locations.csv")  # same folder or specify full path
+    locations_data = pd.read_csv("reasoning/locations.csv")  # same folder or specify full path
     print(f"Loaded {len(locations_data)} locations.")
 
     lon_min, lon_max = coordinates[0], coordinates[1]
@@ -167,35 +167,35 @@ def frame_index_to_timestamp(index, starting_date, frame_time_interval):
 
 
     
+def generate_examples_from_frames():
 
+    load_locations(coordinates,base_path)
 
-load_locations(coordinates,base_path)
+    for entry in os.listdir(base_path):
+        full_path = os.path.join(base_path, entry)
+        if os.path.isdir(full_path):
+            #later this first stage can be skipped
+            plot_locations_to_map(full_path,"reasoning/examples_from_blobs/"+entry,coordinates)
 
-for entry in os.listdir(base_path):
-    full_path = os.path.join(base_path, entry)
-    if os.path.isdir(full_path):
-        #later this first stage can be skipped
-        plot_locations_to_map(full_path,"examples_from_blobs/"+entry,coordinates)
+            #########################################################################
+            #compute the map that for each cloud tells me which locations I am covering
+            trajectories =  pd.read_csv(full_path+"/trajectories.csv")
+            frame_cloud_map = get_clouds_covering_locations(locations_name_px_pos,full_path+"/segment_labels_all.npz",trajectories)
+            
+            #########################################################################
 
-        #########################################################################
-        #compute the map that for each cloud tells me which locations I am covering
-        trajectories =  pd.read_csv(full_path+"/trajectories.csv")
-        frame_cloud_map = get_clouds_covering_locations(locations_name_px_pos,full_path+"/segment_labels_all.npz",trajectories)
-        
-        #########################################################################
+            # Example: print clouds covering each location in frame 0
+            #full_str="starting date: "+str(starting_date)+"\n"
+            full_str="% format: cloud_id, yyyy, mm, dd, h, location"
+            for key in frame_cloud_map.keys():
+                for cell_id, locs in frame_cloud_map[key].items():
+                    for location in locs:
+                        yyyy,mm,dd,h=frame_index_to_timestamp(key,starting_date,1) #1h between each frame
+                        cloud_at_string=f"{full_path.rsplit('/', 1)[-1]}"
+                        print(f"full path -> full path {cell_id,yyyy,mm,dd,h}")
+                        full_str+=f"{cloud_at_string}_covers({cell_id},{yyyy},{mm},{dd},{h},\"{location}\").\n"
 
-        # Example: print clouds covering each location in frame 0
-        #full_str="starting date: "+str(starting_date)+"\n"
-        full_str="% format: cloud_id, yyyy, mm, dd, h, location"
-        for key in frame_cloud_map.keys():
-            for cell_id, locs in frame_cloud_map[key].items():
-                for location in locs:
-                    yyyy,mm,dd,h=frame_index_to_timestamp(key,starting_date,1) #1h between each frame
-                    cloud_at_string=f"{full_path.rsplit('/', 1)[-1]}"
-                    print(f"full path -> full path {cell_id,yyyy,mm,dd,h}")
-                    full_str+=f"{cloud_at_string}_covers({cell_id},{yyyy},{mm},{dd},{h},\"{location}\").\n"
-
-            print("% ---- next frame ----")
-        with open(f"{"examples_from_blobs/"+full_path.rsplit('/', 1)[-1]}/clouds_covering.txt", "w") as f:
-            f.write(full_str)
-        frame_cloud_map={}
+                print("% ---- next frame ----")
+            with open(f"{"reasoning/examples_from_blobs/"+full_path.rsplit('/', 1)[-1]}/clouds_covering.txt", "w") as f:
+                f.write(full_str)
+            frame_cloud_map={}
