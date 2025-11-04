@@ -4,7 +4,7 @@ from image_processing.segment_track import run_tobac
 from raw_data.extract_features_nc import save_feature_maps
 from raw_data.cut_long_lat import cut_grib_long_lat
 from reasoning.pictograms_to_ground_truth import generate_ground_truth
-from reasoning.generate_examples import generate_examples_from_frames
+from reasoning.generate_examples import generate_examples_from_frames,merge_in_examples
 
 import iris
 iris.FUTURE.date_microseconds = True
@@ -87,7 +87,13 @@ if __name__ == "__main__":
 
     mode = int(input())
 
-    folders_pref = {"cloud"} #, "humidity"}#, "temp", "winds"}
+    folders_pref = {"cloud","humidity"} #, "humidity"}#, "temp", "winds"}
+    
+    folder_params = {
+        "cloud": (0.7, "minimum"),       # e.g. (threshold, go lower or upper)
+        "humidity": (0.4, "minimum")
+    }
+
     folders_suff = {
         1000: "_at_100m", 
         925: "_at_750m",
@@ -137,27 +143,39 @@ if __name__ == "__main__":
     elif mode == 2:    
         #resize iamges once to work on smaller images, generate clustered images and run TOBAC (FVG)
         print("Cluster & run TOBAC on FVG clustered data (just clouds for now)")
-        folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
-        for f in folder_list:
+        folder_list = [
+            (pref + suff, *folder_params[pref])
+            for pref in folders_pref
+            for suff in folders_suff.values()
+        ]
+
+        for f, threshold, upper_lower in folder_list:
+            
             resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
             generate_clustered_images(numClusters, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/clustered/{f}_clustered")
-            run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
+            run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold)
 
     elif mode == 3:
         #resize iamges once to work on smaller images and run TOBAC (FVG)
         print("run TOBAC on FVG data (just clouds for now)")
-        folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
-        for f in folder_list:
+        folder_list = [
+            (pref + suff, *folder_params[pref])
+            for pref in folders_pref
+            for suff in folders_suff.values()
+        ]
+        for f, threshold, upper_lower in folder_list:
+            print("folder ",f, " upper-lower ", upper_lower, "threshold ", threshold )
             resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
-            run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],n_min_threshold)
+            run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower, n_min_threshold)
   
     elif mode == 4:
         
         generate_ground_truth()
 
     elif mode == 5:
+
         generate_examples_from_frames()
-    
+        merge_in_examples()
     '''
     elif mode == 5:    
         #resize iamges once to work on smaller images, generate clustered images and run TOBAC (IT)

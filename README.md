@@ -19,6 +19,7 @@ Project aiming to provide some plain explanations to weather forecasts by using 
 * [X] Track features through frames
 * [ ] Additional Image processing (simplify through polygons) 
 * [X] Track Split/merge (by hand(?))
-* [ ] Bring concepts to facts
+* [X] Bring concepts to facts
+* [ ] Full example generation
 * [ ] ILP/ASP model
 * [ ] NLP translation (?)
