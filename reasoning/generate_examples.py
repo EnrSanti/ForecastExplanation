@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
 from collections import defaultdict
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 
 #longmin longmax latmin latmax of FVG and Italy, longmin longmax, latmin latmax
 coordinates=[11,15,44.5,48]
@@ -15,7 +15,7 @@ locations_name_px_pos={}
 starting_date=None
 
 def feature_to_cell_id(feature_id,trajectories):
-    print("looking for feature ->",feature_id)
+    #print("looking for feature ->",feature_id)
     feature_to_cell_map = trajectories.set_index("feature")["cell"].to_dict()
     print(feature_to_cell_map)
     return feature_to_cell_map.get(feature_id,None)
@@ -150,17 +150,10 @@ def get_clouds_covering_locations(locations_name_px_pos, segment_labels_path,tra
     
     return frame_cloud_map
 
-def frame_index_to_timestamp(index,starting_date,frame_time_interval):
+
+def frame_index_to_timestamp(index, starting_date, frame_time_interval):
     """
-    Calculate the timestamp of a frame.
-    
-    Parameters:
-        index (int): frame index (>=0)
-        starting_date (datetime): datetime of frame 0
-        frame_time_interval (timedelta): time between two consecutive frames
-        
-    Returns:
-        datetime: timestamp of the frame at the given index
+    Calculate the timestamp of a frame and return (yyyy, mm, dd, h).
     """
     if index < 0:
         raise ValueError("Frame index must be >= 0")
@@ -169,7 +162,8 @@ def frame_index_to_timestamp(index,starting_date,frame_time_interval):
     if isinstance(frame_time_interval, int):
         frame_time_interval = timedelta(hours=frame_time_interval)
     
-    return starting_date + index * frame_time_interval
+    timestamp = starting_date + index * frame_time_interval
+    return timestamp.year, timestamp.month, timestamp.day, timestamp.hour
 
 
     
@@ -190,15 +184,18 @@ for entry in os.listdir(base_path):
         
         #########################################################################
 
-
         # Example: print clouds covering each location in frame 0
-        full_str="starting date: "+str(starting_date)+"\n"
+        #full_str="starting date: "+str(starting_date)+"\n"
+        full_str="% format: cloud_id, yyyy, mm, dd, h, location"
         for key in frame_cloud_map.keys():
             for cell_id, locs in frame_cloud_map[key].items():
-                time=frame_index_to_timestamp(key,starting_date,1) #1h between each frame
-                full_str+=f"[{full_path.rsplit('/', 1)[-1]}] -- at {str(time)} -- Cloud {cell_id}: covers {locs}\n"
-                print(f"[{full_path.rsplit('/', 1)[-1]}] -- at {str(time)} -- Cloud {cell_id}: covers {locs}\n")
+                for location in locs:
+                    yyyy,mm,dd,h=frame_index_to_timestamp(key,starting_date,1) #1h between each frame
+                    cloud_at_string=f"{full_path.rsplit('/', 1)[-1]}"
+                    print(f"full path -> full path {cell_id,yyyy,mm,dd,h}")
+                    full_str+=f"{cloud_at_string}_covers({cell_id},{yyyy},{mm},{dd},{h},\"{location}\").\n"
 
+            print("% ---- next frame ----")
         with open(f"{"examples_from_blobs/"+full_path.rsplit('/', 1)[-1]}/clouds_covering.txt", "w") as f:
             f.write(full_str)
         frame_cloud_map={}
