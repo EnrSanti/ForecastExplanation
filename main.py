@@ -82,10 +82,11 @@ if __name__ == "__main__":
     
     print("-------------- Image processing -----------------")
     print("[2]: Cluster & run TOBAC on FVG clustered data")
+    print("     Generate facts (coulds, humidty...) over each city")
     print("[3]: run TOBAC on FVG data")
+    print("     Generate facts (coulds, humidty...) over each city")
     print("[4]: Extract ground truth from pictograms")
-    print("[5]: Generate facts (coulds, humidty...) over each city")
-    print("[6]: Generate full examples (TODO)")
+    print("[5]: Generate full examples (TODO)")
 
     print("\nselect: ",end='')
 
@@ -117,11 +118,11 @@ if __name__ == "__main__":
         
         The remaining three commands (2,3) work on data under "./image_processing/":
             [2] clusters the FVG images and runs TOBAC on them
+                Generate facts (coulds, humidty...) over each city
             [3] scales FVG images and runs TOBAC on them
+                Generate facts (coulds, humidty...) over each city
             [4] extract ground truth from pictograms (put them under ./reasoning/pictogram_extraction/pictograms)
-            
-            [5]: Generate facts (coulds, humidty...) over each city
-            [6]: Generate full examples (TODO)
+            [5]: Generate full examples (TODO)
         """
         print(text)
 
@@ -174,6 +175,11 @@ if __name__ == "__main__":
         #for humiidity
         get_humidity_front("image_processing/fvg/clustered/",folders_suff, f"image_processing/fvg/output_clustered/")
 
+        base_path = "./image_processing/fvg/output_clustered/"
+        #generate_cloud_facts_over_cities(base_path)
+        generate_humidity_facts_over_cities(base_path)
+
+
     elif mode == 3:
         #resize iamges once to work on smaller images and run TOBAC (FVG)
         print("run TOBAC on FVG data (just clouds for now)")
@@ -198,15 +204,16 @@ if __name__ == "__main__":
         #for humiidity        
         get_humidity_front("image_processing/fvg/resized/",folders_suff, f"image_processing/fvg/output/")
 
+        base_path = "./image_processing/fvg/output/"
+        #generate_cloud_facts_over_cities(base_path)
+        generate_humidity_facts_over_cities(base_path)
 
     elif mode == 4:       
         generate_ground_truth()
-    elif mode == 5:
 
-        generate_cloud_facts_over_cities()
-        generate_humidity_facts_over_cities()
+        
     
-    elif mode == 6:
+    elif mode == 5:
         #TODO
         merge_into_examples()
 
