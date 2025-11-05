@@ -23,7 +23,7 @@ INPUT_FOLDERS = [
 
 # All results will be saved under this parent folder,
 # preserving the same folder names as INPUT_FOLDERS
-OUTPUT_PARENT_DIR = "./fronts_curve_open/"
+OUTPUT_PARENT_DIR = "./image_processing/fvg/output/"
 
 GAUSSIAN_SIGMA_MAIN = 8.0
 PERCENTILE = 90
@@ -111,7 +111,6 @@ def detect_single_open_front(image_path, output_dir):
 
 
 def process_folder(input_dir, output_dir):
-    """Process all .png images in a single folder."""
     os.makedirs(output_dir, exist_ok=True)
     files = sorted([f for f in os.listdir(input_dir) if f.lower().endswith(".png")])
     print(f"\n📁 Processing folder: {input_dir} ({len(files)} images)")
@@ -130,6 +129,5 @@ def process_multiple_folders(input_folders, output_parent):
         output_dir = os.path.join(output_parent, folder_name)
         process_folder(folder, output_dir)
 
-
-if __name__ == "__main__":
+def get_humidity_front():
     process_multiple_folders(INPUT_FOLDERS, OUTPUT_PARENT_DIR)

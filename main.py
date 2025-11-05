@@ -1,10 +1,13 @@
 from image_processing.image_proc import generate_clustered_images
 from image_processing.image_proc import resize_1_4_and_simplify
 from image_processing.segment_track import run_tobac
+
+from image_processing.humidity_front import get_humidity_front
 from raw_data.extract_features_nc import save_feature_maps
 from raw_data.cut_long_lat import cut_grib_long_lat
 from reasoning.pictograms_to_ground_truth import generate_ground_truth
-from reasoning.generate_examples import generate_examples_from_frames,merge_in_examples
+from reasoning.generate_examples import generate_cloud_facts,merge_in_examples
+
 
 import iris
 iris.FUTURE.date_microseconds = True
@@ -150,10 +153,15 @@ if __name__ == "__main__":
         ]
 
         for f, threshold, upper_lower in folder_list:
-            
+            #for the images
             resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
             generate_clustered_images(numClusters, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/clustered/{f}_clustered")
+            
+            #for the clouds
             run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold)
+        
+        #for humiidity
+        get_humidity_front()
 
     elif mode == 3:
         #resize iamges once to work on smaller images and run TOBAC (FVG)
@@ -166,53 +174,19 @@ if __name__ == "__main__":
         for f, threshold, upper_lower in folder_list:
             print("folder ",f, " upper-lower ", upper_lower, "threshold ", threshold )
             resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
+            
+            #for the clouds
             run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower, n_min_threshold)
-  
+
+        #for humiidity        
+        get_humidity_front()
+
     elif mode == 4:
         
         generate_ground_truth()
 
     elif mode == 5:
 
-        generate_examples_from_frames()
+        generate_cloud_facts()
         merge_in_examples()
-    '''
-    elif mode == 5:    
-        #resize iamges once to work on smaller images, generate clustered images and run TOBAC (IT)
-        print("Cluster & run TOBAC on IT clustered data (just clouds for now)")
-        folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
-        for f in folder_list:
-            resize_1_4_and_simplify(f"raw_data/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
-            generate_clustered_images(numClusters, f"image_processing/it/resized/{f}", f"image_processing/it/clustered/{f}_clustered")
-            run_tobac(f"image_processing/it/clustered/{f}_clustered", f"image_processing/it/output_clustered/{f}","raw_data/extracted_it_cleaned/borders.png",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
 
-    elif mode == 6:
-        #resize iamges once to work on smaller images and run TOBAC (FVG)
-        print("run TOBAC on IT data (just clouds for now)")
-      
-        folder_list = [pref + suff for pref in folders_pref for suff in folders_suff.values()]
-        for f in folder_list:
-            resize_1_4_and_simplify(f"raw_data/extracted_it_cleaned/{f}", f"image_processing/it/resized/{f}")
-            run_tobac(f"image_processing/it/resized/{f}", f"image_processing/it/output/{f}","raw_data/extracted_it_cleaned/borders.png",coordinates_italy[2],coordinates_italy[3],coordinates_italy[0],coordinates_italy[1],n_min_threshold)
-    '''
-    ''' elif mode == 2:
-        #extract nc from grib for IT & save feature maps  (multithreaded, beware more threads use lots of RAM)
-        coordinates=[11,15,44.5,48]
-        coordinates_italy=[6.5,18.5,36.5,48]
-        input_dir = "./raw_data/data/original_CERRA"
-        output_dir = "./raw_data/data/CERRA_cut"
-        os.makedirs(output_dir, exist_ok=True)
-        
-        # all grib files
-        grib_files = [f for f in os.listdir(input_dir) if f.endswith(".grib")]
-
-        #no threads, processes HDF5 has some thread issues
-        with ProcessPoolExecutor(max_workers=2) as executor:
-            futures = {executor.submit(extract, grib_file, coordinates,coordinates_italy,False): grib_file for grib_file in grib_files}
-
-            for future in as_completed(futures):
-                grib_file = futures[future]
-                try:
-                    future.result()  # raises exception if any
-                except Exception as e:
-                    print(f"Extract failed for {grib_file}: {e}")'''
