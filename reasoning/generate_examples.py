@@ -10,6 +10,16 @@ from datetime import datetime, timedelta
 coordinates=[11,15,44.5,48]
 coordinates_italy=[6.5,18.5,36.5,48]
 base_path = "./image_processing/fvg/output/"
+folder_types = ["cloud"]
+
+folders_suff = {
+    1000: "_at_100m", 
+    925: "_at_750m",
+    850: "_at_1.4km",
+    700: "_at_3km", 
+    500: "_at_5.5km", 
+    300: "_at_9km"
+}
 locations_name_px_pos={}
 
 starting_date=None
@@ -150,7 +160,6 @@ def get_clouds_covering_locations(locations_name_px_pos, segment_labels_path,tra
     
     return frame_cloud_map
 
-
 def frame_index_to_timestamp(index, starting_date, frame_time_interval):
     """
     Calculate the timestamp of a frame and return (yyyy, mm, dd, h).
@@ -164,18 +173,18 @@ def frame_index_to_timestamp(index, starting_date, frame_time_interval):
     
     timestamp = starting_date + index * frame_time_interval
     return timestamp.year, timestamp.month, timestamp.day, timestamp.hour
-
-
     
-def generate_examples_from_frames():
+def generate_cloud_facts():
 
     load_locations(coordinates,base_path)
 
-    for entry in os.listdir(base_path):
-        full_path = os.path.join(base_path, entry)
+    for level, suff in folders_suff.items():
+        entry= folder_types[0] + suff
+        full_path = os.path.join(base_path, folder_types[0] + suff)
+
         if os.path.isdir(full_path):
             #later this first stage can be skipped
-            plot_locations_to_map(full_path,"reasoning/examples_from_blobs/"+entry,coordinates)
+            plot_locations_to_map(full_path,"reasoning/clouds/"+entry,coordinates)
 
             #########################################################################
             #compute the map that for each cloud tells me which locations I am covering
@@ -196,9 +205,35 @@ def generate_examples_from_frames():
                         full_str+=f"{cloud_at_string}_covers({cell_id},{yyyy},{mm},{dd},{h},\"{location}\").\n"
 
                 print("% ---- next frame ----")
-            with open(f"{"reasoning/examples_from_blobs/"+full_path.rsplit('/', 1)[-1]}/clouds_covering.txt", "w") as f:
+            with open(f"{"reasoning/clouds/"+full_path.rsplit('/', 1)[-1]}/clouds_covering.txt", "w") as f:
                 f.write(full_str)
             frame_cloud_map={}
+
+    generate_cloud_split_merges()
+
+def generate_cloud_split_merges():
+    pass
+
+def generate_humidity_facts():
+
+    for level, suff in folders_suff.items():
+        entry= folder_types[1] + suff
+        full_path = os.path.join(base_path, folder_types[0] + suff)
+
+        if os.path.isdir(full_path):
+            #later this first stage can be skipped
+            plot_locations_to_map(full_path,"reasoning/clouds/"+entry,coordinates)
+
+            #########################################################################
+            #compute the map that for each cloud tells me which locations I am covering
+            trajectories =  pd.read_csv(full_path+"/trajectories.csv")
+            frame_cloud_map = get_clouds_covering_locations(locations_name_px_pos,full_path+"/segment_labels_all.npz",trajectories)
+            
+
+
+
+
+    pass
 
 def merge_in_examples():
     pass
