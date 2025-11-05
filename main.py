@@ -6,7 +6,7 @@ from image_processing.humidity_front import get_humidity_front
 from raw_data.extract_features_nc import save_feature_maps
 from raw_data.cut_long_lat import cut_grib_long_lat
 from reasoning.pictograms_to_ground_truth import generate_ground_truth
-from reasoning.generate_examples import generate_cloud_facts,merge_in_examples
+from reasoning.generate_examples import generate_cloud_facts_over_cities, generate_humidity_facts_over_cities, merge_into_examples
 
 
 import iris
@@ -84,17 +84,18 @@ if __name__ == "__main__":
     print("[2]: Cluster & run TOBAC on FVG clustered data")
     print("[3]: run TOBAC on FVG data")
     print("[4]: Extract ground truth from pictograms")
-    print("[5]: generate examples from tobac output & ground truth")
+    print("[5]: Generate facts (coulds, humidty...) over each city")
+    print("[6]: Generate full examples (TODO)")
 
     print("\nselect: ",end='')
 
     mode = int(input())
 
-    folders_pref = {"cloud"} #, "humidity"}#, "temp", "winds"}
+    folders_pref = ["cloud","humidity"] #, "humidity"}#, "temp", "winds"}
     
     folder_params = {
-        "cloud": (0.7, "minimum"),       # e.g. (threshold, go lower or upper)
-        #"humidity": (0.4, "minimum")
+        "cloud": (0.7, "minimum",3),       # e.g. (threshold, go lower or upper, clusters)
+        "humidity": (0.4, "minimum",2)
     }
 
     folders_suff = {
@@ -119,7 +120,8 @@ if __name__ == "__main__":
             [3] scales FVG images and runs TOBAC on them
             [4] extract ground truth from pictograms (put them under ./reasoning/pictogram_extraction/pictograms)
             
-            [5] generate examples from tobac output & ground truth
+            [5]: Generate facts (coulds, humidty...) over each city
+            [6]: Generate full examples (TODO)
         """
         print(text)
 
@@ -152,16 +154,25 @@ if __name__ == "__main__":
             for suff in folders_suff.values()
         ]
 
-        for f, threshold, upper_lower in folder_list:
+        for f, threshold, upper_lower, num_clusters in folder_list:
             #for the images
-            resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
-            generate_clustered_images(numClusters, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/clustered/{f}_clustered")
-            
+            resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")    
+            generate_clustered_images(num_clusters, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/clustered/{f}_clustered")
+            pass    
+
+        folder_list_clouds = [
+            (folders_pref[0] + suff)
+            for suff in folders_suff.values()
+        ]
+
+        #for the clouds
+        
+        for f in folder_list_clouds:
             #for the clouds
             run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold)
         
         #for humiidity
-        get_humidity_front()
+        get_humidity_front("image_processing/fvg/clustered/",folders_suff, f"image_processing/fvg/output_clustered/")
 
     elif mode == 3:
         #resize iamges once to work on smaller images and run TOBAC (FVG)
@@ -171,22 +182,31 @@ if __name__ == "__main__":
             for pref in folders_pref
             for suff in folders_suff.values()
         ]
-        for f, threshold, upper_lower in folder_list:
+        for f, threshold, upper_lower, _ in folder_list:
             print("folder ",f, " upper-lower ", upper_lower, "threshold ", threshold )
-            resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
-            
-            #for the clouds
+            #resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
+        
+        folder_list_clouds = [
+            (folders_pref[0] + suff)
+            for suff in folders_suff.values()
+        ]
+        #for the clouds
+        
+        for f in folder_list_clouds:
             run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower, n_min_threshold)
 
         #for humiidity        
-        get_humidity_front()
+        get_humidity_front("image_processing/fvg/resized/",folders_suff, f"image_processing/fvg/output/")
 
-    elif mode == 4:
-        
+
+    elif mode == 4:       
         generate_ground_truth()
-
     elif mode == 5:
 
-        generate_cloud_facts()
-        merge_in_examples()
+        generate_cloud_facts_over_cities()
+        generate_humidity_facts_over_cities()
+    
+    elif mode == 6:
+        #TODO
+        merge_into_examples()
 

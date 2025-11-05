@@ -129,5 +129,9 @@ def process_multiple_folders(input_folders, output_parent):
         output_dir = os.path.join(output_parent, folder_name)
         process_folder(folder, output_dir)
 
-def get_humidity_front():
-    process_multiple_folders(INPUT_FOLDERS, OUTPUT_PARENT_DIR)
+def get_humidity_front(input_folder,folders_suff, output_parent_dir):
+    input_folders=[]
+    for level, suff in folders_suff.items():
+        input_folders.append(input_folder+"humidity"+suff+"_clustered")
+    
+    process_multiple_folders(input_folders, output_parent_dir)
