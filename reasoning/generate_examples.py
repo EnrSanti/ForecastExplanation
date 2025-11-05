@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 #longmin longmax latmin latmax of FVG and Italy, longmin longmax, latmin latmax
 coordinates=[11,15,44.5,48]
 coordinates_italy=[6.5,18.5,36.5,48]
-base_path = "./image_processing/fvg/output/"
 folder_types = ["cloud","humidity"]
 
 folders_suff = {
@@ -174,7 +173,7 @@ def frame_index_to_timestamp(index, starting_date, frame_time_interval):
     timestamp = starting_date + index * frame_time_interval
     return timestamp.year, timestamp.month, timestamp.day, timestamp.hour
     
-def generate_cloud_facts_over_cities():
+def generate_cloud_facts_over_cities(base_path):
 
     load_locations(coordinates,base_path)
 
@@ -212,14 +211,15 @@ def generate_cloud_facts_over_cities():
     generate_cloud_split_merges()
 
 
-def generate_humidity_facts_over_cities():
+def generate_humidity_facts_over_cities(base_path):
 
     for level, suff in folders_suff.items():
         entry= folder_types[1] + suff
         full_path = os.path.join(base_path, folder_types[1] + suff)
-
+        print(full_path)
         if os.path.isdir(full_path):
             #later this first stage can be skipped
+            print("plotting locations to map")
             plot_locations_to_map(full_path,"reasoning/humidity/"+entry,coordinates)
 
             #########################################################################
