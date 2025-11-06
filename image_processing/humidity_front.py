@@ -10,6 +10,7 @@ under a specified OUTPUT_PARENT_DIR.
 import os
 import cv2
 import numpy as np
+from PIL import Image
 
 # --- CONFIG ---
 INPUT_FOLDERS = [
@@ -124,14 +125,21 @@ def process_folder(input_dir, output_dir):
 def process_multiple_folders(input_folders, output_parent):
     """Mirror folder structure: each input → same-named subfolder under output_parent."""
     os.makedirs(output_parent, exist_ok=True)
+
     for folder in input_folders:
+
         folder_name = os.path.basename(os.path.normpath(folder))
         output_dir = os.path.join(output_parent, folder_name)
+
+
+
         process_folder(folder, output_dir)
+
 
 def get_humidity_front(input_folder,folders_suff, output_parent_dir,clustered_or_not):
     input_folders=[]
     for level, suff in folders_suff.items():
         input_folders.append(input_folder+"humidity"+suff+clustered_or_not)
     
+    #it also saves the npz
     process_multiple_folders(input_folders, output_parent_dir)

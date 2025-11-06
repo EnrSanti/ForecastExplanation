@@ -176,7 +176,7 @@ if __name__ == "__main__":
         get_humidity_front("image_processing/fvg/clustered/",folders_suff, f"image_processing/fvg/output_clustered/","_clustered")
 
         base_path = "./image_processing/fvg/output_clustered/"
-        #generate_cloud_facts_over_cities(base_path)
+        generate_cloud_facts_over_cities(base_path)
         generate_humidity_facts_over_cities(base_path,"_clustered")
 
 
@@ -205,16 +205,19 @@ if __name__ == "__main__":
         get_humidity_front("image_processing/fvg/resized/",folders_suff, f"image_processing/fvg/output/","")
 
         base_path = "./image_processing/fvg/output/"
-        #generate_cloud_facts_over_cities(base_path)
+        generate_cloud_facts_over_cities(base_path)
         generate_humidity_facts_over_cities(base_path,"")
-
+        
     elif mode == 4:       
+
         generate_ground_truth()
 
     elif mode == 5:
         #TODO
         merge_into_examples()
         
-    #elif mode == 6: to experiment
-        #experimental 
-        #pass
+    elif mode == 6: #to experiment
+
+        base_path = "./image_processing/fvg/output/"
+        generate_humidity_facts_over_cities(base_path,"")
+        

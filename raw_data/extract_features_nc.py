@@ -39,6 +39,7 @@ def save_feature_maps(input_path,coordinates, is_fvg, clean_plot):
         output_base = "./raw_data/extracted_fvg"
     else:
         output_base = "./raw_data/extracted_it"
+        
     if(clean_plot):
         output_base = output_base+"_cleaned"
     
@@ -131,7 +132,7 @@ def save_cloud_maps(input_path, coordinates,clean_plot):
             cax=ax, orientation='horizontal'
         )
         cb.set_label(f'Cloud cover at {lvl} hPa [fraction]')
-        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa_cloud.png"), dpi=380, bbox_inches='tight')
+        plt.savefig(os.path.join(output_base, f"legend{folders[lvl]}_cloud.png"), dpi=380, bbox_inches='tight')
         plt.close(fig)
 
     # ---- PLOT LOOP ----
@@ -208,7 +209,7 @@ def save_temperature_maps(input_path,coordinates, clean_plot):
             cax=ax, orientation='horizontal'
         )
         cb.set_label(f'Temperature at {lvl} hPa [K]')
-        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa.png"), dpi=380, bbox_inches='tight',pad_inches=0)
+        plt.savefig(os.path.join(output_base, f"legend{folders[lvl]}_temp.png"), dpi=380, bbox_inches='tight',pad_inches=0)
         plt.close(fig)
 
     # ---- PLOT LOOP ----
@@ -300,7 +301,7 @@ def save_wind_maps(input_path, coordinates, clean_plot):
         )
         cb.set_label(f"Wind speed at {lvl} hPa [m/s]")
         plt.savefig(
-            os.path.join(output_base, f"legend_{lvl}hPa_wind.png"),
+            os.path.join(output_base, f"legend{folders[lvl]}_wind.png"),
             dpi=380,
             bbox_inches="tight",
             pad_inches=0,
@@ -478,7 +479,7 @@ def save_humidity_maps(input_path, coordinates, clean_plot):
             cax=ax, orientation='horizontal'
         )
         cb.set_label(f'Relative humidity at {lvl} hPa [%]')
-        plt.savefig(os.path.join(output_base, f"legend_{lvl}hPa_humidity.png"),
+        plt.savefig(os.path.join(output_base, f"legend_{folders[lvl]}_humidity.png"),
                     dpi=380, bbox_inches='tight')
         plt.close(fig)
 
