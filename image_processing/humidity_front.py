@@ -106,7 +106,7 @@ def detect_single_open_front(image_path, output_dir):
                  LINE_COLOR, LINE_THICKNESS, cv2.LINE_AA)
 
     os.makedirs(output_dir, exist_ok=True)
-    outpath = os.path.join(output_dir, f"{basename}_front.png")
+    outpath = os.path.join(output_dir, f"front {basename}.png")
     cv2.imwrite(outpath, out)
 
 
@@ -129,9 +129,9 @@ def process_multiple_folders(input_folders, output_parent):
         output_dir = os.path.join(output_parent, folder_name)
         process_folder(folder, output_dir)
 
-def get_humidity_front(input_folder,folders_suff, output_parent_dir):
+def get_humidity_front(input_folder,folders_suff, output_parent_dir,clustered_or_not):
     input_folders=[]
     for level, suff in folders_suff.items():
-        input_folders.append(input_folder+"humidity"+suff+"_clustered")
+        input_folders.append(input_folder+"humidity"+suff+clustered_or_not)
     
     process_multiple_folders(input_folders, output_parent_dir)

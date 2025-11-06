@@ -172,12 +172,13 @@ if __name__ == "__main__":
             #for the clouds
             run_tobac(f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold)
         
-        #for humiidity
-        get_humidity_front("image_processing/fvg/clustered/",folders_suff, f"image_processing/fvg/output_clustered/")
+        
+        get_humidity_front("image_processing/fvg/clustered/",folders_suff, f"image_processing/fvg/output_clustered/","_clustered")
 
         base_path = "./image_processing/fvg/output_clustered/"
         #generate_cloud_facts_over_cities(base_path)
-        generate_humidity_facts_over_cities(base_path)
+        generate_humidity_facts_over_cities(base_path,"_clustered")
+
 
 
     elif mode == 3:
@@ -201,19 +202,19 @@ if __name__ == "__main__":
         for f in folder_list_clouds:
             run_tobac(f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower, n_min_threshold)
 
-        #for humiidity        
-        get_humidity_front("image_processing/fvg/resized/",folders_suff, f"image_processing/fvg/output/")
+        get_humidity_front("image_processing/fvg/resized/",folders_suff, f"image_processing/fvg/output/","")
 
         base_path = "./image_processing/fvg/output/"
         #generate_cloud_facts_over_cities(base_path)
-        generate_humidity_facts_over_cities(base_path)
+        generate_humidity_facts_over_cities(base_path,"")
 
     elif mode == 4:       
         generate_ground_truth()
 
-        
-    
     elif mode == 5:
         #TODO
         merge_into_examples()
-
+        
+    #elif mode == 6: to experiment
+        #experimental 
+        #pass

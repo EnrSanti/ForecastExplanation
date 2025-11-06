@@ -75,9 +75,11 @@ def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
     
     # Loop through all images
     for filename in sorted(os.listdir(image_input_folder)):
+        print("plot_locations_to_map FOLDER", image_input_folder)
         if not filename.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff")):
             continue
         if(starting_date is None):
+            print(" NOMEFILE ->",filename)
             parts = filename.split("_")
             date_str = parts[-2]         # '20191101'
             hour_str = parts[-1][:2]     # '05' → 5
@@ -211,22 +213,22 @@ def generate_cloud_facts_over_cities(base_path):
     generate_cloud_split_merges()
 
 
-def generate_humidity_facts_over_cities(base_path):
+def generate_humidity_facts_over_cities(base_path,clustered):
 
+    print("hey base path -> ", base_path)
+    print(folders_suff.items())
     for level, suff in folders_suff.items():
-        entry= folder_types[1] + suff
-        full_path = os.path.join(base_path, folder_types[1] + suff)
+        entry= folder_types[1] + suff+clustered
+        print("entry -> ",entry)
+        full_path = os.path.join(base_path, entry)
         print(full_path)
         if os.path.isdir(full_path):
             #later this first stage can be skipped
             print("plotting locations to map")
             plot_locations_to_map(full_path,"reasoning/humidity/"+entry,coordinates)
 
-            #########################################################################
-            #compute the map that for each cloud tells me which locations I am covering
-            #trajectories =  pd.read_csv(full_path+"/trajectories.csv")
-            #frame_cloud_map = get_clouds_covering_locations(locations_name_px_pos,full_path+"/segment_labels_all.npz",trajectories) 
-        
+            #TO COMPLETE
+            
 
 
 def generate_cloud_split_merges():
