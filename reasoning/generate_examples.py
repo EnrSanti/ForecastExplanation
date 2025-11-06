@@ -5,6 +5,8 @@ import matplotlib.image as mpimg
 import numpy as np
 from collections import defaultdict
 from datetime import datetime, timedelta
+from PIL import Image
+
 
 #longmin longmax latmin latmax of FVG and Italy, longmin longmax, latmin latmax
 coordinates=[11,15,44.5,48]
@@ -63,6 +65,16 @@ def load_locations(coordinates,image_input_folder):
         )
         locations_name_px_pos[row["Location"]]=(px,py)
 
+def get_starting_date(filename):
+    global starting_date
+    if(starting_date is None):
+        parts = filename.split("_")
+        date_str = parts[-2]         # '20191101'
+        hour_str = parts[-1][:2]     # '05' → 5
+
+        starting_date= datetime.strptime(date_str + hour_str, "%Y%m%d%H")
+
+
 def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
     # Load locations
     global locations_name_px_pos, starting_date
@@ -78,13 +90,7 @@ def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
         print("plot_locations_to_map FOLDER", image_input_folder)
         if not filename.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff")):
             continue
-        if(starting_date is None):
-            print(" NOMEFILE ->",filename)
-            parts = filename.split("_")
-            date_str = parts[-2]         # '20191101'
-            hour_str = parts[-1][:2]     # '05' → 5
-    
-            starting_date= datetime.strptime(date_str + hour_str, "%Y%m%d%H")
+        get_starting_date(filename) #it's in a for, but it's done once, yes a bit of refactory later
 
         input_path = os.path.join(image_input_folder, filename)
         output_path = os.path.join(image_output_folder, filename)
@@ -212,28 +218,103 @@ def generate_cloud_facts_over_cities(base_path):
 
     generate_cloud_split_merges()
 
+def generate_cloud_split_merges():
+    pass
+
+def merge_into_examples():
+    pass
+
+def get_value_over_city(): #forna utile anche per la temperatura
+    pass
+
+def color_to_humidity(rgb_color, legend_colors, legend_values):
+    """
+    Given an (R,G,B) color, find the closest color in the legend
+    and return its corresponding humidity value.
+    """
+    color = np.array(rgb_color)
+    dists = np.linalg.norm(legend_colors - color, axis=1)
+    idx = np.argmin(dists)
+    return float(legend_values[idx])
 
 def generate_humidity_facts_over_cities(base_path,clustered):
 
-    print("hey base path -> ", base_path)
-    print(folders_suff.items())
+    global starting_date
+    load_locations(coordinates,base_path)
+
     for level, suff in folders_suff.items():
-        entry= folder_types[1] + suff+clustered
-        print("entry -> ",entry)
+
+        entry = folder_types[1] + suff+clustered
         full_path = os.path.join(base_path, entry)
-        print(full_path)
+        
+
+        legend_colors, legend_values = load_legend_mapping("./raw_data/extracted_fvg_cleaned/legend_300hPa_humidity.png")
+
+
         if os.path.isdir(full_path):
             #later this first stage can be skipped
             print("plotting locations to map")
             plot_locations_to_map(full_path,"reasoning/humidity/"+entry,coordinates)
 
-            #TO COMPLETE
+            
+            hum_values=get_humidity_over_locations_color(locations_name_px_pos,full_path,legend_colors, legend_values)
+
+
+            with open(f"{"reasoning/humidity/"+full_path.rsplit('/', 1)[-1]}/humidity.txt", "w") as f:
+                print("TIPO: ", type(hum_values))
+                f.write("% format yyyy, mm, dd, h, location, humidity_percentage\n")
+                for frame, values in hum_values.items():
+                    yyyy,mm,dd,h=frame_index_to_timestamp(frame, starting_date, 1)
+                    for location_name, _ in locations_name_px_pos.items():
+                        
+                        f.write(f"humidity_percentage{suff}({yyyy},{mm},{dd},{h},\"{location_name}\",{int(values[location_name])}).\n")
+                    
             
 
+def get_humidity_over_locations_color(locations, frames_path, legend_colors, legend_values, radius=5):
+    """
+    Given city positions and a folder of humidity frames,
+    computes average humidity percentage around each location.
+    """
+    import os
+    frame_humidity_map = {}
+    frames = sorted([f for f in os.listdir(frames_path) if f.lower().endswith((".png",".jpg",".tif"))])
 
-def generate_cloud_split_merges():
-    pass
+    for frame_idx, frame_file in enumerate(frames):
+        img = np.array(Image.open(os.path.join(frames_path, frame_file)).convert("RGB"))
+        h, w, _ = img.shape
+        loc_to_hum = {}
+
+        for name, (px, py) in locations.items():
+            px_i, py_i = int(round(px)), int(round(py))
+            if 0 <= px_i < w and 0 <= py_i < h:
+                x_min, x_max = max(0, px_i-radius), min(w, px_i+radius+1)
+                y_min, y_max = max(0, py_i-radius), min(h, py_i+radius+1)
+                region = img[y_min:y_max, x_min:x_max]
+
+                mean_color = region.reshape(-1,3).mean(axis=0)
+                hum = color_to_humidity(mean_color, legend_colors, legend_values)
+                loc_to_hum[name] = hum
+            else:
+                print(f"{name} outside frame {frame_idx}")
+        frame_humidity_map[frame_idx] = loc_to_hum
+    return frame_humidity_map
 
 
-def merge_into_examples():
-    pass
+def load_legend_mapping(legend_path, n_samples=101):
+    """
+    Reads a horizontal colorbar legend (e.g. humidity 0–100%),
+    returns (legend_colors, legend_values).
+    """
+    legend_img = np.array(Image.open(legend_path).convert("RGB"))
+    h, w, _ = legend_img.shape
+
+    # Average vertically, since the color bar may have thickness
+    avg_colors = legend_img.mean(axis=0)  # shape (w,3)
+
+    # Sample N equally spaced positions along the width
+    idx = np.linspace(0, w - 1, n_samples).astype(int)
+    legend_colors = avg_colors[idx]
+    legend_values = np.linspace(0, 100, n_samples)
+
+    return legend_colors, legend_values
