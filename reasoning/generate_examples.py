@@ -16,21 +16,14 @@ folder_types = ["cloud","humidity"]
 folders_suff = {
     1000: "_at_100m", 
     925: "_at_750m",
-    850: "_at_1.4km",
+    850: "_at_1_4km",
     700: "_at_3km", 
-    500: "_at_5.5km", 
+    500: "_at_5_5km", 
     300: "_at_9km"
 }
 locations_name_px_pos={}
 
-km_to_hpa = {
-    100: 1000,
-    750: 925,
-    1.4: 850,
-    3: 700,
-    5.5: 500,
-    9: 300
-}
+
 
 starting_date=None
 
@@ -258,11 +251,10 @@ def generate_humidity_facts_over_cities(base_path,clustered):
         
         print("starting date humidity: ", entry)
         #from height to hpa
-        match = re.search(r'(\d+(?:\.\d+)?)', entry)
-        hpa=float(match.group(1))
-        hpa=km_to_hpa[hpa]
+        match = re.search(r'(\d+(?:[_\.]\d+)?(?:m|km))', entry)
+        hpa=str(match.group(1))
 
-        legend_colors, legend_values = load_legend_mapping(f"./raw_data/extracted_fvg_cleaned/legend_{hpa}hPa_humidity.png")
+        legend_colors, legend_values = load_legend_mapping(f"./raw_data/extracted_fvg_cleaned/legend_at_{hpa}_humidity.png")
 
 
         if os.path.isdir(full_path):
