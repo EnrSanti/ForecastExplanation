@@ -6,7 +6,7 @@ import numpy as np
 from collections import defaultdict
 from datetime import datetime, timedelta
 from PIL import Image
-
+import re
 
 #longmin longmax latmin latmax of FVG and Italy, longmin longmax, latmin latmax
 coordinates=[11,15,44.5,48]
@@ -22,6 +22,15 @@ folders_suff = {
     300: "_at_9km"
 }
 locations_name_px_pos={}
+
+km_to_hpa = {
+    100: 1000,
+    750: 925,
+    1.4: 850,
+    3: 700,
+    5.5: 500,
+    9: 300
+}
 
 starting_date=None
 
@@ -73,7 +82,6 @@ def get_starting_date(filename):
         hour_str = parts[-1][:2]     # '05' → 5
 
         starting_date= datetime.strptime(date_str + hour_str, "%Y%m%d%H")
-
 
 def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
     # Load locations
@@ -202,14 +210,15 @@ def generate_cloud_facts_over_cities(base_path):
 
             # Example: print clouds covering each location in frame 0
             #full_str="starting date: "+str(starting_date)+"\n"
-            full_str="% format: cloud_id, yyyy, mm, dd, h, location"
+            full_str="% format: cloud_at(location, cloud_id, yyyy, mm, dd, h).\n\n"
             for key in frame_cloud_map.keys():
                 for cell_id, locs in frame_cloud_map[key].items():
                     for location in locs:
                         yyyy,mm,dd,h=frame_index_to_timestamp(key,starting_date,1) #1h between each frame
                         cloud_at_string=f"{full_path.rsplit('/', 1)[-1]}"
+                        loc_lower = location.lower().replace(" ", "_")
                         print(f"full path -> full path {cell_id,yyyy,mm,dd,h}")
-                        full_str+=f"{cloud_at_string}_covers({cell_id},{yyyy},{mm},{dd},{h},\"{location}\").\n"
+                        full_str+=f"{cloud_at_string}_covers({location},{cell_id},{yyyy},{mm},{dd},{h}).\n"
 
                 print("% ---- next frame ----")
             with open(f"{"reasoning/clouds/"+full_path.rsplit('/', 1)[-1]}/clouds_covering.txt", "w") as f:
@@ -247,8 +256,13 @@ def generate_humidity_facts_over_cities(base_path,clustered):
         entry = folder_types[1] + suff+clustered
         full_path = os.path.join(base_path, entry)
         
+        print("starting date humidity: ", entry)
+        #from height to hpa
+        match = re.search(r'(\d+(?:\.\d+)?)', entry)
+        hpa=float(match.group(1))
+        hpa=km_to_hpa[hpa]
 
-        legend_colors, legend_values = load_legend_mapping("./raw_data/extracted_fvg_cleaned/legend_300hPa_humidity.png")
+        legend_colors, legend_values = load_legend_mapping(f"./raw_data/extracted_fvg_cleaned/legend_{hpa}hPa_humidity.png")
 
 
         if os.path.isdir(full_path):
@@ -261,16 +275,15 @@ def generate_humidity_facts_over_cities(base_path,clustered):
 
 
             with open(f"{"reasoning/humidity/"+full_path.rsplit('/', 1)[-1]}/humidity.txt", "w") as f:
-                print("TIPO: ", type(hum_values))
-                f.write("% format yyyy, mm, dd, h, location, humidity_percentage\n")
+                f.write("% format humidity_percentage_at(location, humidity_percentage, yyyy, mm, dd, h).\n\n")
                 for frame, values in hum_values.items():
                     yyyy,mm,dd,h=frame_index_to_timestamp(frame, starting_date, 1)
                     for location_name, _ in locations_name_px_pos.items():
-                        
-                        f.write(f"humidity_percentage{suff}({yyyy},{mm},{dd},{h},\"{location_name}\",{int(values[location_name])}).\n")
+                        loc_lower = location_name.lower().replace(" ", "_")
+                        #witout appproximation use: int(values[location_name])
+                        approximated_hum=int(round(values[location_name]/20)*20) #approx to the nearest 10
+                        f.write(f"humidity_percentage{suff}({loc_lower}, {approximated_hum}, {yyyy},{mm},{dd},{h}).\n")
                     
-            
-
 def get_humidity_over_locations_color(locations, frames_path, legend_colors, legend_values, radius=5):
     """
     Given city positions and a folder of humidity frames,
