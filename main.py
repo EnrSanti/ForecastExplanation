@@ -5,7 +5,7 @@ from image_processing.segment_track import run_tobac
 from image_processing.humidity_front import get_humidity_front
 from raw_data.extract_features_nc import save_feature_maps
 from raw_data.cut_long_lat import cut_grib_long_lat
-from reasoning.pictograms_to_ground_truth import generate_ground_truth
+from reasoning.pictogram_extraction.pictograms_to_ground_truth import generate_ground_truth
 from reasoning.generate_examples import generate_cloud_facts_over_cities, generate_humidity_facts_over_cities, merge_into_examples
 
 
@@ -148,7 +148,7 @@ if __name__ == "__main__":
 
     elif mode == 2:    
         #resize iamges once to work on smaller images, generate clustered images and run TOBAC (FVG)
-        print("Cluster & run TOBAC on FVG clustered data (just clouds for now)")
+        print("Cluster & run TOBAC on FVG clustered data (just clouds & humidity  for now)")
         folder_list = [
             (pref + suff, *folder_params[pref])
             for pref in folders_pref
@@ -183,7 +183,7 @@ if __name__ == "__main__":
 
     elif mode == 3:
         #resize iamges once to work on smaller images and run TOBAC (FVG)
-        print("run TOBAC on FVG data (just clouds for now)")
+        print("run TOBAC on FVG data (just clouds & humidity for now)")
         folder_list = [
             (pref + suff, *folder_params[pref])
             for pref in folders_pref

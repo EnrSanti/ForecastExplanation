@@ -7,12 +7,12 @@ import pandas as pd
 from scipy.ndimage import maximum_filter
 import re
 
-
 # --- Configuration ---
 ICON_FOLDER_PATH = './reasoning/pictogram_extraction/merged_icons/'
 INPUT_FOLDER = './reasoning/pictogram_extraction/pictograms/sky/'      # folder containing all input images
 OUTPUT_FOLDER = './reasoning/pictogram_extraction/extracted'           # folder where results will be saved
 CSV_PATH = './reasoning/locations.csv'                                 # path to your location CSV
+
 
 # Matching Parameters
 RELAXED_THRESHOLD = 0.71
@@ -149,16 +149,15 @@ def icon_name_to_sky_level(icon_name):
     name = icon_name.lower()
 
     if "cloud" in name:
-        return 4
+        return "cloudy"
     elif "big_cloud" in name:
-        return 3
+        return "mostly_cloudy"
     elif "mid_cloud" in name:
-        return 2
+        return "partly_cloudy"
     elif "small_cloud" in name:
-        return 1
+        return "mostly_clear"
     else:
-        return 0
-
+        return "sunny"
 
 def extract_date_from_filename(filename):
     """
@@ -171,7 +170,6 @@ def extract_date_from_filename(filename):
         year, month, day = map(int, match.groups())
         return year, month, day
     return None
-
 
 def generate_ground_truth():
     start_total = time.time()
@@ -218,12 +216,15 @@ def generate_ground_truth():
 
         yyyy,mm,dd=extract_date_from_filename(img_path)
         with open(txt_path, 'w') as f:
-            f.write(f'date({yyyy},{mm},{dd}).\n')
+            f.write(f"%% Format: forecasted_rain(location, drops_in_pictogram,yyyy,mm,dd).\n")
+            f.write(f"%% Format: forecasted_sky(location, description ,yyyy,mm,dd).\n")
+            f.write(f'date({yyyy},{mm},{dd}).\n\n')
             for x, y, name, w, h, loc in detections:
                 icon_name = os.path.splitext(name)[0]  # remove .png/.jpg
                 if loc:
-                    f.write(f'forecasted_rain("{loc}", {icon_name_to_rain_level(icon_name)},{yyyy},{mm},{dd}). \n')
-                    f.write(f'forecasted_sky("{loc}", {icon_name_to_sky_level(icon_name)},{yyyy},{mm},{dd}). \n')
+                    loc_lower = loc.lower().replace(" ", "_")
+                    f.write(f'forecasted_rain({loc_lower}, {icon_name_to_rain_level(icon_name)},{yyyy},{mm},{dd}). \n')
+                    f.write(f'forecasted_sky({loc_lower}, "{icon_name_to_sky_level(icon_name)}",{yyyy},{mm},{dd}). \n')
                 else:
                     f.write(f'UNKNOWN {icon_name}\n')
 
