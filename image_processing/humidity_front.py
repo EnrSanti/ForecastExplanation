@@ -14,9 +14,9 @@ from PIL import Image
 
 # --- CONFIG ---
 INPUT_FOLDERS = [
-    "./image_processing/fvg/resized/humidity_at_1.4km/",
+    "./image_processing/fvg/resized/humidity_at_1_4km/",
     "./image_processing/fvg/resized/humidity_at_3km/",
-    "./image_processing/fvg/resized/humidity_at_5.5km/",
+    "./image_processing/fvg/resized/humidity_at_5_5km/",
     "./image_processing/fvg/resized/humidity_at_9km/",
     "./image_processing/fvg/resized/humidity_at_100m/",
     "./image_processing/fvg/resized/humidity_at_750m/"

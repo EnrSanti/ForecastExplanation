@@ -13,12 +13,12 @@ from cartopy.io import shapereader
 
 #define the hPa of the data considered, moreover define a more symbolic name for them
 levels = [1000, 925, 850, 700, 500, 300]
-folders = {
+folders= {
     1000: "_at_100m", 
     925: "_at_750m",
-    850: "_at_1.4km",
+    850: "_at_1_4km",
     700: "_at_3km", 
-    500: "_at_5.5km", 
+    500: "_at_5_5km", 
     300: "_at_9km"
 }
 output_base = ""
@@ -48,8 +48,8 @@ def save_feature_maps(input_path,coordinates, is_fvg, clean_plot):
     print(f"Output base directory: {output_base}")
     save_borders_png(output_base,coordinates)
     save_humidity_maps(input_path, coordinates,clean_plot)
-    save_wind_maps(input_path, coordinates,clean_plot)
     save_cloud_maps(input_path,coordinates, clean_plot)
+    save_wind_maps(input_path, coordinates,clean_plot)
     save_temperature_maps(input_path,coordinates, clean_plot)
 
 
@@ -479,7 +479,7 @@ def save_humidity_maps(input_path, coordinates, clean_plot):
             cax=ax, orientation='horizontal'
         )
         cb.set_label(f'Relative humidity at {lvl} hPa [%]')
-        plt.savefig(os.path.join(output_base, f"legend_{folders[lvl]}_humidity.png"),
+        plt.savefig(os.path.join(output_base, f"legend_at{folders[lvl]}_humidity.png"),
                     dpi=380, bbox_inches='tight')
         plt.close(fig)
 

@@ -1,16 +1,17 @@
 % format: cloud_at(location, cloud_id, yyyy, mm, dd, h).
 
-cloud_at_100m_covers(Sappada,31,2019,11,2,16).
-cloud_at_100m_covers(Sappada,31,2019,11,2,17).
-cloud_at_100m_covers(Pontebba,34,2019,11,2,17).
-cloud_at_100m_covers(Sappada,31,2019,11,2,19).
-cloud_at_100m_covers(Sappada,31,2019,11,2,20).
-cloud_at_100m_covers(Sappada,31,2019,11,2,21).
-cloud_at_100m_covers(Sappada,31,2019,11,2,22).
-cloud_at_100m_covers(Sappada,31,2019,11,2,23).
-cloud_at_100m_covers(Sappada,31,2019,11,3,1).
-cloud_at_100m_covers(Sappada,31,2019,11,3,2).
-cloud_at_100m_covers(Sappada,31,2019,11,3,3).
-cloud_at_100m_covers(Stolvizza,40,2019,11,3,5).
+cloud_at_100m_covers(Sappada,30,2019,11,2,15).
+cloud_at_100m_covers(Sappada,30,2019,11,2,16).
+cloud_at_100m_covers(Sappada,30,2019,11,2,17).
+cloud_at_100m_covers(Pontebba,31,2019,11,2,17).
+cloud_at_100m_covers(Sappada,30,2019,11,2,19).
+cloud_at_100m_covers(Sappada,30,2019,11,2,20).
+cloud_at_100m_covers(Sappada,30,2019,11,2,21).
+cloud_at_100m_covers(Sappada,30,2019,11,2,22).
+cloud_at_100m_covers(Sappada,30,2019,11,2,23).
+cloud_at_100m_covers(Sappada,30,2019,11,3,1).
+cloud_at_100m_covers(Sappada,30,2019,11,3,2).
+cloud_at_100m_covers(Sappada,30,2019,11,3,3).
+cloud_at_100m_covers(Stolvizza,41,2019,11,3,5).
 cloud_at_100m_covers(Udine,15,2019,11,3,5).
-cloud_at_100m_covers(Stolvizza,31,2019,11,3,6).
+cloud_at_100m_covers(Stolvizza,30,2019,11,3,6).
