@@ -239,14 +239,14 @@ def color_to_humidity(rgb_color, legend_colors, legend_values):
     idx = np.argmin(dists)
     return float(legend_values[idx])
 
-def generate_humidity_facts_over_cities(base_path,clustered):
+def generate_humidity_facts_over_cities(base_path):
 
     global starting_date
     load_locations(coordinates,base_path)
 
     for level, suff in folders_suff.items():
 
-        entry = folder_types[1] + suff+clustered
+        entry = folder_types[1] + suff 
         full_path = os.path.join(base_path, entry)
         
         print("starting date humidity: ", entry)
@@ -256,8 +256,9 @@ def generate_humidity_facts_over_cities(base_path,clustered):
 
         legend_colors, legend_values = load_legend_mapping(f"./raw_data/extracted_fvg_cleaned/legend_at_{hpa}_humidity.png")
 
-
+        print(full_path)
         if os.path.isdir(full_path):
+
             #later this first stage can be skipped
             print("plotting locations to map")
             plot_locations_to_map(full_path,"reasoning/humidity/"+entry,coordinates)
