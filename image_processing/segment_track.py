@@ -27,7 +27,7 @@ def overlay_image(path_borders, axs, temp_da):
 
 #target minimum -> upper
 #target maximum -> lower
-def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max, threshold, target ,smooth = 8):
+def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max, threshold, target, save_split_merges=True,smooth = 8):
     
     """
     Runs the locate and tracking of the objects
@@ -258,7 +258,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
 
-        print("Figure size in pixels:", int(fig_width_px), int(fig_height_px))
+        #print("Figure size in pixels:", int(fig_width_px), int(fig_height_px))
         smoothed_frame = ndimage.gaussian_filter(test_data_norm.isel(time=itime).values, sigma=smooth)
 
         temp_da = test_data_norm.isel(time=itime).copy()
@@ -329,35 +329,35 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         plt.close(fig) 
     
     #======= SPLITTING AND MERGING ========
-
-    all_splits_merges=""
-    for i, itime in enumerate(range(1, images_no)):
-        if(all_segment_labels[itime-1] is None or all_segment_labels[itime] is None):
-            continue
+    if(save_split_merges):
+        all_splits_merges=""
+        for i, itime in enumerate(range(1, images_no)):
+            if(all_segment_labels[itime-1] is None or all_segment_labels[itime] is None):
+                continue
+            
+            plot_feature_borders(
+                segment_labels=all_segment_labels[i].isel(time=0).values,
+                ax=axs,
+                border_thickness_px=8,  # Example: 3 pixels thick border
+                border_color="red"
+            )
+            
+            extended_overlap_map = find_extended_overlap_blobs_inferred(
+                segment_labels=all_segment_labels[i].isel(time=0).values,
+                trajectories=trajectories,
+                border_thickness_px=8  # Use the same thickness as your plot border
+            )
         
-        plot_feature_borders(
-            segment_labels=all_segment_labels[i].isel(time=0).values,
-            ax=axs,
-            border_thickness_px=8,  # Example: 3 pixels thick border
-            border_color="red"
-        )
+            splits,merges=get_splits_merges(extended_overlap_map, trajectories, itime,images_no,gap_features_frames,all_segment_labels[itime],all_segment_labels[itime-1],new_born_at_curr[itime],disappeared_at_curr[itime])
+            
+            if splits != "" or merges !="":
+                all_splits_merges+=splits+merges
+                all_splits_merges+="-------------------\n"
+            print("Consideering frame ---------------------------- ", itime+1)
         
-        extended_overlap_map = find_extended_overlap_blobs_inferred(
-            segment_labels=all_segment_labels[i].isel(time=0).values,
-            trajectories=trajectories,
-            border_thickness_px=8  # Use the same thickness as your plot border
-        )
-       
-        splits,merges=get_splits_merges(extended_overlap_map, trajectories, itime,images_no,gap_features_frames,all_segment_labels[itime],all_segment_labels[itime-1],new_born_at_curr[itime],disappeared_at_curr[itime])
-        
-        if splits != "" or merges !="":
-            all_splits_merges+=splits+merges
-            all_splits_merges+="-------------------\n"
-        print("new frame ---------------------------- ", itime+1)
-    
-    #save the merge and splits found:
-    with open(output_folder+f"/split_merge.txt", "w") as f:
-        f.write(str(all_splits_merges))
+        #save the merge and splits found:
+        with open(output_folder+f"/split_merge.txt", "w") as f:
+            f.write(str(all_splits_merges))
     
     #save the trajectories
     trajectories.to_csv(output_folder+f"/trajectories.csv", index=False)
@@ -552,10 +552,10 @@ def extract_keys(filename):
         return (0, 0)
 
 
-def run_tobac(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,threshold, target,n_min_threshold=0,smooth = 8):
+def run_tobac_merge_split(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,threshold, target,n_min_threshold=0,smooth = 8):
     """
     The main function called from outside (main).
-    Runs the locate and tracking of the objects
+    Runs the locate and tracking of the objects, moreover it does the splitting and merging detection.
     
     Parameters
     ----------
@@ -569,5 +569,27 @@ def run_tobac(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon
     smooth: smoothing factor for gaussian filter (default 8)
 
     """
-    locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold, target,smooth)
+    locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold, target,True,smooth)
     print("Locating & tracking procedure completed")
+
+def run_tobac_fronts(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,threshold, target,n_min_threshold=0,smooth = 8):
+    """
+    The main function called from outside (main).
+    Runs the locate and tracking of the objects, it doens't do the splitting and merging detection, but tracks fronts.
+    
+    Parameters
+    ----------
+    inpu_folder: folder path containing the input images (equal size & regional area)
+    output_folder: folder path to save the output images (if not existing it will be created)
+    lat_min: the minimum latitude of the area in the images
+    lat_max: the maximum latitude of the area in the images
+    lon_min: the minimum longitude of the area in the images
+    lon_max: the maximum longitude of the area in the images
+    n_min_threshold: minimum number of pixels for object detection (default 0)
+    smooth: smoothing factor for gaussian filter (default 8)
+
+    """
+    locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold, target,False,smooth)
+    print("Locating & tracking (fronts) procedure completed")
+
+

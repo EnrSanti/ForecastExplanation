@@ -276,13 +276,13 @@ def plot_feature_borders(segment_labels: np.ndarray, ax: plt.Axes, border_thickn
                                                                        
 def get_splits_merges(overlap_map, trajectories, time_step,frames_no,gap_frames,segment_labels_current, segment_labels_prev,new_born_curr,disappeared):
     #get the cells for the next time step
-    print("get_splits called")
+    #print("get_splits called")
 
     frames_considered = 0
     cells_prev_step = []
     prev_time_step = time_step - 1
     for time in range(prev_time_step,time_step):
-        print("considering frames from ",time," to ",time_step)
+        #print("considering frames from ",time," to ",time_step)
         frames_considered+=1
         cells_prev_step.append(trajectories[trajectories["frame"] == time]["cell"].unique())
 
@@ -376,7 +376,7 @@ def detect_splits_by_area(
         mass=[]
         #do un check ai confinanti dei confianti SE SONO NEWBORN SE AGGIUNGONO UN PO ALLA MASSA e se intersection_next_frame è alta 
 
-        print("candidates -> -> ",candidates)
+        #print("candidates -> -> ",candidates)
 
         for c in candidates:
             if(c not in map_areas_curr): #SI SERVE. don't touch
@@ -385,11 +385,11 @@ def detect_splits_by_area(
             mass.append(int(map_areas_curr[c]))
 
 
-        print("overlap % ->",overlap_percentage)
-        print("mass -> ",mass)
-        print("mass to match -> ",mass_previous_split)
+        #print("overlap % ->",overlap_percentage)
+        #print("mass -> ",mass)
+        #print("mass to match -> ",mass_previous_split)
         indexes = select_indices_best_match(overlap_percentage,mass,area_ratio_threshold,mass_previous_split)
-        print("indexes   ->     ",indexes)
+        #print("indexes   ->     ",indexes)
         
         for index in indexes:
             already_split.add(candidates[index])
@@ -450,8 +450,8 @@ def detect_merge_by_area(
 
         #print("candidates -> -> ",candidates)
 
-        print("considering cell ",cell_id," at frame",frame_no)
-        print("merge candidates -> -> ",candidates)
+        #print("considering cell ",cell_id," at frame",frame_no)
+        #print("merge candidates -> -> ",candidates)
 
         for c in candidates:
             if(c not in map_areas_prev):
@@ -460,9 +460,9 @@ def detect_merge_by_area(
             mass.append(int(map_areas_prev[c]))
 
 
-        print("merge overlap % ->",overlap_percentage)
-        print("merge mass -> ",mass)
-        print("merge mass to match -> ",mass_after_merge,"\n\n")
+        #print("merge overlap % ->",overlap_percentage)
+        #print("merge mass -> ",mass)
+        #print("merge mass to match -> ",mass_after_merge,"\n\n")
 
         #print("overlap % ->",overlap_percentage)
         #print("mass -> ",mass)
@@ -518,7 +518,7 @@ def feature_from_cell_id(cell_id, trajectories, frame):
 
 def intersection_next_frame(cell_id_1, cell_id_2, segment_labels_current, segment_labels_prev,trajectories,curr_time):
     
-    print("checking intersection between cell ",cell_id_1, "frame ",curr_time," and cell",cell_id_2," at frame ",curr_time-1)
+    #print("checking intersection between cell ",cell_id_1, "frame ",curr_time," and cell",cell_id_2," at frame ",curr_time-1)
     # --- Apply label transformations if provided ---
     seg_curr = np.copy(segment_labels_current)
     seg_prev = np.copy(segment_labels_prev)
