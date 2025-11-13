@@ -25,11 +25,11 @@ warnings.filterwarnings(
 
 #for clustering the number of clusters to consider
 numClusters_clouds = 3
-num_clusters_humidity = 8 
+num_clusters_fronts = 4
 
 #minimum number of pixels for TOBAC (don't consider smaller blobs)
 n_min_threshold_clouds=300
-n_min_threshold_humidity=3000
+n_min_threshold_fronts=3000
 
 
 
@@ -94,11 +94,12 @@ if __name__ == "__main__":
 
     mode = int(input())
 
-    folders_pref = ["cloud","humidity"] #, "humidity"}#, "temp", "winds"}
+    folders_pref = ["cloud","humidity","temp"] #, "winds"}
     
     folder_params = {
         "cloud": (0.7, "minimum",numClusters_clouds),       # e.g. (threshold, go lower or upper, clusters)
-        "humidity": (0.4, "minimum",numClusters_clouds)
+        "humidity": (0.4, "minimum",num_clusters_fronts),
+        "temp": (0.5, "minimum",num_clusters_fronts),       # temp fronts
     }
 
     folders_suff = {
@@ -193,7 +194,7 @@ if __name__ == "__main__":
         #for the humidity   
         with ProcessPoolExecutor(max_workers=2) as executor:
             futures = {
-                executor.submit(run_tobac_fronts,f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold_humidity
+                executor.submit(run_tobac_fronts,f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold_fronts
                                 ): f for f in folder_list_humidity}
 
             for future in as_completed(futures):
@@ -205,8 +206,25 @@ if __name__ == "__main__":
                 except Exception as e:
                     print(f"❌ Error processing {f}: {e}")
 
+        #for the tmeperature
+        folder_list_temp = [
+            (folders_pref[2] + suff)
+            for suff in folders_suff.values()
+        ]
+        with ProcessPoolExecutor(max_workers=2) as executor:
+            futures = {
+                executor.submit(run_tobac_fronts,f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold_fronts
+                                ): f for f in folder_list_temp}
 
-        #get_humidity_front("image_processing/fvg/clustered/",folders_suff, f"image_processing/fvg/output_clustered/","_clustered")
+            for future in as_completed(futures):
+                
+                f = futures[future]
+                try:
+                    future.result()  # will raise exception if the call failed
+                    print(f"✅ Completed {f}")
+                except Exception as e:
+                    print(f"❌ Error processing {f}: {e}")
+
 
         base_path = "./image_processing/fvg/output_clustered/"
         generate_cloud_facts_over_cities(base_path)
@@ -224,7 +242,7 @@ if __name__ == "__main__":
         ]
         for f, threshold, upper_lower, _ in folder_list:
             print("folder ",f, " upper-lower ", upper_lower, "threshold ", threshold )
-            #resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
+            resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
         
         #for the clouds
         folder_list_clouds = [
@@ -235,7 +253,7 @@ if __name__ == "__main__":
         
         with ProcessPoolExecutor(max_workers=2) as executor:
             futures = {
-                executor.submit(run_tobac_merge_split, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png", coordinates[2], coordinates[3], coordinates[0], coordinates[1], threshold, upper_lower, n_min_threshold_clouds
+                executor.submit(run_tobac_merge_split, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png", coordinates[2], coordinates[3], coordinates[0], coordinates[1], threshold, upper_lower, n_min_threshold_fronts
                 ): f for f in folder_list_clouds}
 
             for future in as_completed(futures):
@@ -255,7 +273,7 @@ if __name__ == "__main__":
 
         with ProcessPoolExecutor(max_workers=2) as executor:
             futures = {
-                executor.submit(run_tobac_fronts,f"image_processing/fvg/resized/{f}_clustered", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold_humidity
+                executor.submit(run_tobac_fronts,f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold_fronts
                                 ): f for f in folder_list_humidity}
 
             for future in as_completed(futures):
@@ -267,6 +285,25 @@ if __name__ == "__main__":
                 except Exception as e:
                     print(f"❌ Error processing {f}: {e}")
 
+        #for the humidity
+        folder_list_temp = [
+            (folders_pref[2] + suff)
+            for suff in folders_suff.values()
+        ]
+
+        with ProcessPoolExecutor(max_workers=2) as executor:
+            futures = {
+                executor.submit(run_tobac_fronts,f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold_fronts
+                                ): f for f in folder_list_temp}
+
+            for future in as_completed(futures):
+                
+                f = futures[future]
+                try:
+                    future.result()  # will raise exception if the call failed
+                    print(f"✅ Completed {f}")
+                except Exception as e:
+                    print(f"❌ Error processing {f}: {e}")
 
         
         base_path = "./image_processing/fvg/output/"
@@ -284,5 +321,5 @@ if __name__ == "__main__":
     elif mode == 6: #to experiment
 
         base_path = "./image_processing/fvg/output/"
-        generate_humidity_facts_over_cities(base_path,"")
+        generate_humidity_facts_over_cities(base_path)
         
