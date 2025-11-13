@@ -1,0 +1,1 @@
+Temperature range at 700 hPa: 265.30 K to 278.99 K

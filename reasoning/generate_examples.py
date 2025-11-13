@@ -11,7 +11,7 @@ import re
 #longmin longmax latmin latmax of FVG and Italy, longmin longmax, latmin latmax
 coordinates=[11,15,44.5,48]
 coordinates_italy=[6.5,18.5,36.5,48]
-folder_types = ["cloud","humidity"]
+folder_types = ["cloud","humidity","temp"]
 
 folders_suff = {
     1000: "_at_100m", 
@@ -306,8 +306,7 @@ def get_humidity_over_locations_color(locations, frames_path, legend_colors, leg
         frame_humidity_map[frame_idx] = loc_to_hum
     return frame_humidity_map
 
-
-def load_legend_mapping(legend_path, n_samples=101):
+def load_legend_mapping(legend_path, n_samples=101,min_value=0, max_value=100):
     """
     Reads a horizontal colorbar legend (e.g. humidity 0–100%),
     returns (legend_colors, legend_values).
@@ -321,6 +320,60 @@ def load_legend_mapping(legend_path, n_samples=101):
     # Sample N equally spaced positions along the width
     idx = np.linspace(0, w - 1, n_samples).astype(int)
     legend_colors = avg_colors[idx]
-    legend_values = np.linspace(0, 100, n_samples)
+    legend_values = np.linspace(min_value, max_value, n_samples)
 
     return legend_colors, legend_values
+
+def generate_temp_facts_over_cities(base_path):
+
+    global starting_date
+    load_locations(coordinates,base_path)
+
+    for level, suff in folders_suff.items():
+
+        entry = folder_types[2] + suff 
+        full_path = os.path.join(base_path, entry)
+        
+        print("starting date temperature: ", entry)
+        #from height to hpa
+        match = re.search(r'(\d+(?:[_\.]\d+)?(?:m|km))', entry)
+        hpa=str(match.group(1))
+
+
+        #open the file with min and max temp
+        with open(f"./raw_data/extracted_fvg_cleaned/temp{folders_suff[level]}/legend{folders_suff[level]}_temp.txt", 'r') as ftxt:
+            content = ftxt.read()
+
+        match = re.search(r"Temperature range at \d+\s* hPa:\s*([\d.]+)\s*K\s*to\s*([\d.]+)\s*K", content)
+        min_temp=None
+        max_temp=None
+        if match:
+            min_temp = int(float(match.group(1)))
+            max_temp = int(float(match.group(2)))
+            print("temperatures:    ",  min_temp, max_temp)
+        else:
+            raise ValueError("No temperature range found in legend file.")  
+
+        sample_points=max_temp - min_temp +1 #1 step each degree
+        legend_colors, legend_values = load_legend_mapping(f"./raw_data/extracted_fvg_cleaned/legend_at_{hpa}_temp.png", n_samples=sample_points, min_value=min_temp, max_value=max_temp)
+
+        print(full_path)
+        if os.path.isdir(full_path):
+
+            #later this first stage can be skipped
+            print("plotting locations to map")
+            plot_locations_to_map(full_path,"reasoning/temp/"+entry,coordinates)
+
+            
+            hum_values=get_humidity_over_locations_color(locations_name_px_pos,full_path,legend_colors, legend_values)
+
+            with open(f"{"reasoning/temp/"+full_path.rsplit('/', 1)[-1]}/temp.txt", "w") as f:
+                f.write("% format temperature_at(location, temperature, yyyy, mm, dd, h).\n\n")
+                for frame, values in hum_values.items():
+                    yyyy,mm,dd,h=frame_index_to_timestamp(frame, starting_date, 1)
+                    for location_name, _ in locations_name_px_pos.items():
+                        loc_lower = location_name.lower().replace(" ", "_")
+                        #witout appproximation use: int(values[location_name])
+                        approximated_temp=round(values[location_name]) #approx (should already be int)
+                        f.write(f"temperature_at{suff}({loc_lower}, {approximated_temp}, {yyyy},{mm},{dd},{h}).\n")
+                    

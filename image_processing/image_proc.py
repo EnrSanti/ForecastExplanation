@@ -8,7 +8,7 @@ import math, os, time
 import cv2
 from glob import glob
 
-import torch
+#import torch
 
 
 #----------- CLUSTERING ----------- 
@@ -43,8 +43,7 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
         reshaped = img.reshape(-1, C)
 
         # Cluster this single image
-        clustered_img = cluster_images_gpu(1, numClusters, [reshaped], [img], [f])[0]
-
+        clustered_img = cluster_images(1, numClusters, [reshaped], [img], [f])[0]
 
         # Convert to grayscale if needed
         if clustered_img.ndim == 3:
@@ -56,11 +55,10 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
         unique_vals = np.unique(clustered_gray)
 
         if len(unique_vals) != 3:
-            
             swapped_img = clustered_gray
         else:
-            print(f"[WARN]")
             # Sort to ensure consistent order: low → high intensity
+            print(f"[WARN] {f}")
             '''
             unique_vals = np.sort(unique_vals)
             black_val, mid_val, white_val = unique_vals
@@ -71,14 +69,12 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
             swapped_img[clustered_gray == mid_val] = 128       # thin cloud
             swapped_img[clustered_gray == white_val] = 255     # full cloud
             '''
-
         # Save as high-quality JPEG
         out_path = os.path.join(output_dir, f)
         cv2.imwrite(out_path, swapped_img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
         print(f"[INFO] Saved clustered image: {out_path}")
 
-#single core
 def cluster_images(n_im, numClusters, reshaped, image, image_f):
     """
     clustering function of a single image
@@ -163,12 +159,12 @@ def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
             output_path = os.path.join(output_folder, filename)
             img_resized.save(output_path)
 
-            print(f"Resized: {filename} -> {new_size}")
+            #print(f"Resized: {filename} -> {new_size}")
 
         except Exception as e:
             print(f"Skipping {filename}: {e}")
 
-
+'''
 def kmeans_torch(X, num_clusters=3, max_iter=100, tol=1e-4, device=None):
     """
     GPU-based K-Means using PyTorch.
@@ -252,3 +248,4 @@ def cluster_images_gpu(n_im, numClusters, reshaped, image, image_f):
         print(f"[INFO] Processed {image_f[i]}")
 
     return clustering
+'''
