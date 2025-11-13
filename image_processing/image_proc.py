@@ -8,6 +8,8 @@ import math, os, time
 import cv2
 from glob import glob
 
+import torch
+
 
 #----------- CLUSTERING ----------- 
 # https://github.com/AbhinavUtkarsh/Image-Segmentation
@@ -41,7 +43,8 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
         reshaped = img.reshape(-1, C)
 
         # Cluster this single image
-        clustered_img = cluster_images(1, numClusters, [reshaped], [img], [f])[0]
+        clustered_img = cluster_images_gpu(1, numClusters, [reshaped], [img], [f])[0]
+
 
         # Convert to grayscale if needed
         if clustered_img.ndim == 3:
@@ -53,10 +56,12 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
         unique_vals = np.unique(clustered_gray)
 
         if len(unique_vals) != 3:
-            print(f"[WARN] {f}: found {len(unique_vals)} unique clusters, skipping discrete remap.")
+            
             swapped_img = clustered_gray
         else:
+            print(f"[WARN]")
             # Sort to ensure consistent order: low → high intensity
+            '''
             unique_vals = np.sort(unique_vals)
             black_val, mid_val, white_val = unique_vals
 
@@ -65,6 +70,7 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
             swapped_img[clustered_gray == black_val] = 0       # no cloud
             swapped_img[clustered_gray == mid_val] = 128       # thin cloud
             swapped_img[clustered_gray == white_val] = 255     # full cloud
+            '''
 
         # Save as high-quality JPEG
         out_path = os.path.join(output_dir, f)
@@ -72,6 +78,7 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
 
         print(f"[INFO] Saved clustered image: {out_path}")
 
+#single core
 def cluster_images(n_im, numClusters, reshaped, image, image_f):
     """
     clustering function of a single image
@@ -160,3 +167,88 @@ def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
 
         except Exception as e:
             print(f"Skipping {filename}: {e}")
+
+
+def kmeans_torch(X, num_clusters=3, max_iter=100, tol=1e-4, device=None):
+    """
+    GPU-based K-Means using PyTorch.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape (N, D)
+        Input data (pixels/features)
+    num_clusters : int
+        Number of clusters
+    max_iter : int
+        Maximum iterations
+    tol : float
+        Convergence tolerance
+    device : str or torch.device
+        "cuda" or "cpu" (auto if None)
+
+    Returns
+    -------
+    labels : np.ndarray, shape (N,)
+        Cluster labels
+    centers : np.ndarray, shape (num_clusters, D)
+        Cluster centers
+    """
+    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    X_t = torch.tensor(X, dtype=torch.float32, device=device)
+
+    # Random initialization of centroids
+    indices = torch.randperm(X_t.shape[0])[:num_clusters]
+    centers = X_t[indices]
+
+    for _ in range(max_iter):
+        # Assign clusters
+        dists = torch.cdist(X_t, centers)
+        labels = torch.argmin(dists, dim=1)
+
+        # Update centers
+        new_centers = torch.stack([
+            X_t[labels == k].mean(dim=0) if torch.any(labels == k) else centers[k]
+            for k in range(num_clusters)
+        ])
+
+        # Check convergence
+        shift = torch.norm(new_centers - centers)
+        centers = new_centers
+        if shift < tol:
+            break
+
+    return labels.cpu().numpy(), centers.cpu().numpy()
+
+def cluster_images_gpu(n_im, numClusters, reshaped, image, image_f):
+    """
+    Serial image clustering using GPU K-Means.
+
+    Parameters
+    ----------
+    n_im : int
+        Number of images (usually 1 per call)
+    numClusters : int
+        Number of clusters
+    reshaped : list of np.ndarray
+        List of flattened image arrays (H*W, C)
+    image : list of np.ndarray
+        Original images
+    image_f : list of str
+        Image filenames
+
+    Returns
+    -------
+    clustering : list of np.ndarray
+        Clustered labels reshaped to image dimensions
+    """
+    clustering = [0 for _ in range(n_im)]
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"[INFO] Using device: {device}")
+
+    for i in range(n_im):
+        X = reshaped[i]
+        labels, _ = kmeans_torch(X, num_clusters=numClusters, max_iter=200, device=device)
+        clustering[i] = labels.reshape(image[i].shape[:2])
+        print(f"[INFO] Processed {image_f[i]}")
+
+    return clustering

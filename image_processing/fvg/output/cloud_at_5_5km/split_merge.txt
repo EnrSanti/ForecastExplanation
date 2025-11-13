@@ -1,23 +1,16 @@
-Cell 32 changed (SPLIT) into 'new' cell 35 at frame 31 (according to tobac)
-Cell 27 changed (SPLIT) into 'new' cell 42 at frame 31 (according to tobac)
-Cell 24 changed (MERGE) into cell 25 at frame 31 (according to tobac)
-Cell 27 changed (MERGE) into cell 42 at frame 31 (according to tobac)
+Cell 13 changed (SPLIT) into 'new' cell 16 at frame 30 (according to tobac)
 -------------------
-Cell 21 changed (SPLIT) into 'new' cell 47 at frame 33 (according to tobac)
-Cell 41 changed (SPLIT) into 'new' cell 53 at frame 33 (according to tobac)
-Cell 44 changed (MERGE) into cell 47 at frame 33 (according to tobac)
-Cell 42 changed (MERGE) into cell 52 at frame 33 (according to tobac)
+Cell 15 changed (SPLIT) into 'new' cell 19 at frame 31 (according to tobac)
+Cell 15 split but also remained at frame 31
+Cell 16 changed (SPLIT) into 'new' cell 18 at frame 31 (according to tobac)
 -------------------
-Cell 47 changed (SPLIT) into 'new' cell 54 at frame 34 (according to tobac)
-Cell 35 changed (MERGE) into cell 54 at frame 34 (according to tobac)
+Cell 23 changed (SPLIT) into 'new' cell 25 at frame 34 (according to tobac)
+Cell 18 changed (MERGE) into cell 25 at frame 34 (according to tobac)
 -------------------
-Cell 55 changed (SPLIT) into 'new' cell 61 at frame 36 (according to tobac)
-Cell 55 split but also remained at frame 36
-Cell 56 changed (SPLIT) into 'new' cell 59 at frame 36 (according to tobac)
-Cell 48 changed (MERGE) into cell 59 at frame 36 (according to tobac)
+Cell 25 split into 27 at frame 36
+Cell 25 split into 28 at frame 36
+Cell 25 split but also remained at frame 36
 -------------------
-Cell 66 changed (SPLIT) into 'new' cell 68 at frame 43 (according to tobac)
-Cell 64 changed (MERGE) into cell 68 at frame 43 (according to tobac)
--------------------
-Cell 74 changed (SPLIT) into 'new' cell 77 at frame 53 (according to tobac)
+Cell 30 changed (SPLIT) into 'new' cell 32 at frame 41 (according to tobac)
+Cell 20 changed (MERGE) into cell 32 at frame 41 (according to tobac)
 -------------------
