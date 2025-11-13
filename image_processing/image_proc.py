@@ -137,7 +137,6 @@ def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
     valid_extensions = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
 
     # === PROCESS IMAGES ===
-    print("considering folder "+str(os.listdir(input_folder)))
     for filename in os.listdir(input_folder):
         file_path = os.path.join(input_folder, filename)
         name, ext = os.path.splitext(filename)

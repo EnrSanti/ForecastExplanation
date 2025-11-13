@@ -99,7 +99,7 @@ if __name__ == "__main__":
     folder_params = {
         "cloud": (0.7, "minimum",numClusters_clouds),       # e.g. (threshold, go lower or upper, clusters)
         "humidity": (0.4, "minimum",num_clusters_fronts),
-        "temp": (0.6, "minimum",num_clusters_fronts),       # temp fronts
+        "temp": (0.5, "minimum",num_clusters_fronts),       # temp fronts
     }
 
     folders_suff = {

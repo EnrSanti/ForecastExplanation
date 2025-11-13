@@ -152,9 +152,12 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
 
     #======== FEATURE TRACKING ========
     #using predict, i may be a little bit out of the "search raius" but ok
-    trajectories = tobac.linking_trackpy(features_weighted_points, test_data, dt=dt, dxy=dxy, v_max=v_max, memory=gap_features_frames,method_linking="predict")
- 
-
+    
+    try:
+        trajectories = tobac.linking_trackpy(features_weighted_points, test_data, dt=dt, dxy=dxy, v_max=v_max, memory=gap_features_frames,method_linking="predict")
+    except Exception as e:
+        print("No trajectories found: ")
+        trajectories = None
 
    
     #======== SEGMENTING ========
@@ -164,6 +167,50 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
     new_born_at_curr={}
     disappeared_at_curr={}
     all_frames_for_cell = {}
+
+
+    #getting the list with number of images
+    plot_frames = range(0, images_no)
+
+    if(trajectories is None):
+        for i, itime in enumerate(plot_frames):
+            original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
+            fig_width_in = n_x / 100
+            fig_height_in = n_y / 100
+            fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in),dpi=100)
+            fig_width_px = fig.get_size_inches()[0] * fig.dpi
+            fig_height_px = fig.get_size_inches()[1] * fig.dpi
+            fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+
+
+            #print("Figure size in pixels:", int(fig_width_px), int(fig_height_px))
+            smoothed_frame = ndimage.gaussian_filter(test_data_norm.isel(time=itime).values, sigma=smooth)
+
+            temp_da = test_data_norm.isel(time=itime).copy()
+            temp_da.data = smoothed_frame
+
+            #consistent color range across all frames
+            axs.imshow(temp_da.values, origin="upper", cmap="viridis")  # pixels are axes
+            xlim = (0, temp_da.sizes['x'])
+            ylim = (0, temp_da.sizes['y'])
+            axs.set_title("")
+            axs.set_xticks([])       #remove x-axis ticks
+            axs.set_yticks([])       #remove y-axis ticks
+            axs.set_xticklabels([])  #remove x-axis labels
+            axs.set_yticklabels([])  #remove y-axis labels
+            axs.axis('off')    
+            out_path = os.path.join(output_folder, f"{original_img_name}.png")
+            axs.set_xlim(0, temp_da.sizes["x"])
+            axs.set_ylim(temp_da.sizes["y"], 0)  #since origin="upper"
+            
+            overlay_image(border_path, axs, temp_da)
+
+
+            plt.savefig(out_path, dpi=100, bbox_inches=None,pad_inches=0)
+            plt.close(fig) 
+        return
+    
+
 
     #for all images i smooth the frame and collect the segments
     for i, itime in enumerate(range(0, images_no)):
@@ -203,8 +250,10 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         segments_all.append((itime, segment_labels, segments))
         all_segment_labels.append(segment_labels)
         
-    #getting the list with number of images
-    plot_frames = range(0, images_no)
+
+
+
+
 
 
 
