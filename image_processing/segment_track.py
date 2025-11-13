@@ -15,6 +15,8 @@ import cv2
 from collections import defaultdict
 from image_processing.split_merge import plot_feature_borders, find_extended_overlap_blobs_inferred,get_splits_merges
 import logging
+import traceback
+import warnings
 
 
 logging.getLogger("trackpy").setLevel(logging.WARNING)
@@ -45,6 +47,8 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
 
     """
 
+    #create folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True) 
     #Load images from input folder
     image_files = ([os.path.join(input_folder, f) for f in os.listdir(input_folder)
                         if f.lower().endswith((".png", ".jpg", ".jpeg"))])
@@ -149,9 +153,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
     #======== FEATURE TRACKING ========
     #using predict, i may be a little bit out of the "search raius" but ok
     trajectories = tobac.linking_trackpy(features_weighted_points, test_data, dt=dt, dxy=dxy, v_max=v_max, memory=gap_features_frames,method_linking="predict")
-
-    #create folder if it doesn't exist
-    os.makedirs(output_folder, exist_ok=True)  
+ 
 
 
    

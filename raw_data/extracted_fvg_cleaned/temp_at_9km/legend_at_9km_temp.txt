@@ -1,0 +1,1 @@
+Temperature range at 300 hPa: 224.53 K to 233.96 K

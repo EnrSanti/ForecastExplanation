@@ -1,0 +1,1 @@
+Temperature range at 1000 hPa: 276.21 K to 300.26 K

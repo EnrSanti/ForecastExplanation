@@ -6,7 +6,7 @@ from image_processing.humidity_front import get_humidity_front
 from raw_data.extract_features_nc import save_feature_maps
 from raw_data.cut_long_lat import cut_grib_long_lat
 from reasoning.pictogram_extraction.pictograms_to_ground_truth import generate_ground_truth
-from reasoning.generate_examples import generate_cloud_facts_over_cities, generate_humidity_facts_over_cities, merge_into_examples
+from reasoning.generate_examples import generate_cloud_facts_over_cities, generate_humidity_facts_over_cities,generate_temp_facts_over_cities , merge_into_examples
 
 
 import iris
@@ -25,7 +25,7 @@ warnings.filterwarnings(
 
 #for clustering the number of clusters to consider
 numClusters_clouds = 3
-num_clusters_fronts = 4
+num_clusters_fronts = 5
 
 #minimum number of pixels for TOBAC (don't consider smaller blobs)
 n_min_threshold_clouds=300
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     folder_params = {
         "cloud": (0.7, "minimum",numClusters_clouds),       # e.g. (threshold, go lower or upper, clusters)
         "humidity": (0.4, "minimum",num_clusters_fronts),
-        "temp": (0.5, "minimum",num_clusters_fronts),       # temp fronts
+        "temp": (0.6, "minimum",num_clusters_fronts),       # temp fronts
     }
 
     folders_suff = {
@@ -229,6 +229,7 @@ if __name__ == "__main__":
         base_path = "./image_processing/fvg/output_clustered/"
         generate_cloud_facts_over_cities(base_path)
         generate_humidity_facts_over_cities(base_path)
+        generate_temp_facts_over_cities(base_path)
 
 
 
@@ -244,6 +245,28 @@ if __name__ == "__main__":
             print("folder ",f, " upper-lower ", upper_lower, "threshold ", threshold )
             resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
         
+        #for the temp
+        folder_list_temp = [
+            (folders_pref[2] + suff)
+            for suff in folders_suff.values()
+        ]
+
+        with ProcessPoolExecutor(max_workers=2) as executor:
+            print("threshold ", threshold )
+            futures = {
+                executor.submit(run_tobac_fronts,f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold_fronts
+                                ): f for f in folder_list_temp}
+
+            for future in as_completed(futures):
+                
+                f = futures[future]
+                try:
+                    future.result()  # will raise exception if the call failed
+                    print(f"✅ Completed {f}")
+                except Exception as e:
+                    print(f"❌ Error processing {f}: {e}")
+
+
         #for the clouds
         folder_list_clouds = [
             (folders_pref[0] + suff)
@@ -285,7 +308,24 @@ if __name__ == "__main__":
                 except Exception as e:
                     print(f"❌ Error processing {f}: {e}")
 
-        #for the humidity
+      
+        
+        
+        base_path = "./image_processing/fvg/output/"
+        generate_cloud_facts_over_cities(base_path)
+        generate_humidity_facts_over_cities(base_path)
+        generate_temp_facts_over_cities(base_path)
+
+    elif mode == 4:       
+
+        generate_ground_truth()
+
+    elif mode == 5:
+        #TODO
+        merge_into_examples()
+        
+    elif mode == 6: #to experiment
+
         folder_list_temp = [
             (folders_pref[2] + suff)
             for suff in folders_suff.values()
@@ -305,21 +345,3 @@ if __name__ == "__main__":
                 except Exception as e:
                     print(f"❌ Error processing {f}: {e}")
 
-        
-        base_path = "./image_processing/fvg/output/"
-        generate_cloud_facts_over_cities(base_path)
-        generate_humidity_facts_over_cities(base_path)
-        
-    elif mode == 4:       
-
-        generate_ground_truth()
-
-    elif mode == 5:
-        #TODO
-        merge_into_examples()
-        
-    elif mode == 6: #to experiment
-
-        base_path = "./image_processing/fvg/output/"
-        generate_humidity_facts_over_cities(base_path)
-        

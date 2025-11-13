@@ -211,6 +211,8 @@ def save_temperature_maps(input_path,coordinates, clean_plot):
         cb.set_label(f'Temperature at {lvl} hPa [K]')
         plt.savefig(os.path.join(output_base, f"legend{folders[lvl]}_temp.png"), dpi=380, bbox_inches='tight',pad_inches=0)
         plt.close(fig)
+        with open(os.path.join(output_base+f"/temp{folders[lvl]}", f"legend{folders[lvl]}_temp.txt"), 'w') as ftxt:
+            ftxt.write(f"Temperature range at {lvl} hPa: {vmin:.2f} K to {vmax:.2f} K\n")
 
     # ---- PLOT LOOP ----
     for lvl in levels:
@@ -479,7 +481,7 @@ def save_humidity_maps(input_path, coordinates, clean_plot):
             cax=ax, orientation='horizontal'
         )
         cb.set_label(f'Relative humidity at {lvl} hPa [%]')
-        plt.savefig(os.path.join(output_base, f"legend_at{folders[lvl]}_humidity.png"),
+        plt.savefig(os.path.join(output_base, f"legend{folders[lvl]}_humidity.png"),
                     dpi=380, bbox_inches='tight')
         plt.close(fig)
 
