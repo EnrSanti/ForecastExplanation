@@ -1,0 +1,15 @@
+% format: hum_front_[alt]_hPa(city1,city2,yyyy,mm,dd,h).
+
+hum_front_850_hPa(Cividale,Gorizia,2019,11,1,6).
+hum_front_850_hPa(Cividale,Gorizia,2019,11,1,7).
+hum_front_850_hPa(Lignano,Palmanova,2019,11,1,9).
+hum_front_850_hPa(Cividale,Gorizia,2019,11,1,10).
+hum_front_850_hPa(Cividale,Gorizia,2019,11,1,11).
+hum_front_850_hPa(Cividale,Gorizia,2019,11,1,12).
+hum_front_850_hPa(Grado,Trieste,2019,11,1,12).
+hum_front_850_hPa(Cividale,Palmanova,2019,11,1,13).
+hum_front_850_hPa(Cividale,Gorizia,2019,11,1,13).
+hum_front_850_hPa(Lignano,Palmanova,2019,11,1,13).
+hum_front_850_hPa(Cividale,Gorizia,2019,11,1,14).
+hum_front_850_hPa(Grado,Trieste,2019,11,1,14).
+hum_front_850_hPa(Cividale,Gorizia,2019,11,1,15).
