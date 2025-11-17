@@ -66,6 +66,7 @@ def load_locations(coordinates,image_input_folder):
             width, height
         )
         locations_name_px_pos[row["Location"]]=(px,py)
+    return locations_name_px_pos
 
 def get_starting_date(filename):
     global starting_date
@@ -86,34 +87,74 @@ def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
     # Make sure output folder exists
     os.makedirs(image_output_folder, exist_ok=True)
     
+    TARGET_WIDTH = 668
+    TARGET_HEIGHT = 585  
     # Loop through all images
     for filename in sorted(os.listdir(image_input_folder)):
         print("plot_locations_to_map FOLDER", image_input_folder)
+        print("plot_locations_to_map FOLDER", image_input_folder)
+
         if not filename.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff")):
             continue
-        get_starting_date(filename) #it's in a for, but it's done once, yes a bit of refactory later
+
+        get_starting_date(filename)
 
         input_path = os.path.join(image_input_folder, filename)
         output_path = os.path.join(image_output_folder, filename)
-        
-        # Load image
-        img = mpimg.imread(input_path)
-        
-        fig, ax = plt.subplots(figsize=(10, 8))
-        ax.imshow(img, origin="upper")
-        
-        # Plot each location as a red star
-        for location in locations.keys():
-            px,py=locations[location]
+
+        # -------------------------------------------------------------
+        # 1. Load & resize WITH PIL (pixel-exact)
+        # -------------------------------------------------------------
+        img = Image.open(input_path)
+        img = img.resize((TARGET_WIDTH, TARGET_HEIGHT), Image.LANCZOS)
+        img_np = np.array(img)
+
+        # -------------------------------------------------------------
+        # 2. Create exact-size figure in inches for DPI=100
+        # -------------------------------------------------------------
+        fig_width_in  = TARGET_WIDTH / 100
+        fig_height_in = TARGET_HEIGHT / 100
+
+        fig, ax = plt.subplots(
+            figsize=(fig_width_in, fig_height_in),
+            dpi=100
+        )
+
+        # Remove all margins
+        fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+
+        # -------------------------------------------------------------
+        # 3. Plot background image
+        # -------------------------------------------------------------
+        ax.imshow(img_np, origin="upper")
+
+        # -------------------------------------------------------------
+        # 4. Plot each location
+        # -------------------------------------------------------------
+        for location, (px, py) in locations.items():
             ax.plot(px, py, marker=".", color="red", markersize=10)
             ax.text(px + 5, py - 5, location, color="red", fontsize=8)
-        
+
+        # Set limits to prevent shrinking
+        ax.set_xlim(0, TARGET_WIDTH)
+        ax.set_ylim(TARGET_HEIGHT, 0)
+
+        # Remove axes completely
+        ax.set_xticks([])
+        ax.set_yticks([])
         ax.axis("off")
-        plt.tight_layout()
-        
-        # Save to output folder
-        plt.savefig(output_path, bbox_inches="tight", pad_inches=0)
+
+        # -------------------------------------------------------------
+        # 5. Save image EXACTLY sized
+        # -------------------------------------------------------------
+        plt.savefig(
+            output_path,
+            dpi=100,
+            bbox_inches=None,   # <-- IMPORTANT (avoid shrinking)
+            pad_inches=0        # <-- IMPORTANT
+        )
         plt.close(fig)
+
         print(f"Saved {output_path}")
 
 def get_clouds_covering_locations(locations_name_px_pos, segment_labels_path,trajectories):

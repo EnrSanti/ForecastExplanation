@@ -7,7 +7,7 @@ from raw_data.extract_features_nc import save_feature_maps
 from raw_data.cut_long_lat import cut_grib_long_lat
 from reasoning.pictogram_extraction.pictograms_to_ground_truth import generate_ground_truth
 from reasoning.generate_examples import generate_cloud_facts_over_cities, generate_humidity_facts_over_cities,generate_temp_facts_over_cities , merge_into_examples
-
+from reasoning.get_fronts import to_test
 
 import iris
 iris.FUTURE.date_microseconds = True
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     folder_params = {
         "cloud": (0.7, "minimum",numClusters_clouds),       # e.g. (threshold, go lower or upper, clusters)
         "humidity": (0.4, "minimum",num_clusters_fronts),
-        "temp": (0.5, "minimum",num_clusters_fronts),       # temp fronts
+        "temp": (0.65, "minimum",num_clusters_fronts),       # temp fronts
     }
 
     folders_suff = {
@@ -325,23 +325,6 @@ if __name__ == "__main__":
         merge_into_examples()
         
     elif mode == 6: #to experiment
-
-        folder_list_temp = [
-            (folders_pref[2] + suff)
-            for suff in folders_suff.values()
-        ]
-
-        with ProcessPoolExecutor(max_workers=2) as executor:
-            futures = {
-                executor.submit(run_tobac_fronts,f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold_fronts
-                                ): f for f in folder_list_temp}
-
-            for future in as_completed(futures):
-                
-                f = futures[future]
-                try:
-                    future.result()  # will raise exception if the call failed
-                    print(f"✅ Completed {f}")
-                except Exception as e:
-                    print(f"❌ Error processing {f}: {e}")
+        to_test("./image_processing/fvg/output/", coordinates)
+        
 

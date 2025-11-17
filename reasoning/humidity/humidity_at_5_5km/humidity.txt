@@ -210,7 +210,7 @@ humidity_percentage_at_5_5km(lignano, 0, 2019,11,1,11).
 humidity_percentage_at_5_5km(grado, 0, 2019,11,1,11).
 humidity_percentage_at_5_5km(trieste, 0, 2019,11,1,11).
 humidity_percentage_at_5_5km(sappada, 100, 2019,11,1,12).
-humidity_percentage_at_5_5km(villa_santina, 0, 2019,11,1,12).
+humidity_percentage_at_5_5km(villa_santina, 100, 2019,11,1,12).
 humidity_percentage_at_5_5km(pontebba, 100, 2019,11,1,12).
 humidity_percentage_at_5_5km(tarvisio, 0, 2019,11,1,12).
 humidity_percentage_at_5_5km(forni, 100, 2019,11,1,12).
@@ -221,7 +221,7 @@ humidity_percentage_at_5_5km(spilinbergo, 100, 2019,11,1,12).
 humidity_percentage_at_5_5km(udine, 100, 2019,11,1,12).
 humidity_percentage_at_5_5km(cividale, 0, 2019,11,1,12).
 humidity_percentage_at_5_5km(pordenone, 100, 2019,11,1,12).
-humidity_percentage_at_5_5km(codroipo, 100, 2019,11,1,12).
+humidity_percentage_at_5_5km(codroipo, 0, 2019,11,1,12).
 humidity_percentage_at_5_5km(rivignano, 100, 2019,11,1,12).
 humidity_percentage_at_5_5km(palmanova, 0, 2019,11,1,12).
 humidity_percentage_at_5_5km(gorizia, 0, 2019,11,1,12).
@@ -230,19 +230,19 @@ humidity_percentage_at_5_5km(grado, 0, 2019,11,1,12).
 humidity_percentage_at_5_5km(trieste, 0, 2019,11,1,12).
 humidity_percentage_at_5_5km(sappada, 0, 2019,11,1,13).
 humidity_percentage_at_5_5km(villa_santina, 100, 2019,11,1,13).
-humidity_percentage_at_5_5km(pontebba, 0, 2019,11,1,13).
+humidity_percentage_at_5_5km(pontebba, 100, 2019,11,1,13).
 humidity_percentage_at_5_5km(tarvisio, 100, 2019,11,1,13).
 humidity_percentage_at_5_5km(forni, 0, 2019,11,1,13).
-humidity_percentage_at_5_5km(stolvizza, 0, 2019,11,1,13).
+humidity_percentage_at_5_5km(stolvizza, 100, 2019,11,1,13).
 humidity_percentage_at_5_5km(barcis, 100, 2019,11,1,13).
 humidity_percentage_at_5_5km(gemona, 100, 2019,11,1,13).
 humidity_percentage_at_5_5km(spilinbergo, 0, 2019,11,1,13).
 humidity_percentage_at_5_5km(udine, 100, 2019,11,1,13).
-humidity_percentage_at_5_5km(cividale, 100, 2019,11,1,13).
+humidity_percentage_at_5_5km(cividale, 0, 2019,11,1,13).
 humidity_percentage_at_5_5km(pordenone, 0, 2019,11,1,13).
 humidity_percentage_at_5_5km(codroipo, 0, 2019,11,1,13).
 humidity_percentage_at_5_5km(rivignano, 0, 2019,11,1,13).
-humidity_percentage_at_5_5km(palmanova, 100, 2019,11,1,13).
+humidity_percentage_at_5_5km(palmanova, 0, 2019,11,1,13).
 humidity_percentage_at_5_5km(gorizia, 100, 2019,11,1,13).
 humidity_percentage_at_5_5km(lignano, 0, 2019,11,1,13).
 humidity_percentage_at_5_5km(grado, 0, 2019,11,1,13).
@@ -262,7 +262,7 @@ humidity_percentage_at_5_5km(pordenone, 100, 2019,11,1,14).
 humidity_percentage_at_5_5km(codroipo, 0, 2019,11,1,14).
 humidity_percentage_at_5_5km(rivignano, 0, 2019,11,1,14).
 humidity_percentage_at_5_5km(palmanova, 0, 2019,11,1,14).
-humidity_percentage_at_5_5km(gorizia, 0, 2019,11,1,14).
+humidity_percentage_at_5_5km(gorizia, 100, 2019,11,1,14).
 humidity_percentage_at_5_5km(lignano, 0, 2019,11,1,14).
 humidity_percentage_at_5_5km(grado, 0, 2019,11,1,14).
 humidity_percentage_at_5_5km(trieste, 0, 2019,11,1,14).
@@ -297,8 +297,8 @@ humidity_percentage_at_5_5km(spilinbergo, 0, 2019,11,1,16).
 humidity_percentage_at_5_5km(udine, 100, 2019,11,1,16).
 humidity_percentage_at_5_5km(cividale, 100, 2019,11,1,16).
 humidity_percentage_at_5_5km(pordenone, 0, 2019,11,1,16).
-humidity_percentage_at_5_5km(codroipo, 100, 2019,11,1,16).
-humidity_percentage_at_5_5km(rivignano, 100, 2019,11,1,16).
+humidity_percentage_at_5_5km(codroipo, 0, 2019,11,1,16).
+humidity_percentage_at_5_5km(rivignano, 0, 2019,11,1,16).
 humidity_percentage_at_5_5km(palmanova, 100, 2019,11,1,16).
 humidity_percentage_at_5_5km(gorizia, 100, 2019,11,1,16).
 humidity_percentage_at_5_5km(lignano, 0, 2019,11,1,16).
@@ -326,7 +326,7 @@ humidity_percentage_at_5_5km(trieste, 0, 2019,11,1,17).
 humidity_percentage_at_5_5km(sappada, 0, 2019,11,1,18).
 humidity_percentage_at_5_5km(villa_santina, 100, 2019,11,1,18).
 humidity_percentage_at_5_5km(pontebba, 100, 2019,11,1,18).
-humidity_percentage_at_5_5km(tarvisio, 0, 2019,11,1,18).
+humidity_percentage_at_5_5km(tarvisio, 100, 2019,11,1,18).
 humidity_percentage_at_5_5km(forni, 100, 2019,11,1,18).
 humidity_percentage_at_5_5km(stolvizza, 0, 2019,11,1,18).
 humidity_percentage_at_5_5km(barcis, 100, 2019,11,1,18).
@@ -609,7 +609,7 @@ humidity_percentage_at_5_5km(lignano, 100, 2019,11,2,8).
 humidity_percentage_at_5_5km(grado, 0, 2019,11,2,8).
 humidity_percentage_at_5_5km(trieste, 0, 2019,11,2,8).
 humidity_percentage_at_5_5km(sappada, 100, 2019,11,2,9).
-humidity_percentage_at_5_5km(villa_santina, 0, 2019,11,2,9).
+humidity_percentage_at_5_5km(villa_santina, 100, 2019,11,2,9).
 humidity_percentage_at_5_5km(pontebba, 100, 2019,11,2,9).
 humidity_percentage_at_5_5km(tarvisio, 0, 2019,11,2,9).
 humidity_percentage_at_5_5km(forni, 100, 2019,11,2,9).
@@ -685,7 +685,7 @@ humidity_percentage_at_5_5km(lignano, 0, 2019,11,2,12).
 humidity_percentage_at_5_5km(grado, 0, 2019,11,2,12).
 humidity_percentage_at_5_5km(trieste, 0, 2019,11,2,12).
 humidity_percentage_at_5_5km(sappada, 100, 2019,11,2,13).
-humidity_percentage_at_5_5km(villa_santina, 0, 2019,11,2,13).
+humidity_percentage_at_5_5km(villa_santina, 100, 2019,11,2,13).
 humidity_percentage_at_5_5km(pontebba, 0, 2019,11,2,13).
 humidity_percentage_at_5_5km(tarvisio, 0, 2019,11,2,13).
 humidity_percentage_at_5_5km(forni, 100, 2019,11,2,13).
@@ -818,7 +818,7 @@ humidity_percentage_at_5_5km(lignano, 0, 2019,11,2,19).
 humidity_percentage_at_5_5km(grado, 100, 2019,11,2,19).
 humidity_percentage_at_5_5km(trieste, 100, 2019,11,2,19).
 humidity_percentage_at_5_5km(sappada, 100, 2019,11,2,20).
-humidity_percentage_at_5_5km(villa_santina, 0, 2019,11,2,20).
+humidity_percentage_at_5_5km(villa_santina, 100, 2019,11,2,20).
 humidity_percentage_at_5_5km(pontebba, 100, 2019,11,2,20).
 humidity_percentage_at_5_5km(tarvisio, 100, 2019,11,2,20).
 humidity_percentage_at_5_5km(forni, 100, 2019,11,2,20).
@@ -985,7 +985,7 @@ humidity_percentage_at_5_5km(codroipo, 0, 2019,11,3,4).
 humidity_percentage_at_5_5km(rivignano, 0, 2019,11,3,4).
 humidity_percentage_at_5_5km(palmanova, 0, 2019,11,3,4).
 humidity_percentage_at_5_5km(gorizia, 100, 2019,11,3,4).
-humidity_percentage_at_5_5km(lignano, 0, 2019,11,3,4).
+humidity_percentage_at_5_5km(lignano, 100, 2019,11,3,4).
 humidity_percentage_at_5_5km(grado, 0, 2019,11,3,4).
 humidity_percentage_at_5_5km(trieste, 0, 2019,11,3,4).
 humidity_percentage_at_5_5km(sappada, 100, 2019,11,3,5).
@@ -998,7 +998,7 @@ humidity_percentage_at_5_5km(barcis, 100, 2019,11,3,5).
 humidity_percentage_at_5_5km(gemona, 100, 2019,11,3,5).
 humidity_percentage_at_5_5km(spilinbergo, 100, 2019,11,3,5).
 humidity_percentage_at_5_5km(udine, 0, 2019,11,3,5).
-humidity_percentage_at_5_5km(cividale, 0, 2019,11,3,5).
+humidity_percentage_at_5_5km(cividale, 100, 2019,11,3,5).
 humidity_percentage_at_5_5km(pordenone, 100, 2019,11,3,5).
 humidity_percentage_at_5_5km(codroipo, 0, 2019,11,3,5).
 humidity_percentage_at_5_5km(rivignano, 0, 2019,11,3,5).
