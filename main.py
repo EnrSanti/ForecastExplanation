@@ -7,7 +7,7 @@ from raw_data.extract_features_nc import save_feature_maps
 from raw_data.cut_long_lat import cut_grib_long_lat
 from reasoning.pictogram_extraction.pictograms_to_ground_truth import generate_ground_truth
 from reasoning.generate_examples import generate_cloud_facts_over_cities, generate_humidity_facts_over_cities,generate_temp_facts_over_cities , merge_into_examples
-from reasoning.get_fronts import to_test
+from reasoning.get_fronts import init_fronts_generation,generate_fronts_hum,generate_fronts_temp
 
 import iris
 iris.FUTURE.date_microseconds = True
@@ -17,6 +17,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import warnings
 
 from reasoning.generate_examples import coordinates,coordinates_italy
+
 warnings.filterwarnings(
     "ignore",
     message="As of v1.6.0, segmentation with time length 1",
@@ -229,7 +230,11 @@ if __name__ == "__main__":
         base_path = "./image_processing/fvg/output_clustered/"
         generate_cloud_facts_over_cities(base_path)
         generate_humidity_facts_over_cities(base_path)
-        generate_temp_facts_over_cities(base_path)
+
+        starting_date=generate_temp_facts_over_cities(base_path)
+        
+        generate_fronts_hum(starting_date)
+        generate_fronts_temp(starting_date)
 
 
 
@@ -314,7 +319,9 @@ if __name__ == "__main__":
         base_path = "./image_processing/fvg/output/"
         generate_cloud_facts_over_cities(base_path)
         generate_humidity_facts_over_cities(base_path)
-        generate_temp_facts_over_cities(base_path)
+        starting_date=generate_temp_facts_over_cities(base_path)
+        generate_fronts_hum(starting_date)
+        generate_fronts_temp(starting_date)
 
     elif mode == 4:       
 
@@ -325,6 +332,11 @@ if __name__ == "__main__":
         merge_into_examples()
         
     elif mode == 6: #to experiment
-        to_test("./image_processing/fvg/output/", coordinates)
+        base_path = "./image_processing/fvg/output/"
+        starting_date=generate_temp_facts_over_cities(base_path)
+
+        init_fronts_generation("./image_processing/fvg/output/", coordinates)
+        generate_fronts_hum(starting_date)
+        generate_fronts_temp(starting_date)
         
 

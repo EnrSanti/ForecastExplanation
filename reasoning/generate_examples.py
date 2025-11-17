@@ -75,7 +75,7 @@ def get_starting_date(filename):
         date_str = parts[-2]         # '20191101'
         hour_str = parts[-1][:2]     # '05' → 5
 
-        starting_date= datetime.strptime(date_str + hour_str, "%Y%m%d%H")
+        starting_date=datetime.strptime(date_str + hour_str, "%Y%m%d%H")
 
 def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
     # Load locations
@@ -417,4 +417,4 @@ def generate_temp_facts_over_cities(base_path):
                         #witout appproximation use: int(values[location_name])
                         approximated_temp=round(values[location_name]) #approx (should already be int)
                         f.write(f"temperature_at{suff}({loc_lower}, {approximated_temp}, {yyyy},{mm},{dd},{h}).\n")
-                    
+    return starting_date
