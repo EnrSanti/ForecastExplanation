@@ -183,7 +183,7 @@ def save_temperature_maps(input_path,coordinates, clean_plot):
     global levels,folders
     temp_folders = {k: "temp" + v for k, v in folders.items()}
 
-    cmap = "coolwarm"
+    cmap = "OrRd"
 
     # ---- OPEN DATASET ----
     ds = xr.open_dataset(input_path, decode_times=True, decode_timedelta=False)  # fix FutureWarning

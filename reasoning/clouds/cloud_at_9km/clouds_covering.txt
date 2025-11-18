@@ -266,8 +266,10 @@ cloud_at_9km_covers(Gorizia,17,2019,11,2,5).
 cloud_at_9km_covers(Lignano,17,2019,11,2,5).
 cloud_at_9km_covers(Grado,17,2019,11,2,5).
 cloud_at_9km_covers(Trieste,17,2019,11,2,5).
+cloud_at_9km_covers(Sappada,17,2019,11,2,6).
 cloud_at_9km_covers(Villa_santina,17,2019,11,2,6).
 cloud_at_9km_covers(Pontebba,17,2019,11,2,6).
+cloud_at_9km_covers(Tarvisio,17,2019,11,2,6).
 cloud_at_9km_covers(Stolvizza,17,2019,11,2,6).
 cloud_at_9km_covers(Barcis,17,2019,11,2,6).
 cloud_at_9km_covers(Gemona,17,2019,11,2,6).
