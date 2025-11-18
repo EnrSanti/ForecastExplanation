@@ -166,15 +166,15 @@ if __name__ == "__main__":
             pass    
 
         folder_list_clouds = [
-            (folders_pref[0] + suff)
+            (folders_pref[0] + suff, folders_pref[0])
             for suff in folders_suff.values()
         ]
 
         #for the clouds run tobac   
         with ProcessPoolExecutor(max_workers=2) as executor:
             futures = {
-                executor.submit(run_tobac_merge_split, f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}", "raw_data/extracted_fvg_cleaned/borders.png", coordinates[2], coordinates[3], coordinates[0], coordinates[1], threshold, upper_lower, n_min_threshold_clouds
-                ): f for f in folder_list_clouds}
+                executor.submit(run_tobac_merge_split, f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}", "raw_data/extracted_fvg_cleaned/borders.png", coordinates[2], coordinates[3], coordinates[0], coordinates[1], threshold, upper_lower,type_, n_min_threshold_clouds
+                ):  (f,type_) for (f,type_)  in folder_list_clouds}
 
             for future in as_completed(futures):
 
@@ -188,15 +188,15 @@ if __name__ == "__main__":
 
 
         folder_list_humidity = [
-            (folders_pref[1] + suff)
+            (folders_pref[1] + suff, folders_pref[1])
             for suff in folders_suff.values()
         ]
 
         #for the humidity   
         with ProcessPoolExecutor(max_workers=2) as executor:
             futures = {
-                executor.submit(run_tobac_fronts,f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold_fronts
-                                ): f for f in folder_list_humidity}
+                executor.submit(run_tobac_fronts,f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,type_,n_min_threshold_fronts
+                                ): (f,type_) for (f,type_) in folder_list_humidity}
 
             for future in as_completed(futures):
                 
@@ -209,13 +209,13 @@ if __name__ == "__main__":
 
         #for the tmeperature
         folder_list_temp = [
-            (folders_pref[2] + suff)
+            (folders_pref[2] + suff, folders_pref[2])
             for suff in folders_suff.values()
         ]
         with ProcessPoolExecutor(max_workers=2) as executor:
             futures = {
-                executor.submit(run_tobac_fronts,f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold_fronts
-                                ): f for f in folder_list_temp}
+                executor.submit(run_tobac_fronts,f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,type_,n_min_threshold_fronts
+                                ): (f,type_) for (f,type_) in folder_list_temp}
 
             for future in as_completed(futures):
                 
@@ -252,15 +252,15 @@ if __name__ == "__main__":
         
         #for the temp
         folder_list_temp = [
-            (folders_pref[2] + suff)
+            (folders_pref[2] + suff,  folders_pref[2])
             for suff in folders_suff.values()
         ]
 
         with ProcessPoolExecutor(max_workers=2) as executor:
             print("threshold ", threshold )
             futures = {
-                executor.submit(run_tobac_fronts,f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold_fronts
-                                ): f for f in folder_list_temp}
+                executor.submit(run_tobac_fronts,f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,type_,n_min_threshold_fronts
+                                ): (f,type_) for (f,type_) in folder_list_temp}
 
             for future in as_completed(futures):
                 
@@ -274,15 +274,15 @@ if __name__ == "__main__":
 
         #for the clouds
         folder_list_clouds = [
-            (folders_pref[0] + suff)
+            (folders_pref[0] + suff,  folders_pref[0])
             for suff in folders_suff.values()
         ]
         
         
         with ProcessPoolExecutor(max_workers=2) as executor:
             futures = {
-                executor.submit(run_tobac_merge_split, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png", coordinates[2], coordinates[3], coordinates[0], coordinates[1], threshold, upper_lower, n_min_threshold_fronts
-                ): f for f in folder_list_clouds}
+                executor.submit(run_tobac_merge_split, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png", coordinates[2], coordinates[3], coordinates[0], coordinates[1], threshold, upper_lower,type_, n_min_threshold_fronts
+                ): (f,type_) for (f,type_) in folder_list_clouds}
 
             for future in as_completed(futures):
 
@@ -295,14 +295,14 @@ if __name__ == "__main__":
 
         #for the humidity
         folder_list_humidity = [
-            (folders_pref[1] + suff)
+            (folders_pref[1] + suff,  folders_pref[1])
             for suff in folders_suff.values()
         ]
 
         with ProcessPoolExecutor(max_workers=2) as executor:
             futures = {
-                executor.submit(run_tobac_fronts,f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,n_min_threshold_fronts
-                                ): f for f in folder_list_humidity}
+                executor.submit(run_tobac_fronts,f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower, type_, n_min_threshold_fronts
+                                ): (f,type_) for (f,type_) in folder_list_humidity}
 
             for future in as_completed(futures):
                 

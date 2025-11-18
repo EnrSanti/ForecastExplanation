@@ -1,7 +1,7 @@
-Cell 19 changed (SPLIT) into 'new' cell 20 at frame 38 (according to tobac)
-Cell 19 changed (MERGE) into cell 20 at frame 38 (according to tobac)
+Cell 18 changed (SPLIT) into 'new' cell 19 at frame 38 (according to tobac)
+Cell 18 changed (MERGE) into cell 19 at frame 38 (according to tobac)
 -------------------
-Cell 18 changed (MERGE) into cell 22 at frame 40 (according to tobac)
+Cell 19 changed (MERGE) into cell 22 at frame 40 (according to tobac)
 -------------------
 Cell 24 changed (SPLIT) into 'new' cell 26 at frame 41 (according to tobac)
 -------------------

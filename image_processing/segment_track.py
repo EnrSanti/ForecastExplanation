@@ -29,7 +29,7 @@ def overlay_image(path_borders, axs, temp_da):
 
 #target minimum -> upper
 #target maximum -> lower
-def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max, threshold, target, save_split_merges=True,smooth = 8):
+def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max, threshold, target,type_, save_split_merges=True,smooth = 8):
     
     """
     Runs the locate and tracking of the objects
@@ -74,8 +74,15 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
     datetimes = pd.to_datetime(datetimes)
 
     #convert frames to grayscale
-    frames_gray = [np.mean(f[:, :, :3], axis=2) if f.ndim==3 else f for f in frames]
-
+    
+    frames_gray = []
+    if type_ in ["temp"]:
+        frames_gray = [1-np.mean(f[:, :, :3], axis=2) if f.ndim==3 else f for f in frames]
+    else:
+        frames_gray = [np.mean(f[:, :, :3], axis=2) if f.ndim==3 else f for f in frames]
+        
+    
+    
     #stack into 3D array (time, y, x)
     data = np.stack(frames_gray)
     _, n_y, n_x = data.shape
@@ -171,6 +178,13 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
 
     #getting the list with number of images
     plot_frames = range(0, images_no)
+    cmap="viridis"
+    if type_ == "cloud":
+        cmap = "viridis"
+    elif type_ == "humidity":
+        cmap = "YlGnBu"
+    elif type_ == "temp":
+        cmap = "OrRd"
 
     if(trajectories is None):
         for i, itime in enumerate(plot_frames):
@@ -190,7 +204,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
             temp_da.data = smoothed_frame
 
             #consistent color range across all frames
-            axs.imshow(temp_da.values, origin="upper", cmap="viridis")  # pixels are axes
+            axs.imshow(temp_da.values, origin="upper", cmap=cmap)  # pixels are axes
             xlim = (0, temp_da.sizes['x'])
             ylim = (0, temp_da.sizes['y'])
             axs.set_title("")
@@ -219,8 +233,6 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         smoothed_frame =ndimage.gaussian_filter(
             test_data_norm.isel(time=itime).values, sigma=smooth
         )
-        temp_da = test_data_norm.isel(time=itime).copy()
-        temp_da.data = smoothed_frame
 
         temp_da = test_data_norm.isel(time=[itime]).copy()
         temp_da.data = smoothed_frame[np.newaxis, ...]  #keep time dim
@@ -316,7 +328,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         temp_da.data = smoothed_frame
 
         #consistent color range across all frames
-        axs.imshow(temp_da.values, origin="upper", cmap="viridis")  # pixels are axes
+        axs.imshow(temp_da.values, origin="upper", cmap=cmap)  # pixels are axes
         xlim = (0, temp_da.sizes['x'])
         ylim = (0, temp_da.sizes['y'])
     
@@ -603,7 +615,7 @@ def extract_keys(filename):
         return (0, 0)
 
 
-def run_tobac_merge_split(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,threshold, target,n_min_threshold=0,smooth = 8):
+def run_tobac_merge_split(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,threshold, target,type_,n_min_threshold=0,smooth = 8):
     """
     The main function called from outside (main).
     Runs the locate and tracking of the objects, moreover it does the splitting and merging detection.
@@ -620,10 +632,11 @@ def run_tobac_merge_split(inpu_folder, output_folder,border_path,lat_min,lat_max
     smooth: smoothing factor for gaussian filter (default 8)
 
     """
-    locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold, target,True,smooth)
+    print("Type: ", type_)
+    locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold, target,type_,True,smooth)
     print("Locating & tracking procedure completed")
 
-def run_tobac_fronts(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,threshold, target,n_min_threshold=0,smooth = 8):
+def run_tobac_fronts(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,threshold, target,type_,n_min_threshold=0,smooth = 8):
     """
     The main function called from outside (main).
     Runs the locate and tracking of the objects, it doens't do the splitting and merging detection, but tracks fronts.
@@ -640,7 +653,8 @@ def run_tobac_fronts(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_
     smooth: smoothing factor for gaussian filter (default 8)
 
     """
-    locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold, target,False,smooth)
+    print("Type: ", type_)
+    locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold,  target,type_,False,smooth)
     print("Locating & tracking (fronts) procedure completed")
 
 

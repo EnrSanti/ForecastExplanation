@@ -3,6 +3,7 @@
 cloud_at_3km_covers(Trieste,5,2019,11,1,22).
 cloud_at_3km_covers(Trieste,5,2019,11,1,23).
 cloud_at_3km_covers(Pordenone,12,2019,11,2,4).
+cloud_at_3km_covers(Pordenone,13,2019,11,2,9).
 cloud_at_3km_covers(Rivignano,17,2019,11,2,14).
 cloud_at_3km_covers(Lignano,17,2019,11,2,14).
 cloud_at_3km_covers(Grado,17,2019,11,2,14).
