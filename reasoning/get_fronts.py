@@ -273,8 +273,6 @@ def generate_fronts_hum(starting_date):
     target_type = folder_types[1] 
 
 
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Generating temperature fronts...",starting_date)
-    
     all_fronts_facts = []
 
     for level, suff in folders_suff.items():
@@ -313,7 +311,7 @@ def generate_fronts_hum(starting_date):
                         city2_seg_id = get_location_segment_id(city2, seg_labels, locations_pos_px)
                         
                         # Front condition: one covered (seg_id > 0), one not (seg_id == 0)
-                        is_front_candidate = (city1_seg_id != city2_seg_id == 0)
+                        is_front_candidate = (city1_seg_id != city2_seg_id)
 
 
                         if is_front_candidate:
@@ -395,7 +393,7 @@ def generate_fronts_temp(starting_date):
                         city2_seg_id = get_location_segment_id(city2, seg_labels, locations_pos_px)
                         
                         # Front condition: one covered (seg_id > 0), one not (seg_id == 0)
-                        is_front_candidate = (city1_seg_id != city2_seg_id == 0)
+                        is_front_candidate = (city1_seg_id != city2_seg_id )
 
 
                         if is_front_candidate:

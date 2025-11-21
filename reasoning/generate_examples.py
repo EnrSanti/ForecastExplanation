@@ -435,8 +435,22 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         timestamp = cloud_timestamp or hum_timestamp or temp_front_timestamp or hum_front_timestamp
         
         with open(output_path, 'w') as f_out:
+            #get the date as yyyy_mm_dd
+            y, m, d, h = frame_index_to_timestamp(frame_idx, starting_date)
+            date_str = f"{y}_{m:02d}_{d:02d}"
+
             f_out.write("% Example generated data for frame {}\n\n".format(frame_idx))
             f_out.write("#pos(e1,{ \n\n")
+            #open the pictogram file for that date
+            pictogram_file=os.path.join(folder_pictograms,f"pitt_{date_str}_locations.txt")
+            if os.path.isfile(pictogram_file):
+                with open(pictogram_file, 'r') as f_picto:
+                    pictogram_lines = f_picto.readlines()
+                    f_out.write("".join(pictogram_lines))
+                    f_out.write("\n")
+           
+            f_out.write(" },{}).\n\n")
+            f_out.write("#context(e1,{ \n\n")
             f_out.write(timestamp + "\n\n")
             f_out.write("% Cloud coverage data:\n")            
             f_out.write("% Cloud_covers(location,cloud_id)\n")
@@ -459,7 +473,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
             for fact in temp_front_stripped:
                 f_out.write(fact + "\n")
             f_out.write("\n")
-            f_out.write("  },{}). \n")
+            f_out.write("}). \n")
         print(f"Wrote example data to {output_path}")
 
 
