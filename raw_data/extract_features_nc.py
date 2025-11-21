@@ -107,7 +107,7 @@ def save_cloud_maps(input_path, coordinates,clean_plot):
     cloud_folders = {k: "cloud" + v for k, v in folders.items()}
 
 
-    cmap = "Blues"
+    cmap = "viridis"
 
     ds = xr.open_dataset(input_path, decode_times=True, decode_timedelta=False)
     if 'ccl' not in ds:

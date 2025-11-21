@@ -488,7 +488,7 @@ temperature_at_at_1_4km(udine, 279, 2019,11,2,2).
 temperature_at_at_1_4km(cividale, 279, 2019,11,2,2).
 temperature_at_at_1_4km(pordenone, 279, 2019,11,2,2).
 temperature_at_at_1_4km(codroipo, 279, 2019,11,2,2).
-temperature_at_at_1_4km(rivignano, 282, 2019,11,2,2).
+temperature_at_at_1_4km(rivignano, 279, 2019,11,2,2).
 temperature_at_at_1_4km(palmanova, 279, 2019,11,2,2).
 temperature_at_at_1_4km(gorizia, 281, 2019,11,2,2).
 temperature_at_at_1_4km(lignano, 280, 2019,11,2,2).
@@ -507,7 +507,7 @@ temperature_at_at_1_4km(udine, 279, 2019,11,2,3).
 temperature_at_at_1_4km(cividale, 279, 2019,11,2,3).
 temperature_at_at_1_4km(pordenone, 279, 2019,11,2,3).
 temperature_at_at_1_4km(codroipo, 279, 2019,11,2,3).
-temperature_at_at_1_4km(rivignano, 285, 2019,11,2,3).
+temperature_at_at_1_4km(rivignano, 279, 2019,11,2,3).
 temperature_at_at_1_4km(palmanova, 279, 2019,11,2,3).
 temperature_at_at_1_4km(gorizia, 279, 2019,11,2,3).
 temperature_at_at_1_4km(lignano, 280, 2019,11,2,3).
@@ -552,9 +552,9 @@ temperature_at_at_1_4km(lignano, 280, 2019,11,2,5).
 temperature_at_at_1_4km(grado, 280, 2019,11,2,5).
 temperature_at_at_1_4km(trieste, 280, 2019,11,2,5).
 temperature_at_at_1_4km(sappada, 277, 2019,11,2,6).
-temperature_at_at_1_4km(villa_santina, 275, 2019,11,2,6).
+temperature_at_at_1_4km(villa_santina, 277, 2019,11,2,6).
 temperature_at_at_1_4km(pontebba, 275, 2019,11,2,6).
-temperature_at_at_1_4km(tarvisio, 277, 2019,11,2,6).
+temperature_at_at_1_4km(tarvisio, 279, 2019,11,2,6).
 temperature_at_at_1_4km(forni, 277, 2019,11,2,6).
 temperature_at_at_1_4km(stolvizza, 277, 2019,11,2,6).
 temperature_at_at_1_4km(barcis, 277, 2019,11,2,6).
@@ -564,11 +564,11 @@ temperature_at_at_1_4km(udine, 279, 2019,11,2,6).
 temperature_at_at_1_4km(cividale, 279, 2019,11,2,6).
 temperature_at_at_1_4km(pordenone, 279, 2019,11,2,6).
 temperature_at_at_1_4km(codroipo, 279, 2019,11,2,6).
-temperature_at_at_1_4km(rivignano, 279, 2019,11,2,6).
-temperature_at_at_1_4km(palmanova, 279, 2019,11,2,6).
+temperature_at_at_1_4km(rivignano, 281, 2019,11,2,6).
+temperature_at_at_1_4km(palmanova, 281, 2019,11,2,6).
 temperature_at_at_1_4km(gorizia, 281, 2019,11,2,6).
-temperature_at_at_1_4km(lignano, 280, 2019,11,2,6).
-temperature_at_at_1_4km(grado, 280, 2019,11,2,6).
+temperature_at_at_1_4km(lignano, 282, 2019,11,2,6).
+temperature_at_at_1_4km(grado, 282, 2019,11,2,6).
 temperature_at_at_1_4km(trieste, 282, 2019,11,2,6).
 temperature_at_at_1_4km(sappada, 277, 2019,11,2,7).
 temperature_at_at_1_4km(villa_santina, 275, 2019,11,2,7).
@@ -647,7 +647,7 @@ temperature_at_at_1_4km(lignano, 280, 2019,11,2,10).
 temperature_at_at_1_4km(grado, 280, 2019,11,2,10).
 temperature_at_at_1_4km(trieste, 280, 2019,11,2,10).
 temperature_at_at_1_4km(sappada, 275, 2019,11,2,11).
-temperature_at_at_1_4km(villa_santina, 276, 2019,11,2,11).
+temperature_at_at_1_4km(villa_santina, 275, 2019,11,2,11).
 temperature_at_at_1_4km(pontebba, 275, 2019,11,2,11).
 temperature_at_at_1_4km(tarvisio, 277, 2019,11,2,11).
 temperature_at_at_1_4km(forni, 275, 2019,11,2,11).
@@ -666,7 +666,7 @@ temperature_at_at_1_4km(lignano, 278, 2019,11,2,11).
 temperature_at_at_1_4km(grado, 279, 2019,11,2,11).
 temperature_at_at_1_4km(trieste, 280, 2019,11,2,11).
 temperature_at_at_1_4km(sappada, 275, 2019,11,2,12).
-temperature_at_at_1_4km(villa_santina, 274, 2019,11,2,12).
+temperature_at_at_1_4km(villa_santina, 275, 2019,11,2,12).
 temperature_at_at_1_4km(pontebba, 275, 2019,11,2,12).
 temperature_at_at_1_4km(tarvisio, 275, 2019,11,2,12).
 temperature_at_at_1_4km(forni, 275, 2019,11,2,12).
@@ -704,7 +704,7 @@ temperature_at_at_1_4km(lignano, 278, 2019,11,2,13).
 temperature_at_at_1_4km(grado, 279, 2019,11,2,13).
 temperature_at_at_1_4km(trieste, 278, 2019,11,2,13).
 temperature_at_at_1_4km(sappada, 275, 2019,11,2,14).
-temperature_at_at_1_4km(villa_santina, 274, 2019,11,2,14).
+temperature_at_at_1_4km(villa_santina, 275, 2019,11,2,14).
 temperature_at_at_1_4km(pontebba, 273, 2019,11,2,14).
 temperature_at_at_1_4km(tarvisio, 275, 2019,11,2,14).
 temperature_at_at_1_4km(forni, 275, 2019,11,2,14).
@@ -723,7 +723,7 @@ temperature_at_at_1_4km(lignano, 280, 2019,11,2,14).
 temperature_at_at_1_4km(grado, 278, 2019,11,2,14).
 temperature_at_at_1_4km(trieste, 278, 2019,11,2,14).
 temperature_at_at_1_4km(sappada, 275, 2019,11,2,15).
-temperature_at_at_1_4km(villa_santina, 274, 2019,11,2,15).
+temperature_at_at_1_4km(villa_santina, 275, 2019,11,2,15).
 temperature_at_at_1_4km(pontebba, 275, 2019,11,2,15).
 temperature_at_at_1_4km(tarvisio, 275, 2019,11,2,15).
 temperature_at_at_1_4km(forni, 277, 2019,11,2,15).

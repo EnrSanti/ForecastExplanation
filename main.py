@@ -16,7 +16,7 @@ import threading
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import warnings
 
-from reasoning.generate_examples import coordinates,coordinates_italy
+from reasoning.generate_examples import coordinates,coordinates_italy, init_starting_date
 
 warnings.filterwarnings(
     "ignore",
@@ -30,7 +30,7 @@ num_clusters_fronts = 5
 
 #minimum number of pixels for TOBAC (don't consider smaller blobs)
 n_min_threshold_clouds=300
-n_min_threshold_fronts=3000
+n_min_threshold_fronts=2000
 
 
 
@@ -98,9 +98,9 @@ if __name__ == "__main__":
     folders_pref = ["cloud","humidity","temp"] #, "winds"}
     
     folder_params = {
-        "cloud": (0.7, "minimum",numClusters_clouds),       # e.g. (threshold, go lower or upper, clusters)
-        "humidity": (0.4, "minimum",num_clusters_fronts),
-        "temp": (0.65, "minimum",num_clusters_fronts),       # temp fronts
+        "cloud": (0.7, "maximum",numClusters_clouds),       # e.g. (threshold, go lower or upper, clusters)
+        "humidity": (0.55, "minimum",num_clusters_fronts),
+        "temp": (0.6, "maximum",num_clusters_fronts),       # temp fronts
     }
 
     folders_suff = {
@@ -247,7 +247,6 @@ if __name__ == "__main__":
             for suff in folders_suff.values()
         ]
         for f, threshold, upper_lower, _ in folder_list:
-            print("folder ",f, " upper-lower ", upper_lower, "threshold ", threshold )
             resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
         
         #for the temp
@@ -255,7 +254,7 @@ if __name__ == "__main__":
             (folders_pref[2] + suff,  folders_pref[2])
             for suff in folders_suff.values()
         ]
-
+        
         with ProcessPoolExecutor(max_workers=2) as executor:
             print("threshold ", threshold )
             futures = {
@@ -271,7 +270,7 @@ if __name__ == "__main__":
                 except Exception as e:
                     print(f"❌ Error processing {f}: {e}")
 
-
+        
         #for the clouds
         folder_list_clouds = [
             (folders_pref[0] + suff,  folders_pref[0])
@@ -292,13 +291,12 @@ if __name__ == "__main__":
                     print(f"✅ Completed {f}")
                 except Exception as e:
                     print(f"❌ Error processing {f}: {e}")
-
+        
         #for the humidity
         folder_list_humidity = [
             (folders_pref[1] + suff,  folders_pref[1])
             for suff in folders_suff.values()
         ]
-
         with ProcessPoolExecutor(max_workers=2) as executor:
             futures = {
                 executor.submit(run_tobac_fronts,f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower, type_, n_min_threshold_fronts
@@ -328,8 +326,20 @@ if __name__ == "__main__":
         generate_ground_truth()
 
     elif mode == 5:
-        #TODO
-        merge_into_examples()
+        folder_list_clouds = [
+            (folders_pref[0] + suff,  folders_pref[0])
+            for suff in folders_suff.values()
+        ]
+        folder_list_humidity = [
+            (folders_pref[1] + suff,  folders_pref[1])
+            for suff in folders_suff.values()
+        ]
+        folder_list_temp = [
+            (folders_pref[2] + suff, folders_pref[2])
+            for suff in folders_suff.values()
+        ]
+        init_starting_date()
+        merge_into_examples(folder_list_clouds,folder_list_humidity,folder_list_temp)
         
     elif mode == 6: #to experiment
         base_path = "./image_processing/fvg/output/"

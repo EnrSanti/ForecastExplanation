@@ -8,7 +8,7 @@ temperature_at_at_5_5km(forni, 256, 2019,11,1,1).
 temperature_at_at_5_5km(stolvizza, 255, 2019,11,1,1).
 temperature_at_at_5_5km(barcis, 256, 2019,11,1,1).
 temperature_at_at_5_5km(gemona, 256, 2019,11,1,1).
-temperature_at_at_5_5km(spilinbergo, 257, 2019,11,1,1).
+temperature_at_at_5_5km(spilinbergo, 256, 2019,11,1,1).
 temperature_at_at_5_5km(udine, 256, 2019,11,1,1).
 temperature_at_at_5_5km(cividale, 256, 2019,11,1,1).
 temperature_at_at_5_5km(pordenone, 257, 2019,11,1,1).
@@ -65,7 +65,7 @@ temperature_at_at_5_5km(forni, 256, 2019,11,1,4).
 temperature_at_at_5_5km(stolvizza, 256, 2019,11,1,4).
 temperature_at_at_5_5km(barcis, 256, 2019,11,1,4).
 temperature_at_at_5_5km(gemona, 256, 2019,11,1,4).
-temperature_at_at_5_5km(spilinbergo, 259, 2019,11,1,4).
+temperature_at_at_5_5km(spilinbergo, 256, 2019,11,1,4).
 temperature_at_at_5_5km(udine, 256, 2019,11,1,4).
 temperature_at_at_5_5km(cividale, 256, 2019,11,1,4).
 temperature_at_at_5_5km(pordenone, 257, 2019,11,1,4).
@@ -84,7 +84,7 @@ temperature_at_at_5_5km(forni, 256, 2019,11,1,5).
 temperature_at_at_5_5km(stolvizza, 255, 2019,11,1,5).
 temperature_at_at_5_5km(barcis, 256, 2019,11,1,5).
 temperature_at_at_5_5km(gemona, 256, 2019,11,1,5).
-temperature_at_at_5_5km(spilinbergo, 257, 2019,11,1,5).
+temperature_at_at_5_5km(spilinbergo, 256, 2019,11,1,5).
 temperature_at_at_5_5km(udine, 256, 2019,11,1,5).
 temperature_at_at_5_5km(cividale, 256, 2019,11,1,5).
 temperature_at_at_5_5km(pordenone, 257, 2019,11,1,5).
@@ -103,7 +103,7 @@ temperature_at_at_5_5km(forni, 256, 2019,11,1,6).
 temperature_at_at_5_5km(stolvizza, 255, 2019,11,1,6).
 temperature_at_at_5_5km(barcis, 256, 2019,11,1,6).
 temperature_at_at_5_5km(gemona, 255, 2019,11,1,6).
-temperature_at_at_5_5km(spilinbergo, 257, 2019,11,1,6).
+temperature_at_at_5_5km(spilinbergo, 256, 2019,11,1,6).
 temperature_at_at_5_5km(udine, 255, 2019,11,1,6).
 temperature_at_at_5_5km(cividale, 255, 2019,11,1,6).
 temperature_at_at_5_5km(pordenone, 256, 2019,11,1,6).
@@ -122,7 +122,7 @@ temperature_at_at_5_5km(forni, 256, 2019,11,1,7).
 temperature_at_at_5_5km(stolvizza, 256, 2019,11,1,7).
 temperature_at_at_5_5km(barcis, 257, 2019,11,1,7).
 temperature_at_at_5_5km(gemona, 256, 2019,11,1,7).
-temperature_at_at_5_5km(spilinbergo, 257, 2019,11,1,7).
+temperature_at_at_5_5km(spilinbergo, 256, 2019,11,1,7).
 temperature_at_at_5_5km(udine, 256, 2019,11,1,7).
 temperature_at_at_5_5km(cividale, 256, 2019,11,1,7).
 temperature_at_at_5_5km(pordenone, 257, 2019,11,1,7).
@@ -198,7 +198,7 @@ temperature_at_at_5_5km(forni, 259, 2019,11,1,11).
 temperature_at_at_5_5km(stolvizza, 257, 2019,11,1,11).
 temperature_at_at_5_5km(barcis, 260, 2019,11,1,11).
 temperature_at_at_5_5km(gemona, 259, 2019,11,1,11).
-temperature_at_at_5_5km(spilinbergo, 260, 2019,11,1,11).
+temperature_at_at_5_5km(spilinbergo, 259, 2019,11,1,11).
 temperature_at_at_5_5km(udine, 259, 2019,11,1,11).
 temperature_at_at_5_5km(cividale, 257, 2019,11,1,11).
 temperature_at_at_5_5km(pordenone, 259, 2019,11,1,11).
@@ -551,14 +551,14 @@ temperature_at_at_5_5km(gorizia, 260, 2019,11,2,5).
 temperature_at_at_5_5km(lignano, 261, 2019,11,2,5).
 temperature_at_at_5_5km(grado, 260, 2019,11,2,5).
 temperature_at_at_5_5km(trieste, 261, 2019,11,2,5).
-temperature_at_at_5_5km(sappada, 259, 2019,11,2,6).
-temperature_at_at_5_5km(villa_santina, 259, 2019,11,2,6).
-temperature_at_at_5_5km(pontebba, 259, 2019,11,2,6).
-temperature_at_at_5_5km(tarvisio, 259, 2019,11,2,6).
+temperature_at_at_5_5km(sappada, 260, 2019,11,2,6).
+temperature_at_at_5_5km(villa_santina, 260, 2019,11,2,6).
+temperature_at_at_5_5km(pontebba, 260, 2019,11,2,6).
+temperature_at_at_5_5km(tarvisio, 260, 2019,11,2,6).
 temperature_at_at_5_5km(forni, 260, 2019,11,2,6).
-temperature_at_at_5_5km(stolvizza, 259, 2019,11,2,6).
+temperature_at_at_5_5km(stolvizza, 260, 2019,11,2,6).
 temperature_at_at_5_5km(barcis, 260, 2019,11,2,6).
-temperature_at_at_5_5km(gemona, 259, 2019,11,2,6).
+temperature_at_at_5_5km(gemona, 260, 2019,11,2,6).
 temperature_at_at_5_5km(spilinbergo, 260, 2019,11,2,6).
 temperature_at_at_5_5km(udine, 260, 2019,11,2,6).
 temperature_at_at_5_5km(cividale, 260, 2019,11,2,6).
@@ -567,9 +567,9 @@ temperature_at_at_5_5km(codroipo, 260, 2019,11,2,6).
 temperature_at_at_5_5km(rivignano, 260, 2019,11,2,6).
 temperature_at_at_5_5km(palmanova, 260, 2019,11,2,6).
 temperature_at_at_5_5km(gorizia, 261, 2019,11,2,6).
-temperature_at_at_5_5km(lignano, 260, 2019,11,2,6).
-temperature_at_at_5_5km(grado, 260, 2019,11,2,6).
-temperature_at_at_5_5km(trieste, 260, 2019,11,2,6).
+temperature_at_at_5_5km(lignano, 261, 2019,11,2,6).
+temperature_at_at_5_5km(grado, 261, 2019,11,2,6).
+temperature_at_at_5_5km(trieste, 261, 2019,11,2,6).
 temperature_at_at_5_5km(sappada, 259, 2019,11,2,7).
 temperature_at_at_5_5km(villa_santina, 260, 2019,11,2,7).
 temperature_at_at_5_5km(pontebba, 259, 2019,11,2,7).
@@ -805,7 +805,7 @@ temperature_at_at_5_5km(tarvisio, 259, 2019,11,2,19).
 temperature_at_at_5_5km(forni, 259, 2019,11,2,19).
 temperature_at_at_5_5km(stolvizza, 259, 2019,11,2,19).
 temperature_at_at_5_5km(barcis, 257, 2019,11,2,19).
-temperature_at_at_5_5km(gemona, 259, 2019,11,2,19).
+temperature_at_at_5_5km(gemona, 257, 2019,11,2,19).
 temperature_at_at_5_5km(spilinbergo, 257, 2019,11,2,19).
 temperature_at_at_5_5km(udine, 257, 2019,11,2,19).
 temperature_at_at_5_5km(cividale, 259, 2019,11,2,19).
@@ -995,7 +995,7 @@ temperature_at_at_5_5km(tarvisio, 256, 2019,11,3,5).
 temperature_at_at_5_5km(forni, 255, 2019,11,3,5).
 temperature_at_at_5_5km(stolvizza, 256, 2019,11,3,5).
 temperature_at_at_5_5km(barcis, 255, 2019,11,3,5).
-temperature_at_at_5_5km(gemona, 259, 2019,11,3,5).
+temperature_at_at_5_5km(gemona, 256, 2019,11,3,5).
 temperature_at_at_5_5km(spilinbergo, 256, 2019,11,3,5).
 temperature_at_at_5_5km(udine, 255, 2019,11,3,5).
 temperature_at_at_5_5km(cividale, 255, 2019,11,3,5).
@@ -1014,7 +1014,7 @@ temperature_at_at_5_5km(tarvisio, 257, 2019,11,3,6).
 temperature_at_at_5_5km(forni, 254, 2019,11,3,6).
 temperature_at_at_5_5km(stolvizza, 256, 2019,11,3,6).
 temperature_at_at_5_5km(barcis, 254, 2019,11,3,6).
-temperature_at_at_5_5km(gemona, 257, 2019,11,3,6).
+temperature_at_at_5_5km(gemona, 255, 2019,11,3,6).
 temperature_at_at_5_5km(spilinbergo, 255, 2019,11,3,6).
 temperature_at_at_5_5km(udine, 255, 2019,11,3,6).
 temperature_at_at_5_5km(cividale, 255, 2019,11,3,6).

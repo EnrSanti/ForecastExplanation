@@ -8,7 +8,7 @@ temperature_at_at_9km(forni, 225, 2019,11,1,1).
 temperature_at_at_9km(stolvizza, 226, 2019,11,1,1).
 temperature_at_at_9km(barcis, 226, 2019,11,1,1).
 temperature_at_at_9km(gemona, 226, 2019,11,1,1).
-temperature_at_at_9km(spilinbergo, 227, 2019,11,1,1).
+temperature_at_at_9km(spilinbergo, 226, 2019,11,1,1).
 temperature_at_at_9km(udine, 226, 2019,11,1,1).
 temperature_at_at_9km(cividale, 226, 2019,11,1,1).
 temperature_at_at_9km(pordenone, 228, 2019,11,1,1).
@@ -27,7 +27,7 @@ temperature_at_at_9km(forni, 226, 2019,11,1,2).
 temperature_at_at_9km(stolvizza, 225, 2019,11,1,2).
 temperature_at_at_9km(barcis, 227, 2019,11,1,2).
 temperature_at_at_9km(gemona, 225, 2019,11,1,2).
-temperature_at_at_9km(spilinbergo, 227, 2019,11,1,2).
+temperature_at_at_9km(spilinbergo, 226, 2019,11,1,2).
 temperature_at_at_9km(udine, 225, 2019,11,1,2).
 temperature_at_at_9km(cividale, 225, 2019,11,1,2).
 temperature_at_at_9km(pordenone, 228, 2019,11,1,2).
@@ -65,7 +65,7 @@ temperature_at_at_9km(forni, 227, 2019,11,1,4).
 temperature_at_at_9km(stolvizza, 226, 2019,11,1,4).
 temperature_at_at_9km(barcis, 227, 2019,11,1,4).
 temperature_at_at_9km(gemona, 226, 2019,11,1,4).
-temperature_at_at_9km(spilinbergo, 228, 2019,11,1,4).
+temperature_at_at_9km(spilinbergo, 227, 2019,11,1,4).
 temperature_at_at_9km(udine, 226, 2019,11,1,4).
 temperature_at_at_9km(cividale, 226, 2019,11,1,4).
 temperature_at_at_9km(pordenone, 228, 2019,11,1,4).
@@ -551,11 +551,11 @@ temperature_at_at_9km(gorizia, 231, 2019,11,2,5).
 temperature_at_at_9km(lignano, 231, 2019,11,2,5).
 temperature_at_at_9km(grado, 232, 2019,11,2,5).
 temperature_at_at_9km(trieste, 232, 2019,11,2,5).
-temperature_at_at_9km(sappada, 229, 2019,11,2,6).
-temperature_at_at_9km(villa_santina, 230, 2019,11,2,6).
-temperature_at_at_9km(pontebba, 230, 2019,11,2,6).
-temperature_at_at_9km(tarvisio, 230, 2019,11,2,6).
-temperature_at_at_9km(forni, 230, 2019,11,2,6).
+temperature_at_at_9km(sappada, 230, 2019,11,2,6).
+temperature_at_at_9km(villa_santina, 231, 2019,11,2,6).
+temperature_at_at_9km(pontebba, 231, 2019,11,2,6).
+temperature_at_at_9km(tarvisio, 231, 2019,11,2,6).
+temperature_at_at_9km(forni, 231, 2019,11,2,6).
 temperature_at_at_9km(stolvizza, 231, 2019,11,2,6).
 temperature_at_at_9km(barcis, 231, 2019,11,2,6).
 temperature_at_at_9km(gemona, 231, 2019,11,2,6).
@@ -564,7 +564,7 @@ temperature_at_at_9km(udine, 231, 2019,11,2,6).
 temperature_at_at_9km(cividale, 231, 2019,11,2,6).
 temperature_at_at_9km(pordenone, 231, 2019,11,2,6).
 temperature_at_at_9km(codroipo, 231, 2019,11,2,6).
-temperature_at_at_9km(rivignano, 232, 2019,11,2,6).
+temperature_at_at_9km(rivignano, 231, 2019,11,2,6).
 temperature_at_at_9km(palmanova, 231, 2019,11,2,6).
 temperature_at_at_9km(gorizia, 231, 2019,11,2,6).
 temperature_at_at_9km(lignano, 232, 2019,11,2,6).
