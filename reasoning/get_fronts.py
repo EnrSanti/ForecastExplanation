@@ -16,10 +16,10 @@ base_path=""
 locations_pos_px={}
 city_map={}
 
-
+'''
 def plot_city_connections_on_image(image_path, city_locs, adjacency, save_path=None, linewidth=2):
-    from PIL import Image
-    import matplotlib.pyplot as plt
+    
+    #used once for debugging
 
     img = Image.open(image_path)
     W, H = img.size
@@ -47,7 +47,7 @@ def plot_city_connections_on_image(image_path, city_locs, adjacency, save_path=N
         plt.close(fig)
     else:
         plt.show()
-
+'''
 
 def build_delaunay_adjacency_filtered(city_locs, length_factor=1.8):
     """
@@ -117,9 +117,10 @@ def build_delaunay_adjacency_filtered(city_locs, length_factor=1.8):
 
 
 def build_city_adjacency_graph_for_fronts(base_path, coordinates):
-    
-    path="./reasoning/screen.png"
-    # 2. Get the neighborhoods
+    '''
+        Build the city adjacency graph using Delaunay triangulation
+    '''
+    #Get the neighborhoods for each location
     locations_name_px_pos = load_locations(coordinates,base_path)
     adj = build_delaunay_adjacency_filtered(locations_name_px_pos)  # a = your DataFrame/dict
 
@@ -128,7 +129,7 @@ def build_city_adjacency_graph_for_fronts(base_path, coordinates):
 
     '''
     plot_city_connections_on_image(
-        image_path=path,
+        image_path="./reasoning/screen.png",
         city_locs=locations_name_px_pos,
         adjacency=adj,
         save_path="triangulation_overlay.png"
@@ -137,6 +138,10 @@ def build_city_adjacency_graph_for_fronts(base_path, coordinates):
     return adj, locations_name_px_pos
 
 def init_fronts_generation(path,_coordinates):
+    '''
+    Initialize global variables for front generation
+    Moreover it caluculates the city adjacency graph once
+    '''
     global coordinates
     global base_path
     global city_map
@@ -147,24 +152,14 @@ def init_fronts_generation(path,_coordinates):
 
 
 
-
-# Assume these are globally available, set by init_fronts_generation
-# global coordinates
-# global base_path
-# global map # Adjacency graph (city -> list of adjacent cities)
-# global locations_pos_px # Dictionary: location_name -> (px, py)
-# global starting_date # Assume this is available for timestamp conversion
-# global feature_to_cell_id # Function to map segment ID to cell ID (from trajectories)
-# global frame_index_to_timestamp # Function to convert frame index to yyyy,mm,dd,h
-
-# Constants for the front generation
-PIXEL_STEP_SIZE = 5 # Step size for checking pixels on the line segment
-
 def get_pixel_line(p1_px, p1_py, p2_px, p2_py):
     """
     Generates pixel coordinates along the line segment between (p1_px, p1_py) and (p2_px, p2_py).
     Uses a simple line algorithm, sampling every PIXEL_STEP_SIZE.
     """
+
+    PIXEL_STEP_SIZE = 5 # Step size for checking pixels on the line segment
+
     points = []
     dx = p2_px - p1_px
     dy = p2_py - p1_py
@@ -193,6 +188,7 @@ def is_line_clear(p1_name, p2_name, seg_labels, locations_name_px_pos):
     
     Returns True if the line is clear (no seg_labels > 0), False otherwise.
     """
+    '''
     (p1_px, p1_py) = locations_name_px_pos[p1_name]
     (p2_px, p2_py) = locations_name_px_pos[p2_name]
     
@@ -200,7 +196,7 @@ def is_line_clear(p1_name, p2_name, seg_labels, locations_name_px_pos):
 
 
     #with a single cluster per image always clear
-    '''
+    
     line_pixels = get_pixel_line(p1_px, p1_py, p2_px, p2_py)
     
     for px, py in line_pixels:

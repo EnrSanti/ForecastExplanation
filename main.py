@@ -2,7 +2,6 @@ from image_processing.image_proc import generate_clustered_images
 from image_processing.image_proc import resize_1_4_and_simplify
 from image_processing.segment_track import run_tobac_merge_split, run_tobac_fronts
 
-from image_processing.humidity_front import get_humidity_front
 from raw_data.extract_features_nc import save_feature_maps
 from raw_data.cut_long_lat import cut_grib_long_lat
 from reasoning.pictogram_extraction.pictograms_to_ground_truth import generate_ground_truth
@@ -31,8 +30,6 @@ num_clusters_fronts = 5
 #minimum number of pixels for TOBAC (don't consider smaller blobs)
 n_min_threshold_clouds=300
 n_min_threshold_fronts=2000
-
-
 
 
 def extract(grib_file,coordinates_fvg,coordinates_italy, is_fvg):
@@ -112,9 +109,26 @@ if __name__ == "__main__":
         300: "_at_9km"
     }
 
+    folder_list = [
+        (pref + suff, *folder_params[pref])
+        for pref in folders_pref
+        for suff in folders_suff.values()
+    ]
+    folder_list_humidity = [
+        (folders_pref[1] + suff, folders_pref[1])
+        for suff in folders_suff.values()
+    ]
+    folder_list_clouds = [
+        (folders_pref[0] + suff, folders_pref[0])
+        for suff in folders_suff.values()
+    ]
+    #for the temp
+    folder_list_temp = [
+        (folders_pref[2] + suff,  folders_pref[2])
+        for suff in folders_suff.values()
+    ]
 
     #print info
-
     if mode == 0:
         text = """
         The first two commands (1) cut (in latitude and long.) the gribs file under ./raw_data/data/original_CERRA, save it as .nc.
@@ -126,7 +140,7 @@ if __name__ == "__main__":
             [3] scales FVG images and runs TOBAC on them
                 Generate facts (coulds, humidty...) over each city
             [4] extract ground truth from pictograms (put them under ./reasoning/pictogram_extraction/pictograms)
-            [5]: Generate full examples (TODO)
+            [5]: Generate full examples (to complete)
         """
         print(text)
 
@@ -151,24 +165,20 @@ if __name__ == "__main__":
                     print(f"Extract failed for {grib_file}: {e}")
 
     elif mode == 2:    
-        #resize iamges once to work on smaller images, generate clustered images and run TOBAC (FVG)
-        print("Cluster & run TOBAC on FVG clustered data (just clouds & humidity  for now)")
-        folder_list = [
-            (pref + suff, *folder_params[pref])
-            for pref in folders_pref
-            for suff in folders_suff.values()
-        ]
+        
+        base_path = "./image_processing/fvg/output_clustered/"
 
+        #resize iamges once to work on smaller images, generate clustered images and run TOBAC (FVG)
+        print("Cluster & run TOBAC on FVG clustered data (clouds & humidity  for now)")
+        
+
+        #resize and cluster the images
         for f, threshold, upper_lower, num_clusters in folder_list:
-            #for the images
             resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")    
             generate_clustered_images(num_clusters, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/clustered/{f}_clustered")
             pass    
 
-        folder_list_clouds = [
-            (folders_pref[0] + suff, folders_pref[0])
-            for suff in folders_suff.values()
-        ]
+        
 
         #for the clouds run tobac   
         with ProcessPoolExecutor(max_workers=2) as executor:
@@ -187,12 +197,9 @@ if __name__ == "__main__":
 
 
 
-        folder_list_humidity = [
-            (folders_pref[1] + suff, folders_pref[1])
-            for suff in folders_suff.values()
-        ]
+        
 
-        #for the humidity   
+        #for the humidity run tobac
         with ProcessPoolExecutor(max_workers=2) as executor:
             futures = {
                 executor.submit(run_tobac_fronts,f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,type_,n_min_threshold_fronts
@@ -207,11 +214,7 @@ if __name__ == "__main__":
                 except Exception as e:
                     print(f"❌ Error processing {f}: {e}")
 
-        #for the tmeperature
-        folder_list_temp = [
-            (folders_pref[2] + suff, folders_pref[2])
-            for suff in folders_suff.values()
-        ]
+        #for the tmeperature run tobac
         with ProcessPoolExecutor(max_workers=2) as executor:
             futures = {
                 executor.submit(run_tobac_fronts,f"image_processing/fvg/clustered/{f}_clustered", f"image_processing/fvg/output_clustered/{f}","raw_data/extracted_fvg_cleaned/borders.png",coordinates[2],coordinates[3],coordinates[0],coordinates[1],threshold,upper_lower,type_,n_min_threshold_fronts
@@ -227,13 +230,12 @@ if __name__ == "__main__":
                     print(f"❌ Error processing {f}: {e}")
 
 
-        base_path = "./image_processing/fvg/output_clustered/"
         generate_cloud_facts_over_cities(base_path)
         generate_humidity_facts_over_cities(base_path)
 
         starting_date=generate_temp_facts_over_cities(base_path)
         
-        init_fronts_generation("./image_processing/fvg/output_clustered/", coordinates)
+        init_fronts_generation(base_path, coordinates)
         generate_fronts_hum(starting_date)
         generate_fronts_temp(starting_date)
 
@@ -241,20 +243,15 @@ if __name__ == "__main__":
 
     elif mode == 3:
         #resize iamges once to work on smaller images and run TOBAC (FVG)
-        print("run TOBAC on FVG data (just clouds & humidity for now)")
-        folder_list = [
-            (pref + suff, *folder_params[pref])
-            for pref in folders_pref
-            for suff in folders_suff.values()
-        ]
+        print("run TOBAC on FVG data (clouds & humidity for now)")
+
+        base_path = "./image_processing/fvg/output/"
+        
+
         for f, threshold, upper_lower, _ in folder_list:
             resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")
         
-        #for the temp
-        folder_list_temp = [
-            (folders_pref[2] + suff,  folders_pref[2])
-            for suff in folders_suff.values()
-        ]
+        
         
         with ProcessPoolExecutor(max_workers=2) as executor:
             print("threshold ", threshold )
@@ -273,10 +270,7 @@ if __name__ == "__main__":
 
         
         #for the clouds
-        folder_list_clouds = [
-            (folders_pref[0] + suff,  folders_pref[0])
-            for suff in folders_suff.values()
-        ]
+        
         
         
         with ProcessPoolExecutor(max_workers=2) as executor:
@@ -313,12 +307,12 @@ if __name__ == "__main__":
                     print(f"❌ Error processing {f}: {e}")
 
       
-        
-        
-        base_path = "./image_processing/fvg/output/"
+        generate_cloud_facts_over_cities(base_path)
+        generate_humidity_facts_over_cities(base_path)
+      
         starting_date=generate_temp_facts_over_cities(base_path)
 
-        init_fronts_generation("./image_processing/fvg/output/", coordinates)
+        init_fronts_generation(base_path, coordinates)
         generate_fronts_hum(starting_date)
         generate_fronts_temp(starting_date)
 
@@ -327,22 +321,12 @@ if __name__ == "__main__":
         generate_ground_truth()
 
     elif mode == 5:
-        folder_list_clouds = [
-            (folders_pref[0] + suff,  folders_pref[0])
-            for suff in folders_suff.values()
-        ]
-        folder_list_humidity = [
-            (folders_pref[1] + suff,  folders_pref[1])
-            for suff in folders_suff.values()
-        ]
-        folder_list_temp = [
-            (folders_pref[2] + suff, folders_pref[2])
-            for suff in folders_suff.values()
-        ]
+        
         init_starting_date()
         merge_into_examples(folder_list_clouds,folder_list_humidity,folder_list_temp)
         
     elif mode == 6: #to experiment stuff
+        #don't mind me
         base_path = "./image_processing/fvg/output/"
         starting_date=generate_temp_facts_over_cities(base_path)
 
