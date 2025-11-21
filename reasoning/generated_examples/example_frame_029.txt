@@ -2,129 +2,123 @@
 
 #pos(e1,{ 
 
+%% Format: forecasted_rain(location, drops_in_pictogram,yyyy,mm,dd).
+%% Format: forecasted_sky(location, description ,yyyy,mm,dd).
+date(2019,11,2).
+
+forecasted_rain(trieste, 4,2019,11,2). 
+forecasted_sky(trieste, "cloudy",2019,11,2). 
+forecasted_rain(pordenone, 2,2019,11,2). 
+forecasted_sky(pordenone, "cloudy",2019,11,2). 
+forecasted_rain(udine, 2,2019,11,2). 
+forecasted_sky(udine, "cloudy",2019,11,2). 
+forecasted_rain(cividale, 2,2019,11,2). 
+forecasted_sky(cividale, "cloudy",2019,11,2). 
+forecasted_rain(spilinbergo, 1,2019,11,2). 
+forecasted_sky(spilinbergo, "cloudy",2019,11,2). 
+forecasted_rain(tarvisio, 1,2019,11,2). 
+forecasted_sky(tarvisio, "cloudy",2019,11,2). 
+forecasted_rain(barcis, 1,2019,11,2). 
+forecasted_sky(barcis, "cloudy",2019,11,2). 
+forecasted_rain(pontebba, 3,2019,11,2). 
+forecasted_sky(pontebba, "cloudy",2019,11,2). 
+forecasted_rain(gemona, 2,2019,11,2). 
+forecasted_sky(gemona, "sunny",2019,11,2). 
+forecasted_rain(forni, 1,2019,11,2). 
+forecasted_sky(forni, "cloudy",2019,11,2). 
+forecasted_rain(stolvizza, 3,2019,11,2). 
+forecasted_sky(stolvizza, "sunny",2019,11,2). 
+forecasted_rain(sappada, 1,2019,11,2). 
+forecasted_sky(sappada, "cloudy",2019,11,2). 
+forecasted_rain(palmanova, 3,2019,11,2). 
+forecasted_sky(palmanova, "cloudy",2019,11,2). 
+forecasted_rain(villa_santina, 1,2019,11,2). 
+forecasted_sky(villa_santina, "cloudy",2019,11,2). 
+forecasted_rain(codroipo, 2,2019,11,2). 
+forecasted_sky(codroipo, "sunny",2019,11,2). 
+forecasted_rain(lignano, 2,2019,11,2). 
+forecasted_sky(lignano, "sunny",2019,11,2). 
+forecasted_rain(rivignano, 3,2019,11,2). 
+forecasted_sky(rivignano, "cloudy",2019,11,2). 
+
+ },{}).
+
+#context(e1,{ 
+
 date_time(2019,11,2,6).
 
 % Cloud coverage data:
 % Cloud_covers(location,cloud_id)
-cloud_at_100m_covers(Villa_santina,1).
-cloud_at_100m_covers(Tarvisio,1).
-cloud_at_100m_covers(Forni,1).
-cloud_at_100m_covers(Stolvizza,1).
-cloud_at_100m_covers(Barcis,1).
-cloud_at_100m_covers(Gemona,1).
-cloud_at_100m_covers(Spilinbergo,1).
-cloud_at_100m_covers(Udine,1).
-cloud_at_100m_covers(Cividale,1).
-cloud_at_100m_covers(Pordenone,1).
-cloud_at_100m_covers(Codroipo,1).
-cloud_at_100m_covers(Rivignano,1).
-cloud_at_100m_covers(Palmanova,1).
-cloud_at_100m_covers(Gorizia,1).
-cloud_at_100m_covers(Lignano,1).
-cloud_at_100m_covers(Grado,1).
-cloud_at_100m_covers(Trieste,1).
-cloud_at_750m_covers(Villa_santina,1).
-cloud_at_750m_covers(Tarvisio,1).
-cloud_at_750m_covers(Forni,1).
-cloud_at_750m_covers(Stolvizza,1).
-cloud_at_750m_covers(Barcis,1).
-cloud_at_750m_covers(Gemona,1).
-cloud_at_750m_covers(Spilinbergo,1).
-cloud_at_750m_covers(Udine,1).
-cloud_at_750m_covers(Pordenone,1).
-cloud_at_750m_covers(Codroipo,1).
-cloud_at_750m_covers(Gorizia,1).
-cloud_at_1_4km_covers(Villa_santina,7).
-cloud_at_1_4km_covers(Tarvisio,7).
-cloud_at_1_4km_covers(Forni,7).
-cloud_at_1_4km_covers(Barcis,7).
-cloud_at_3km_covers(Sappada,1).
-cloud_at_3km_covers(Villa_santina,1).
-cloud_at_3km_covers(Pontebba,1).
-cloud_at_3km_covers(Tarvisio,1).
-cloud_at_3km_covers(Forni,1).
-cloud_at_3km_covers(Stolvizza,1).
-cloud_at_3km_covers(Barcis,1).
-cloud_at_3km_covers(Gemona,1).
-cloud_at_3km_covers(Spilinbergo,1).
-cloud_at_3km_covers(Udine,1).
-cloud_at_3km_covers(Cividale,1).
-cloud_at_3km_covers(Pordenone,1).
-cloud_at_3km_covers(Codroipo,1).
-cloud_at_3km_covers(Rivignano,1).
-cloud_at_3km_covers(Palmanova,1).
-cloud_at_3km_covers(Gorizia,1).
-cloud_at_3km_covers(Lignano,1).
-cloud_at_3km_covers(Grado,1).
-cloud_at_3km_covers(Trieste,1).
-cloud_at_5_5km_covers(Villa_santina,4).
-cloud_at_5_5km_covers(Pontebba,4).
-cloud_at_5_5km_covers(Tarvisio,4).
-cloud_at_5_5km_covers(Forni,4).
-cloud_at_5_5km_covers(Stolvizza,4).
-cloud_at_5_5km_covers(Barcis,4).
-cloud_at_5_5km_covers(Gemona,4).
-cloud_at_5_5km_covers(Spilinbergo,4).
-cloud_at_5_5km_covers(Udine,4).
-cloud_at_5_5km_covers(Cividale,4).
-cloud_at_5_5km_covers(Pordenone,4).
-cloud_at_5_5km_covers(Codroipo,4).
-cloud_at_5_5km_covers(Rivignano,4).
-cloud_at_5_5km_covers(Palmanova,4).
-cloud_at_5_5km_covers(Gorizia,4).
-cloud_at_5_5km_covers(Lignano,4).
-cloud_at_5_5km_covers(Grado,4).
-cloud_at_5_5km_covers(Trieste,4).
-cloud_at_9km_covers(Sappada,28).
-cloud_at_9km_covers(Forni,28).
+cloud_at_750m_covers(Trieste,43).
+cloud_at_1_4km_covers(Pontebba,22).
+cloud_at_1_4km_covers(Stolvizza,22).
+cloud_at_1_4km_covers(Gemona,22).
+cloud_at_1_4km_covers(Spilinbergo,22).
+cloud_at_1_4km_covers(Udine,22).
+cloud_at_1_4km_covers(Cividale,22).
+cloud_at_1_4km_covers(Pordenone,22).
+cloud_at_1_4km_covers(Codroipo,22).
+cloud_at_1_4km_covers(Gorizia,22).
+cloud_at_1_4km_covers(Trieste,22).
+cloud_at_5_5km_covers(Pontebba,42).
+cloud_at_5_5km_covers(Tarvisio,42).
+cloud_at_5_5km_covers(Stolvizza,42).
+cloud_at_5_5km_covers(Barcis,42).
+cloud_at_5_5km_covers(Gemona,42).
+cloud_at_5_5km_covers(Spilinbergo,42).
+cloud_at_9km_covers(Spilinbergo,25).
+cloud_at_9km_covers(Udine,25).
 
 % Humidity front data:
 % humidty_front(location_1,location_2): between the two locations there's a sharp change 
+hum_front_300_hPa(Sappada,Villa_santina).
+hum_front_300_hPa(Forni,Villa_santina).
+hum_front_300_hPa(Barcis,Forni).
 
 % hum(location_1,humidity_percentage): the percentage is discretized in 0, 20, 40 ... 
 humidity_percentage_at_100m(sappada, 0).
-humidity_percentage_at_100m(villa_santina, 0).
+humidity_percentage_at_100m(villa_santina, 20).
 humidity_percentage_at_100m(pontebba, 0).
-humidity_percentage_at_100m(tarvisio, 0).
-humidity_percentage_at_100m(forni, 0).
+humidity_percentage_at_100m(tarvisio, 40).
+humidity_percentage_at_100m(forni, 20).
 humidity_percentage_at_100m(stolvizza, 0).
-humidity_percentage_at_100m(barcis, 0).
-humidity_percentage_at_100m(gemona, 80).
-humidity_percentage_at_100m(spilinbergo, 80).
-humidity_percentage_at_100m(udine, 0).
-humidity_percentage_at_100m(cividale, 0).
+humidity_percentage_at_100m(barcis, 40).
+humidity_percentage_at_100m(gemona, 60).
+humidity_percentage_at_100m(spilinbergo, 60).
+humidity_percentage_at_100m(udine, 40).
+humidity_percentage_at_100m(cividale, 40).
 humidity_percentage_at_100m(pordenone, 60).
-humidity_percentage_at_100m(codroipo, 80).
-humidity_percentage_at_100m(rivignano, 80).
+humidity_percentage_at_100m(codroipo, 60).
+humidity_percentage_at_100m(rivignano, 60).
 humidity_percentage_at_100m(palmanova, 60).
-humidity_percentage_at_100m(gorizia, 80).
-humidity_percentage_at_100m(lignano, 100).
-humidity_percentage_at_100m(grado, 80).
-humidity_percentage_at_100m(trieste, 0).
-humidity_percentage_at_750m(sappada, 0).
-humidity_percentage_at_750m(villa_santina, 100).
-humidity_percentage_at_750m(pontebba, 0).
-humidity_percentage_at_750m(tarvisio, 100).
-humidity_percentage_at_750m(forni, 100).
-humidity_percentage_at_750m(stolvizza, 0).
-humidity_percentage_at_750m(barcis, 100).
-humidity_percentage_at_750m(gemona, 100).
-humidity_percentage_at_750m(spilinbergo, 100).
-humidity_percentage_at_750m(udine, 0).
+humidity_percentage_at_100m(gorizia, 60).
+humidity_percentage_at_100m(lignano, 60).
+humidity_percentage_at_100m(grado, 60).
+humidity_percentage_at_100m(trieste, 40).
+humidity_percentage_at_750m(sappada, 20).
+humidity_percentage_at_750m(villa_santina, 20).
+humidity_percentage_at_750m(pontebba, 20).
+humidity_percentage_at_750m(tarvisio, 20).
+humidity_percentage_at_750m(forni, 20).
+humidity_percentage_at_750m(stolvizza, 20).
+humidity_percentage_at_750m(barcis, 20).
+humidity_percentage_at_750m(gemona, 20).
+humidity_percentage_at_750m(spilinbergo, 20).
+humidity_percentage_at_750m(udine, 20).
 humidity_percentage_at_750m(cividale, 0).
-humidity_percentage_at_750m(pordenone, 0).
-humidity_percentage_at_750m(codroipo, 0).
+humidity_percentage_at_750m(pordenone, 20).
+humidity_percentage_at_750m(codroipo, 20).
 humidity_percentage_at_750m(rivignano, 0).
 humidity_percentage_at_750m(palmanova, 0).
-humidity_percentage_at_750m(gorizia, 0).
-humidity_percentage_at_750m(lignano, 0).
-humidity_percentage_at_750m(grado, 0).
-humidity_percentage_at_750m(trieste, 0).
-humidity_percentage_at_1_4km(sappada, 0).
-humidity_percentage_at_1_4km(villa_santina, 0).
+humidity_percentage_at_750m(gorizia, 20).
+humidity_percentage_at_750m(lignano, 20).
+humidity_percentage_at_750m(grado, 20).
+humidity_percentage_at_750m(trieste, 20).
+humidity_percentage_at_1_4km(sappada, 20).
+humidity_percentage_at_1_4km(villa_santina, 20).
 humidity_percentage_at_1_4km(pontebba, 0).
-humidity_percentage_at_1_4km(tarvisio, 0).
-humidity_percentage_at_1_4km(forni, 0).
+humidity_percentage_at_1_4km(tarvisio, 20).
+humidity_percentage_at_1_4km(forni, 20).
 humidity_percentage_at_1_4km(stolvizza, 0).
 humidity_percentage_at_1_4km(barcis, 0).
 humidity_percentage_at_1_4km(gemona, 0).
@@ -135,182 +129,182 @@ humidity_percentage_at_1_4km(pordenone, 0).
 humidity_percentage_at_1_4km(codroipo, 0).
 humidity_percentage_at_1_4km(rivignano, 0).
 humidity_percentage_at_1_4km(palmanova, 0).
-humidity_percentage_at_1_4km(gorizia, 0).
-humidity_percentage_at_1_4km(lignano, 0).
-humidity_percentage_at_1_4km(grado, 0).
-humidity_percentage_at_1_4km(trieste, 0).
-humidity_percentage_at_3km(sappada, 0).
-humidity_percentage_at_3km(villa_santina, 0).
-humidity_percentage_at_3km(pontebba, 0).
-humidity_percentage_at_3km(tarvisio, 100).
-humidity_percentage_at_3km(forni, 0).
-humidity_percentage_at_3km(stolvizza, 0).
-humidity_percentage_at_3km(barcis, 0).
-humidity_percentage_at_3km(gemona, 0).
-humidity_percentage_at_3km(spilinbergo, 0).
-humidity_percentage_at_3km(udine, 0).
-humidity_percentage_at_3km(cividale, 0).
-humidity_percentage_at_3km(pordenone, 0).
-humidity_percentage_at_3km(codroipo, 0).
-humidity_percentage_at_3km(rivignano, 0).
-humidity_percentage_at_3km(palmanova, 0).
-humidity_percentage_at_3km(gorizia, 100).
-humidity_percentage_at_3km(lignano, 0).
+humidity_percentage_at_1_4km(gorizia, 20).
+humidity_percentage_at_1_4km(lignano, 20).
+humidity_percentage_at_1_4km(grado, 20).
+humidity_percentage_at_1_4km(trieste, 20).
+humidity_percentage_at_3km(sappada, 40).
+humidity_percentage_at_3km(villa_santina, 40).
+humidity_percentage_at_3km(pontebba, 40).
+humidity_percentage_at_3km(tarvisio, 60).
+humidity_percentage_at_3km(forni, 40).
+humidity_percentage_at_3km(stolvizza, 40).
+humidity_percentage_at_3km(barcis, 40).
+humidity_percentage_at_3km(gemona, 40).
+humidity_percentage_at_3km(spilinbergo, 40).
+humidity_percentage_at_3km(udine, 40).
+humidity_percentage_at_3km(cividale, 40).
+humidity_percentage_at_3km(pordenone, 40).
+humidity_percentage_at_3km(codroipo, 40).
+humidity_percentage_at_3km(rivignano, 40).
+humidity_percentage_at_3km(palmanova, 40).
+humidity_percentage_at_3km(gorizia, 60).
+humidity_percentage_at_3km(lignano, 60).
 humidity_percentage_at_3km(grado, 100).
 humidity_percentage_at_3km(trieste, 100).
-humidity_percentage_at_5_5km(sappada, 0).
-humidity_percentage_at_5_5km(villa_santina, 0).
-humidity_percentage_at_5_5km(pontebba, 0).
-humidity_percentage_at_5_5km(tarvisio, 0).
-humidity_percentage_at_5_5km(forni, 0).
-humidity_percentage_at_5_5km(stolvizza, 0).
-humidity_percentage_at_5_5km(barcis, 0).
+humidity_percentage_at_5_5km(sappada, 40).
+humidity_percentage_at_5_5km(villa_santina, 20).
+humidity_percentage_at_5_5km(pontebba, 20).
+humidity_percentage_at_5_5km(tarvisio, 20).
+humidity_percentage_at_5_5km(forni, 40).
+humidity_percentage_at_5_5km(stolvizza, 20).
+humidity_percentage_at_5_5km(barcis, 20).
 humidity_percentage_at_5_5km(gemona, 0).
 humidity_percentage_at_5_5km(spilinbergo, 0).
-humidity_percentage_at_5_5km(udine, 0).
-humidity_percentage_at_5_5km(cividale, 0).
-humidity_percentage_at_5_5km(pordenone, 0).
+humidity_percentage_at_5_5km(udine, 20).
+humidity_percentage_at_5_5km(cividale, 20).
+humidity_percentage_at_5_5km(pordenone, 20).
 humidity_percentage_at_5_5km(codroipo, 0).
-humidity_percentage_at_5_5km(rivignano, 0).
-humidity_percentage_at_5_5km(palmanova, 0).
-humidity_percentage_at_5_5km(gorizia, 0).
-humidity_percentage_at_5_5km(lignano, 0).
-humidity_percentage_at_5_5km(grado, 0).
-humidity_percentage_at_5_5km(trieste, 0).
-humidity_percentage_at_9km(sappada, 100).
-humidity_percentage_at_9km(villa_santina, 0).
-humidity_percentage_at_9km(pontebba, 0).
-humidity_percentage_at_9km(tarvisio, 0).
-humidity_percentage_at_9km(forni, 100).
-humidity_percentage_at_9km(stolvizza, 0).
-humidity_percentage_at_9km(barcis, 0).
-humidity_percentage_at_9km(gemona, 0).
-humidity_percentage_at_9km(spilinbergo, 0).
-humidity_percentage_at_9km(udine, 0).
-humidity_percentage_at_9km(cividale, 0).
-humidity_percentage_at_9km(pordenone, 0).
-humidity_percentage_at_9km(codroipo, 0).
-humidity_percentage_at_9km(rivignano, 0).
-humidity_percentage_at_9km(palmanova, 0).
-humidity_percentage_at_9km(gorizia, 0).
-humidity_percentage_at_9km(lignano, 0).
-humidity_percentage_at_9km(grado, 0).
-humidity_percentage_at_9km(trieste, 0).
+humidity_percentage_at_5_5km(rivignano, 20).
+humidity_percentage_at_5_5km(palmanova, 20).
+humidity_percentage_at_5_5km(gorizia, 40).
+humidity_percentage_at_5_5km(lignano, 40).
+humidity_percentage_at_5_5km(grado, 40).
+humidity_percentage_at_5_5km(trieste, 40).
+humidity_percentage_at_9km(sappada, 0).
+humidity_percentage_at_9km(villa_santina, 60).
+humidity_percentage_at_9km(pontebba, 60).
+humidity_percentage_at_9km(tarvisio, 80).
+humidity_percentage_at_9km(forni, 0).
+humidity_percentage_at_9km(stolvizza, 60).
+humidity_percentage_at_9km(barcis, 60).
+humidity_percentage_at_9km(gemona, 40).
+humidity_percentage_at_9km(spilinbergo, 20).
+humidity_percentage_at_9km(udine, 20).
+humidity_percentage_at_9km(cividale, 40).
+humidity_percentage_at_9km(pordenone, 60).
+humidity_percentage_at_9km(codroipo, 40).
+humidity_percentage_at_9km(rivignano, 40).
+humidity_percentage_at_9km(palmanova, 40).
+humidity_percentage_at_9km(gorizia, 60).
+humidity_percentage_at_9km(lignano, 40).
+humidity_percentage_at_9km(grado, 40).
+humidity_percentage_at_9km(trieste, 40).
 
 % Temperature data (in kelvin):
-temperature_at_at_100m(sappada, 287).
-temperature_at_at_100m(villa_santina, 284).
-temperature_at_at_100m(pontebba, 286).
-temperature_at_at_100m(tarvisio, 287).
-temperature_at_at_100m(forni, 288).
-temperature_at_at_100m(stolvizza, 286).
-temperature_at_at_100m(barcis, 286).
-temperature_at_at_100m(gemona, 286).
-temperature_at_at_100m(spilinbergo, 284).
-temperature_at_at_100m(udine, 286).
-temperature_at_at_100m(cividale, 286).
-temperature_at_at_100m(pordenone, 284).
-temperature_at_at_100m(codroipo, 284).
-temperature_at_at_100m(rivignano, 286).
-temperature_at_at_100m(palmanova, 286).
-temperature_at_at_100m(gorizia, 287).
-temperature_at_at_100m(lignano, 287).
-temperature_at_at_100m(grado, 288).
-temperature_at_at_100m(trieste, 289).
-temperature_at_at_750m(sappada, 283).
-temperature_at_at_750m(villa_santina, 279).
-temperature_at_at_750m(pontebba, 280).
-temperature_at_at_750m(tarvisio, 283).
-temperature_at_at_750m(forni, 283).
-temperature_at_at_750m(stolvizza, 281).
-temperature_at_at_750m(barcis, 281).
-temperature_at_at_750m(gemona, 280).
-temperature_at_at_750m(spilinbergo, 280).
-temperature_at_at_750m(udine, 280).
-temperature_at_at_750m(cividale, 280).
-temperature_at_at_750m(pordenone, 281).
-temperature_at_at_750m(codroipo, 281).
-temperature_at_at_750m(rivignano, 281).
-temperature_at_at_750m(palmanova, 281).
-temperature_at_at_750m(gorizia, 281).
-temperature_at_at_750m(lignano, 282).
-temperature_at_at_750m(grado, 282).
-temperature_at_at_750m(trieste, 282).
-temperature_at_at_1_4km(sappada, 277).
-temperature_at_at_1_4km(villa_santina, 277).
-temperature_at_at_1_4km(pontebba, 277).
-temperature_at_at_1_4km(tarvisio, 279).
-temperature_at_at_1_4km(forni, 279).
-temperature_at_at_1_4km(stolvizza, 277).
-temperature_at_at_1_4km(barcis, 279).
-temperature_at_at_1_4km(gemona, 277).
-temperature_at_at_1_4km(spilinbergo, 279).
-temperature_at_at_1_4km(udine, 279).
-temperature_at_at_1_4km(cividale, 279).
-temperature_at_at_1_4km(pordenone, 279).
-temperature_at_at_1_4km(codroipo, 279).
-temperature_at_at_1_4km(rivignano, 279).
-temperature_at_at_1_4km(palmanova, 279).
-temperature_at_at_1_4km(gorizia, 281).
-temperature_at_at_1_4km(lignano, 280).
-temperature_at_at_1_4km(grado, 280).
-temperature_at_at_1_4km(trieste, 282).
-temperature_at_at_3km(sappada, 274).
-temperature_at_at_3km(villa_santina, 274).
-temperature_at_at_3km(pontebba, 274).
-temperature_at_at_3km(tarvisio, 275).
-temperature_at_at_3km(forni, 274).
-temperature_at_at_3km(stolvizza, 274).
-temperature_at_at_3km(barcis, 274).
-temperature_at_at_3km(gemona, 274).
-temperature_at_at_3km(spilinbergo, 274).
-temperature_at_at_3km(udine, 274).
-temperature_at_at_3km(cividale, 274).
-temperature_at_at_3km(pordenone, 274).
-temperature_at_at_3km(codroipo, 274).
-temperature_at_at_3km(rivignano, 274).
-temperature_at_at_3km(palmanova, 274).
-temperature_at_at_3km(gorizia, 274).
-temperature_at_at_3km(lignano, 273).
-temperature_at_at_3km(grado, 274).
-temperature_at_at_3km(trieste, 273).
-temperature_at_at_5_5km(sappada, 260).
-temperature_at_at_5_5km(villa_santina, 260).
-temperature_at_at_5_5km(pontebba, 260).
-temperature_at_at_5_5km(tarvisio, 260).
-temperature_at_at_5_5km(forni, 260).
-temperature_at_at_5_5km(stolvizza, 260).
-temperature_at_at_5_5km(barcis, 260).
-temperature_at_at_5_5km(gemona, 260).
-temperature_at_at_5_5km(spilinbergo, 260).
-temperature_at_at_5_5km(udine, 260).
-temperature_at_at_5_5km(cividale, 260).
-temperature_at_at_5_5km(pordenone, 260).
-temperature_at_at_5_5km(codroipo, 260).
-temperature_at_at_5_5km(rivignano, 260).
-temperature_at_at_5_5km(palmanova, 260).
-temperature_at_at_5_5km(gorizia, 260).
-temperature_at_at_5_5km(lignano, 260).
-temperature_at_at_5_5km(grado, 260).
-temperature_at_at_5_5km(trieste, 260).
+temperature_at_at_100m(sappada, 293).
+temperature_at_at_100m(villa_santina, 299).
+temperature_at_at_100m(pontebba, 295).
+temperature_at_at_100m(tarvisio, 293).
+temperature_at_at_100m(forni, 293).
+temperature_at_at_100m(stolvizza, 295).
+temperature_at_at_100m(barcis, 295).
+temperature_at_at_100m(gemona, 299).
+temperature_at_at_100m(spilinbergo, 299).
+temperature_at_at_100m(udine, 299).
+temperature_at_at_100m(cividale, 299).
+temperature_at_at_100m(pordenone, 299).
+temperature_at_at_100m(codroipo, 299).
+temperature_at_at_100m(rivignano, 299).
+temperature_at_at_100m(palmanova, 299).
+temperature_at_at_100m(gorizia, 295).
+temperature_at_at_100m(lignano, 299).
+temperature_at_at_100m(grado, 299).
+temperature_at_at_100m(trieste, 294).
+temperature_at_at_750m(sappada, 291).
+temperature_at_at_750m(villa_santina, 291).
+temperature_at_at_750m(pontebba, 291).
+temperature_at_at_750m(tarvisio, 291).
+temperature_at_at_750m(forni, 291).
+temperature_at_at_750m(stolvizza, 291).
+temperature_at_at_750m(barcis, 291).
+temperature_at_at_750m(gemona, 291).
+temperature_at_at_750m(spilinbergo, 291).
+temperature_at_at_750m(udine, 291).
+temperature_at_at_750m(cividale, 291).
+temperature_at_at_750m(pordenone, 291).
+temperature_at_at_750m(codroipo, 291).
+temperature_at_at_750m(rivignano, 291).
+temperature_at_at_750m(palmanova, 291).
+temperature_at_at_750m(gorizia, 291).
+temperature_at_at_750m(lignano, 291).
+temperature_at_at_750m(grado, 291).
+temperature_at_at_750m(trieste, 291).
+temperature_at_at_1_4km(sappada, 288).
+temperature_at_at_1_4km(villa_santina, 288).
+temperature_at_at_1_4km(pontebba, 288).
+temperature_at_at_1_4km(tarvisio, 288).
+temperature_at_at_1_4km(forni, 288).
+temperature_at_at_1_4km(stolvizza, 288).
+temperature_at_at_1_4km(barcis, 288).
+temperature_at_at_1_4km(gemona, 288).
+temperature_at_at_1_4km(spilinbergo, 288).
+temperature_at_at_1_4km(udine, 288).
+temperature_at_at_1_4km(cividale, 288).
+temperature_at_at_1_4km(pordenone, 288).
+temperature_at_at_1_4km(codroipo, 288).
+temperature_at_at_1_4km(rivignano, 288).
+temperature_at_at_1_4km(palmanova, 288).
+temperature_at_at_1_4km(gorizia, 288).
+temperature_at_at_1_4km(lignano, 288).
+temperature_at_at_1_4km(grado, 288).
+temperature_at_at_1_4km(trieste, 286).
+temperature_at_at_3km(sappada, 276).
+temperature_at_at_3km(villa_santina, 276).
+temperature_at_at_3km(pontebba, 276).
+temperature_at_at_3km(tarvisio, 272).
+temperature_at_at_3km(forni, 276).
+temperature_at_at_3km(stolvizza, 277).
+temperature_at_at_3km(barcis, 276).
+temperature_at_at_3km(gemona, 277).
+temperature_at_at_3km(spilinbergo, 276).
+temperature_at_at_3km(udine, 265).
+temperature_at_at_3km(cividale, 265).
+temperature_at_at_3km(pordenone, 277).
+temperature_at_at_3km(codroipo, 277).
+temperature_at_at_3km(rivignano, 277).
+temperature_at_at_3km(palmanova, 265).
+temperature_at_at_3km(gorizia, 265).
+temperature_at_at_3km(lignano, 277).
+temperature_at_at_3km(grado, 265).
+temperature_at_at_3km(trieste, 265).
+temperature_at_at_5_5km(sappada, 257).
+temperature_at_at_5_5km(villa_santina, 257).
+temperature_at_at_5_5km(pontebba, 257).
+temperature_at_at_5_5km(tarvisio, 257).
+temperature_at_at_5_5km(forni, 257).
+temperature_at_at_5_5km(stolvizza, 257).
+temperature_at_at_5_5km(barcis, 257).
+temperature_at_at_5_5km(gemona, 257).
+temperature_at_at_5_5km(spilinbergo, 257).
+temperature_at_at_5_5km(udine, 257).
+temperature_at_at_5_5km(cividale, 255).
+temperature_at_at_5_5km(pordenone, 253).
+temperature_at_at_5_5km(codroipo, 256).
+temperature_at_at_5_5km(rivignano, 255).
+temperature_at_at_5_5km(palmanova, 256).
+temperature_at_at_5_5km(gorizia, 252).
+temperature_at_at_5_5km(lignano, 254).
+temperature_at_at_5_5km(grado, 253).
+temperature_at_at_5_5km(trieste, 253).
 temperature_at_at_9km(sappada, 229).
-temperature_at_at_9km(villa_santina, 229).
-temperature_at_at_9km(pontebba, 229).
-temperature_at_at_9km(tarvisio, 229).
-temperature_at_at_9km(forni, 229).
-temperature_at_at_9km(stolvizza, 229).
-temperature_at_at_9km(barcis, 229).
-temperature_at_at_9km(gemona, 229).
-temperature_at_at_9km(spilinbergo, 229).
-temperature_at_at_9km(udine, 229).
-temperature_at_at_9km(cividale, 229).
-temperature_at_at_9km(pordenone, 230).
-temperature_at_at_9km(codroipo, 230).
-temperature_at_at_9km(rivignano, 230).
-temperature_at_at_9km(palmanova, 230).
-temperature_at_at_9km(gorizia, 230).
-temperature_at_at_9km(lignano, 230).
-temperature_at_at_9km(grado, 230).
-temperature_at_at_9km(trieste, 230).
+temperature_at_at_9km(villa_santina, 228).
+temperature_at_at_9km(pontebba, 228).
+temperature_at_at_9km(tarvisio, 228).
+temperature_at_at_9km(forni, 228).
+temperature_at_at_9km(stolvizza, 228).
+temperature_at_at_9km(barcis, 228).
+temperature_at_at_9km(gemona, 228).
+temperature_at_at_9km(spilinbergo, 228).
+temperature_at_at_9km(udine, 228).
+temperature_at_at_9km(cividale, 228).
+temperature_at_at_9km(pordenone, 228).
+temperature_at_at_9km(codroipo, 228).
+temperature_at_at_9km(rivignano, 228).
+temperature_at_at_9km(palmanova, 228).
+temperature_at_at_9km(gorizia, 228).
+temperature_at_at_9km(lignano, 229).
+temperature_at_at_9km(grado, 229).
+temperature_at_at_9km(trieste, 229).
 
-  },{}). 
+}). 
