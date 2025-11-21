@@ -631,7 +631,6 @@ def run_tobac_merge_split(inpu_folder, output_folder,border_path,lat_min,lat_max
     smooth: smoothing factor for gaussian filter (default 8)
 
     """
-    print("Type: ", type_)
     locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold, target,type_,True,smooth)
     print("Locating & tracking procedure completed")
 
@@ -652,7 +651,6 @@ def run_tobac_fronts(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_
     smooth: smoothing factor for gaussian filter (default 8)
 
     """
-    print("Type ->>>>>>>>>>>>>>>>>>>>>>>>>>>: ", type_)
     locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold,  target,type_,False,smooth)
     print("Locating & tracking (fronts) procedure completed")
 

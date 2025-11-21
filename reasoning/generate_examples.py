@@ -243,7 +243,6 @@ def generate_cloud_facts_over_cities(base_path):
 
         if os.path.isdir(full_path):
             #later this first stage can be skipped
-            print("plotting locations to map FULLPATH:", full_path)
             plot_locations_to_map(full_path,"reasoning/clouds/"+entry,coordinates)
 
             #########################################################################
@@ -262,7 +261,7 @@ def generate_cloud_facts_over_cities(base_path):
                         yyyy,mm,dd,h=frame_index_to_timestamp(key,starting_date,1) #1h between each frame
                         cloud_at_string=f"{full_path.rsplit('/', 1)[-1]}"
                         loc_lower = location.lower().replace(" ", "_")
-                        print(f"full path -> full path {cell_id,yyyy,mm,dd,h}")
+                       
                         full_str+=f"{cloud_at_string}_covers({location},{cell_id},{yyyy},{mm},{dd},{h}).\n"
 
                 print("% ---- next frame ----")
@@ -569,7 +568,6 @@ def generate_temp_facts_over_cities(base_path):
         entry = folder_types[2] + suff 
         full_path = os.path.join(base_path, entry)
         
-        print("starting date temperature: ", entry)
         #from height to hpa
         match = re.search(r'(\d+(?:[_\.]\d+)?(?:m|km))', entry)
         hpa=str(match.group(1))
