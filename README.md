@@ -28,6 +28,6 @@ Project aiming to provide some plain explanations to weather forecasts by using 
 * [ ] Additional Image processing (simplify through polygons?) 
 * [X] Track Split/merge (by hand(?))
 * [X] Bring concepts to facts
-* [ ] Full example generation
+* [X] Full example generation
 * [ ] ILP/ASP model
 * [ ] NLP translation (?)
