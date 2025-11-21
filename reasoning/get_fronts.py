@@ -408,7 +408,7 @@ def generate_fronts_temp(starting_date):
             output_dir = f"reasoning/temp/{folder_name}"
             os.makedirs(output_dir, exist_ok=True)
             output_file = os.path.join(output_dir, "temp_fronts.txt")
-            
+            print("output_file ------------------------> ", output_file)
             full_str = f"% format: temp_front_[alt]_hPa(city1,city2,yyyy,mm,dd,h).\n\n"
             full_str += "\n".join(altitude_facts)
             

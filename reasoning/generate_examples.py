@@ -77,6 +77,17 @@ def get_starting_date(filename):
 
         starting_date=datetime.strptime(date_str + hour_str, "%Y%m%d%H")
 
+def init_starting_date():
+    global starting_date
+    image_input_folder="./reasoning/humidity/humidity_at_100m/"
+
+    # Loop through all images
+    for filename in sorted(os.listdir(image_input_folder)):
+        if not filename.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff")):
+            continue
+
+        get_starting_date(filename)
+
 def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
     # Load locations
     global locations_name_px_pos, starting_date
@@ -91,7 +102,6 @@ def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
     TARGET_HEIGHT = 585  
     # Loop through all images
     for filename in sorted(os.listdir(image_input_folder)):
-        print("plot_locations_to_map FOLDER", image_input_folder)
         print("plot_locations_to_map FOLDER", image_input_folder)
 
         if not filename.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff")):
@@ -209,7 +219,7 @@ def get_clouds_covering_locations(locations_name_px_pos, segment_labels_path,tra
     
     return frame_cloud_map
 
-def frame_index_to_timestamp(index, starting_date, frame_time_interval):
+def frame_index_to_timestamp(index, starting_date, frame_time_interval=1):
     """
     Calculate the timestamp of a frame and return (yyyy, mm, dd, h).
     """
@@ -233,6 +243,7 @@ def generate_cloud_facts_over_cities(base_path):
 
         if os.path.isdir(full_path):
             #later this first stage can be skipped
+            print("plotting locations to map FULLPATH:", full_path)
             plot_locations_to_map(full_path,"reasoning/clouds/"+entry,coordinates)
 
             #########################################################################
@@ -264,11 +275,194 @@ def generate_cloud_facts_over_cities(base_path):
 def generate_cloud_split_merges():
     pass
 
-def merge_into_examples():
-    pass
+def rewrite_facts_no_dates(lines):
+    """
+    Generic transformer:
+    - Extracts the timestamp (last four comma-separated fields)
+    - Removes them from each predicate
+    - Returns (timestamp_fact, stripped_predicates)
+    """
 
-def get_value_over_city(): #forna utile anche per la temperatura
-    pass
+    timestamp = None
+    stripped_facts = []
+
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith('%'):
+            continue
+
+        # Remove trailing ")." safely
+        if line.endswith(")."):
+            body = line[:-2]
+        elif line.endswith(")"):
+            body = line[:-1]
+        else:
+            body = line
+
+        # Split predicate name and arguments
+        pred_name, args_str = body.split("(", 1)
+        args = args_str.split(",")
+
+        # Last 4 arguments are the timestamp
+        if len(args) < 4:
+            # malformed line, skip
+            continue
+
+        *arg_parts, yyyy, mm, dd, hh = args
+
+        # Create timestamp only once per frame
+        if timestamp is None:
+            timestamp = f"date_time({yyyy},{mm},{dd},{hh})."
+
+        # Rebuild predicate with remaining args
+        new_pred = f"{pred_name}(" + ",".join(arg_parts) + ")."
+        stripped_facts.append(new_pred)
+
+    return timestamp, stripped_facts
+
+
+def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
+    global starting_date
+    folder_split_merge="./image_processing/fvg/output" #ha le subfolder per ogni livello (considera solo le clouds)
+    folder_clouds="./reasoning/clouds" #ha le subfolder per ogni livello
+    folder_hum="./reasoning/humidity" #ha le subfolder per ogni livello
+    folder_temp="./reasoning/temp" #ha le subfolder per ogni livello
+    folder_pictograms="./reasoning/pictogram_extraction/extracted"
+    
+    output_folder="./reasoning/generated_examples"
+
+    num_frames=None
+    cloud_covering_data = None
+    frame_strings = {}
+    for cloud_folder_name,_ in folder_list_clouds:
+        # Build the full path to the cloud folder
+        full_cloud_folder = os.path.join(folder_clouds, cloud_folder_name)
+
+        if not os.path.isdir(full_cloud_folder):
+            print(f"Skipping missing folder: {full_cloud_folder}")
+            continue
+
+        if(num_frames is None): #once
+            png_files = [f for f in os.listdir(full_cloud_folder) if f.lower().endswith('.png')]
+            num_frames = len(png_files)
+            cloud_covering_data = {frame_idx: [] for frame_idx in range(num_frames)}
+
+            for frame_idx in range(num_frames):
+                y, m, d, h = frame_index_to_timestamp(frame_idx,starting_date)
+                # Format like in your file: yyyy,mm,dd,hh
+                ts_str = f"{y},{m},{d},{h})"
+                frame_strings[frame_idx] = ts_str
+  
+        #open file "clouds_covering.txt" to get which clouds cover which locations
+        cloud_covering_file = os.path.join(full_cloud_folder, "clouds_covering.txt")
+        
+                
+        # Precompute frame timestamp strings
+    
+        # Scan line by line
+        with open(cloud_covering_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                for frame_idx, ts_str in frame_strings.items():
+                    if ts_str in line:
+                        cloud_covering_data[frame_idx].append(line)
+                        break  # if a line can only belong to one frame
+
+    hum_front_data = {frame_idx: [] for frame_idx in range(num_frames)}
+    hum_data = {frame_idx: [] for frame_idx in range(num_frames)}
+    
+    for hum_folder_name,_ in folder_list_hum:
+        full_hum_folder = os.path.join(folder_hum, hum_folder_name)
+
+        if not os.path.isdir(full_hum_folder):
+            print(f"Skipping missing folder: {full_hum_folder}")
+            continue
+        hum_front_file = os.path.join(full_hum_folder, "humidity_fronts.txt")
+        hum_file=os.path.join(full_hum_folder, "humidity.txt")
+
+        with open(hum_front_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                for frame_idx, ts_str in frame_strings.items():
+                    if ts_str in line:
+                        hum_front_data[frame_idx].append(line)
+                        break  # if a line can only belong to one frame
+
+        print("hum_file", hum_file)
+        with open(hum_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                for frame_idx, ts_str in frame_strings.items():
+                    print("line humidity:", ts_str, line)
+                    if ts_str in line:
+                        hum_data[frame_idx].append(line)                        
+                        break  # if a line can only belong to one frame
+                    
+    print("humidity data loaded", hum_data.items())
+    temp_data = {frame_idx: [] for frame_idx in range(num_frames)}
+    
+    for temp_folder_name,_ in folder_list_temp:
+        full_temp_folder = os.path.join(folder_temp, temp_folder_name)
+
+        if not os.path.isdir(full_temp_folder):
+            print(f"Skipping missing folder: {full_temp_folder}")
+            continue
+        hum_front_file = os.path.join(full_temp_folder, "temp.txt")
+        
+
+        with open(hum_front_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                for frame_idx, ts_str in frame_strings.items():
+                    if ts_str in line:
+                        temp_data[frame_idx].append(line)
+                        break  # if a line can only belong to one frame
+    
+    for frame_idx in range(num_frames):
+        output_path = os.path.join(output_folder, f"example_frame_{frame_idx:03d}.txt")
+        os.makedirs(output_folder, exist_ok=True)
+
+        cloud_timestamp, cloud_stripped = rewrite_facts_no_dates(cloud_covering_data[frame_idx])
+
+        # Transform the humidity front data
+        hum_front_timestamp, hum_front_stripped = rewrite_facts_no_dates(hum_front_data[frame_idx])
+
+        # Transform the temperature data
+        temp_front_timestamp, temp_front_stripped = rewrite_facts_no_dates(temp_data[frame_idx])
+
+        hum_timestamp, hum_stripped = rewrite_facts_no_dates(hum_data[frame_idx])
+        # Determine which timestamp to use (they MUST be the same)
+        # If some datasets are empty, pick first non-empty
+        timestamp = cloud_timestamp or hum_timestamp or temp_front_timestamp or hum_front_timestamp
+        
+        with open(output_path, 'w') as f_out:
+            f_out.write("% Example generated data for frame {}\n\n".format(frame_idx))
+            f_out.write("#pos(e1,{ \n\n")
+            f_out.write(timestamp + "\n\n")
+            f_out.write("% Cloud coverage data:\n")            
+            f_out.write("% Cloud_covers(location,cloud_id)\n")
+            for fact in cloud_stripped:
+                f_out.write(fact + "\n")
+            f_out.write("\n")
+
+            f_out.write("% Humidity front data:\n")
+            f_out.write("% humidty_front(location_1,location_2): between the two locations there's a sharp change \n")
+            for fact in hum_front_stripped:
+                f_out.write(fact + "\n")
+            f_out.write("\n")
+            f_out.write("% hum(location_1,humidity_percentage): the percentage is discretized in 0, 20, 40 ... \n")
+            for fact in hum_stripped:
+                f_out.write(fact + "\n")
+            f_out.write("\n")
+
+
+            f_out.write("% Temperature data (in kelvin):\n")
+            for fact in temp_front_stripped:
+                f_out.write(fact + "\n")
+            f_out.write("\n")
+            f_out.write("  },{}). \n")
+        print(f"Wrote example data to {output_path}")
+
 
 def color_to_humidity(rgb_color, legend_colors, legend_values):
     """
@@ -402,9 +596,8 @@ def generate_temp_facts_over_cities(base_path):
         if os.path.isdir(full_path):
 
             #later this first stage can be skipped
-            print("plotting locations to map")
             plot_locations_to_map(full_path,"reasoning/temp/"+entry,coordinates)
-
+            print("getting humidity over locations color FULL PATH", full_path)
             
             hum_values=get_humidity_over_locations_color(locations_name_px_pos,full_path,legend_colors, legend_values)
 

@@ -74,7 +74,6 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
     datetimes = pd.to_datetime(datetimes)
 
     #convert frames to grayscale
-    
     frames_gray = []
     if type_ in ["temp"]:
         frames_gray = [1-np.mean(f[:, :, :3], axis=2) if f.ndim==3 else f for f in frames]
@@ -204,7 +203,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
             temp_da.data = smoothed_frame
 
             #consistent color range across all frames
-            axs.imshow(temp_da.values, origin="upper", cmap=cmap)  # pixels are axes
+            axs.imshow(temp_da.values, origin="upper",cmap=cmap)  # pixels are axes
             xlim = (0, temp_da.sizes['x'])
             ylim = (0, temp_da.sizes['y'])
             axs.set_title("")
@@ -328,7 +327,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         temp_da.data = smoothed_frame
 
         #consistent color range across all frames
-        axs.imshow(temp_da.values, origin="upper", cmap=cmap)  # pixels are axes
+        axs.imshow(temp_da.values, origin="upper",cmap=cmap)  # pixels are axes
         xlim = (0, temp_da.sizes['x'])
         ylim = (0, temp_da.sizes['y'])
     
@@ -653,7 +652,7 @@ def run_tobac_fronts(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_
     smooth: smoothing factor for gaussian filter (default 8)
 
     """
-    print("Type: ", type_)
+    print("Type ->>>>>>>>>>>>>>>>>>>>>>>>>>>: ", type_)
     locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold,  target,type_,False,smooth)
     print("Locating & tracking (fronts) procedure completed")
 

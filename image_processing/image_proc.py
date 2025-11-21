@@ -53,13 +53,13 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
 
         # Identify unique cluster values
         unique_vals = np.unique(clustered_gray)
-
+        swapped_img = None
         if len(unique_vals) != 3:
             swapped_img = clustered_gray
         else:
             # Sort to ensure consistent order: low → high intensity
-            print(f"[WARN] {f}")
-            '''
+            #print(f"[WARN] {f}")
+
             unique_vals = np.sort(unique_vals)
             black_val, mid_val, white_val = unique_vals
 
@@ -68,7 +68,7 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
             swapped_img[clustered_gray == black_val] = 0       # no cloud
             swapped_img[clustered_gray == mid_val] = 128       # thin cloud
             swapped_img[clustered_gray == white_val] = 255     # full cloud
-            '''
+
         # Save as high-quality JPEG
         out_path = os.path.join(output_dir, f)
         cv2.imwrite(out_path, swapped_img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
