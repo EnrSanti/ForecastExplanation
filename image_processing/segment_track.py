@@ -49,6 +49,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
 
     #create folder if it doesn't exist
     os.makedirs(output_folder, exist_ok=True) 
+
     #Load images from input folder
     image_files = ([os.path.join(input_folder, f) for f in os.listdir(input_folder)
                         if f.lower().endswith((".png", ".jpg", ".jpeg"))])
@@ -121,15 +122,13 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
     test_data_norm = (test_data - vmin) / (vmax - vmin)
 
 
-    #original threshold was 155 to normalized [0, 1]:
-    norm_threshold = threshold
 
 
     # === FEATURE DETECTION ===
     #Locate twice just to get the segmentation right (i.e. with "extreme" i know the center will be inside the object)
     features = tobac.feature_detection_multithreshold(
         test_data_norm,
-        threshold=[norm_threshold],  #single threshold in normalized space
+        threshold=[threshold],  #single threshold in normalized space
         dxy=3000,  #1 px 3km
         target=target,
         position_threshold="extreme",
@@ -140,7 +139,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
     #this will be used for getting the center of the objects, the one above for segmentation
     features_weighted_points = tobac.feature_detection_multithreshold(
         test_data_norm,
-        threshold=[norm_threshold], 
+        threshold=[threshold], 
         dxy=3000,
         target=target,
         position_threshold="weighted_abs",
@@ -149,7 +148,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         min_distance=1000 #at least 1000m between 2 objects
     )
 
-    
+
     dt=3600
     dxy=2500
     v_max=70
@@ -175,8 +174,9 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
     all_frames_for_cell = {}
 
 
-    #getting the list with number of images
     plot_frames = range(0, images_no)
+
+    #getting how to color the images
     cmap="viridis"
     if type_ == "cloud":
         cmap = "viridis"
@@ -185,14 +185,13 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
     elif type_ == "temp":
         cmap = "OrRd"
 
+    #particular case: no trajectories found, just plot the smoothed images
     if(trajectories is None):
         for i, itime in enumerate(plot_frames):
             original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
             fig_width_in = n_x / 100
             fig_height_in = n_y / 100
             fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in),dpi=100)
-            fig_width_px = fig.get_size_inches()[0] * fig.dpi
-            fig_height_px = fig.get_size_inches()[1] * fig.dpi
             fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
 
@@ -216,6 +215,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
             axs.set_xlim(0, temp_da.sizes["x"])
             axs.set_ylim(temp_da.sizes["y"], 0)  #since origin="upper"
             
+            #add the fvg borders
             overlay_image(border_path, axs, temp_da)
 
 
@@ -236,9 +236,6 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         temp_da = test_data_norm.isel(time=[itime]).copy()
         temp_da.data = smoothed_frame[np.newaxis, ...]  #keep time dim
 
-
-        field_2d = temp_da
-
         #features in this frame
         f = features[features["frame"] == itime]  
         
@@ -251,9 +248,9 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         #perform segmentation
         segment_labels, segments = tobac.segmentation_2D(
             f,
-            field_2d,
+            temp_da,
             dxy=dxy,
-            threshold=norm_threshold,
+            threshold=threshold,
             target=target
         )
 
@@ -261,10 +258,6 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         segments_all.append((itime, segment_labels, segments))
         all_segment_labels.append(segment_labels)
         
-
-
-
-
 
 
 
@@ -315,8 +308,6 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         fig_width_in = n_x / 100
         fig_height_in = n_y / 100
         fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in),dpi=100)
-        fig_width_px = fig.get_size_inches()[0] * fig.dpi
-        fig_height_px = fig.get_size_inches()[1] * fig.dpi
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
 
@@ -613,7 +604,6 @@ def extract_keys(filename):
     else:
         return (0, 0)
 
-
 def run_tobac_merge_split(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,threshold, target,type_,n_min_threshold=0,smooth = 8):
     """
     The main function called from outside (main).
@@ -653,5 +643,3 @@ def run_tobac_fronts(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_
     """
     locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold,  target,type_,False,smooth)
     print("Locating & tracking (fronts) procedure completed")
-
-

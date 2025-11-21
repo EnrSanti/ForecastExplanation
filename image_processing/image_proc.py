@@ -8,8 +8,6 @@ import math, os, time
 import cv2
 from glob import glob
 
-#import torch
-
 
 #----------- CLUSTERING ----------- 
 # https://github.com/AbhinavUtkarsh/Image-Segmentation
