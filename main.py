@@ -89,7 +89,7 @@ if __name__ == "__main__":
     print("[3]: run TOBAC on FVG data")
     print("     Generate facts (coulds, humidty...) over each city")
     print("[4]: Extract ground truth from pictograms")
-    print("[5]: Generate full examples (TODO)")
+    print("[5]: Generate full examples (to complete)")
 
     print("\nselect: ",end='')
 
@@ -233,6 +233,7 @@ if __name__ == "__main__":
 
         starting_date=generate_temp_facts_over_cities(base_path)
         
+        init_fronts_generation("./image_processing/fvg/output_clustered/", coordinates)
         generate_fronts_hum(starting_date)
         generate_fronts_temp(starting_date)
 
@@ -315,9 +316,9 @@ if __name__ == "__main__":
         
         
         base_path = "./image_processing/fvg/output/"
-        generate_cloud_facts_over_cities(base_path)
-        generate_humidity_facts_over_cities(base_path)
         starting_date=generate_temp_facts_over_cities(base_path)
+
+        init_fronts_generation("./image_processing/fvg/output/", coordinates)
         generate_fronts_hum(starting_date)
         generate_fronts_temp(starting_date)
 
@@ -341,7 +342,7 @@ if __name__ == "__main__":
         init_starting_date()
         merge_into_examples(folder_list_clouds,folder_list_humidity,folder_list_temp)
         
-    elif mode == 6: #to experiment
+    elif mode == 6: #to experiment stuff
         base_path = "./image_processing/fvg/output/"
         starting_date=generate_temp_facts_over_cities(base_path)
 

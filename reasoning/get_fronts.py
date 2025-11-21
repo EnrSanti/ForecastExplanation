@@ -273,10 +273,12 @@ def generate_fronts_hum(starting_date):
     target_type = folder_types[1] 
 
 
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Generating temperature fronts...",starting_date)
     
     all_fronts_facts = []
 
     for level, suff in folders_suff.items():
+        
         folder_name = target_type + suff
         full_path = os.path.join(base_path, folder_name)
 
@@ -351,7 +353,8 @@ def generate_fronts_temp(starting_date):
     global locations_pos_px
 
     map = city_map
-        
+    
+    print("Generating temperature fronts...")
     # Assuming 'humidity' is index 1
     target_type = folder_types[2] 
 
