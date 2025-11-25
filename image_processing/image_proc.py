@@ -42,7 +42,7 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
         reshaped = img.reshape(-1, C)
 
         # Cluster this single image
-        clustered_img = cluster_images_auto(1, numClusters, [reshaped], [img], [f])[0]
+        clustered_img = cluster_images_auto(numClusters, [reshaped], [img], [f])[0]
 
         # Convert to grayscale if needed
         if clustered_img.ndim == 3:
@@ -74,46 +74,41 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
 
         print(f"[INFO] Saved clustered image: {out_path}")
 
-def cluster_images(n_im, numClusters, reshaped, image, image_f):
+def cluster_images(numClusters, reshaped, image, image_f):
     """
     clustering function of a single image
     
     """
-    clustering = [0 for _ in range(n_im)]
-    for i in range(n_im):
-        kmeans = KMeans(n_clusters=numClusters, n_init=40, max_iter=500).fit(reshaped[i])
-        clustering[i] = np.reshape(np.array(kmeans.labels_, dtype=np.uint8),
-                                   (image[i].shape[0], image[i].shape[1]))
-        print("processing " + image_f[i])
+    kmeans = KMeans(n_clusters=numClusters, n_init=40, max_iter=500).fit(reshaped[i])
+    clustering = np.reshape(np.array(kmeans.labels_, dtype=np.uint8),
+                                   (image[0].shape[0], image[0].shape[1]))
+    print("processing " + image_f[i])
 
-    sortedLabels = [[] for _ in range(n_im)]
-    for i in range(n_im):
-        # compute mean brightness per cluster
-        gray = cv2.cvtColor(image[i], cv2.COLOR_BGR2GRAY)
-        means = []
-        for lbl in range(numClusters):
-            mask = (clustering[i] == lbl)
-            means.append(np.mean(gray[mask]) if np.any(mask) else 0)
+    # compute mean brightness per cluster
+    gray = cv2.cvtColor(image[i], cv2.COLOR_BGR2GRAY)
+    means = []
+    for lbl in range(numClusters):
+        mask = (clustering[i] == lbl)
+        means.append(np.mean(gray[mask]) if np.any(mask) else 0)
 
-        # sort by brightness (dark → bright)
-        sortedLabels[i] = sorted(range(numClusters), key=lambda x: means[x])
+    # sort by brightness (dark → bright)
+    sortedLabels = sorted(range(numClusters), key=lambda x: means[x])
 
-    kmeansImage = [0 for _ in range(n_im)]
-    concatImage = [[] for _ in range(n_im)]
-    for j in range(n_im):
-        kmeansImage[j] = np.zeros(image[j].shape[:2], dtype=np.uint8)
-        for i, label in enumerate(sortedLabels[j]):
-            # black = background, gray = border, white = core
-            kmeansImage[j][clustering[j] == label] = int((255) / (numClusters - 1)) * i
 
-        concatImage[j] = np.concatenate(
-            (image[j],
-             193 * np.ones((image[j].shape[0], int(0.0625 * image[j].shape[1]), 3), dtype=np.uint8),
-             cv2.cvtColor(kmeansImage[j], cv2.COLOR_GRAY2BGR)),
-            axis=1
-        )
+    kmeansImage = np.zeros(image[0].shape[:2], dtype=np.uint8)
+    for i, label in enumerate(sortedLabels[0]):
+        # black = background, gray = border, white = core
+        kmeansImage[clustering == label] = int((255) / (numClusters - 1)) * i
 
-    return kmeansImage
+    concatImage = np.concatenate(
+        (image[0],
+            193 * np.ones((image[0].shape[0], int(0.0625 * image[0].shape[1]), 3), dtype=np.uint8),
+            cv2.cvtColor(kmeansImage, cv2.COLOR_GRAY2BGR)),
+        axis=1
+    )
+
+    return [kmeansImage]
+
 
 #----------- IMG RESIZING -----------
 def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
@@ -216,33 +211,31 @@ def kmeans_torch(X, num_clusters=3, max_iter=500,n_init=40, tol=1e-4, device=Non
 
     return best_labels.cpu().numpy(), best_centers.cpu().numpy()
 
-def cluster_images_gpu(n_im, numClusters, reshaped, image, image_f):
-    clustering = [0 for _ in range(n_im)]
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+def cluster_images_gpu( numClusters, reshaped, image, image_f):
 
-    for i in range(n_im):
-        X = reshaped[i]
-        labels, _ = kmeans_torch(X, num_clusters=numClusters, max_iter=200, device=device)
-        clustering[i] = labels.reshape(image[i].shape[:2])
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device="cpu"
+    X = reshaped[0]
+    labels, _ = kmeans_torch(X, num_clusters=numClusters, max_iter=200, device=device)
+    clustering = labels.reshape(image[0].shape[:2])
 
     # --- Ensure consistent label mapping ---
-    kmeansImage = [0 for _ in range(n_im)]
-    for i in range(n_im):
-        gray = cv2.cvtColor(image[i], cv2.COLOR_BGR2GRAY)
-        means = []
-        for lbl in range(numClusters):
-            mask = (clustering[i] == lbl)
-            means.append(np.mean(gray[mask]) if np.any(mask) else 0)
-        sortedLabels = sorted(range(numClusters), key=lambda x: means[x])
+    gray = cv2.cvtColor(image[0], cv2.COLOR_BGR2GRAY)
+    means = []
+    for lbl in range(numClusters):
+        mask = (clustering == lbl)
+        means.append(np.mean(gray[mask]) if np.any(mask) else 0)
+    sortedLabels = sorted(range(numClusters), key=lambda x: means[x])
         
-        img_mapped = np.zeros_like(clustering[i], dtype=np.uint8)
-        for idx, label in enumerate(sortedLabels):
-            img_mapped[clustering[i] == label] = int((255)/(numClusters-1))*idx
-        kmeansImage[i] = img_mapped
+    
+    img_mapped = np.zeros_like(clustering, dtype=np.uint8)
+    for idx, label in enumerate(sortedLabels):
+        img_mapped[clustering == label] = int((255)/(numClusters-1))*idx
+    kmeansImage = img_mapped
 
-    return kmeansImage
+    return [kmeansImage]
 
-def cluster_images_auto(n_im, numClusters, reshaped, image, image_f):
+def cluster_images_auto(numClusters, reshaped, image, image_f):
     
     """
     Automatically uses GPU K-Means if CUDA is available.
@@ -251,10 +244,11 @@ def cluster_images_auto(n_im, numClusters, reshaped, image, image_f):
   
     try:
         if torch.cuda.is_available():
-            return cluster_images_gpu(n_im, numClusters, reshaped, image, image_f)
+            return cluster_images_gpu(numClusters, reshaped, image, image_f)
     except ImportError:
         print("[INFO] PyTorch not installed → using CPU K-Means")
 
     # fallback to CPU
-    return cluster_images(n_im, numClusters, reshaped, image, image_f)
+    return cluster_images(numClusters, reshaped, image, image_f)
+
 
