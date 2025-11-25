@@ -230,10 +230,10 @@ humidity_percentage_at_750m(grado, 100, 2019,11,1,12).
 humidity_percentage_at_750m(trieste, 100, 2019,11,1,12).
 humidity_percentage_at_750m(sappada, 20, 2019,11,1,13).
 humidity_percentage_at_750m(villa_santina, 60, 2019,11,1,13).
-humidity_percentage_at_750m(pontebba, 40, 2019,11,1,13).
+humidity_percentage_at_750m(pontebba, 60, 2019,11,1,13).
 humidity_percentage_at_750m(tarvisio, 20, 2019,11,1,13).
 humidity_percentage_at_750m(forni, 20, 2019,11,1,13).
-humidity_percentage_at_750m(stolvizza, 60, 2019,11,1,13).
+humidity_percentage_at_750m(stolvizza, 100, 2019,11,1,13).
 humidity_percentage_at_750m(barcis, 20, 2019,11,1,13).
 humidity_percentage_at_750m(gemona, 100, 2019,11,1,13).
 humidity_percentage_at_750m(spilinbergo, 100, 2019,11,1,13).
@@ -249,7 +249,7 @@ humidity_percentage_at_750m(grado, 100, 2019,11,1,13).
 humidity_percentage_at_750m(trieste, 100, 2019,11,1,13).
 humidity_percentage_at_750m(sappada, 20, 2019,11,1,14).
 humidity_percentage_at_750m(villa_santina, 60, 2019,11,1,14).
-humidity_percentage_at_750m(pontebba, 40, 2019,11,1,14).
+humidity_percentage_at_750m(pontebba, 60, 2019,11,1,14).
 humidity_percentage_at_750m(tarvisio, 40, 2019,11,1,14).
 humidity_percentage_at_750m(forni, 20, 2019,11,1,14).
 humidity_percentage_at_750m(stolvizza, 100, 2019,11,1,14).
@@ -324,7 +324,7 @@ humidity_percentage_at_750m(lignano, 60, 2019,11,1,17).
 humidity_percentage_at_750m(grado, 60, 2019,11,1,17).
 humidity_percentage_at_750m(trieste, 100, 2019,11,1,17).
 humidity_percentage_at_750m(sappada, 0, 2019,11,1,18).
-humidity_percentage_at_750m(villa_santina, 60, 2019,11,1,18).
+humidity_percentage_at_750m(villa_santina, 40, 2019,11,1,18).
 humidity_percentage_at_750m(pontebba, 20, 2019,11,1,18).
 humidity_percentage_at_750m(tarvisio, 40, 2019,11,1,18).
 humidity_percentage_at_750m(forni, 0, 2019,11,1,18).
@@ -419,7 +419,7 @@ humidity_percentage_at_750m(lignano, 60, 2019,11,1,22).
 humidity_percentage_at_750m(grado, 60, 2019,11,1,22).
 humidity_percentage_at_750m(trieste, 60, 2019,11,1,22).
 humidity_percentage_at_750m(sappada, 20, 2019,11,1,23).
-humidity_percentage_at_750m(villa_santina, 40, 2019,11,1,23).
+humidity_percentage_at_750m(villa_santina, 60, 2019,11,1,23).
 humidity_percentage_at_750m(pontebba, 60, 2019,11,1,23).
 humidity_percentage_at_750m(tarvisio, 60, 2019,11,1,23).
 humidity_percentage_at_750m(forni, 20, 2019,11,1,23).
@@ -652,7 +652,7 @@ humidity_percentage_at_750m(pontebba, 0, 2019,11,2,11).
 humidity_percentage_at_750m(tarvisio, 20, 2019,11,2,11).
 humidity_percentage_at_750m(forni, 20, 2019,11,2,11).
 humidity_percentage_at_750m(stolvizza, 0, 2019,11,2,11).
-humidity_percentage_at_750m(barcis, 20, 2019,11,2,11).
+humidity_percentage_at_750m(barcis, 40, 2019,11,2,11).
 humidity_percentage_at_750m(gemona, 20, 2019,11,2,11).
 humidity_percentage_at_750m(spilinbergo, 20, 2019,11,2,11).
 humidity_percentage_at_750m(udine, 0, 2019,11,2,11).
@@ -706,7 +706,7 @@ humidity_percentage_at_750m(trieste, 20, 2019,11,2,13).
 humidity_percentage_at_750m(sappada, 0, 2019,11,2,14).
 humidity_percentage_at_750m(villa_santina, 20, 2019,11,2,14).
 humidity_percentage_at_750m(pontebba, 0, 2019,11,2,14).
-humidity_percentage_at_750m(tarvisio, 40, 2019,11,2,14).
+humidity_percentage_at_750m(tarvisio, 20, 2019,11,2,14).
 humidity_percentage_at_750m(forni, 20, 2019,11,2,14).
 humidity_percentage_at_750m(stolvizza, 0, 2019,11,2,14).
 humidity_percentage_at_750m(barcis, 20, 2019,11,2,14).
@@ -743,7 +743,7 @@ humidity_percentage_at_750m(grado, 20, 2019,11,2,15).
 humidity_percentage_at_750m(trieste, 20, 2019,11,2,15).
 humidity_percentage_at_750m(sappada, 0, 2019,11,2,16).
 humidity_percentage_at_750m(villa_santina, 20, 2019,11,2,16).
-humidity_percentage_at_750m(pontebba, 20, 2019,11,2,16).
+humidity_percentage_at_750m(pontebba, 0, 2019,11,2,16).
 humidity_percentage_at_750m(tarvisio, 40, 2019,11,2,16).
 humidity_percentage_at_750m(forni, 20, 2019,11,2,16).
 humidity_percentage_at_750m(stolvizza, 0, 2019,11,2,16).
@@ -934,10 +934,10 @@ humidity_percentage_at_750m(trieste, 20, 2019,11,3,1).
 humidity_percentage_at_750m(sappada, 0, 2019,11,3,2).
 humidity_percentage_at_750m(villa_santina, 20, 2019,11,3,2).
 humidity_percentage_at_750m(pontebba, 20, 2019,11,3,2).
-humidity_percentage_at_750m(tarvisio, 40, 2019,11,3,2).
+humidity_percentage_at_750m(tarvisio, 20, 2019,11,3,2).
 humidity_percentage_at_750m(forni, 20, 2019,11,3,2).
-humidity_percentage_at_750m(stolvizza, 20, 2019,11,3,2).
-humidity_percentage_at_750m(barcis, 40, 2019,11,3,2).
+humidity_percentage_at_750m(stolvizza, 0, 2019,11,3,2).
+humidity_percentage_at_750m(barcis, 20, 2019,11,3,2).
 humidity_percentage_at_750m(gemona, 20, 2019,11,3,2).
 humidity_percentage_at_750m(spilinbergo, 0, 2019,11,3,2).
 humidity_percentage_at_750m(udine, 0, 2019,11,3,2).
