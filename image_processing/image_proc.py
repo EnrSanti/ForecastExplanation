@@ -7,72 +7,15 @@ from sklearn.cluster import KMeans
 import math, os, time
 import cv2
 from glob import glob
+
+import multiprocessing as mp
 import torch
+
+import threading
 from concurrent.futures import ThreadPoolExecutor
 
 #----------- CLUSTERING ----------- 
-# https://github.com/AbhinavUtkarsh/Image-Segmentation
-def generate_clustered_images(numClusters, input_dir, output_dir):
-    """
-    clustering function, which given a number of clusters, it considers all  images in the input directory, clusters them and saves in the output directory
-    
-    Parameters
-    ----------
-        numClusters: the number of clusters which will cluster the images
-        input_dir: the path of the folder where the images to be clustered are present
-        output_dir: the path of the folder where the images clustered are saved
-    """
-    import os, cv2
-    import numpy as np
 
-    os.makedirs(output_dir, exist_ok=True)
-    files = os.listdir(input_dir)
-    if len(os.listdir(output_dir)) >= len(os.listdir(input_dir)):
-        print(f"Output folder '{output_dir}' already contains images. Skipping clustering, assuming to be correct.")
-        return
-    for f in files:
-        img_path = os.path.join(input_dir, f)
-        img = cv2.imread(img_path)
-
-        if img is None:
-            print(f"[WARN] Skipping {f}, not a valid image.")
-            continue
-
-        H, W, C = img.shape
-        reshaped = img.reshape(-1, C)
-
-        # Cluster this single image
-        clustered_img = cluster_images_auto(numClusters, [reshaped], [img], [f])[0]
-
-        # Convert to grayscale if needed
-        if clustered_img.ndim == 3:
-            clustered_gray = cv2.cvtColor(clustered_img, cv2.COLOR_BGR2GRAY)
-        else:
-            clustered_gray = clustered_img
-
-        # Identify unique cluster values
-        unique_vals = np.unique(clustered_gray)
-        swapped_img = None
-        if len(unique_vals) != 3:
-            swapped_img = clustered_gray
-        else:
-            # Sort to ensure consistent order: low → high intensity
-            #print(f"[WARN] {f}")
-
-            unique_vals = np.sort(unique_vals)
-            black_val, mid_val, white_val = unique_vals
-
-            # Map to discrete 0, 128, 255
-            swapped_img = np.zeros_like(clustered_gray, dtype=np.uint8)
-            swapped_img[clustered_gray == black_val] = 0       # no cloud
-            swapped_img[clustered_gray == mid_val] = 128       # thin cloud
-            swapped_img[clustered_gray == white_val] = 255     # full cloud
-
-        # Save as high-quality JPEG
-        out_path = os.path.join(output_dir, f)
-        cv2.imwrite(out_path, swapped_img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
-
-        print(f"[INFO] Saved clustered image: {out_path}")
 
 def cluster_images(numClusters, reshaped, image, image_f):
     """
@@ -214,7 +157,7 @@ def kmeans_torch(X, num_clusters=3, max_iter=500,n_init=40, tol=1e-4, device=Non
 def cluster_images_gpu( numClusters, reshaped, image, image_f):
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    device="cpu"
+    
     X = reshaped[0]
     labels, _ = kmeans_torch(X, num_clusters=numClusters, max_iter=200, device=device)
     clustering = labels.reshape(image[0].shape[:2])
@@ -235,13 +178,15 @@ def cluster_images_gpu( numClusters, reshaped, image, image_f):
 
     return [kmeansImage]
 
+num_workers = 4
+_streams = [torch.cuda.Stream(device=0) for _ in range(num_workers)]
+
+
 def cluster_images_auto(numClusters, reshaped, image, image_f):
-    
     """
     Automatically uses GPU K-Means if CUDA is available.
     Falls back to CPU K-Means otherwise.
     """
-  
     try:
         if torch.cuda.is_available():
             return cluster_images_gpu(numClusters, reshaped, image, image_f)
@@ -252,3 +197,116 @@ def cluster_images_auto(numClusters, reshaped, image, image_f):
     return cluster_images(numClusters, reshaped, image, image_f)
 
 
+def worker_thread(args, results, idx):
+    """
+    Each thread uses a persistent CUDA stream from _streams
+    """
+    numClusters, reshaped, image, file, stream_id = args
+    stream = _streams[stream_id]
+
+    print(f"[INFO] Thread {threading.get_ident()} using stream {stream}")
+
+    with torch.cuda.stream(stream):
+        result = cluster_images_gpu(
+            numClusters,
+            [reshaped],
+            [image],
+            [file]
+        )[0]
+
+    results[idx] = result
+
+
+def cluster_images_auto_4threads(numClusters, reshaped_list, image_list, file_list):
+    """
+    
+    Run clustering in batches of 4 threads at a time.
+    Each thread uses a distinct CUDA stream.
+    """
+    total = len(reshaped_list)
+    results = [None] * total
+
+    for batch_start in range(0, total, num_workers):
+        batch_end = min(batch_start + num_workers, total)
+
+        threads = []
+
+        # Launch up to 4 threads
+        for i in range(batch_start, batch_end):
+            stream_id = i % num_workers
+            t = threading.Thread(
+                target=worker_thread,
+                args=((numClusters,
+                       reshaped_list[i],
+                       image_list[i],
+                       file_list[i],
+                       stream_id), results, i)
+            )
+            t.start()
+            threads.append(t)
+
+        # Wait for this batch to finish before launching the next one
+        for t in threads:
+            t.join()
+
+    return results
+
+
+
+def generate_clustered_images(numClusters, input_dir, output_dir):
+    os.makedirs(output_dir, exist_ok=True)
+
+    files = sorted(os.listdir(input_dir))
+    if len(os.listdir(output_dir)) >= len(files):
+        print(f"Output folder '{output_dir}' already contains images. Skipping clustering.")
+        return
+
+    batch_files = files[:len(files)]  # e.g., 2 images
+    reshaped_batch = []
+    images_batch = []
+
+    for f in batch_files:
+        img_path = os.path.join(input_dir, f)
+        img = cv2.imread(img_path)
+
+        if img is None:
+            print(f"[WARN] Skipping {f}, not a valid image.")
+            continue
+
+        H, W, C = img.shape
+        reshaped_batch.append(img.reshape(-1, C))
+        images_batch.append(img)
+
+    # --- Cluster images in parallel threads using different streams ---
+    clustered_results = cluster_images_auto_4threads(
+        numClusters,
+        reshaped_batch,
+        images_batch,
+        batch_files
+    )
+
+    # --- Save results ---
+    for f, clustered_img in zip(batch_files, clustered_results):
+        if clustered_img is None:
+            continue
+
+        if clustered_img.ndim == 3:
+            clustered_gray = cv2.cvtColor(clustered_img, cv2.COLOR_BGR2GRAY)
+        else:
+            clustered_gray = clustered_img
+
+        unique_vals = np.unique(clustered_gray)
+        out_path = os.path.join(output_dir, f)
+
+        if len(unique_vals) == 3:
+            unique_vals = np.sort(unique_vals)
+            black, mid, white = unique_vals
+
+            swapped = np.zeros_like(clustered_gray)
+            swapped[clustered_gray == black] = 0
+            swapped[clustered_gray == mid] = 128
+            swapped[clustered_gray == white] = 255
+        else:
+            swapped = clustered_gray
+
+        cv2.imwrite(out_path, swapped, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
