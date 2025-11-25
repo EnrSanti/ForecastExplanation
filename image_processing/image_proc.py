@@ -7,7 +7,8 @@ from sklearn.cluster import KMeans
 import math, os, time
 import cv2
 from glob import glob
-
+import torch
+from concurrent.futures import ThreadPoolExecutor
 
 #----------- CLUSTERING ----------- 
 # https://github.com/AbhinavUtkarsh/Image-Segmentation
@@ -41,7 +42,7 @@ def generate_clustered_images(numClusters, input_dir, output_dir):
         reshaped = img.reshape(-1, C)
 
         # Cluster this single image
-        clustered_img = cluster_images(1, numClusters, [reshaped], [img], [f])[0]
+        clustered_img = cluster_images_auto(1, numClusters, [reshaped], [img], [f])[0]
 
         # Convert to grayscale if needed
         if clustered_img.ndim == 3:
@@ -161,8 +162,7 @@ def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
         except Exception as e:
             print(f"Skipping {filename}: {e}")
 
-'''
-def kmeans_torch(X, num_clusters=3, max_iter=100, tol=1e-4, device=None):
+def kmeans_torch(X, num_clusters=3, max_iter=500,n_init=40, tol=1e-4, device=None):
     """
     GPU-based K-Means using PyTorch.
 
@@ -188,61 +188,73 @@ def kmeans_torch(X, num_clusters=3, max_iter=100, tol=1e-4, device=None):
     """
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     X_t = torch.tensor(X, dtype=torch.float32, device=device)
+    best_inertia = float("inf")
+    best_labels = None
+    best_centers = None
 
-    # Random initialization of centroids
-    indices = torch.randperm(X_t.shape[0])[:num_clusters]
-    centers = X_t[indices]
+    for _ in range(n_init):
+        indices = torch.randperm(X_t.shape[0])[:num_clusters]
+        centers = X_t[indices]
+        for _ in range(max_iter):
+            dists = torch.cdist(X_t, centers)
+            labels = torch.argmin(dists, dim=1)
+            new_centers = torch.stack([
+                X_t[labels == k].mean(dim=0) if torch.any(labels == k) else centers[k]
+                for k in range(num_clusters)
+            ])
+            if torch.norm(new_centers - centers) < tol:
+                break
+            centers = new_centers
 
-    for _ in range(max_iter):
-        # Assign clusters
-        dists = torch.cdist(X_t, centers)
-        labels = torch.argmin(dists, dim=1)
+        # Compute inertia (sum of squared distances)
+        dists_final = torch.cdist(X_t, centers)
+        inertia = torch.sum((dists_final[torch.arange(X_t.shape[0]), labels])**2).item()
+        if inertia < best_inertia:
+            best_inertia = inertia
+            best_labels = labels.clone()
+            best_centers = centers.clone()
 
-        # Update centers
-        new_centers = torch.stack([
-            X_t[labels == k].mean(dim=0) if torch.any(labels == k) else centers[k]
-            for k in range(num_clusters)
-        ])
-
-        # Check convergence
-        shift = torch.norm(new_centers - centers)
-        centers = new_centers
-        if shift < tol:
-            break
-
-    return labels.cpu().numpy(), centers.cpu().numpy()
+    return best_labels.cpu().numpy(), best_centers.cpu().numpy()
 
 def cluster_images_gpu(n_im, numClusters, reshaped, image, image_f):
-    """
-    Serial image clustering using GPU K-Means.
-
-    Parameters
-    ----------
-    n_im : int
-        Number of images (usually 1 per call)
-    numClusters : int
-        Number of clusters
-    reshaped : list of np.ndarray
-        List of flattened image arrays (H*W, C)
-    image : list of np.ndarray
-        Original images
-    image_f : list of str
-        Image filenames
-
-    Returns
-    -------
-    clustering : list of np.ndarray
-        Clustered labels reshaped to image dimensions
-    """
     clustering = [0 for _ in range(n_im)]
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"[INFO] Using device: {device}")
 
     for i in range(n_im):
         X = reshaped[i]
         labels, _ = kmeans_torch(X, num_clusters=numClusters, max_iter=200, device=device)
         clustering[i] = labels.reshape(image[i].shape[:2])
-        print(f"[INFO] Processed {image_f[i]}")
 
-    return clustering
-'''
+    # --- Ensure consistent label mapping ---
+    kmeansImage = [0 for _ in range(n_im)]
+    for i in range(n_im):
+        gray = cv2.cvtColor(image[i], cv2.COLOR_BGR2GRAY)
+        means = []
+        for lbl in range(numClusters):
+            mask = (clustering[i] == lbl)
+            means.append(np.mean(gray[mask]) if np.any(mask) else 0)
+        sortedLabels = sorted(range(numClusters), key=lambda x: means[x])
+        
+        img_mapped = np.zeros_like(clustering[i], dtype=np.uint8)
+        for idx, label in enumerate(sortedLabels):
+            img_mapped[clustering[i] == label] = int((255)/(numClusters-1))*idx
+        kmeansImage[i] = img_mapped
+
+    return kmeansImage
+
+def cluster_images_auto(n_im, numClusters, reshaped, image, image_f):
+    
+    """
+    Automatically uses GPU K-Means if CUDA is available.
+    Falls back to CPU K-Means otherwise.
+    """
+  
+    try:
+        if torch.cuda.is_available():
+            return cluster_images_gpu(n_im, numClusters, reshaped, image, image_f)
+    except ImportError:
+        print("[INFO] PyTorch not installed → using CPU K-Means")
+
+    # fallback to CPU
+    return cluster_images(n_im, numClusters, reshaped, image, image_f)
+

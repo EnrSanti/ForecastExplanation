@@ -265,7 +265,8 @@ def generate_cloud_facts_over_cities(base_path):
                         full_str+=f"{cloud_at_string}_covers({location},{cell_id},{yyyy},{mm},{dd},{h}).\n"
 
                 print("% ---- next frame ----")
-            with open(f"{"reasoning/clouds/"+full_path.rsplit('/', 1)[-1]}/clouds_covering.txt", "w") as f:
+            path = "reasoning/clouds/" + full_path.rsplit('/', 1)[-1] + "/clouds_covering.txt"
+            with open(path, "w") as f:
                 f.write(full_str)
             frame_cloud_map={}
 
@@ -514,8 +515,8 @@ def generate_humidity_facts_over_cities(base_path):
             
             hum_values=get_humidity_over_locations_color(locations_name_px_pos,full_path,legend_colors, legend_values)
 
-
-            with open(f"{"reasoning/humidity/"+full_path.rsplit('/', 1)[-1]}/humidity.txt", "w") as f:
+            path="reasoning/humidity/" + full_path.rsplit('/', 1)[-1] + "/humidity.txt"
+            with open(path, "w") as f:
                 f.write("% format humidity_percentage_at(location, humidity_percentage, yyyy, mm, dd, h).\n\n")
                 for frame, values in hum_values.items():
                     yyyy,mm,dd,h=frame_index_to_timestamp(frame, starting_date, 1)
@@ -612,8 +613,8 @@ def generate_temp_facts_over_cities(base_path):
             print("getting humidity over locations color FULL PATH", full_path)
             
             hum_values=get_humidity_over_locations_color(locations_name_px_pos,full_path,legend_colors, legend_values)
-
-            with open(f"{"reasoning/temp/"+full_path.rsplit('/', 1)[-1]}/temp.txt", "w") as f:
+            path="reasoning/temp/" + full_path.rsplit('/', 1)[-1] + "/temp.txt"
+            with open(path, "w") as f:
                 f.write("% format temperature_at(location, temperature, yyyy, mm, dd, h).\n\n")
                 for frame, values in hum_values.items():
                     yyyy,mm,dd,h=frame_index_to_timestamp(frame, starting_date, 1)
