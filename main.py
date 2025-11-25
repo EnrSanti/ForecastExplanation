@@ -171,14 +171,23 @@ if __name__ == "__main__":
         #resize iamges once to work on smaller images, generate clustered images and run TOBAC (FVG)
         print("Cluster & run TOBAC on FVG clustered data (clouds & humidity  for now)")
         
+        import time
 
+        # Calculate the start time
+        start = time.time()
         #resize and cluster the images
         for f, threshold, upper_lower, num_clusters in folder_list:
+            
             resize_1_4_and_simplify(f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}")    
             generate_clustered_images(num_clusters, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/clustered/{f}_clustered")
             pass    
 
-        
+        end = time.time()
+        length = end - start
+
+        # Show the results : this can be altered however you like
+        print("TIME REQUIRED ------> ", length, "seconds!")
+
 
         #for the clouds run tobac   
         with ProcessPoolExecutor(max_workers=2) as executor:
