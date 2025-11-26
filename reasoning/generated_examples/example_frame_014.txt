@@ -2,43 +2,85 @@
 
 #pos(e1,{ 
 
-%% Format: forecasted_rain(location, drops_in_pictogram,yyyy,mm,dd).
-%% Format: forecasted_sky(location, description ,yyyy,mm,dd).
+%% Format: forecasted_rain(location, drops_in_pictogram).
+%% Format: forecasted_sky(location, description).
 date(2019,11,1).
 
-forecasted_rain(barcis, 0,2019,11,1). 
-forecasted_sky(barcis, "cloudy",2019,11,1). 
-forecasted_rain(pontebba, 0,2019,11,1). 
-forecasted_sky(pontebba, "cloudy",2019,11,1). 
-forecasted_rain(cividale, 0,2019,11,1). 
-forecasted_sky(cividale, "sunny",2019,11,1). 
-forecasted_rain(forni, 0,2019,11,1). 
-forecasted_sky(forni, "sunny",2019,11,1). 
-forecasted_rain(udine, 0,2019,11,1). 
-forecasted_sky(udine, "sunny",2019,11,1). 
-forecasted_rain(pordenone, 0,2019,11,1). 
-forecasted_sky(pordenone, "sunny",2019,11,1). 
-forecasted_rain(trieste, 0,2019,11,1). 
-forecasted_sky(trieste, "sunny",2019,11,1). 
-forecasted_rain(villa_santina, 0,2019,11,1). 
-forecasted_sky(villa_santina, "sunny",2019,11,1). 
-forecasted_rain(rivignano, 0,2019,11,1). 
-forecasted_sky(rivignano, "sunny",2019,11,1). 
-forecasted_rain(spilinbergo, 0,2019,11,1). 
-forecasted_sky(spilinbergo, "sunny",2019,11,1). 
-forecasted_rain(palmanova, 0,2019,11,1). 
-forecasted_sky(palmanova, "sunny",2019,11,1). 
-forecasted_rain(tarvisio, 0,2019,11,1). 
-forecasted_sky(tarvisio, "cloudy",2019,11,1). 
-forecasted_rain(sappada, 0,2019,11,1). 
-forecasted_sky(sappada, "sunny",2019,11,1). 
-forecasted_rain(lignano, 0,2019,11,1). 
-forecasted_sky(lignano, "sunny",2019,11,1). 
+forecasted_rain(barcis, 0). 
+forecasted_sky(barcis, "mostly_clear"). 
+forecasted_rain(pontebba, 0). 
+forecasted_sky(pontebba, "mostly_clear"). 
+forecasted_rain(cividale, 0). 
+forecasted_sky(cividale, "sunny"). 
+forecasted_rain(forni, 0). 
+forecasted_sky(forni, "sunny"). 
+forecasted_rain(udine, 0). 
+forecasted_sky(udine, "sunny"). 
+forecasted_rain(pordenone, 0). 
+forecasted_sky(pordenone, "sunny"). 
+forecasted_rain(trieste, 0). 
+forecasted_sky(trieste, "sunny"). 
+forecasted_rain(villa_santina, 0). 
+forecasted_sky(villa_santina, "sunny"). 
+forecasted_rain(rivignano, 0). 
+forecasted_sky(rivignano, "sunny"). 
+forecasted_rain(spilinbergo, 0). 
+forecasted_sky(spilinbergo, "sunny"). 
+forecasted_rain(palmanova, 0). 
+forecasted_sky(palmanova, "sunny"). 
+forecasted_rain(tarvisio, 0). 
+forecasted_sky(tarvisio, "cloudy"). 
+forecasted_rain(sappada, 0). 
+forecasted_sky(sappada, "sunny"). 
+forecasted_rain(lignano, 0). 
+forecasted_sky(lignano, "sunny"). 
 
- },{}).
-
-#context(e1,{ 
-
+}, 
+{
+rains_at(barcis). 
+partially_sunny_at(barcis). 
+covered_at(barcis). 
+rains_at(pontebba). 
+partially_sunny_at(pontebba). 
+covered_at(pontebba). 
+rains_at(cividale). 
+partially_sunny_at(cividale). 
+covered_at(cividale). 
+rains_at(forni). 
+partially_sunny_at(forni). 
+covered_at(forni). 
+rains_at(udine). 
+partially_sunny_at(udine). 
+covered_at(udine). 
+rains_at(pordenone). 
+partially_sunny_at(pordenone). 
+covered_at(pordenone). 
+rains_at(trieste). 
+partially_sunny_at(trieste). 
+covered_at(trieste). 
+rains_at(villa_santina). 
+partially_sunny_at(villa_santina). 
+covered_at(villa_santina). 
+rains_at(rivignano). 
+partially_sunny_at(rivignano). 
+covered_at(rivignano). 
+rains_at(spilinbergo). 
+partially_sunny_at(spilinbergo). 
+covered_at(spilinbergo). 
+rains_at(palmanova). 
+partially_sunny_at(palmanova). 
+covered_at(palmanova). 
+rains_at(tarvisio). 
+sunny_at(tarvisio). 
+partially_sunny_at(tarvisio). 
+rains_at(sappada). 
+partially_sunny_at(sappada). 
+covered_at(sappada). 
+rains_at(lignano). 
+partially_sunny_at(lignano). 
+covered_at(lignano). 
+},
+{
 date_time(2019,11,1,15).
 
 % Cloud coverage data:
@@ -54,28 +96,28 @@ cloud_at_9km_covers(Trieste,26).
 % Humidity front data:
 % humidty_front(location_1,location_2): between the two locations there's a sharp change 
 hum_front_1000_hPa(Stolvizza,Udine).
-hum_front_1000_hPa(Barcis,Spilinbergo).
 hum_front_1000_hPa(Barcis,Pordenone).
-hum_front_1000_hPa(Gemona,Stolvizza).
+hum_front_1000_hPa(Barcis,Spilinbergo).
 hum_front_1000_hPa(Gemona,Villa_santina).
 hum_front_1000_hPa(Gemona,Pontebba).
+hum_front_1000_hPa(Gemona,Stolvizza).
 hum_front_1000_hPa(Spilinbergo,Villa_santina).
-hum_front_1000_hPa(Cividale,Stolvizza).
 hum_front_1000_hPa(Cividale,Tarvisio).
+hum_front_1000_hPa(Cividale,Stolvizza).
 hum_front_925_hPa(Stolvizza,Udine).
-hum_front_925_hPa(Barcis,Spilinbergo).
 hum_front_925_hPa(Barcis,Pordenone).
-hum_front_925_hPa(Gemona,Stolvizza).
+hum_front_925_hPa(Barcis,Spilinbergo).
 hum_front_925_hPa(Gemona,Villa_santina).
 hum_front_925_hPa(Gemona,Pontebba).
+hum_front_925_hPa(Gemona,Stolvizza).
 hum_front_925_hPa(Spilinbergo,Villa_santina).
-hum_front_925_hPa(Cividale,Stolvizza).
 hum_front_925_hPa(Cividale,Tarvisio).
+hum_front_925_hPa(Cividale,Stolvizza).
+hum_front_850_hPa(Cividale,Tarvisio).
 hum_front_850_hPa(Cividale,Stolvizza).
 hum_front_850_hPa(Cividale,Udine).
-hum_front_850_hPa(Cividale,Tarvisio).
-hum_front_850_hPa(Palmanova,Udine).
 hum_front_850_hPa(Palmanova,Rivignano).
+hum_front_850_hPa(Palmanova,Udine).
 hum_front_850_hPa(Lignano,Palmanova).
 hum_front_850_hPa(Grado,Lignano).
 
@@ -159,7 +201,7 @@ humidity_percentage_at_3km(trieste, 60).
 humidity_percentage_at_5_5km(sappada, 40).
 humidity_percentage_at_5_5km(villa_santina, 20).
 humidity_percentage_at_5_5km(pontebba, 20).
-humidity_percentage_at_5_5km(tarvisio, 40).
+humidity_percentage_at_5_5km(tarvisio, 20).
 humidity_percentage_at_5_5km(forni, 60).
 humidity_percentage_at_5_5km(stolvizza, 20).
 humidity_percentage_at_5_5km(barcis, 40).
@@ -179,7 +221,7 @@ humidity_percentage_at_9km(sappada, 0).
 humidity_percentage_at_9km(villa_santina, 40).
 humidity_percentage_at_9km(pontebba, 80).
 humidity_percentage_at_9km(tarvisio, 60).
-humidity_percentage_at_9km(forni, 0).
+humidity_percentage_at_9km(forni, 20).
 humidity_percentage_at_9km(stolvizza, 60).
 humidity_percentage_at_9km(barcis, 40).
 humidity_percentage_at_9km(gemona, 60).
@@ -191,7 +233,7 @@ humidity_percentage_at_9km(codroipo, 80).
 humidity_percentage_at_9km(rivignano, 80).
 humidity_percentage_at_9km(palmanova, 20).
 humidity_percentage_at_9km(gorizia, 20).
-humidity_percentage_at_9km(lignano, 60).
+humidity_percentage_at_9km(lignano, 80).
 humidity_percentage_at_9km(grado, 20).
 humidity_percentage_at_9km(trieste, 20).
 
@@ -259,18 +301,18 @@ temperature_at_at_3km(pontebba, 276).
 temperature_at_at_3km(tarvisio, 272).
 temperature_at_at_3km(forni, 276).
 temperature_at_at_3km(stolvizza, 276).
-temperature_at_at_3km(barcis, 277).
+temperature_at_at_3km(barcis, 276).
 temperature_at_at_3km(gemona, 276).
 temperature_at_at_3km(spilinbergo, 276).
 temperature_at_at_3km(udine, 275).
-temperature_at_at_3km(cividale, 273).
+temperature_at_at_3km(cividale, 272).
 temperature_at_at_3km(pordenone, 276).
-temperature_at_at_3km(codroipo, 276).
+temperature_at_at_3km(codroipo, 275).
 temperature_at_at_3km(rivignano, 276).
-temperature_at_at_3km(palmanova, 272).
+temperature_at_at_3km(palmanova, 271).
 temperature_at_at_3km(gorizia, 272).
 temperature_at_at_3km(lignano, 277).
-temperature_at_at_3km(grado, 275).
+temperature_at_at_3km(grado, 277).
 temperature_at_at_3km(trieste, 272).
 temperature_at_at_5_5km(sappada, 260).
 temperature_at_at_5_5km(villa_santina, 260).
@@ -291,24 +333,48 @@ temperature_at_at_5_5km(gorizia, 261).
 temperature_at_at_5_5km(lignano, 261).
 temperature_at_at_5_5km(grado, 261).
 temperature_at_at_5_5km(trieste, 261).
-temperature_at_at_9km(sappada, 227).
-temperature_at_at_9km(villa_santina, 229).
-temperature_at_at_9km(pontebba, 229).
-temperature_at_at_9km(tarvisio, 229).
+temperature_at_at_9km(sappada, 228).
+temperature_at_at_9km(villa_santina, 228).
+temperature_at_at_9km(pontebba, 228).
+temperature_at_at_9km(tarvisio, 228).
 temperature_at_at_9km(forni, 225).
-temperature_at_at_9km(stolvizza, 229).
-temperature_at_at_9km(barcis, 225).
-temperature_at_at_9km(gemona, 229).
-temperature_at_at_9km(spilinbergo, 229).
-temperature_at_at_9km(udine, 229).
-temperature_at_at_9km(cividale, 229).
-temperature_at_at_9km(pordenone, 226).
-temperature_at_at_9km(codroipo, 229).
-temperature_at_at_9km(rivignano, 229).
-temperature_at_at_9km(palmanova, 229).
-temperature_at_at_9km(gorizia, 229).
-temperature_at_at_9km(lignano, 230).
-temperature_at_at_9km(grado, 230).
-temperature_at_at_9km(trieste, 230).
+temperature_at_at_9km(stolvizza, 228).
+temperature_at_at_9km(barcis, 226).
+temperature_at_at_9km(gemona, 228).
+temperature_at_at_9km(spilinbergo, 228).
+temperature_at_at_9km(udine, 228).
+temperature_at_at_9km(cividale, 228).
+temperature_at_at_9km(pordenone, 228).
+temperature_at_at_9km(codroipo, 228).
+temperature_at_at_9km(rivignano, 228).
+temperature_at_at_9km(palmanova, 228).
+temperature_at_at_9km(gorizia, 228).
+temperature_at_at_9km(lignano, 229).
+temperature_at_at_9km(grado, 229).
+temperature_at_at_9km(trieste, 229).
 
 }). 
+
+%general bg rules
+
+# RAINS
+rains_at(X) :- forecasted_rain(X, Y), Y > 0.
+:- rains_at(X), forecasted_rain(X, 0).   % constraint for “only if”
+
+# CLOUD COVER (if)
+sunny_at(X) :- forecasted_sky(X, "sunny").
+sunny_at(X) :- forecasted_sky(X, "mostly_clear").
+partially_sunny_at(X) :- forecasted_sky(X, "partly_cloudy").
+covered_at(X) :- forecasted_sky(X, "mostly_cloudy").
+covered_at(X) :- forecasted_sky(X, "cloudy").
+
+#other implication verse
+:- sunny_at(X), not forecasted_sky(X, "sunny"), not forecasted_sky(X, "mostly_clear").
+:- partially_sunny_at(X), not forecasted_sky(X, "partly_cloudy").
+:- covered_at(X), not forecasted_sky(X, "mostly_cloudy"), not forecasted_sky(X, "cloudy").
+
+#only one is true
+:- sunny_at(X), partially_sunny_at(X).
+:- sunny_at(X), covered_at(X).
+:- partially_sunny_at(X), covered_at(X).
+                    
