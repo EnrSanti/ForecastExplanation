@@ -23,7 +23,11 @@ folders_suff = {
 }
 locations_name_px_pos={}
 
-
+fact_pattern = re.compile(
+    r'(?P<pred>forecasted_rain|forecasted_sky)\('
+    r'\s*(?P<city>[a-zA-Z_]+)\s*,\s*'
+    r'(?P<value>[^)]+)\)'
+)
 
 starting_date=None
 
@@ -435,47 +439,130 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         # If some datasets are empty, pick first non-empty
         timestamp = cloud_timestamp or hum_timestamp or temp_front_timestamp or hum_front_timestamp
         
-        with open(output_path, 'w') as f_out:
             #get the date as yyyy_mm_dd
-            y, m, d, h = frame_index_to_timestamp(frame_idx, starting_date)
-            date_str = f"{y}_{m:02d}_{d:02d}"
+        y, m, d, h = frame_index_to_timestamp(frame_idx, starting_date)
+        date_str = f"{y}_{m:02d}_{d:02d}"
 
-            f_out.write("% Example generated data for frame {}\n\n".format(frame_idx))
-            f_out.write("#pos(e1,{ \n\n")
-            #open the pictogram file for that date
-            pictogram_file=os.path.join(folder_pictograms,f"pitt_{date_str}_locations.txt")
-            if os.path.isfile(pictogram_file):
-                with open(pictogram_file, 'r') as f_picto:
-                    pictogram_lines = f_picto.readlines()
-                    f_out.write("".join(pictogram_lines))
-                    f_out.write("\n")
-           
-            f_out.write(" },{}).\n\n")
-            f_out.write("#context(e1,{ \n\n")
-            f_out.write(timestamp + "\n\n")
-            f_out.write("% Cloud coverage data:\n")            
-            f_out.write("% Cloud_covers(location,cloud_id)\n")
-            for fact in cloud_stripped:
-                f_out.write(fact + "\n")
-            f_out.write("\n")
+        positive_facts="% Example generated data for frame {}\n\n".format(frame_idx)
+        positive_facts+="#pos(e1,{ \n\n"
+        #open the pictogram file for that date
+        pictogram_file=os.path.join(folder_pictograms,f"pitt_{date_str}_locations.txt")
+        
+        negative_facts=""
+        if os.path.isfile(pictogram_file):
+            with open(pictogram_file, 'r') as f_picto:
+                pictogram_lines = f_picto.readlines()
+                positive_facts+="".join(pictogram_lines)+"\n"
+                for line in pictogram_lines:
+                    line=line.strip()
+                    negative_facts+=compute_negative_facts(line)
+        positive_facts+="}, \n"
 
-            f_out.write("% Humidity front data:\n")
-            f_out.write("% humidty_front(location_1,location_2): between the two locations there's a sharp change \n")
-            for fact in hum_front_stripped:
-                f_out.write(fact + "\n")
-            f_out.write("\n")
-            f_out.write("% hum(location_1,humidity_percentage): the percentage is discretized in 0, 20, 40 ... \n")
-            for fact in hum_stripped:
-                f_out.write(fact + "\n")
-            f_out.write("\n")
+        excluded_facts="{\n"
+
+        excluded_facts+=negative_facts
 
 
-            f_out.write("% Temperature data (in kelvin):\n")
-            for fact in temp_front_stripped:
-                f_out.write(fact + "\n")
-            f_out.write("\n")
-            f_out.write("}). \n")
+
+        excluded_facts+="},\n"
+
+        context_facts="{\n"
+
+        context_facts+=timestamp + "\n\n"
+        context_facts+="% Cloud coverage data:\n"
+        context_facts+="% Cloud_covers(location,cloud_id)\n"
+
+        for fact in cloud_stripped:
+            context_facts+=fact + "\n"
+        context_facts+="\n"
+
+        context_facts+="% Humidity front data:\n"
+        context_facts+="% humidty_front(location_1,location_2): between the two locations there's a sharp change \n"
+
+        for fact in hum_front_stripped:
+            context_facts+=fact + "\n"
+        context_facts+="\n"
+
+        context_facts+="% hum(location_1,humidity_percentage): the percentage is discretized in 0, 20, 40 ... \n"
+        for fact in hum_stripped:
+            context_facts+=fact + "\n"
+        context_facts+="\n"
+
+
+        context_facts+="% Temperature data (in kelvin):\n"
+        for fact in temp_front_stripped:
+            context_facts+=fact + "\n"
+        context_facts+="\n"
+        context_facts+="}). \n"
+
+        background="""
+%general bg rules
+
+# RAINS
+rains_at(X) :- forecasted_rain(X, Y), Y > 0.
+:- rains_at(X), forecasted_rain(X, 0).   % constraint for “only if”
+
+# CLOUD COVER (if)
+sunny_at(X) :- forecasted_sky(X, "sunny").
+sunny_at(X) :- forecasted_sky(X, "mostly_clear").
+partially_sunny_at(X) :- forecasted_sky(X, "partly_cloudy").
+covered_at(X) :- forecasted_sky(X, "mostly_cloudy").
+covered_at(X) :- forecasted_sky(X, "cloudy").
+
+#other implication verse
+:- sunny_at(X), not forecasted_sky(X, "sunny"), not forecasted_sky(X, "mostly_clear").
+:- partially_sunny_at(X), not forecasted_sky(X, "partly_cloudy").
+:- covered_at(X), not forecasted_sky(X, "mostly_cloudy"), not forecasted_sky(X, "cloudy").
+
+#only one is true
+:- sunny_at(X), partially_sunny_at(X).
+:- sunny_at(X), covered_at(X).
+:- partially_sunny_at(X), covered_at(X).
+                    """
+        with open(output_path, 'w') as f_out:
+            f_out.write(positive_facts)
+            f_out.write(excluded_facts)
+            f_out.write(context_facts)
+            f_out.write(background)
+
         print(f"Wrote example data to {output_path}")
+
+def compute_negative_facts(line):
+
+    
+    match = fact_pattern.search(line)
+    if not match:
+        return ""  # not a matching forecast fact
+
+    pred = match.group("pred")
+    city = match.group("city")
+    raw_value = match.group("value").strip()
+    if(line.startswith('%')):   
+        return "" #skip comments
+    # Case 1: forecasted_rain(..., number)
+    if pred == "forecasted_rain":
+        value = int(raw_value)  # value is numeric
+        if(value != 0):
+            return "sunny_at("+city+"). \n"
+        else:
+            return "rains_at("+city+"). \n"
+    # Case 2: forecasted_sky(..., "string")
+    else:
+        # Remove surrounding quotes if present
+        if raw_value.startswith('"') and raw_value.endswith('"'):
+            value = raw_value[1:-1]
+        else:
+            value = raw_value
+        
+        if value == "sunny" or value == "mostly_clear":
+            return "partially_sunny_at("+city+"). \n"+"covered_at("+city+"). \n"
+        elif value == "partly_cloudy":
+            return "sunny_at("+city+"). \n"+"covered_at("+city+"). \n"
+        elif value == "mostly_cloudy" or value == "cloudy":
+            return "sunny_at("+city+"). \n"+"partially_sunny_at("+city+"). \n"
+    return ""
+
+
 
 
 def color_to_humidity(rgb_color, legend_colors, legend_values):

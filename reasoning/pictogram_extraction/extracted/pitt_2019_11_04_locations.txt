@@ -1,38 +1,38 @@
-%% Format: forecasted_rain(location, drops_in_pictogram,yyyy,mm,dd).
-%% Format: forecasted_sky(location, description ,yyyy,mm,dd).
+%% Format: forecasted_rain(location, drops_in_pictogram).
+%% Format: forecasted_sky(location, description).
 date(2019,11,4).
 
-forecasted_rain(pontebba, 2,2019,11,4). 
-forecasted_sky(pontebba, "cloudy",2019,11,4). 
-forecasted_rain(barcis, 1,2019,11,4). 
-forecasted_sky(barcis, "cloudy",2019,11,4). 
-forecasted_rain(spilinbergo, 1,2019,11,4). 
-forecasted_sky(spilinbergo, "cloudy",2019,11,4). 
-forecasted_rain(udine, 1,2019,11,4). 
-forecasted_sky(udine, "cloudy",2019,11,4). 
-forecasted_rain(palmanova, 1,2019,11,4). 
-forecasted_sky(palmanova, "cloudy",2019,11,4). 
-forecasted_rain(pordenone, 1,2019,11,4). 
-forecasted_sky(pordenone, "cloudy",2019,11,4). 
-forecasted_rain(tarvisio, 2,2019,11,4). 
-forecasted_sky(tarvisio, "cloudy",2019,11,4). 
-forecasted_rain(cividale, 2,2019,11,4). 
-forecasted_sky(cividale, "cloudy",2019,11,4). 
-forecasted_rain(trieste, 2,2019,11,4). 
-forecasted_sky(trieste, "cloudy",2019,11,4). 
-forecasted_rain(stolvizza, 3,2019,11,4). 
-forecasted_sky(stolvizza, "sunny",2019,11,4). 
-forecasted_rain(gemona, 1,2019,11,4). 
-forecasted_sky(gemona, "sunny",2019,11,4). 
-forecasted_rain(sappada, 1,2019,11,4). 
-forecasted_sky(sappada, "cloudy",2019,11,4). 
-forecasted_rain(forni, 1,2019,11,4). 
-forecasted_sky(forni, "sunny",2019,11,4). 
-forecasted_rain(villa_santina, 1,2019,11,4). 
-forecasted_sky(villa_santina, "cloudy",2019,11,4). 
-forecasted_rain(rivignano, 1,2019,11,4). 
-forecasted_sky(rivignano, "cloudy",2019,11,4). 
-forecasted_rain(lignano, 1,2019,11,4). 
-forecasted_sky(lignano, "cloudy",2019,11,4). 
-forecasted_rain(codroipo, 1,2019,11,4). 
-forecasted_sky(codroipo, "sunny",2019,11,4). 
+forecasted_rain(pontebba, 2). 
+forecasted_sky(pontebba, "mostly_cloudy"). 
+forecasted_rain(barcis, 1). 
+forecasted_sky(barcis, "partly_cloudy"). 
+forecasted_rain(spilinbergo, 1). 
+forecasted_sky(spilinbergo, "partly_cloudy"). 
+forecasted_rain(udine, 1). 
+forecasted_sky(udine, "partly_cloudy"). 
+forecasted_rain(palmanova, 1). 
+forecasted_sky(palmanova, "partly_cloudy"). 
+forecasted_rain(pordenone, 1). 
+forecasted_sky(pordenone, "partly_cloudy"). 
+forecasted_rain(tarvisio, 2). 
+forecasted_sky(tarvisio, "partly_cloudy"). 
+forecasted_rain(cividale, 2). 
+forecasted_sky(cividale, "partly_cloudy"). 
+forecasted_rain(trieste, 2). 
+forecasted_sky(trieste, "partly_cloudy"). 
+forecasted_rain(stolvizza, 3). 
+forecasted_sky(stolvizza, "sunny"). 
+forecasted_rain(gemona, 1). 
+forecasted_sky(gemona, "sunny"). 
+forecasted_rain(sappada, 1). 
+forecasted_sky(sappada, "partly_cloudy"). 
+forecasted_rain(forni, 1). 
+forecasted_sky(forni, "sunny"). 
+forecasted_rain(villa_santina, 1). 
+forecasted_sky(villa_santina, "partly_cloudy"). 
+forecasted_rain(rivignano, 1). 
+forecasted_sky(rivignano, "partly_cloudy"). 
+forecasted_rain(lignano, 1). 
+forecasted_sky(lignano, "partly_cloudy"). 
+forecasted_rain(codroipo, 1). 
+forecasted_sky(codroipo, "sunny"). 

@@ -147,15 +147,15 @@ def icon_name_to_sky_level(icon_name):
     Matching is case-insensitive.
     """
     name = icon_name.lower()
-
-    if "cloud" in name:
-        return "cloudy"
-    elif "big_cloud" in name:
+    
+    if "big_cloud" in name:
         return "mostly_cloudy"
     elif "mid_cloud" in name:
         return "partly_cloudy"
     elif "small_cloud" in name:
         return "mostly_clear"
+    elif "cloud" in name:
+        return "cloudy"
     else:
         return "sunny"
 
@@ -216,15 +216,15 @@ def generate_ground_truth():
 
         yyyy,mm,dd=extract_date_from_filename(img_path)
         with open(txt_path, 'w') as f:
-            f.write(f"%% Format: forecasted_rain(location, drops_in_pictogram,yyyy,mm,dd).\n")
-            f.write(f"%% Format: forecasted_sky(location, description ,yyyy,mm,dd).\n")
+            f.write(f"%% Format: forecasted_rain(location, drops_in_pictogram).\n")
+            f.write(f"%% Format: forecasted_sky(location, description).\n")
             f.write(f'date({yyyy},{mm},{dd}).\n\n')
             for x, y, name, w, h, loc in detections:
                 icon_name = os.path.splitext(name)[0]  # remove .png/.jpg
                 if loc:
                     loc_lower = loc.lower().replace(" ", "_")
-                    f.write(f'forecasted_rain({loc_lower}, {icon_name_to_rain_level(icon_name)},{yyyy},{mm},{dd}). \n')
-                    f.write(f'forecasted_sky({loc_lower}, "{icon_name_to_sky_level(icon_name)}",{yyyy},{mm},{dd}). \n')
+                    f.write(f'forecasted_rain({loc_lower}, {icon_name_to_rain_level(icon_name)}). \n') #,{yyyy},{mm},{dd}
+                    f.write(f'forecasted_sky({loc_lower}, "{icon_name_to_sky_level(icon_name)}"). \n') #,{yyyy},{mm},{dd}
                 else:
                     f.write(f'UNKNOWN {icon_name}\n')
 
