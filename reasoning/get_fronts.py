@@ -313,7 +313,8 @@ def generate_fronts_hum(starting_date):
                         if is_front_candidate:
                             # 2. Check for clear line segment
                             if is_line_clear(city1, city2, seg_labels, locations_pos_px):
-                                
+                                city1=city1.lower()
+                                city2=city2.lower()
                                 front_pred = f"hum_front_{level}_hPa({city1},{city2},{yyyy},{mm},{dd},{h})."
                                 altitude_facts.append(front_pred)
                                 # If one is covered and the other is not, the 'front' is between them
@@ -395,7 +396,8 @@ def generate_fronts_temp(starting_date):
                         if is_front_candidate:
                             # 2. Check for clear line segment
                             if is_line_clear(city1, city2, seg_labels, locations_pos_px):
-                                
+                                city1=city1.lower()
+                                city2=city2.lower()
                                 front_pred = f"temp_front_{level}_hPa({city1},{city2},{yyyy},{mm},{dd},{h})."
                                 altitude_facts.append(front_pred)
                                 # If one is covered and the other is not, the 'front' is between them
