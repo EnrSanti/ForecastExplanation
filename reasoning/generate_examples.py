@@ -390,7 +390,6 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                         hum_front_data[frame_idx].append(line)
                         break  # if a line can only belong to one frame
 
-        print("hum_file", hum_file)
         with open(hum_file, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -407,10 +406,17 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         if not os.path.isdir(full_temp_folder):
             print(f"Skipping missing folder: {full_temp_folder}")
             continue
-        hum_front_file = os.path.join(full_temp_folder, "temp.txt")
-        
+        temp_front_file = os.path.join(full_temp_folder, "temp_fronts.txt")
+        temp_file = os.path.join(full_temp_folder, "temp.txt")
 
-        with open(hum_front_file, 'r') as f:
+        with open(temp_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                for frame_idx, ts_str in frame_strings.items():
+                    if ts_str in line:
+                        hum_front_data[frame_idx].append(line)
+                        break  # if a line can only belong to one frame
+        with open(temp_front_file, 'r') as f:
             for line in f:
                 line = line.strip()
                 for frame_idx, ts_str in frame_strings.items():
