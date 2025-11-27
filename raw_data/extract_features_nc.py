@@ -11,6 +11,8 @@ import numpy as np
 import pathlib
 from cartopy.io import shapereader
 
+from concurrent.futures import ProcessPoolExecutor, as_completed,ThreadPoolExecutor
+
 #define the hPa of the data considered, moreover define a more symbolic name for them
 levels = [1000, 925, 850, 700, 500, 300]
 folders= {
@@ -47,10 +49,19 @@ def save_feature_maps(input_path,coordinates, is_fvg, clean_plot):
     
     print(f"Output base directory: {output_base}")
     save_borders_png(output_base,coordinates)
-    save_humidity_maps(input_path, coordinates,clean_plot)
-    save_cloud_maps(input_path,coordinates, clean_plot)
-    save_wind_maps(input_path, coordinates,clean_plot)
-    save_temperature_maps(input_path,coordinates, clean_plot)
+    with ProcessPoolExecutor(max_workers=4) as executor:
+        futures = [
+            executor.submit(save_humidity_maps, input_path, coordinates, clean_plot),
+            executor.submit(save_cloud_maps, input_path, coordinates, clean_plot),
+            executor.submit(save_wind_maps, input_path, coordinates, clean_plot),
+            executor.submit(save_temperature_maps, input_path, coordinates, clean_plot)
+        ]
+
+        for f in as_completed(futures):
+            try:
+                f.result()  # Raises exception if the process failed
+            except Exception as e:
+                print("Process failed:", e)
 
 
 

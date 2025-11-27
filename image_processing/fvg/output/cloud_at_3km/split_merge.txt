@@ -1,5 +1,0 @@
-Cell 1 changed (SPLIT) into 'new' cell 6 at frame 49 (according to tobac)
-Cell 5 changed (SPLIT) into 'new' cell 7 at frame 49 (according to tobac)
-Cell 1 changed (MERGE) into cell 6 at frame 49 (according to tobac)
-Cell 3 changed (MERGE) into cell 7 at frame 49 (according to tobac)
--------------------
