@@ -204,7 +204,7 @@ def worker_thread(args, results, idx):
     numClusters, reshaped, image, file, stream_id = args
     stream = _streams[stream_id]
 
-    print(f"[INFO] Thread {threading.get_ident()} using stream {stream}")
+    #print(f"[INFO] Thread {threading.get_ident()} using stream {stream}")
 
     with torch.cuda.stream(stream):
         result = cluster_images_gpu(
