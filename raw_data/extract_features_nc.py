@@ -11,6 +11,7 @@ import numpy as np
 import pathlib
 from cartopy.io import shapereader
 
+import gc; 
 from concurrent.futures import ProcessPoolExecutor, as_completed,ThreadPoolExecutor
 
 #define the hPa of the data considered, moreover define a more symbolic name for them
@@ -178,6 +179,7 @@ def save_cloud_maps(input_path, coordinates,clean_plot):
                 fname = os.path.join(out_dir, f"cloud_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
                 plt.savefig(fname, dpi=380, bbox_inches='tight', pad_inches=0)
                 plt.close(fig)
+            gc.collect()
 
     print("Finished plotting cloud maps with separate legends per level.")
 
@@ -268,7 +270,7 @@ def save_temperature_maps(input_path,coordinates, clean_plot):
                 fname = os.path.join(out_dir, f"temp_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
                 plt.savefig(fname, dpi=380, bbox_inches='tight',pad_inches=0)
                 plt.close(fig)
-
+                gc.collect()
 
     print("Finished plotting all levels with consistent colormap and separate folders + legends.")
 
@@ -321,9 +323,11 @@ def save_wind_maps(input_path, coordinates, clean_plot):
         )
         plt.close(fig)
 
-        out_dir = os.path.join(output_base, wind_folders[lvl])
+     
     
     for lvl in levels:
+
+        out_dir = os.path.join(output_base, wind_folders[lvl])
         for i in range(u_lvl.sizes["time"]):
             base_time = pd.to_datetime(str(u_lvl["time"].isel(time=i).values))
             for j in range(u_lvl.sizes["step"]):
@@ -529,5 +533,5 @@ def save_humidity_maps(input_path, coordinates, clean_plot):
                 fname = os.path.join(out_dir, f"humidity_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
                 plt.savefig(fname, dpi=380, bbox_inches='tight', pad_inches=0)
                 plt.close(fig)
-
+            gc.collect()    
     print("Finished plotting humidity maps with separate legends per level.")

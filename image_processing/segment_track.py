@@ -17,6 +17,7 @@ from image_processing.split_merge import plot_feature_borders, find_extended_ove
 import logging
 import traceback
 import warnings
+import gc
 
 
 logging.getLogger("trackpy").setLevel(logging.WARNING)
@@ -406,8 +407,8 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
             if splits != "" or merges !="":
                 all_splits_merges+=splits+merges
                 all_splits_merges+="-------------------\n"
-            print("Consideering frame ---------------------------- ", itime+1)
-        
+            #print("Consideering frame ---------------------------- ", itime+1)
+        gc.collect()
         #save the merge and splits found:
         with open(output_folder+f"/split_merge.txt", "w") as f:
             f.write(str(all_splits_merges))

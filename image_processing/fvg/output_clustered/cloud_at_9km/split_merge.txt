@@ -1,0 +1,112 @@
+Cell 2 changed (SPLIT) into 'new' cell 1 at frame 4 (according to tobac)
+-------------------
+Cell 1 changed (SPLIT) into 'new' cell 3 at frame 5 (according to tobac)
+Cell 1 changed (MERGE) into cell 3 at frame 5 (according to tobac)
+-------------------
+Cell 4 changed (SPLIT) into 'new' cell 8 at frame 6 (according to tobac)
+Cell 4 split but also remained at frame 6
+Cell 5 changed (SPLIT) into 'new' cell 4 at frame 6 (according to tobac)
+-------------------
+Cell 7 changed (SPLIT) into 'new' cell 10 at frame 7 (according to tobac)
+Cell 7 split but also remained at frame 7
+-------------------
+Cell 7 changed (SPLIT) into 'new' cell 10 at frame 8 (according to tobac)
+Cell 8 changed (MERGE) into cell 10 at frame 8 (according to tobac)
+-------------------
+Cell 9 split into 14 at frame 9
+Cell 9 split into 15 at frame 9
+Cell 9 split but also remained at frame 9
+-------------------
+Cell 12 changed (SPLIT) into 'new' cell 18 at frame 10 (according to tobac)
+Cell 12 split but also remained at frame 10
+-------------------
+Cell 12 changed (SPLIT) into 'new' cell 19 at frame 11 (according to tobac)
+Cell 12 split but also remained at frame 11
+-------------------
+Cell 21 changed (SPLIT) into 'new' cell 23 at frame 12 (according to tobac)
+Cell 12 changed (MERGE) into cell 18 at frame 12 (according to tobac)
+Cell 19 changed (MERGE) into cell 20 at frame 12 (according to tobac)
+Cell 21 changed (MERGE) into cell 23 at frame 12 (according to tobac)
+-------------------
+Cell 18 changed (SPLIT) into 'new' cell 25 at frame 13 (according to tobac)
+Cell 12 changed (MERGE) into cell 25 at frame 13 (according to tobac)
+-------------------
+Cell 25 changed (SPLIT) into 'new' cell 28 at frame 15 (according to tobac)
+Cell 25 split but also remained at frame 15
+-------------------
+Cell 28 changed (MERGE) into cell 25 at frame 17 (according to tobac)
+-------------------
+Cell 25 split into 32 at frame 19
+Cell 25 split into 31 at frame 19
+Cell 25 split but also remained at frame 19
+-------------------
+Cell 25 split into 33 at frame 20
+Cell 25 split into 34 at frame 20
+Cell 25 split into 35 at frame 20
+Cell 25 split into 36 at frame 20
+Cell 25 split into 37 at frame 20
+Cell 25 split but also remained at frame 20
+-------------------
+Cell 25 changed (SPLIT) into 'new' cell 39 at frame 22 (according to tobac)
+Cell 25 split but also remained at frame 22
+-------------------
+Cell 25 split into 41 at frame 23
+Cell 25 split into 42 at frame 23
+Cell 32 changed (MERGE) into cell 41 at frame 23 (according to tobac)
+Cell 25 changed (MERGE) into cell 42 at frame 23 (according to tobac)
+-------------------
+Cell 44 changed (SPLIT) into 'new' cell 25 at frame 25 (according to tobac)
+-------------------
+Cell 49 changed (SPLIT) into 'new' cell 50 at frame 26 (according to tobac)
+-------------------
+Cell 25 split into 57 at frame 28
+Cell 25 split into 55 at frame 28
+Cell 25 split but also remained at frame 28
+-------------------
+Cell 25 changed (SPLIT) into 'new' cell 58 at frame 29 (according to tobac)
+Cell 25 split but also remained at frame 29
+-------------------
+Cell 25 changed (SPLIT) into 'new' cell 62 at frame 31 (according to tobac)
+Cell 25 split but also remained at frame 31
+Cell 57 changed (MERGE) into cell 25 at frame 31 (according to tobac)
+-------------------
+Cell 25 changed (SPLIT) into 'new' cell 63 at frame 38 (according to tobac)
+Cell 25 split but also remained at frame 38
+-------------------
+Cell 25 changed (SPLIT) into 'new' cell 69 at frame 39 (according to tobac)
+Cell 25 changed (MERGE) into cell 69 at frame 39 (according to tobac)
+-------------------
+Cell 69 split into 75 at frame 41
+Cell 69 split into 78 at frame 41
+Cell 69 split but also remained at frame 41
+Cell 70 changed (SPLIT) into 'new' cell 79 at frame 41 (according to tobac)
+Cell 70 split but also remained at frame 41
+-------------------
+Cell 73 changed (SPLIT) into 'new' cell 72 at frame 42 (according to tobac)
+Cell 78 changed (SPLIT) into 'new' cell 81 at frame 42 (according to tobac)
+Cell 65 changed (MERGE) into cell 72 at frame 42 (according to tobac)
+-------------------
+Cell 81 changed (SPLIT) into 'new' cell 85 at frame 43 (according to tobac)
+-------------------
+Cell 83 split into 87 at frame 44
+Cell 83 split into 88 at frame 44
+Cell 83 split into 89 at frame 44
+Cell 83 split but also remained at frame 44
+-------------------
+Cell 97 changed (SPLIT) into 'new' cell 100 at frame 52 (according to tobac)
+Cell 97 split but also remained at frame 52
+-------------------
+Cell 91 changed (SPLIT) into 'new' cell 103 at frame 53 (according to tobac)
+Cell 91 split but also remained at frame 53
+Cell 97 changed (SPLIT) into 'new' cell 100 at frame 53 (according to tobac)
+Cell 96 merged into 100 at frame 53
+Cell 97 merged into 100 at frame 53
+-------------------
+Cell 100 changed (SPLIT) into 'new' cell 108 at frame 54 (according to tobac)
+Cell 97 changed (MERGE) into cell 107 at frame 54 (according to tobac)
+Cell 98 merged into 108 at frame 54
+Cell 100 merged into 108 at frame 54
+-------------------
+Cell 107 changed (SPLIT) into 'new' cell 111 at frame 55 (according to tobac)
+Cell 108 changed (SPLIT) into 'new' cell 112 at frame 55 (according to tobac)
+-------------------

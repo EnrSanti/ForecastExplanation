@@ -34,7 +34,6 @@ starting_date=None
 def feature_to_cell_id(feature_id,trajectories):
     #print("looking for feature ->",feature_id)
     feature_to_cell_map = trajectories.set_index("feature")["cell"].to_dict()
-    print(feature_to_cell_map)
     return feature_to_cell_map.get(feature_id,None)
 
 def geo_to_pixel(lon, lat, lon_min, lon_max, lat_min, lat_max, img_width, img_height):
@@ -268,7 +267,6 @@ def generate_cloud_facts_over_cities(base_path):
                        
                         full_str+=f"{cloud_at_string}_covers({location},{cell_id},{yyyy},{mm},{dd},{h}).\n"
 
-                print("% ---- next frame ----")
             path = "reasoning/clouds/" + full_path.rsplit('/', 1)[-1] + "/clouds_covering.txt"
             with open(path, "w") as f:
                 f.write(full_str)
@@ -397,12 +395,10 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
             for line in f:
                 line = line.strip()
                 for frame_idx, ts_str in frame_strings.items():
-                    print("line humidity:", ts_str, line)
                     if ts_str in line:
                         hum_data[frame_idx].append(line)                        
                         break  # if a line can only belong to one frame
                     
-    print("humidity data loaded", hum_data.items())
     temp_data = {frame_idx: [] for frame_idx in range(num_frames)}
     
     for temp_folder_name,_ in folder_list_temp:
@@ -592,7 +588,6 @@ def generate_humidity_facts_over_cities(base_path):
 
         legend_colors, legend_values = load_legend_mapping(f"./raw_data/extracted_fvg_cleaned/legend_at_{hpa}_humidity.png")
 
-        print(full_path)
         if os.path.isdir(full_path):
 
             #later this first stage can be skipped
@@ -692,7 +687,6 @@ def generate_temp_facts_over_cities(base_path):
         sample_points=max_temp - min_temp +1 #1 step each degree
         legend_colors, legend_values = load_legend_mapping(f"./raw_data/extracted_fvg_cleaned/legend_at_{hpa}_temp.png", n_samples=sample_points, min_value=min_temp, max_value=max_temp)
 
-        print(full_path)
         if os.path.isdir(full_path):
 
             #later this first stage can be skipped
