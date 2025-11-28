@@ -12,7 +12,6 @@ import iris
 import shutil
 import time
 
-iris.FUTURE.date_microseconds = True
 import sys, os
 import threading
 from concurrent.futures import ProcessPoolExecutor, as_completed,ThreadPoolExecutor
@@ -388,6 +387,9 @@ if __name__ == "__main__":
         shutil.rmtree("./image_processing/fvg/output", ignore_errors=True)
         shutil.rmtree("./image_processing/fvg/output_clustered", ignore_errors=True)
         shutil.rmtree("./image_processing/fvg/resized", ignore_errors=True)
+
+        shutil.rmtree("./raw_data/data/CERRA_cut", ignore_errors=True)
+        os.makedirs("./raw_data/data/CERRA_cut", exist_ok=True)
 
         shutil.rmtree("./raw_data/extracted_fvg_cleaned", ignore_errors=True)
         os.makedirs("./raw_data/extracted_fvg_cleaned", exist_ok=True)

@@ -17,5 +17,9 @@ conda install -c conda-forge pillow scikit-image numpy matplotlib scikit-learn o
 echo "Installing TOBAC..."
 conda install -c conda-forge tobac -y
 
+# Install cfgrib for reading GRIB files
+echo "Installing cfgrib..."
+conda install -c conda-forge cfgrib -y
+
 echo "Setup complete! To use the environment: conda activate gpu_tobac and then python main.py"
 

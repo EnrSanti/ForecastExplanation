@@ -6,10 +6,10 @@ forecasted_rain(gemona, 4).
 forecasted_sky(gemona, "sunny"). 
 forecasted_rain(pontebba, 4). 
 forecasted_sky(pontebba, "cloudy"). 
-forecasted_rain(tarvisio, 4). 
-forecasted_sky(tarvisio, "cloudy"). 
 forecasted_rain(cividale, 4). 
 forecasted_sky(cividale, "cloudy"). 
+forecasted_rain(tarvisio, 4). 
+forecasted_sky(tarvisio, "cloudy"). 
 forecasted_rain(barcis, 4). 
 forecasted_sky(barcis, "cloudy"). 
 forecasted_rain(spilinbergo, 4). 
