@@ -543,11 +543,14 @@ def compute_negative_facts(line):
         return "" #skip comments
     # Case 1: forecasted_rain(..., number)
     if pred == "forecasted_rain":
-        value = int(raw_value)  # value is numeric
-        if(value != 0):
-            return "sunny_at("+city+"). \n"
-        else:
-            return "rains_at("+city+"). \n"
+        try:
+            value = int(raw_value)  # value is numeric
+            if(value != 0):
+                return "sunny_at("+city+"). \n"
+            else:
+                return "rains_at("+city+"). \n"
+        except:
+            return "unkown_rain_at("+city+"). \n"
     # Case 2: forecasted_sky(..., "string")
     else:
         # Remove surrounding quotes if present
@@ -562,6 +565,8 @@ def compute_negative_facts(line):
             return "sunny_at("+city+"). \n"+"covered_at("+city+"). \n"
         elif value == "mostly_cloudy" or value == "cloudy":
             return "sunny_at("+city+"). \n"+"partially_sunny_at("+city+"). \n"
+        else:
+            return "unkown_sky_at("+city+"). \n"
     return ""
 
 
