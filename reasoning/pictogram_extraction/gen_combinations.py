@@ -1,9 +1,11 @@
+#LAUNCHED ONCE FROM BY LAUNCHING THE SCRIPT ITSELF NOT THE MAIN
+
 from PIL import Image
 from itertools import combinations, product
 import os
 
 # Folder with your images
-IMG_FOLDER = "./pictogram_extraction/base_symbols"
+IMG_FOLDER = "./base_symbols"
 OUTPUT_FOLDER = "./merged_icons"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 

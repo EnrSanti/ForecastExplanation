@@ -1,1 +1,1 @@
-Temperature range at 925 hPa: 273.63 K to 293.98 K
+Temperature range at 925 hPa: 271.79 K to 291.68 K

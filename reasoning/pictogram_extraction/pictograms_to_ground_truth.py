@@ -101,7 +101,7 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
                 score = res[y, x]
                 all_detections_raw.append((x, y, name, resized.shape[1], resized.shape[0], score))
 
-    print(f"  Raw detections: {len(all_detections_raw)}")
+    #print(f"  Raw detections: {len(all_detections_raw)}")
 
     # IoU-based NMS
     detections_to_filter = sorted(all_detections_raw, key=lambda x: x[5], reverse=True)
@@ -123,18 +123,24 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
                 suppressed[j] = True
 
     # Add matched locations
-    detections_with_locations = []
+    detections_with_locations = {}
+    locations_detected=[]
     for (x, y, name, w, h, score) in final_detections:
         loc_name = match_to_location(x, y, locations_df)
-        detections_with_locations.append((x, y, name, w, h, loc_name))
+        locations_detected.append(loc_name)
+        detections_with_locations[loc_name]=(x, y, name, w, h)
 
-    return detections_with_locations
+    return detections_with_locations, locations_detected
 
 def icon_name_to_rain_level(icon_name):
     match = re.search(r'rain_([1-4]|6)', icon_name)
     if match:
         return int(match.group(1))
-    return 0 # no rain
+    
+    match = re.search(r'no_rain', icon_name)
+    if match:
+        return 0
+    return "atom_ND"
 
 def icon_name_to_sky_level(icon_name):
     """
@@ -156,8 +162,9 @@ def icon_name_to_sky_level(icon_name):
         return "mostly_clear"
     elif "cloud" in name:
         return "cloudy"
-    else:
+    elif "sunny" in name:
         return "sunny"
+    return "ND"
 
 def extract_date_from_filename(filename):
     """
@@ -202,11 +209,12 @@ def generate_ground_truth():
 
     print(f"Found {len(image_paths)} images to process.\n")
 
+    all_locations=locations_df["Location"].tolist() 
     for img_path in image_paths:
         base_name = os.path.splitext(os.path.basename(img_path))[0]
         print(f"Processing: {base_name}...")
 
-        detections = perform_multi_scale_matching(img_path, icon_templates, locations_df)
+        detections,locations_detected = perform_multi_scale_matching(img_path, icon_templates, locations_df)
 
         out_prefix = os.path.join(OUTPUT_FOLDER, base_name)
         txt_path = f"{out_prefix}_locations.txt"
@@ -219,17 +227,19 @@ def generate_ground_truth():
             f.write(f"%% Format: forecasted_rain(location, drops_in_pictogram).\n")
             f.write(f"%% Format: forecasted_sky(location, description).\n")
             f.write(f'date({yyyy},{mm},{dd}).\n\n')
-            for x, y, name, w, h, loc in detections:
-                icon_name = os.path.splitext(name)[0]  # remove .png/.jpg
-                if loc:
-                    loc_lower = loc.lower().replace(" ", "_")
+
+            for loc in all_locations:
+                loc_lower = loc.lower().replace(" ", "_")
+                if(loc in detections):
+                    x, y, name, w, h = detections[loc]
+                    icon_name = os.path.splitext(name)[0]  # remove .png/.jpg
+                    print(loc)
                     f.write(f'forecasted_rain({loc_lower}, {icon_name_to_rain_level(icon_name)}). \n') #,{yyyy},{mm},{dd}
                     f.write(f'forecasted_sky({loc_lower}, "{icon_name_to_sky_level(icon_name)}"). \n') #,{yyyy},{mm},{dd}
                 else:
-                    f.write(f'UNKNOWN {icon_name}\n')
+                    f.write(f'forecasted_rain({loc_lower}, atom_ND). \n') #,{yyyy},{mm},{dd}
+                    f.write(f'forecasted_sky({loc_lower}, "ND"). \n') #,{yyyy},{mm},{dd}
 
-        #i don't save images for now
-        #visualize_detections(img_path, detections, final_img_path)
         print(f"  Saved: {txt_path}, {final_img_path}\n")
 
     print(f"--- Done. Total time: {time.time() - start_total:.2f} s ---")
