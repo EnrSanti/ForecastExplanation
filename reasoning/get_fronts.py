@@ -16,7 +16,6 @@ base_path=""
 locations_pos_px={}
 city_map={}
 
-'''
 def plot_city_connections_on_image(image_path, city_locs, adjacency, save_path=None, linewidth=2):
     
     #used once for debugging
@@ -47,7 +46,7 @@ def plot_city_connections_on_image(image_path, city_locs, adjacency, save_path=N
         plt.close(fig)
     else:
         plt.show()
-'''
+
 
 def build_delaunay_adjacency_filtered(city_locs, length_factor=1.8):
     """
@@ -126,15 +125,13 @@ def build_city_adjacency_graph_for_fronts(base_path, coordinates):
 
     for city, neighbors in adj.items():
         print(f"{city} → {sorted(neighbors)}")
-
     '''
     plot_city_connections_on_image(
         image_path="./reasoning/screen.png",
         city_locs=locations_name_px_pos,
         adjacency=adj,
         save_path="triangulation_overlay.png"
-    )
-    '''
+    )'''
     return adj, locations_name_px_pos
 
 def init_fronts_generation(path,_coordinates):

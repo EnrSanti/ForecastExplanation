@@ -15,29 +15,49 @@ CSV_PATH = './reasoning/locations.csv'                                 # path to
 
 
 # Matching Parameters
-RELAXED_THRESHOLD = 0.71
-SCALES_TO_TEST = np.linspace(0.8, 1.2, 9)
+RELAXED_THRESHOLD = 0.70
+SCALES_TO_TEST = np.linspace(1, 1.2, 8)
 
 # Filtering
 OVERLAP_THRESHOLD = 0.5     # IoU threshold for NMS
-LOCATION_TOLERANCE = 10     # pixels tolerance to match detected icon to CSV location
+LOCATION_TOLERANCE = 15     # pixels tolerance to match detected icon to CSV location
 
 # Ensure output folder exists
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # --- Core Functions ---
-
-def load_icon(path):
+def load_icon_with_mask(path, power=2.5):
     icon = cv2.imread(path, cv2.IMREAD_UNCHANGED)
     if icon is None:
         raise FileNotFoundError(f"Could not load icon: {path}")
+
+    # --- grayscale icon ---
+    gray = cv2.cvtColor(icon[:, :, :3], cv2.COLOR_BGR2GRAY)
+
     if icon.shape[2] == 4:
         alpha = icon[:, :, 3]
-        gray = cv2.cvtColor(icon[:, :, :3], cv2.COLOR_BGR2GRAY)
-        gray[alpha == 0] = 255  # fill transparent areas
+
+        # binary alpha (cutout mask)
+        _, cutout_mask = cv2.threshold(alpha, 1, 255, cv2.THRESH_BINARY)
+
+        # required by matchTemplate
+        gray[alpha == 0] = 255
+
+        # weighted bottom mask (for matching)
+        h, w = gray.shape
+        weight_mask = build_bottom_weight_mask(h, w, power)
+
+        match_mask = cv2.bitwise_and(cutout_mask, weight_mask)
+        #save masks for debugging
+        #get the name without path
+        name=os.path.basename(path)
+        cv2.imwrite(f"{name}", cutout_mask)
+        return gray, cutout_mask, cutout_mask
+
     else:
-        gray = cv2.cvtColor(icon[:, :, :3], cv2.COLOR_BGR2GRAY)
-    return gray
+        # no transparency
+        return gray, None, None
+
 
 def get_iou(rect1, rect2):
     x1, y1, w1, h1 = rect1
@@ -58,15 +78,43 @@ def visualize_detections(image_path, detections, output_path, color=(0, 0, 255))
     font = cv2.FONT_HERSHEY_SIMPLEX
     font_scale = 0.35
 
-    for x, y, name, w, h, location_name in detections:
-        label = os.path.splitext(name)[0]  # remove extension
+    for location_name, det in detections.items():
+        x, y, w, h = det["bbox"]
+        name = det["type"]
+
+        x, y, w, h = int(x), int(y), int(w), int(h)
+
+        label = os.path.splitext(name)[0]
         if location_name:
             label += f" ({location_name})"
-        cv2.rectangle(img_to_draw, (x, y), (x + w, y + h), color, 1)
-        cv2.putText(img_to_draw, label, (x, y - 5), font, font_scale, color, thickness, cv2.LINE_AA)
+
+        cv2.rectangle(
+            img_to_draw,
+            (x, y),
+            (x + w, y + h),
+            color,
+            thickness,
+        )
+
+        cv2.putText(
+            img_to_draw,
+            label,
+            (x, max(y - 5, 10)),
+            font,
+            font_scale,
+            color,
+            thickness,
+            cv2.LINE_AA,
+        )
 
     cv2.imwrite(output_path, img_to_draw)
     print(f"Visualization saved to: {output_path}")
+
+def build_bottom_weight_mask(h, w, power=2.5):
+    y = np.linspace(0, 1, h).reshape(-1, 1)
+    weights = y ** power
+    mask = (weights * 255).astype(np.uint8)
+    return np.repeat(mask, w, axis=1)
 
 def match_to_location(x, y, locations_df):
     """Find the closest location within LOCATION_TOLERANCE pixels."""
@@ -82,28 +130,46 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
     map_img_color = cv2.imread(image_path)
     if map_img_color is None:
         print(f"!!! ERROR: Failed to load image: {image_path}")
-        return []
+        return {}, []
 
     gray_map = cv2.cvtColor(map_img_color, cv2.COLOR_BGR2GRAY)
     all_detections_raw = []
 
-    for name, icon in icon_templates.items():
+    for name, data in icon_templates.items():
+        icon = data["icon"]
+        match_mask = data["match_mask"]
+
         for scale in SCALES_TO_TEST:
             h, w = icon.shape
-            resized = cv2.resize(icon, (int(w * scale), int(h * scale)))
-            if resized.shape[0] > gray_map.shape[0] or resized.shape[1] > gray_map.shape[1]:
+            rw, rh = int(w * scale), int(h * scale)
+
+            if rw < 5 or rh < 5:
                 continue
 
-            res = cv2.matchTemplate(gray_map, resized, cv2.TM_CCOEFF_NORMED)
+            if rh > gray_map.shape[0] or rw > gray_map.shape[1]:
+                continue
+
+            resized_icon = cv2.resize(icon, (rw, rh))
+
+            resized_mask = None
+            if match_mask is not None:
+                resized_mask = cv2.resize(match_mask, (rw, rh))
+
+            res = cv2.matchTemplate(
+                gray_map,
+                resized_icon,
+                cv2.TM_CCOEFF_NORMED,
+                mask=resized_mask
+            )
+
             res_max = maximum_filter(res, size=3)
             locs = np.where((res == res_max) & (res >= RELAXED_THRESHOLD))
+
             for y, x in zip(*locs):
                 score = res[y, x]
-                all_detections_raw.append((x, y, name, resized.shape[1], resized.shape[0], score))
+                all_detections_raw.append((x, y, name, rw, rh, score))
 
-    #print(f"  Raw detections: {len(all_detections_raw)}")
-
-    # IoU-based NMS
+    # ---- NMS ----
     detections_to_filter = sorted(all_detections_raw, key=lambda x: x[5], reverse=True)
     final_detections = []
     suppressed = np.zeros(len(detections_to_filter), dtype=bool)
@@ -111,9 +177,10 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
     for i in range(len(detections_to_filter)):
         if suppressed[i]:
             continue
-        best_match = detections_to_filter[i]
-        final_detections.append(best_match)
-        rect_i = best_match[0], best_match[1], best_match[3], best_match[4]
+
+        best = detections_to_filter[i]
+        final_detections.append(best)
+        rect_i = best[0], best[1], best[3], best[4]
 
         for j in range(i + 1, len(detections_to_filter)):
             if suppressed[j]:
@@ -122,15 +189,36 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
             if get_iou(rect_i, rect_j) > OVERLAP_THRESHOLD:
                 suppressed[j] = True
 
-    # Add matched locations
+    # ---- LOCATION MATCH + CUTOUT ----
     detections_with_locations = {}
-    locations_detected=[]
+    locations_detected = []
+
     for (x, y, name, w, h, score) in final_detections:
         loc_name = match_to_location(x, y, locations_df)
+        if loc_name is None:
+            continue
+
         locations_detected.append(loc_name)
-        detections_with_locations[loc_name]=(x, y, name, w, h)
+
+        # ---- CUT OUT ICON FROM MAP ----
+        roi = map_img_color[y:y+h, x:x+w]
+        cutout_mask = icon_templates[name]["cutout_mask"]
+
+        if cutout_mask is not None:
+            alpha = cv2.resize(cutout_mask, (w, h))
+            roi_rgba = cv2.cvtColor(roi, cv2.COLOR_BGR2BGRA)
+            roi_rgba[:, :, 3] = alpha
+        else:
+            roi_rgba = roi
+
+        detections_with_locations[loc_name] = {
+            "type": name,
+            "bbox": (x, y, w, h),
+            "icon": roi_rgba
+        }
 
     return detections_with_locations, locations_detected
+
 
 def icon_name_to_rain_level(icon_name):
     match = re.search(r'rain_([1-4]|6)', icon_name)
@@ -197,7 +285,13 @@ def generate_ground_truth():
     for path in template_paths:
         try:
             name = os.path.basename(path)
-            icon_templates[name] = load_icon(path)
+            gray, match_mask, cutout_mask = load_icon_with_mask(path)
+
+            icon_templates[name] = {
+                "icon": gray,
+                "match_mask": match_mask,
+                "cutout_mask": cutout_mask,
+            }
         except Exception as e:
             print(f"Error loading {os.path.basename(path)}: {e}")
 
@@ -231,8 +325,10 @@ def generate_ground_truth():
             for loc in all_locations:
                 loc_lower = loc.lower().replace(" ", "_")
                 if(loc in detections):
-                    x, y, name, w, h = detections[loc]
-                    icon_name = os.path.splitext(name)[0]  # remove .png/.jpg
+                    det= detections[loc]
+                    x, y, w, h = det["bbox"]
+                    name = det["type"]
+                    icon_name = os.path.splitext(name)[0]
                     print(loc)
                     f.write(f'forecasted_rain({loc_lower}, {icon_name_to_rain_level(icon_name)}). \n') #,{yyyy},{mm},{dd}
                     f.write(f'forecasted_sky({loc_lower}, "{icon_name_to_sky_level(icon_name)}"). \n') #,{yyyy},{mm},{dd}
@@ -240,6 +336,10 @@ def generate_ground_truth():
                     f.write(f'forecasted_rain({loc_lower}, atom_ND). \n') #,{yyyy},{mm},{dd}
                     f.write(f'forecasted_sky({loc_lower}, "ND"). \n') #,{yyyy},{mm},{dd}
 
+        visualize_detections(img_path, detections, final_img_path)
+
         print(f"  Saved: {txt_path}, {final_img_path}\n")
 
     print(f"--- Done. Total time: {time.time() - start_total:.2f} s ---")
+
+
