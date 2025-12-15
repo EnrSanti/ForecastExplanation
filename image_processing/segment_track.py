@@ -267,14 +267,14 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
     #===== PLOTTING =====
 
     #keep track of cells in previous frames for "gap_features_frames" frames
-    cells_frames_before=[set() for _ in range(gap_features_frames+1)]
+    cells_frames_before=[]
     #what cells are in the current frame
     cell_ids=set() 
     for i, itime in enumerate(plot_frames):
 
         #remove the oldest frame and add the current one
-        cells_frames_before.pop(0)
-        cells_frames_before.append(cell_ids)
+        #cells_frames_before.pop(0)
+        
 
         #get the cells in this frame
         cell_ids = set(trajectories[(trajectories["frame"] == itime)]["cell"].dropna().unique())
@@ -284,15 +284,18 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         #map containing a list, for each cell in the current frame: all the frames it appeared in the previous gap_features_frames frames
         all_frames_for_cell = {}
 
-        for j in range(gap_features_frames):
+        for j in range(gap_features_frames+1):
             #set sum
-            all_cells_in_gap = all_cells_in_gap | cells_frames_before[j]
-            for el in cells_frames_before[j]:
-                if el not in all_frames_for_cell:
-                    all_frames_for_cell[el] = []  #create a list for new cells
-                #add the frame number where the cell appeared
-                all_frames_for_cell[el].append(itime - (gap_features_frames - j))
-    
+            if(i-j-1>=0):
+                all_cells_in_gap = all_cells_in_gap | cells_frames_before[i-j-1]
+                print("frame ", i, " cell ids: ",cell_ids," cells in gap (frame ", i-j-1, " )" ,cells_frames_before[i-j-1])
+                
+                for el in cells_frames_before[i-j-1]:
+                    if el not in all_frames_for_cell:
+                        all_frames_for_cell[el] = []  #create a list for new cells
+                    #add the frame number where the cell appeared
+                    all_frames_for_cell[el].append(i-j-1)
+
 
 
         persisted = cell_ids & all_cells_in_gap   #intersection -> clouds present now and previously
@@ -381,7 +384,8 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         
         plt.savefig(out_path, dpi=100, bbox_inches=None,pad_inches=0)
         plt.close(fig) 
-    
+        cells_frames_before.append(cell_ids)
+    print("all frames for: ", all_frames_for_cell)
     #======= SPLITTING AND MERGING ========
     if(save_split_merges):
         all_splits_merges=""
@@ -389,6 +393,7 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
             if(all_segment_labels[itime-1] is None or all_segment_labels[itime] is None):
                 continue
             
+            #unused if not for debugging
             plot_feature_borders(
                 segment_labels=all_segment_labels[i].isel(time=0).values,
                 ax=axs,
@@ -407,6 +412,8 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
             if splits != "" or merges !="":
                 all_splits_merges+=splits+merges
                 all_splits_merges+="-------------------\n"
+       
+          
             #print("Consideering frame ---------------------------- ", itime+1)
         gc.collect()
         #save the merge and splits found:

@@ -550,8 +550,7 @@ def compute_negative_facts(line):
             else:
                 return "rains_at("+city+"). \n"
         except:
-            #in the positive example is unknown
-            return ""
+            return "unkown_rain_at("+city+"). \n"
     # Case 2: forecasted_sky(..., "string")
     else:
         # Remove surrounding quotes if present

@@ -1,0 +1,22 @@
+%% Format: forecasted_rain(location, drops_in_pictogram).
+%% Format: forecasted_sky(location, description).
+date(2019,11,1).
+
+forecasted_rain(sappada_forni_villa, atom_ND). 
+forecasted_sky(sappada_forni_villa, "cloudy"). 
+forecasted_rain(pontebba_tarvisio, atom_ND). 
+forecasted_sky(pontebba_tarvisio, "mostly_cloudy"). 
+forecasted_rain(lignano_grado, atom_ND). 
+forecasted_sky(lignano_grado, "cloudy"). 
+forecasted_rain(barcis, atom_ND). 
+forecasted_sky(barcis, "cloudy"). 
+forecasted_rain(udine_palamnova, atom_ND). 
+forecasted_sky(udine_palamnova, "cloudy"). 
+forecasted_rain(gorizia, atom_ND). 
+forecasted_sky(gorizia, "cloudy"). 
+forecasted_rain(trieste, atom_ND). 
+forecasted_sky(trieste, "cloudy"). 
+forecasted_rain(gemona_stolvizza, atom_ND). 
+forecasted_sky(gemona_stolvizza, "cloudy"). 
+forecasted_rain(pordenone, atom_ND). 
+forecasted_sky(pordenone, "cloudy"). 
