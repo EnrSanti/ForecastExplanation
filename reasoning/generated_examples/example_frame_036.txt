@@ -10,14 +10,14 @@ date_time(2019,11,2,13).
 
 % Cloud coverage data:
 % Cloud_covers(location,cloud_id)
-cloud_at_750m_covers(Trieste,52).
-cloud_at_1_4km_covers(Pontebba_Tarvisio,33).
-cloud_at_1_4km_covers(Gemona_stolvizza,33).
-cloud_at_3km_covers(Trieste,53).
-cloud_at_3km_covers(Pordenone,53).
-cloud_at_5_5km_covers(Udine_Palamnova,72).
-cloud_at_9km_covers(Pontebba_Tarvisio,47).
-cloud_at_9km_covers(Trieste,47).
+cloud_at_750m_covers(Trieste,63).
+cloud_at_1_4km_covers(Pontebba_Tarvisio,40).
+cloud_at_1_4km_covers(Gemona_stolvizza,40).
+cloud_at_3km_covers(Trieste,55).
+cloud_at_3km_covers(Pordenone,55).
+cloud_at_5_5km_covers(Udine_Palamnova,71).
+cloud_at_9km_covers(Pontebba_Tarvisio,25).
+cloud_at_9km_covers(Trieste,25).
 
 % Humidity front data:
 % humidty_front(location_1,location_2): between the two locations there's a sharp change 

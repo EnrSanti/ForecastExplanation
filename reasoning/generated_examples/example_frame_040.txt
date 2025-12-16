@@ -10,18 +10,18 @@ date_time(2019,11,2,17).
 
 % Cloud coverage data:
 % Cloud_covers(location,cloud_id)
-cloud_at_750m_covers(Gorizia,69).
-cloud_at_750m_covers(Gemona_stolvizza,51).
+cloud_at_750m_covers(Gorizia,76).
+cloud_at_750m_covers(Gemona_stolvizza,57).
 cloud_at_1_4km_covers(Sappada_Forni_villa,36).
 cloud_at_1_4km_covers(Pontebba_Tarvisio,36).
 cloud_at_1_4km_covers(Gorizia,36).
 cloud_at_1_4km_covers(Gemona_stolvizza,36).
-cloud_at_3km_covers(Udine_Palamnova,55).
-cloud_at_5_5km_covers(Lignano_Grado,84).
-cloud_at_5_5km_covers(Gorizia,84).
-cloud_at_5_5km_covers(Trieste,84).
-cloud_at_9km_covers(Udine_Palamnova,62).
-cloud_at_9km_covers(Trieste,62).
+cloud_at_3km_covers(Udine_Palamnova,57).
+cloud_at_5_5km_covers(Lignano_Grado,83).
+cloud_at_5_5km_covers(Gorizia,83).
+cloud_at_5_5km_covers(Trieste,83).
+cloud_at_9km_covers(Udine_Palamnova,69).
+cloud_at_9km_covers(Trieste,69).
 
 % Humidity front data:
 % humidty_front(location_1,location_2): between the two locations there's a sharp change 
@@ -31,12 +31,12 @@ hum_front_700_hPa(gemona_stolvizza,pontebba_tarvisio).
 hum_front_500_hPa(barcis,pordenone).
 hum_front_500_hPa(gemona_stolvizza,udine_palamnova).
 temperature_at_at_100m(sappada_forni_villa, 295).
-temperature_at_at_100m(pontebba_tarvisio, 293).
+temperature_at_at_100m(pontebba_tarvisio, 299).
 temperature_at_at_100m(lignano_grado, 299).
-temperature_at_at_100m(barcis, 299).
+temperature_at_at_100m(barcis, 295).
 temperature_at_at_100m(udine_palamnova, 299).
 temperature_at_at_100m(gorizia, 299).
-temperature_at_at_100m(trieste, 299).
+temperature_at_at_100m(trieste, 295).
 temperature_at_at_100m(gemona_stolvizza, 299).
 temperature_at_at_100m(pordenone, 299).
 temperature_at_at_750m(sappada_forni_villa, 291).
@@ -142,9 +142,6 @@ humidity_percentage_at_9km(gemona_stolvizza, 20).
 humidity_percentage_at_9km(pordenone, 20).
 
 % Temperature data (in kelvin):
-temp_front_1000_hPa(pontebba_tarvisio,sappada_forni_villa).
-temp_front_1000_hPa(gorizia,pontebba_tarvisio).
-temp_front_1000_hPa(gemona_stolvizza,pontebba_tarvisio).
 temp_front_700_hPa(pontebba_tarvisio,sappada_forni_villa).
 temp_front_700_hPa(gorizia,pontebba_tarvisio).
 temp_front_700_hPa(gemona_stolvizza,pontebba_tarvisio).

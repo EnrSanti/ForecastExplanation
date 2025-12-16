@@ -10,9 +10,9 @@ date_time(2019,11,1,21).
 
 % Cloud coverage data:
 % Cloud_covers(location,cloud_id)
-cloud_at_1_4km_covers(Pordenone,14).
+cloud_at_1_4km_covers(Pordenone,15).
 cloud_at_3km_covers(Trieste,17).
-cloud_at_5_5km_covers(Gemona_stolvizza,23).
+cloud_at_5_5km_covers(Gemona_stolvizza,21).
 cloud_at_9km_covers(Sappada_Forni_villa,25).
 cloud_at_9km_covers(Pontebba_Tarvisio,25).
 cloud_at_9km_covers(Lignano_Grado,25).
@@ -80,15 +80,15 @@ temperature_at_at_5_5km(gorizia, 256).
 temperature_at_at_5_5km(trieste, 256).
 temperature_at_at_5_5km(gemona_stolvizza, 256).
 temperature_at_at_5_5km(pordenone, 256).
-temperature_at_at_9km(sappada_forni_villa, 225).
-temperature_at_at_9km(pontebba_tarvisio, 229).
+temperature_at_at_9km(sappada_forni_villa, 227).
+temperature_at_at_9km(pontebba_tarvisio, 231).
 temperature_at_at_9km(lignano_grado, 229).
-temperature_at_at_9km(barcis, 225).
-temperature_at_at_9km(udine_palamnova, 229).
-temperature_at_at_9km(gorizia, 229).
+temperature_at_at_9km(barcis, 226).
+temperature_at_at_9km(udine_palamnova, 228).
+temperature_at_at_9km(gorizia, 232).
 temperature_at_at_9km(trieste, 232).
-temperature_at_at_9km(gemona_stolvizza, 229).
-temperature_at_at_9km(pordenone, 225).
+temperature_at_at_9km(gemona_stolvizza, 228).
+temperature_at_at_9km(pordenone, 228).
 
 % hum(location_1,humidity_percentage): the percentage is discretized in 0, 20, 40 ... 
 humidity_percentage_at_100m(sappada_forni_villa, 20).
@@ -155,7 +155,8 @@ temp_front_850_hPa(gorizia,pontebba_tarvisio).
 temp_front_850_hPa(gemona_stolvizza,udine_palamnova).
 temp_front_850_hPa(pordenone,sappada_forni_villa).
 temp_front_300_hPa(lignano_grado,trieste).
-temp_front_300_hPa(gorizia,trieste).
+temp_front_300_hPa(gorizia,pontebba_tarvisio).
+temp_front_300_hPa(gemona_stolvizza,gorizia).
 
 }). 
 

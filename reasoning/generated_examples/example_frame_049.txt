@@ -10,19 +10,19 @@ date_time(2019,11,3,2).
 
 % Cloud coverage data:
 % Cloud_covers(location,cloud_id)
-cloud_at_750m_covers(Udine_Palamnova,71).
-cloud_at_750m_covers(Gorizia,71).
-cloud_at_750m_covers(Trieste,71).
-cloud_at_750m_covers(Pordenone,71).
-cloud_at_1_4km_covers(Sappada_Forni_villa,47).
-cloud_at_1_4km_covers(Pontebba_Tarvisio,47).
-cloud_at_1_4km_covers(Lignano_Grado,47).
-cloud_at_1_4km_covers(Barcis,47).
-cloud_at_1_4km_covers(Gorizia,47).
-cloud_at_1_4km_covers(Trieste,47).
-cloud_at_1_4km_covers(Gemona_stolvizza,47).
-cloud_at_3km_covers(Pontebba_Tarvisio,75).
-cloud_at_3km_covers(Trieste,63).
+cloud_at_750m_covers(Udine_Palamnova,78).
+cloud_at_750m_covers(Gorizia,78).
+cloud_at_750m_covers(Trieste,78).
+cloud_at_750m_covers(Pordenone,78).
+cloud_at_1_4km_covers(Sappada_Forni_villa,49).
+cloud_at_1_4km_covers(Pontebba_Tarvisio,49).
+cloud_at_1_4km_covers(Lignano_Grado,49).
+cloud_at_1_4km_covers(Barcis,49).
+cloud_at_1_4km_covers(Gorizia,49).
+cloud_at_1_4km_covers(Trieste,49).
+cloud_at_1_4km_covers(Gemona_stolvizza,49).
+cloud_at_3km_covers(Pontebba_Tarvisio,78).
+cloud_at_3km_covers(Trieste,66).
 
 % Humidity front data:
 % humidty_front(location_1,location_2): between the two locations there's a sharp change 
@@ -148,7 +148,7 @@ temp_front_1000_hPa(lignano_grado,trieste).
 temp_front_1000_hPa(barcis,pordenone).
 temp_front_1000_hPa(gorizia,trieste).
 temp_front_1000_hPa(gemona_stolvizza,pontebba_tarvisio).
-temp_front_925_hPa(lignano_grado,pordenone).
+temp_front_925_hPa(lignano_grado,udine_palamnova).
 temp_front_925_hPa(gorizia,pontebba_tarvisio).
 temp_front_925_hPa(gemona_stolvizza,gorizia).
 temp_front_850_hPa(sappada_forni_villa,udine_palamnova).
@@ -158,7 +158,7 @@ temp_front_850_hPa(gemona_stolvizza,udine_palamnova).
 temp_front_850_hPa(pordenone,udine_palamnova).
 temp_front_700_hPa(lignano_grado,trieste).
 temp_front_700_hPa(gorizia,trieste).
-temp_front_300_hPa(lignano_grado,pordenone).
+temp_front_300_hPa(lignano_grado,udine_palamnova).
 temp_front_300_hPa(gorizia,pontebba_tarvisio).
 temp_front_300_hPa(gemona_stolvizza,gorizia).
 

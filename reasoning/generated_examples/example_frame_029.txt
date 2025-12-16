@@ -10,16 +10,20 @@ date_time(2019,11,2,6).
 
 % Cloud coverage data:
 % Cloud_covers(location,cloud_id)
-cloud_at_750m_covers(Lignano_Grado,31).
-cloud_at_1_4km_covers(Udine_Palamnova,21).
-cloud_at_1_4km_covers(Gemona_stolvizza,21).
-cloud_at_9km_covers(Pontebba_Tarvisio,47).
-cloud_at_9km_covers(Lignano_Grado,47).
-cloud_at_9km_covers(Udine_Palamnova,47).
-cloud_at_9km_covers(Gorizia,47).
-cloud_at_9km_covers(Trieste,47).
-cloud_at_9km_covers(Gemona_stolvizza,47).
-cloud_at_9km_covers(Pordenone,47).
+cloud_at_750m_covers(Trieste,43).
+cloud_at_1_4km_covers(Pontebba_Tarvisio,22).
+cloud_at_1_4km_covers(Udine_Palamnova,22).
+cloud_at_1_4km_covers(Gorizia,22).
+cloud_at_1_4km_covers(Trieste,22).
+cloud_at_1_4km_covers(Gemona_stolvizza,22).
+cloud_at_1_4km_covers(Pordenone,22).
+cloud_at_9km_covers(Pontebba_Tarvisio,25).
+cloud_at_9km_covers(Lignano_Grado,25).
+cloud_at_9km_covers(Udine_Palamnova,25).
+cloud_at_9km_covers(Gorizia,25).
+cloud_at_9km_covers(Trieste,25).
+cloud_at_9km_covers(Gemona_stolvizza,25).
+cloud_at_9km_covers(Pordenone,25).
 
 % Humidity front data:
 % humidty_front(location_1,location_2): between the two locations there's a sharp change 
@@ -59,22 +63,22 @@ temperature_at_at_3km(gorizia, 265).
 temperature_at_at_3km(trieste, 265).
 temperature_at_at_3km(gemona_stolvizza, 277).
 temperature_at_at_3km(pordenone, 277).
-temperature_at_at_5_5km(sappada_forni_villa, 260).
-temperature_at_at_5_5km(pontebba_tarvisio, 260).
-temperature_at_at_5_5km(lignano_grado, 260).
+temperature_at_at_5_5km(sappada_forni_villa, 256).
+temperature_at_at_5_5km(pontebba_tarvisio, 256).
+temperature_at_at_5_5km(lignano_grado, 254).
 temperature_at_at_5_5km(barcis, 256).
-temperature_at_at_5_5km(udine_palamnova, 261).
-temperature_at_at_5_5km(gorizia, 256).
-temperature_at_at_5_5km(trieste, 257).
-temperature_at_at_5_5km(gemona_stolvizza, 260).
-temperature_at_at_5_5km(pordenone, 256).
-temperature_at_at_9km(sappada_forni_villa, 230).
+temperature_at_at_5_5km(udine_palamnova, 256).
+temperature_at_at_5_5km(gorizia, 252).
+temperature_at_at_5_5km(trieste, 253).
+temperature_at_at_5_5km(gemona_stolvizza, 256).
+temperature_at_at_5_5km(pordenone, 254).
+temperature_at_at_9km(sappada_forni_villa, 228).
 temperature_at_at_9km(pontebba_tarvisio, 228).
-temperature_at_at_9km(lignano_grado, 227).
+temperature_at_at_9km(lignano_grado, 228).
 temperature_at_at_9km(barcis, 228).
 temperature_at_at_9km(udine_palamnova, 228).
 temperature_at_at_9km(gorizia, 228).
-temperature_at_at_9km(trieste, 226).
+temperature_at_at_9km(trieste, 229).
 temperature_at_at_9km(gemona_stolvizza, 228).
 temperature_at_at_9km(pordenone, 228).
 
@@ -88,33 +92,33 @@ humidity_percentage_at_100m(gorizia, 60).
 humidity_percentage_at_100m(trieste, 40).
 humidity_percentage_at_100m(gemona_stolvizza, 20).
 humidity_percentage_at_100m(pordenone, 60).
-humidity_percentage_at_750m(sappada_forni_villa, 60).
+humidity_percentage_at_750m(sappada_forni_villa, 20).
 humidity_percentage_at_750m(pontebba_tarvisio, 20).
 humidity_percentage_at_750m(lignano_grado, 20).
-humidity_percentage_at_750m(barcis, 60).
+humidity_percentage_at_750m(barcis, 20).
 humidity_percentage_at_750m(udine_palamnova, 20).
 humidity_percentage_at_750m(gorizia, 20).
 humidity_percentage_at_750m(trieste, 20).
-humidity_percentage_at_750m(gemona_stolvizza, 40).
+humidity_percentage_at_750m(gemona_stolvizza, 20).
 humidity_percentage_at_750m(pordenone, 20).
 humidity_percentage_at_1_4km(sappada_forni_villa, 20).
 humidity_percentage_at_1_4km(pontebba_tarvisio, 20).
 humidity_percentage_at_1_4km(lignano_grado, 20).
-humidity_percentage_at_1_4km(barcis, 20).
+humidity_percentage_at_1_4km(barcis, 0).
 humidity_percentage_at_1_4km(udine_palamnova, 0).
 humidity_percentage_at_1_4km(gorizia, 20).
 humidity_percentage_at_1_4km(trieste, 20).
 humidity_percentage_at_1_4km(gemona_stolvizza, 0).
 humidity_percentage_at_1_4km(pordenone, 0).
 humidity_percentage_at_3km(sappada_forni_villa, 40).
-humidity_percentage_at_3km(pontebba_tarvisio, 100).
+humidity_percentage_at_3km(pontebba_tarvisio, 60).
 humidity_percentage_at_3km(lignano_grado, 40).
 humidity_percentage_at_3km(barcis, 40).
 humidity_percentage_at_3km(udine_palamnova, 40).
-humidity_percentage_at_3km(gorizia, 20).
-humidity_percentage_at_3km(trieste, 40).
+humidity_percentage_at_3km(gorizia, 60).
+humidity_percentage_at_3km(trieste, 100).
 humidity_percentage_at_3km(gemona_stolvizza, 40).
-humidity_percentage_at_3km(pordenone, 20).
+humidity_percentage_at_3km(pordenone, 40).
 humidity_percentage_at_5_5km(sappada_forni_villa, 20).
 humidity_percentage_at_5_5km(pontebba_tarvisio, 20).
 humidity_percentage_at_5_5km(lignano_grado, 20).
@@ -128,7 +132,7 @@ humidity_percentage_at_9km(sappada_forni_villa, 100).
 humidity_percentage_at_9km(pontebba_tarvisio, 60).
 humidity_percentage_at_9km(lignano_grado, 40).
 humidity_percentage_at_9km(barcis, 60).
-humidity_percentage_at_9km(udine_palamnova, 40).
+humidity_percentage_at_9km(udine_palamnova, 20).
 humidity_percentage_at_9km(gorizia, 60).
 humidity_percentage_at_9km(trieste, 40).
 humidity_percentage_at_9km(gemona_stolvizza, 40).
@@ -137,11 +141,6 @@ humidity_percentage_at_9km(pordenone, 60).
 % Temperature data (in kelvin):
 temp_front_1000_hPa(lignano_grado,trieste).
 temp_front_1000_hPa(gorizia,trieste).
-temp_front_500_hPa(lignano_grado,trieste).
-temp_front_500_hPa(barcis,sappada_forni_villa).
-temp_front_500_hPa(gorizia,pontebba_tarvisio).
-temp_front_500_hPa(gemona_stolvizza,gorizia).
-temp_front_500_hPa(pordenone,udine_palamnova).
 
 }). 
 
