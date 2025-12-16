@@ -30,7 +30,7 @@ hum_front_850_hPa(lignano_grado,pordenone).
 hum_front_850_hPa(barcis,sappada_forni_villa).
 hum_front_850_hPa(gorizia,pontebba_tarvisio).
 hum_front_850_hPa(gemona_stolvizza,pontebba_tarvisio).
-hum_front_850_hPa(pordenone,udine_palamnova).
+hum_front_850_hPa(pordenone,sappada_forni_villa).
 hum_front_700_hPa(barcis,pordenone).
 temperature_at_at_100m(sappada_forni_villa, 293).
 temperature_at_at_100m(pontebba_tarvisio, 299).
@@ -43,8 +43,8 @@ temperature_at_at_100m(gemona_stolvizza, 294).
 temperature_at_at_100m(pordenone, 299).
 temperature_at_at_750m(sappada_forni_villa, 291).
 temperature_at_at_750m(pontebba_tarvisio, 291).
-temperature_at_at_750m(lignano_grado, 289).
-temperature_at_at_750m(barcis, 290).
+temperature_at_at_750m(lignano_grado, 287).
+temperature_at_at_750m(barcis, 289).
 temperature_at_at_750m(udine_palamnova, 288).
 temperature_at_at_750m(gorizia, 288).
 temperature_at_at_750m(trieste, 282).
@@ -56,7 +56,7 @@ temperature_at_at_1_4km(lignano_grado, 281).
 temperature_at_at_1_4km(barcis, 281).
 temperature_at_at_1_4km(udine_palamnova, 281).
 temperature_at_at_1_4km(gorizia, 281).
-temperature_at_at_1_4km(trieste, 280).
+temperature_at_at_1_4km(trieste, 278).
 temperature_at_at_1_4km(gemona_stolvizza, 281).
 temperature_at_at_1_4km(pordenone, 281).
 temperature_at_at_3km(sappada_forni_villa, 276).
@@ -129,7 +129,7 @@ humidity_percentage_at_5_5km(pontebba_tarvisio, 100).
 humidity_percentage_at_5_5km(lignano_grado, 0).
 humidity_percentage_at_5_5km(barcis, 0).
 humidity_percentage_at_5_5km(udine_palamnova, 0).
-humidity_percentage_at_5_5km(gorizia, 0).
+humidity_percentage_at_5_5km(gorizia, 100).
 humidity_percentage_at_5_5km(trieste, 0).
 humidity_percentage_at_5_5km(gemona_stolvizza, 100).
 humidity_percentage_at_5_5km(pordenone, 0).
@@ -154,7 +154,7 @@ temp_front_925_hPa(lignano_grado,pordenone).
 temp_front_925_hPa(barcis,pordenone).
 temp_front_925_hPa(gorizia,pontebba_tarvisio).
 temp_front_925_hPa(gemona_stolvizza,udine_palamnova).
-temp_front_925_hPa(pordenone,udine_palamnova).
+temp_front_925_hPa(pordenone,sappada_forni_villa).
 temp_front_850_hPa(pontebba_tarvisio,sappada_forni_villa).
 temp_front_850_hPa(gorizia,pontebba_tarvisio).
 temp_front_850_hPa(gemona_stolvizza,pontebba_tarvisio).
@@ -166,7 +166,7 @@ temp_front_500_hPa(pordenone,sappada_forni_villa).
 temp_front_300_hPa(lignano_grado,trieste).
 temp_front_300_hPa(barcis,pordenone).
 temp_front_300_hPa(gorizia,lignano_grado).
-temp_front_300_hPa(pordenone,udine_palamnova).
+temp_front_300_hPa(pordenone,sappada_forni_villa).
 
 }). 
 

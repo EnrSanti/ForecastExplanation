@@ -29,12 +29,12 @@ hum_front_850_hPa(gemona_stolvizza,udine_palamnova).
 hum_front_850_hPa(pordenone,udine_palamnova).
 hum_front_700_hPa(pontebba_tarvisio,sappada_forni_villa).
 hum_front_700_hPa(lignano_grado,trieste).
-hum_front_700_hPa(gorizia,lignano_grado).
+hum_front_700_hPa(gorizia,udine_palamnova).
 hum_front_700_hPa(gemona_stolvizza,udine_palamnova).
 hum_front_500_hPa(sappada_forni_villa,udine_palamnova).
 hum_front_500_hPa(lignano_grado,trieste).
 hum_front_500_hPa(barcis,sappada_forni_villa).
-hum_front_500_hPa(gorizia,lignano_grado).
+hum_front_500_hPa(gorizia,udine_palamnova).
 hum_front_500_hPa(gemona_stolvizza,udine_palamnova).
 hum_front_500_hPa(pordenone,sappada_forni_villa).
 hum_front_300_hPa(sappada_forni_villa,udine_palamnova).
@@ -116,7 +116,7 @@ humidity_percentage_at_750m(gorizia, 0).
 humidity_percentage_at_750m(trieste, 100).
 humidity_percentage_at_750m(gemona_stolvizza, 100).
 humidity_percentage_at_750m(pordenone, 100).
-humidity_percentage_at_1_4km(sappada_forni_villa, 60).
+humidity_percentage_at_1_4km(sappada_forni_villa, 40).
 humidity_percentage_at_1_4km(pontebba_tarvisio, 60).
 humidity_percentage_at_1_4km(lignano_grado, 100).
 humidity_percentage_at_1_4km(barcis, 20).

@@ -23,7 +23,7 @@ hum_front_925_hPa(barcis,pordenone).
 hum_front_925_hPa(gorizia,pontebba_tarvisio).
 hum_front_925_hPa(gemona_stolvizza,sappada_forni_villa).
 hum_front_925_hPa(pordenone,sappada_forni_villa).
-hum_front_850_hPa(lignano_grado,pordenone).
+hum_front_850_hPa(lignano_grado,udine_palamnova).
 hum_front_850_hPa(gorizia,pontebba_tarvisio).
 hum_front_850_hPa(gemona_stolvizza,gorizia).
 hum_front_700_hPa(lignano_grado,trieste).
@@ -56,7 +56,7 @@ temperature_at_at_750m(gemona_stolvizza, 291).
 temperature_at_at_750m(pordenone, 291).
 temperature_at_at_1_4km(sappada_forni_villa, 288).
 temperature_at_at_1_4km(pontebba_tarvisio, 288).
-temperature_at_at_1_4km(lignano_grado, 288).
+temperature_at_at_1_4km(lignano_grado, 286).
 temperature_at_at_1_4km(barcis, 288).
 temperature_at_at_1_4km(udine_palamnova, 288).
 temperature_at_at_1_4km(gorizia, 286).
@@ -82,12 +82,12 @@ temperature_at_at_5_5km(trieste, 261).
 temperature_at_at_5_5km(gemona_stolvizza, 260).
 temperature_at_at_5_5km(pordenone, 256).
 temperature_at_at_9km(sappada_forni_villa, 228).
-temperature_at_at_9km(pontebba_tarvisio, 232).
+temperature_at_at_9km(pontebba_tarvisio, 228).
 temperature_at_at_9km(lignano_grado, 228).
-temperature_at_at_9km(barcis, 227).
+temperature_at_at_9km(barcis, 225).
 temperature_at_at_9km(udine_palamnova, 228).
-temperature_at_at_9km(gorizia, 232).
-temperature_at_at_9km(trieste, 232).
+temperature_at_at_9km(gorizia, 229).
+temperature_at_at_9km(trieste, 229).
 temperature_at_at_9km(gemona_stolvizza, 228).
 temperature_at_at_9km(pordenone, 228).
 
@@ -153,7 +153,7 @@ temp_front_1000_hPa(lignano_grado,pordenone).
 temp_front_1000_hPa(barcis,sappada_forni_villa).
 temp_front_1000_hPa(gorizia,pontebba_tarvisio).
 temp_front_1000_hPa(gemona_stolvizza,udine_palamnova).
-temp_front_1000_hPa(pordenone,udine_palamnova).
+temp_front_1000_hPa(pordenone,sappada_forni_villa).
 temp_front_925_hPa(sappada_forni_villa,udine_palamnova).
 temp_front_925_hPa(pontebba_tarvisio,sappada_forni_villa).
 temp_front_925_hPa(barcis,sappada_forni_villa).
@@ -166,10 +166,6 @@ temp_front_500_hPa(pontebba_tarvisio,sappada_forni_villa).
 temp_front_500_hPa(lignano_grado,pordenone).
 temp_front_500_hPa(gemona_stolvizza,sappada_forni_villa).
 temp_front_500_hPa(pordenone,udine_palamnova).
-temp_front_300_hPa(pontebba_tarvisio,sappada_forni_villa).
-temp_front_300_hPa(lignano_grado,trieste).
-temp_front_300_hPa(gorizia,lignano_grado).
-temp_front_300_hPa(gemona_stolvizza,pontebba_tarvisio).
 
 }). 
 

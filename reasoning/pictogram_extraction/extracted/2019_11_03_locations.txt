@@ -2,21 +2,21 @@
 %% Format: forecasted_sky(location, description).
 date(2019,11,3).
 
-forecasted_rain(sappada_forni_villa, 1). 
-forecasted_sky(sappada_forni_villa, "mostly_cloudy"). 
+forecasted_rain(sappada_forni_villa, 6). 
+forecasted_sky(sappada_forni_villa, "cloudy"). 
 forecasted_rain(pontebba_tarvisio, atom_ND). 
-forecasted_sky(pontebba_tarvisio, "partly_cloudy"). 
-forecasted_rain(lignano_grado, atom_ND). 
-forecasted_sky(lignano_grado, "partly_cloudy"). 
-forecasted_rain(barcis, atom_ND). 
-forecasted_sky(barcis, "partly_cloudy"). 
-forecasted_rain(udine_palamnova, atom_ND). 
-forecasted_sky(udine_palamnova, "partly_cloudy"). 
-forecasted_rain(gorizia, atom_ND). 
-forecasted_sky(gorizia, "partly_cloudy"). 
-forecasted_rain(trieste, atom_ND). 
-forecasted_sky(trieste, "partly_cloudy"). 
-forecasted_rain(gemona_stolvizza, 1). 
-forecasted_sky(gemona_stolvizza, "mostly_cloudy"). 
-forecasted_rain(pordenone, atom_ND). 
-forecasted_sky(pordenone, "partly_cloudy"). 
+forecasted_sky(pontebba_tarvisio, "cloudy"). 
+forecasted_rain(lignano_grado, 4). 
+forecasted_sky(lignano_grado, "mostly_cloudy"). 
+forecasted_rain(barcis, 6). 
+forecasted_sky(barcis, "cloudy"). 
+forecasted_rain(udine_palamnova, 6). 
+forecasted_sky(udine_palamnova, "cloudy"). 
+forecasted_rain(gorizia, 6). 
+forecasted_sky(gorizia, "cloudy"). 
+forecasted_rain(trieste, 4). 
+forecasted_sky(trieste, "mostly_cloudy"). 
+forecasted_rain(gemona_stolvizza, 6). 
+forecasted_sky(gemona_stolvizza, "cloudy"). 
+forecasted_rain(pordenone, 4). 
+forecasted_sky(pordenone, "mostly_cloudy"). 

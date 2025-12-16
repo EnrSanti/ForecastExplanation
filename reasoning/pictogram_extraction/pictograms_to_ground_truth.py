@@ -15,8 +15,8 @@ CSV_PATH = './reasoning/locations.csv'                                 # path to
 
 
 # Matching Parameters
-RELAXED_THRESHOLD = 0.70
-SCALES_TO_TEST = np.linspace(1, 1.2, 8)
+RELAXED_THRESHOLD = 0.80
+SCALES_TO_TEST = [1]
 
 # Filtering
 OVERLAP_THRESHOLD = 0.5     # IoU threshold for NMS
@@ -24,7 +24,74 @@ LOCATION_TOLERANCE = 15     # pixels tolerance to match detected icon to CSV loc
 
 # Ensure output folder exists
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+def resolve_perfect_matches(all_detections_raw, map_img_color, icon_templates):
+    """
+    Resolves near-perfect matches (score >= 0.99) at the same location/size by 
+    prioritizing the template with the largest actual foreground area (most complex).
+    """
+    print("Resolving perfect matches using template complexity...")
+    
+    location_groups = {}
+    for det in all_detections_raw:
+        x, y, name, w, h, score = det
+        key = (x, y, w, h)
+        if key not in location_groups:
+            location_groups[key] = []
+        location_groups[key].append(det)
 
+    filtered_detections = []
+
+    for key, group in location_groups.items():
+        # Find all detections in this group that scored near-perfectly
+        perfect_matches = [det for det in group if det[5] >= 0.99]
+        
+        if len(perfect_matches) > 1:
+            # --- Tie-Breaker Logic for Perfect Scores ---
+            
+            x, y, w, h = key
+            
+            # Patch extraction... (conversion to patch_match_channel remains the same)
+            # Assuming you switched to a color channel (e.g., HSV Saturation)
+            y_end, x_end = min(y + h, map_img_color.shape[0]), min(x + w, map_img_color.shape[1])
+            patch = map_img_color[y:y_end, x:x_end]
+
+            if patch.shape[0] != h or patch.shape[1] != w:
+                 filtered_detections.extend(group) 
+                 continue
+            
+            patch_hsv = cv2.cvtColor(patch, cv2.COLOR_BGR2HSV)
+            patch_match_channel = patch_hsv[:, :, 1] 
+
+            best_match = None
+            # Store the highest value as a tuple: (custom_score, template_complexity_area)
+            highest_custom_value = 0
+            
+            for det in perfect_matches:
+                name = det[2]
+            
+                
+                # --- Complexity Tie-Breaker ---
+                # Retrieve the pre-calculated complexity area from the template structure
+                template_complexity_area = icon_templates[name]["template_area"] 
+
+                # Combine custom score (primary) and complexity (secondary)
+                if template_complexity_area > highest_custom_value:
+                    highest_custom_value = template_complexity_area
+                    best_match = det
+            
+            # Keep only the single best match
+            if best_match is not None:
+                filtered_detections.append(best_match)
+            
+            # Add all non-0.99 detections back
+            non_perfect_matches = [det for det in group if det[5] < 0.99]
+            filtered_detections.extend(non_perfect_matches)
+
+        else:
+            # No tie, keep all detections in this group
+            filtered_detections.extend(group)
+            
+    return filtered_detections
 # --- Core Functions ---
 def load_icon_with_mask(path, power=2.5):
     icon = cv2.imread(path, cv2.IMREAD_UNCHANGED)
@@ -44,19 +111,13 @@ def load_icon_with_mask(path, power=2.5):
         gray[alpha == 0] = 255
 
         # weighted bottom mask (for matching)
-        h, w = gray.shape
-        weight_mask = build_bottom_weight_mask(h, w, power)
 
-        match_mask = cv2.bitwise_and(cutout_mask, weight_mask)
-        #save masks for debugging
-        #get the name without path
-        name=os.path.basename(path)
-        cv2.imwrite(f"{name}", cutout_mask)
-        return gray, cutout_mask, cutout_mask
+        template_complexity_area = np.sum(alpha > 0)
+        return gray, cutout_mask, cutout_mask, template_complexity_area
 
     else:
         # no transparency
-        return gray, None, None
+        return gray, None, None,0
 
 
 def get_iou(rect1, rect2):
@@ -70,6 +131,7 @@ def get_iou(rect1, rect2):
 
 def visualize_detections(image_path, detections, output_path, color=(0, 0, 255)):
     img_to_draw = cv2.imread(image_path)
+
     if img_to_draw is None:
         print(f"Error: Could not load image for visualization at {image_path}")
         return
@@ -110,6 +172,46 @@ def visualize_detections(image_path, detections, output_path, color=(0, 0, 255))
     cv2.imwrite(output_path, img_to_draw)
     print(f"Visualization saved to: {output_path}")
 
+
+
+def visualize_detections_temp(image_path, detections, color=(0, 0, 255)):
+    img_to_draw = cv2.imread(image_path)
+
+    if img_to_draw is None:
+        print(f"Error: Could not load image for visualization at {image_path}")
+        return
+
+    thickness = 1
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.35
+    dets=detections["-"]
+    for det in dets:
+        
+        x, y, w, h = det["bbox"]
+        name = det["type"]
+        score=det["score"]
+        x, y, w, h = int(x), int(y), int(w), int(h)
+        
+        cv2.rectangle(
+            img_to_draw,
+            (x, y),
+            (x + w, y + h),
+            color,
+            thickness,
+        )
+
+        cv2.putText(
+            img_to_draw,
+            name+str(f" {score:.2f}"),
+            (x, max(y - 5, 10)),
+            font,
+            font_scale,
+            color,
+            thickness,
+            cv2.LINE_AA,
+        )
+
+
 def build_bottom_weight_mask(h, w, power=2.5):
     y = np.linspace(0, 1, h).reshape(-1, 1)
     weights = y ** power
@@ -143,9 +245,6 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
             h, w = icon.shape
             rw, rh = int(w * scale), int(h * scale)
 
-            if rw < 5 or rh < 5:
-                continue
-
             if rh > gray_map.shape[0] or rw > gray_map.shape[1]:
                 continue
 
@@ -169,11 +268,35 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
                 score = res[y, x]
                 all_detections_raw.append((x, y, name, rw, rh, score))
 
+    #remove -inf detections
+    all_detections_raw = [det for det in all_detections_raw if np.isfinite(det[5])]
+    all_detections_raw = resolve_perfect_matches(all_detections_raw, map_img_color, icon_templates)
+
+    print(f"in image:  ----  { image_path.replace('_final', '_raw')} " )
+
+    print_detections = {"-": []}
+    for (x, y, name, w, h, score) in all_detections_raw:
+        if((x>350 and x<370) and (y>205 and y<225) or not np.isfinite(score)):
+            continue
+        print(f" Detected: {name} at ({x}, {y}), size=({w}x{h}), score={score:.2f}")
+            
+        print_detections["-"].append({
+            "type": name,
+            "bbox": (x, y, w, h),
+            "icon": name,
+            "score": score
+        })
+
+    print(f"visualizing {len(print_detections)}  detections... ")
+    #get the filename from image_path
+    visualize_detections_temp(image_path, print_detections)
     # ---- NMS ----
+
     detections_to_filter = sorted(all_detections_raw, key=lambda x: x[5], reverse=True)
     final_detections = []
     suppressed = np.zeros(len(detections_to_filter), dtype=bool)
 
+    #IOU
     for i in range(len(detections_to_filter)):
         if suppressed[i]:
             continue
@@ -196,7 +319,7 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
     for (x, y, name, w, h, score) in final_detections:
         loc_name = match_to_location(x, y, locations_df)
         if loc_name is None:
-            continue
+            continue    
 
         locations_detected.append(loc_name)
 
@@ -285,12 +408,13 @@ def generate_ground_truth():
     for path in template_paths:
         try:
             name = os.path.basename(path)
-            gray, match_mask, cutout_mask = load_icon_with_mask(path)
+            gray, match_mask, cutout_mask, template_complexity_area = load_icon_with_mask(path)
 
             icon_templates[name] = {
                 "icon": gray,
                 "match_mask": match_mask,
                 "cutout_mask": cutout_mask,
+                "template_area": template_complexity_area
             }
         except Exception as e:
             print(f"Error loading {os.path.basename(path)}: {e}")

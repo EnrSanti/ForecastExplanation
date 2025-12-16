@@ -12,8 +12,8 @@ date_time(2019,11,1,19).
 % Cloud_covers(location,cloud_id)
 cloud_at_3km_covers(Lignano_Grado,14).
 cloud_at_3km_covers(Gorizia,14).
-cloud_at_5_5km_covers(Sappada_Forni_villa,9).
-cloud_at_5_5km_covers(Barcis,9).
+cloud_at_5_5km_covers(Sappada_Forni_villa,7).
+cloud_at_5_5km_covers(Barcis,7).
 cloud_at_9km_covers(Sappada_Forni_villa,25).
 cloud_at_9km_covers(Pontebba_Tarvisio,25).
 cloud_at_9km_covers(Lignano_Grado,25).
@@ -82,15 +82,15 @@ temperature_at_at_3km(gorizia, 276).
 temperature_at_at_3km(trieste, 277).
 temperature_at_at_3km(gemona_stolvizza, 276).
 temperature_at_at_3km(pordenone, 276).
-temperature_at_at_5_5km(sappada_forni_villa, 251).
-temperature_at_at_5_5km(pontebba_tarvisio, 256).
-temperature_at_at_5_5km(lignano_grado, 256).
-temperature_at_at_5_5km(barcis, 251).
-temperature_at_at_5_5km(udine_palamnova, 256).
-temperature_at_at_5_5km(gorizia, 256).
-temperature_at_at_5_5km(trieste, 257).
-temperature_at_at_5_5km(gemona_stolvizza, 253).
-temperature_at_at_5_5km(pordenone, 251).
+temperature_at_at_5_5km(sappada_forni_villa, 256).
+temperature_at_at_5_5km(pontebba_tarvisio, 261).
+temperature_at_at_5_5km(lignano_grado, 258).
+temperature_at_at_5_5km(barcis, 255).
+temperature_at_at_5_5km(udine_palamnova, 257).
+temperature_at_at_5_5km(gorizia, 261).
+temperature_at_at_5_5km(trieste, 261).
+temperature_at_at_5_5km(gemona_stolvizza, 256).
+temperature_at_at_5_5km(pordenone, 256).
 temperature_at_at_9km(sappada_forni_villa, 232).
 temperature_at_at_9km(pontebba_tarvisio, 232).
 temperature_at_at_9km(lignano_grado, 224).
@@ -164,7 +164,11 @@ temp_front_850_hPa(lignano_grado,udine_palamnova).
 temp_front_850_hPa(barcis,pordenone).
 temp_front_850_hPa(gorizia,pontebba_tarvisio).
 temp_front_850_hPa(gemona_stolvizza,gorizia).
-temp_front_850_hPa(pordenone,udine_palamnova).
+temp_front_850_hPa(pordenone,sappada_forni_villa).
+temp_front_500_hPa(pontebba_tarvisio,sappada_forni_villa).
+temp_front_500_hPa(lignano_grado,trieste).
+temp_front_500_hPa(gorizia,udine_palamnova).
+temp_front_500_hPa(gemona_stolvizza,gorizia).
 
 }). 
 

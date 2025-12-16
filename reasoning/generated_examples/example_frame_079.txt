@@ -10,7 +10,7 @@ date_time(2019,11,4,8).
 
 % Cloud coverage data:
 % Cloud_covers(location,cloud_id)
-cloud_at_1_4km_covers(Sappada_Forni_villa,110).
+cloud_at_1_4km_covers(Sappada_Forni_villa,112).
 
 % Humidity front data:
 % humidty_front(location_1,location_2): between the two locations there's a sharp change 
@@ -45,12 +45,12 @@ temperature_at_at_750m(gemona_stolvizza, 291).
 temperature_at_at_750m(pordenone, 291).
 temperature_at_at_1_4km(sappada_forni_villa, 288).
 temperature_at_at_1_4km(pontebba_tarvisio, 288).
-temperature_at_at_1_4km(lignano_grado, 279).
+temperature_at_at_1_4km(lignano_grado, 277).
 temperature_at_at_1_4km(barcis, 286).
 temperature_at_at_1_4km(udine_palamnova, 281).
 temperature_at_at_1_4km(gorizia, 281).
 temperature_at_at_1_4km(trieste, 280).
-temperature_at_at_1_4km(gemona_stolvizza, 286).
+temperature_at_at_1_4km(gemona_stolvizza, 285).
 temperature_at_at_1_4km(pordenone, 281).
 temperature_at_at_3km(sappada_forni_villa, 276).
 temperature_at_at_3km(pontebba_tarvisio, 276).
@@ -63,11 +63,11 @@ temperature_at_at_3km(gemona_stolvizza, 276).
 temperature_at_at_3km(pordenone, 276).
 temperature_at_at_5_5km(sappada_forni_villa, 260).
 temperature_at_at_5_5km(pontebba_tarvisio, 261).
-temperature_at_at_5_5km(lignano_grado, 260).
+temperature_at_at_5_5km(lignano_grado, 261).
 temperature_at_at_5_5km(barcis, 260).
 temperature_at_at_5_5km(udine_palamnova, 260).
 temperature_at_at_5_5km(gorizia, 261).
-temperature_at_at_5_5km(trieste, 261).
+temperature_at_at_5_5km(trieste, 260).
 temperature_at_at_5_5km(gemona_stolvizza, 260).
 temperature_at_at_5_5km(pordenone, 260).
 temperature_at_at_9km(sappada_forni_villa, 228).
@@ -139,7 +139,7 @@ humidity_percentage_at_9km(pordenone, 0).
 % Temperature data (in kelvin):
 temp_front_1000_hPa(lignano_grado,trieste).
 temp_front_1000_hPa(gorizia,trieste).
-temp_front_925_hPa(lignano_grado,pordenone).
+temp_front_925_hPa(lignano_grado,udine_palamnova).
 temp_front_925_hPa(gorizia,trieste).
 temp_front_850_hPa(sappada_forni_villa,udine_palamnova).
 temp_front_850_hPa(barcis,pordenone).

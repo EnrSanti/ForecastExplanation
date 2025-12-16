@@ -345,6 +345,7 @@ def save_wind_maps(input_path, coordinates, clean_plot):
                 
                 fig, ax = plt.subplots(
                     figsize=(10, 8),
+                    dpi=380,
                     subplot_kw={"projection": ccrs.PlateCarree()},
                 )
                 ax.set_extent(coordinates, crs=ccrs.PlateCarree())
@@ -408,7 +409,7 @@ def save_wind_maps(input_path, coordinates, clean_plot):
                 # ---- CLEAN VS NON-CLEAN ----
                 if clean_plot:
                     txt_path = os.path.join(
-                        out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.txt"
+                        out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.csv"
                     )
                     with open(txt_path, "w") as ftxt:
                         ftxt.write(

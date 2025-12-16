@@ -10,26 +10,26 @@ date_time(2019,11,3,5).
 
 % Cloud coverage data:
 % Cloud_covers(location,cloud_id)
-cloud_at_100m_covers(Gemona_stolvizza,73).
-cloud_at_750m_covers(Udine_Palamnova,71).
-cloud_at_750m_covers(Gorizia,71).
-cloud_at_750m_covers(Gemona_stolvizza,71).
-cloud_at_750m_covers(Pordenone,71).
-cloud_at_1_4km_covers(Sappada_Forni_villa,47).
-cloud_at_1_4km_covers(Barcis,47).
-cloud_at_1_4km_covers(Udine_Palamnova,47).
-cloud_at_1_4km_covers(Gorizia,47).
-cloud_at_1_4km_covers(Trieste,47).
-cloud_at_1_4km_covers(Gemona_stolvizza,47).
-cloud_at_1_4km_covers(Pordenone,47).
-cloud_at_3km_covers(Sappada_Forni_villa,74).
-cloud_at_3km_covers(Pontebba_Tarvisio,74).
-cloud_at_3km_covers(Barcis,74).
-cloud_at_3km_covers(Gemona_stolvizza,74).
+cloud_at_100m_covers(Gemona_stolvizza,80).
+cloud_at_750m_covers(Udine_Palamnova,78).
+cloud_at_750m_covers(Gorizia,78).
+cloud_at_750m_covers(Gemona_stolvizza,78).
+cloud_at_750m_covers(Pordenone,78).
+cloud_at_1_4km_covers(Sappada_Forni_villa,49).
+cloud_at_1_4km_covers(Barcis,49).
+cloud_at_1_4km_covers(Udine_Palamnova,49).
+cloud_at_1_4km_covers(Gorizia,49).
+cloud_at_1_4km_covers(Trieste,49).
+cloud_at_1_4km_covers(Gemona_stolvizza,49).
+cloud_at_1_4km_covers(Pordenone,49).
+cloud_at_3km_covers(Sappada_Forni_villa,77).
+cloud_at_3km_covers(Pontebba_Tarvisio,77).
+cloud_at_3km_covers(Barcis,77).
+cloud_at_3km_covers(Gemona_stolvizza,77).
 
 % Humidity front data:
 % humidty_front(location_1,location_2): between the two locations there's a sharp change 
-hum_front_300_hPa(lignano_grado,pordenone).
+hum_front_300_hPa(lignano_grado,udine_palamnova).
 hum_front_300_hPa(gorizia,pontebba_tarvisio).
 hum_front_300_hPa(gemona_stolvizza,gorizia).
 temperature_at_at_100m(sappada_forni_villa, 295).
@@ -148,7 +148,7 @@ temp_front_1000_hPa(pontebba_tarvisio,sappada_forni_villa).
 temp_front_1000_hPa(lignano_grado,trieste).
 temp_front_1000_hPa(gorizia,trieste).
 temp_front_1000_hPa(gemona_stolvizza,pontebba_tarvisio).
-temp_front_925_hPa(lignano_grado,pordenone).
+temp_front_925_hPa(lignano_grado,udine_palamnova).
 temp_front_925_hPa(gorizia,trieste).
 temp_front_300_hPa(sappada_forni_villa,udine_palamnova).
 temp_front_300_hPa(barcis,sappada_forni_villa).
