@@ -7,6 +7,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from PIL import Image
 import re
+import math
 
 #longmin longmax latmin latmax of FVG and Italy, longmin longmax, latmin latmax
 coordinates=[11,15,44.5,48]
@@ -236,6 +237,64 @@ def frame_index_to_timestamp(index, starting_date, frame_time_interval=1):
     timestamp = starting_date + index * frame_time_interval
     return timestamp.year, timestamp.month, timestamp.day, timestamp.hour
     
+
+
+def segment_direction(x1, y1, x2, y2):
+    dx = x2 - x1
+    dy = y1 - y2  # invert Y because image Y grows downward
+
+    if dx == 0 and dy == 0:
+        raise ValueError("Points must be different")
+
+    # Angle in degrees: 0° = East, CCW positive
+    angle = math.degrees(math.atan2(dy, dx))
+    angle = (angle + 360) % 360
+
+    directions = [
+        "E",   # 0°
+        "NE",  # 45°
+        "N",   # 90°
+        "NW",  # 135°
+        "W",   # 180°
+        "SW",  # 225°
+        "S",   # 270°
+        "SE"   # 315°
+    ]
+
+    index = int((angle + 22.5) // 45) % 8
+    return directions[index]
+
+def generate_cloud_movements(base_path):
+    pattern = r"Frame (\d+), cell (\d+) moved from \(x:\s*([\d.]+),\s*y:([\d.]+)\s*\) to \(x:\s*([\d.]+),\s*y:([\d.]+)\s*\)"
+    for level, suff in folders_suff.items():
+        entry= folder_types[0] + suff
+        full_path = os.path.join(base_path, folder_types[0] + suff)
+        full_str="% format: cloud_moves(cell_id, direction, yyyy, mm, dd, h).\n\n"
+        with open(full_path+"/movements.txt", "r") as f:
+            
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue  # no empty ones 
+                match = re.search(pattern, line)
+                if match:
+                    # Estrazione dei dati
+                    frame_num = match.group(1)
+                    cell_id   = match.group(2)
+                    x_start   = float(match.group(3))
+                    y_start   = float(match.group(4))
+                    x_end     = float(match.group(5))
+                    y_end     = float(match.group(6))
+                    direction = segment_direction(x_start, y_start, x_end, y_end)
+
+                    # Generate facts for this movement
+                    yyyy,mm,dd,h=frame_index_to_timestamp(int(frame_num),starting_date,1)
+                    full_str+=f"{full_path.rsplit('/', 1)[-1]}_moves({cell_id},{direction},{yyyy},{mm},{dd},{h}).\n"
+        
+        path = "reasoning/clouds/" + full_path.rsplit('/', 1)[-1] + "/moving.txt"
+        with open(path, "w") as f:
+            f.write(full_str)
+
 def generate_cloud_facts_over_cities(base_path):
 
     load_locations(coordinates,base_path)
@@ -314,28 +373,48 @@ def rewrite_facts_no_dates(lines):
 
         # Create timestamp only once per frame
         if timestamp is None:
-            timestamp = f"date_time({yyyy},{mm},{dd},{hh})."
+            timestamp = f"date({yyyy},{mm},{dd})."
 
         # Rebuild predicate with remaining args
-        new_pred = f"{pred_name}(" + ",".join(arg_parts) + ")."
+        new_pred = f"{pred_name}(" + (",".join(arg_parts)) + f", {str(hh)})."
         stripped_facts.append(new_pred)
 
     return timestamp, stripped_facts
 
-
+def get_all_dates():
+    
+    pictogram_folder="./reasoning/pictogram_extraction/pictograms/sky"
+    #for eacj file in the folder get the date
+    date_list=[]
+    for filename in sorted(os.listdir(pictogram_folder)):
+        if not filename.lower().endswith((".png")):
+            continue
+        parts = filename.split("_")
+        #file is like 2019_11_01.png
+        #remove .png from last part
+        parts[-1] = parts[-1][:-4]         # '20191101'
+        date_list.append((parts[0],parts[1],parts[2]))
+    
+    return date_list
 def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
     global starting_date
+    date_list=get_all_dates()
+    
     folder_split_merge="./image_processing/fvg/output" #ha le subfolder per ogni livello (considera solo le clouds)
     folder_clouds="./reasoning/clouds" #ha le subfolder per ogni livello
     folder_hum="./reasoning/humidity" #ha le subfolder per ogni livello
     folder_temp="./reasoning/temp" #ha le subfolder per ogni livello
     folder_pictograms="./reasoning/pictogram_extraction/extracted"
-    
+
     output_folder="./reasoning/generated_examples"
+
+    date_list=get_all_dates()
 
     num_frames=None
     cloud_covering_data = None
+    cloud_moving_data = None
     frame_strings = {}
+
     for cloud_folder_name,_ in folder_list_clouds:
         # Build the full path to the cloud folder
         full_cloud_folder = os.path.join(folder_clouds, cloud_folder_name)
@@ -348,19 +427,21 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
             png_files = [f for f in os.listdir(full_cloud_folder) if f.lower().endswith('.png')]
             num_frames = len(png_files)
             cloud_covering_data = {frame_idx: [] for frame_idx in range(num_frames)}
+            cloud_moving_data = {frame_idx: [] for frame_idx in range(num_frames)}
 
             for frame_idx in range(num_frames):
                 y, m, d, h = frame_index_to_timestamp(frame_idx,starting_date)
                 # Format like in your file: yyyy,mm,dd,hh
                 ts_str = f"{y},{m},{d},{h})"
                 frame_strings[frame_idx] = ts_str
-  
+
         #open file "clouds_covering.txt" to get which clouds cover which locations
         cloud_covering_file = os.path.join(full_cloud_folder, "clouds_covering.txt")
+        cloud_moving_file = os.path.join(full_cloud_folder, "moving.txt")
         
                 
         # Precompute frame timestamp strings
-    
+
         # Scan line by line
         with open(cloud_covering_file, 'r') as f:
             for line in f:
@@ -370,9 +451,53 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                         cloud_covering_data[frame_idx].append(line)
                         break  # if a line can only belong to one frame
 
+        with open(cloud_moving_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                for frame_idx, ts_str in frame_strings.items():
+                    if ts_str in line:
+                        cloud_moving_data[frame_idx].append(line)
+                        break  # if a line can only belong to one frame
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     hum_front_data = {frame_idx: [] for frame_idx in range(num_frames)}
     hum_data = {frame_idx: [] for frame_idx in range(num_frames)}
-    
+
     for hum_folder_name,_ in folder_list_hum:
         full_hum_folder = os.path.join(folder_hum, hum_folder_name)
 
@@ -399,7 +524,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                         break  # if a line can only belong to one frame
                     
     temp_data = {frame_idx: [] for frame_idx in range(num_frames)}
-    
+
     for temp_folder_name,_ in folder_list_temp:
         full_temp_folder = os.path.join(folder_temp, temp_folder_name)
 
@@ -416,6 +541,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                     if ts_str in line:
                         hum_front_data[frame_idx].append(line)
                         break  # if a line can only belong to one frame
+
         with open(temp_front_file, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -423,12 +549,13 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                     if ts_str in line:
                         temp_data[frame_idx].append(line)
                         break  # if a line can only belong to one frame
-    
+
     for frame_idx in range(num_frames):
         output_path = os.path.join(output_folder, f"example_frame_{frame_idx:03d}.txt")
         os.makedirs(output_folder, exist_ok=True)
 
         cloud_timestamp, cloud_stripped = rewrite_facts_no_dates(cloud_covering_data[frame_idx])
+        cloud_moving_timestamp, cloud_moving_stripped = rewrite_facts_no_dates(cloud_moving_data[frame_idx])
 
         # Transform the humidity front data
         hum_front_timestamp, hum_front_stripped = rewrite_facts_no_dates(hum_front_data[frame_idx])
@@ -448,7 +575,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         positive_facts="% Example generated data for frame {}\n\n".format(frame_idx)
         positive_facts+="#pos(e1,{ \n\n"
         #open the pictogram file for that date
-        pictogram_file=os.path.join(folder_pictograms,f"pitt_{date_str}_locations.txt")
+        pictogram_file=os.path.join(folder_pictograms,f"{date_str}_locations.txt")
         
         negative_facts=""
         if os.path.isfile(pictogram_file):
@@ -472,54 +599,59 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
 
         context_facts+=timestamp + "\n\n"
         context_facts+="% Cloud coverage data:\n"
-        context_facts+="% Cloud_covers(location,cloud_id)\n"
+        context_facts+="% Cloud_covers(location,cloud_id,hh)\n"
 
         for fact in cloud_stripped:
             context_facts+=fact + "\n"
         context_facts+="\n"
 
+        print("cloud moving stripped:", cloud_moving_stripped)
+        for fact in cloud_moving_stripped:
+            context_facts+=fact + "\n"
+        context_facts+="\n"
+
         context_facts+="% Humidity front data:\n"
-        context_facts+="% humidty_front(location_1,location_2): between the two locations there's a sharp change \n"
+        context_facts+="% humidty_front(location_1,location_2,hh): between the two locations there's a sharp change \n"
 
         for fact in hum_front_stripped:
             context_facts+=fact + "\n"
         context_facts+="\n"
 
-        context_facts+="% hum(location_1,humidity_percentage): the percentage is discretized in 0, 20, 40 ... \n"
+        context_facts+="% hum(location_1,humidity_percentage,hh): the percentage is discretized in 0, 20, 40 ... \n"
         for fact in hum_stripped:
             context_facts+=fact + "\n"
         context_facts+="\n"
 
 
-        context_facts+="% Temperature data (in kelvin):\n"
+        context_facts+="% Temperature data (in kelvin), last parameter is the hour:\n"
         for fact in temp_front_stripped:
             context_facts+=fact + "\n"
         context_facts+="\n"
         context_facts+="}). \n"
 
         background="""
-%general bg rules
+    %general bg rules
 
-# RAINS
-rains_at(X) :- forecasted_rain(X, Y), Y > 0.
-:- rains_at(X), forecasted_rain(X, 0).   % constraint for “only if”
+    # RAINS
+    rains_at(X) :- forecasted_rain(X, Y), Y > 0.
+    :- rains_at(X), forecasted_rain(X, 0).   % constraint for “only if”
 
-# CLOUD COVER (if)
-sunny_at(X) :- forecasted_sky(X, "sunny").
-sunny_at(X) :- forecasted_sky(X, "mostly_clear").
-partially_sunny_at(X) :- forecasted_sky(X, "partly_cloudy").
-covered_at(X) :- forecasted_sky(X, "mostly_cloudy").
-covered_at(X) :- forecasted_sky(X, "cloudy").
+    # CLOUD COVER (if)
+    sunny_at(X) :- forecasted_sky(X, "sunny").
+    sunny_at(X) :- forecasted_sky(X, "mostly_clear").
+    partially_sunny_at(X) :- forecasted_sky(X, "partly_cloudy").
+    covered_at(X) :- forecasted_sky(X, "mostly_cloudy").
+    covered_at(X) :- forecasted_sky(X, "cloudy").
 
-#other implication verse
-:- sunny_at(X), not forecasted_sky(X, "sunny"), not forecasted_sky(X, "mostly_clear").
-:- partially_sunny_at(X), not forecasted_sky(X, "partly_cloudy").
-:- covered_at(X), not forecasted_sky(X, "mostly_cloudy"), not forecasted_sky(X, "cloudy").
+    #other implication verse
+    :- sunny_at(X), not forecasted_sky(X, "sunny"), not forecasted_sky(X, "mostly_clear").
+    :- partially_sunny_at(X), not forecasted_sky(X, "partly_cloudy").
+    :- covered_at(X), not forecasted_sky(X, "mostly_cloudy"), not forecasted_sky(X, "cloudy").
 
-#only one is true
-:- sunny_at(X), partially_sunny_at(X).
-:- sunny_at(X), covered_at(X).
-:- partially_sunny_at(X), covered_at(X).
+    #only one is true
+    :- sunny_at(X), partially_sunny_at(X).
+    :- sunny_at(X), covered_at(X).
+    :- partially_sunny_at(X), covered_at(X).
                     """
         with open(output_path, 'w') as f_out:
             f_out.write(positive_facts)
@@ -568,8 +700,6 @@ def compute_negative_facts(line):
         else:
             return "unkown_sky_at("+city+"). \n"
     return ""
-
-
 
 
 def color_to_humidity(rgb_color, legend_colors, legend_values):

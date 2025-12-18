@@ -224,8 +224,15 @@ def save_temperature_maps(input_path,coordinates, clean_plot):
         cb.set_label(f'Temperature at {lvl} hPa [K]')
         plt.savefig(os.path.join(output_base, f"legend{folders[lvl]}_temp.png"), dpi=380, bbox_inches='tight',pad_inches=0)
         plt.close(fig)
+        cmap_obj = plt.get_cmap(cmap)
+        rgba_min = cmap_obj(norm(vmin))
+        rgba_max = cmap_obj(norm(vmax))
+        rgb255_min = tuple(int(255 * c) for c in rgba_min[:3])
+        rgb255_max = tuple(int(255 * c) for c in rgba_max[:3])
+
         with open(os.path.join(output_base+f"/temp{folders[lvl]}", f"legend{folders[lvl]}_temp.txt"), 'w') as ftxt:
             ftxt.write(f"Temperature range at {lvl} hPa: {vmin:.2f} K to {vmax:.2f} K\n")
+            ftxt.write(f"Respective colors: {rgb255_min}, {rgb255_max}\n")
 
     # ---- PLOT LOOP ----
     for lvl in levels:
@@ -490,6 +497,8 @@ def save_humidity_maps(input_path, coordinates, clean_plot):
         vmin = float(rh_level.min())
         vmax = float(rh_level.max())
 
+        
+
         fig, ax = plt.subplots(figsize=(6,1))
         norm = plt.Normalize(vmin=vmin, vmax=vmax)
         cb = plt.colorbar(
@@ -500,6 +509,15 @@ def save_humidity_maps(input_path, coordinates, clean_plot):
         plt.savefig(os.path.join(output_base, f"legend{folders[lvl]}_humidity.png"),
                     dpi=380, bbox_inches='tight')
         plt.close(fig)
+
+        cmap_obj = plt.get_cmap(cmap)
+        rgba_min = cmap_obj(norm(vmin))
+        rgba_max = cmap_obj(norm(vmax))
+        rgb255_min = tuple(int(255 * c) for c in rgba_min[:3])
+        rgb255_max = tuple(int(255 * c) for c in rgba_max[:3])
+        with open(os.path.join(output_base+f"/humidity{folders[lvl]}", f"legend{folders[lvl]}_hum.txt"), 'w') as ftxt:
+            ftxt.write(f"Humidity range at {lvl} hPa: {vmin:.2f} K to {vmax:.2f} K\n")
+            ftxt.write(f"Respective colors: {rgb255_min}, {rgb255_max}\n")
 
     # ---- PLOT LOOP ----
     for lvl in levels:
@@ -514,12 +532,13 @@ def save_humidity_maps(input_path, coordinates, clean_plot):
                 step_val = int(rh_level['step'].isel(step=j).values)
                 valid_time = base_time + pd.Timedelta(hours=step_val)
 
+            
                 rh_slice = rh_level.isel(time=i, step=j)
                 if not np.isfinite(rh_slice).any():
                     continue
 
                 fig, ax = plt.subplots(figsize=(10,8),
-                                       subplot_kw={'projection': ccrs.PlateCarree()})
+                                    subplot_kw={'projection': ccrs.PlateCarree()})
                 ax.set_extent(coordinates, crs=ccrs.PlateCarree())
                 pcm = ax.pcolormesh(
                     rh_slice['longitude'], rh_slice['latitude'], rh_slice,
@@ -534,5 +553,6 @@ def save_humidity_maps(input_path, coordinates, clean_plot):
                 fname = os.path.join(out_dir, f"humidity_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
                 plt.savefig(fname, dpi=380, bbox_inches='tight', pad_inches=0)
                 plt.close(fig)
+
             gc.collect()    
     print("Finished plotting humidity maps with separate legends per level.")
