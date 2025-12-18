@@ -18,6 +18,7 @@ import logging
 import traceback
 import warnings
 import gc
+import math
 
 
 logging.getLogger("trackpy").setLevel(logging.WARNING)
@@ -27,6 +28,36 @@ DEBUG = False #True would print the circles and search radius
 def overlay_image(path_borders, axs, temp_da):
     img = plt.imread(path_borders)
     axs.imshow(img, extent=(0, temp_da.sizes["x"], temp_da.sizes["y"], 0), alpha=0.6)
+
+def get_blob_positions(trajectories, itime):
+    
+    cells_prev_step = []
+    itime_prev = itime - 1
+    prev_frames_data = trajectories[trajectories["frame"].between(itime_prev, itime_prev)]
+    cells_prev_step = list(prev_frames_data["cell"].unique())
+    
+
+    cells_prev_step = list(cells_prev_step)
+    cell_ids_in_frame = trajectories[trajectories["frame"] == itime]["cell"].unique()
+    # Create necessary mappings and lists
+    
+    all_moved_cells=""
+    print("Considering frame ", itime, " with previous frame ", cells_prev_step)
+    for cell_id in cells_prev_step:
+        print("Checking cell id ", cell_id)
+        if(cell_id in cell_ids_in_frame):
+            #previous positions
+            prev_x=trajectories[((trajectories["frame"] == itime_prev) & (trajectories["cell"]==cell_id))]["x"].iloc[0]
+            prev_y=trajectories[((trajectories["frame"] == itime_prev) & (trajectories["cell"]==cell_id))]["y"].iloc[0]
+            #current positions
+            curr_x=trajectories[((trajectories["frame"] == itime) & (trajectories["cell"]==cell_id))]["x"].iloc[0]
+            curr_y=trajectories[((trajectories["frame"] == itime) & (trajectories["cell"]==cell_id))]["y"].iloc[0]
+            print("curr_x: ", curr_x, " curr_y: ", curr_y, " prev_x: ", prev_x, " prev_y: ", prev_y)
+            all_moved_cells+=f"Frame {itime}, cell {cell_id} moved from (x: {prev_x}, y:{prev_y} ) to (x: {curr_x}, y:{curr_y} )\n"
+    
+    print("Blob movements at frame ", itime, ": ", all_moved_cells)
+    return all_moved_cells
+
 
 #target minimum -> upper
 #target maximum -> lower
@@ -386,8 +417,10 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         plt.close(fig) 
         cells_frames_before.append(cell_ids)
     print("all frames for: ", all_frames_for_cell)
-    #======= SPLITTING AND MERGING ========
+
+    #======= SPLITTING AND MERGING ======== #for tthe clouds
     if(save_split_merges):
+        blob_positions=""
         all_splits_merges=""
         for i, itime in enumerate(range(1, images_no)):
             if(all_segment_labels[itime-1] is None or all_segment_labels[itime] is None):
@@ -409,6 +442,8 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         
             splits,merges=get_splits_merges(extended_overlap_map, trajectories, itime,images_no,gap_features_frames,all_segment_labels[itime],all_segment_labels[itime-1],new_born_at_curr[itime],disappeared_at_curr[itime])
             
+            blob_positions+=get_blob_positions(trajectories, itime)
+            
             if splits != "" or merges !="":
                 all_splits_merges+=splits+merges
                 all_splits_merges+="-------------------\n"
@@ -419,6 +454,8 @@ def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,l
         #save the merge and splits found:
         with open(output_folder+f"/split_merge.txt", "w") as f:
             f.write(str(all_splits_merges))
+        with open(output_folder+f"/movements.txt", "w") as f:
+            f.write(str(blob_positions))
     
     #save the trajectories
     trajectories.to_csv(output_folder+f"/trajectories.csv", index=False)

@@ -1,1 +1,2 @@
-Temperature range at 700 hPa: 265.30 K to 278.99 K
+Temperature range at 700 hPa: 267.89 K to 277.25 K
+Respective colors: (255, 247, 236), (127, 0, 0)

@@ -5,7 +5,7 @@ from image_processing.segment_track import run_tobac_merge_split, run_tobac_fron
 from raw_data.extract_features_nc import save_feature_maps
 from raw_data.cut_long_lat import cut_grib_long_lat
 from reasoning.pictogram_extraction.pictograms_to_ground_truth import generate_ground_truth
-from reasoning.generate_examples import generate_cloud_facts_over_cities, generate_humidity_facts_over_cities,generate_temp_facts_over_cities , merge_into_examples
+from reasoning.generate_examples import generate_cloud_facts_over_cities,generate_cloud_movements, generate_humidity_facts_over_cities,generate_temp_facts_over_cities , merge_into_examples
 from reasoning.get_fronts import init_fronts_generation,generate_fronts_hum,generate_fronts_temp
 
 import iris
@@ -30,7 +30,7 @@ numClusters_clouds = 3
 num_clusters_fronts = 5
 
 #minimum number of pixels for TOBAC (don't consider smaller blobs)
-n_min_threshold_clouds=300
+n_min_threshold_clouds=800
 n_min_threshold_fronts=2000
 
 input_dir_extraction = "./raw_data/data/original_CERRA"
@@ -161,6 +161,7 @@ def run_non_clustered(folders_pref,folder_params,folders_suff,folder_list,folder
 
     
     generate_cloud_facts_over_cities(base_path)
+    generate_cloud_movements(base_path)
     generate_humidity_facts_over_cities(base_path)
     
     starting_date=generate_temp_facts_over_cities(base_path)
@@ -248,6 +249,7 @@ def run_clustered(folders_pref,folder_params,folders_suff,folder_list,folder_lis
 
 
     generate_cloud_facts_over_cities(base_path)
+    generate_cloud_movements(base_path)
     generate_humidity_facts_over_cities(base_path)
 
     starting_date=generate_temp_facts_over_cities(base_path)
