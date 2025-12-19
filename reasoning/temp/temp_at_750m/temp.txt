@@ -3,11 +3,11 @@
 temperature_at_at_750m(sappada_forni_villa, 289, 2019,11,1,1).
 temperature_at_at_750m(pontebba_tarvisio, 289, 2019,11,1,1).
 temperature_at_at_750m(lignano_grado, 286, 2019,11,1,1).
-temperature_at_at_750m(barcis, 286, 2019,11,1,1).
+temperature_at_at_750m(barcis, 287, 2019,11,1,1).
 temperature_at_at_750m(udine_palamnova, 286, 2019,11,1,1).
 temperature_at_at_750m(gorizia, 286, 2019,11,1,1).
 temperature_at_at_750m(trieste, 279, 2019,11,1,1).
-temperature_at_at_750m(gemona_stolvizza, 288, 2019,11,1,1).
+temperature_at_at_750m(gemona_stolvizza, 289, 2019,11,1,1).
 temperature_at_at_750m(pordenone, 289, 2019,11,1,1).
 temperature_at_at_750m(sappada_forni_villa, 289, 2019,11,1,2).
 temperature_at_at_750m(pontebba_tarvisio, 289, 2019,11,1,2).

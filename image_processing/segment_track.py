@@ -42,9 +42,7 @@ def get_blob_positions(trajectories, itime):
     # Create necessary mappings and lists
     
     all_moved_cells=""
-    print("Considering frame ", itime, " with previous frame ", cells_prev_step)
     for cell_id in cells_prev_step:
-        print("Checking cell id ", cell_id)
         if(cell_id in cell_ids_in_frame):
             #previous positions
             prev_x=trajectories[((trajectories["frame"] == itime_prev) & (trajectories["cell"]==cell_id))]["x"].iloc[0]
@@ -52,10 +50,8 @@ def get_blob_positions(trajectories, itime):
             #current positions
             curr_x=trajectories[((trajectories["frame"] == itime) & (trajectories["cell"]==cell_id))]["x"].iloc[0]
             curr_y=trajectories[((trajectories["frame"] == itime) & (trajectories["cell"]==cell_id))]["y"].iloc[0]
-            print("curr_x: ", curr_x, " curr_y: ", curr_y, " prev_x: ", prev_x, " prev_y: ", prev_y)
             all_moved_cells+=f"Frame {itime}, cell {cell_id} moved from (x: {prev_x}, y:{prev_y} ) to (x: {curr_x}, y:{curr_y} )\n"
     
-    print("Blob movements at frame ", itime, ": ", all_moved_cells)
     return all_moved_cells
 
 

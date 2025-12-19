@@ -44,7 +44,8 @@ cloud_at_100m_moves(8,W,2019,11,1,7).
 cloud_at_100m_moves(2,W,2019,11,1,8).
 cloud_at_100m_moves(5,W,2019,11,1,8).
 cloud_at_100m_moves(8,N,2019,11,1,8).
-cloud_at_100m_moves(13,NE,2019,11,1,15).
+cloud_at_100m_moves(2,SW,2019,11,1,11).
+cloud_at_100m_moves(13,E,2019,11,1,15).
 cloud_at_100m_moves(13,E,2019,11,1,16).
 cloud_at_100m_moves(13,SW,2019,11,1,17).
 cloud_at_100m_moves(14,NE,2019,11,1,17).

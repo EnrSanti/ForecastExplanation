@@ -3,6 +3,7 @@
 cloud_at_1_4km_moves(1,E,2019,11,1,2).
 cloud_at_1_4km_moves(3,W,2019,11,1,2).
 cloud_at_1_4km_moves(1,SW,2019,11,1,3).
+cloud_at_1_4km_moves(3,W,2019,11,1,5).
 cloud_at_1_4km_moves(4,NE,2019,11,1,14).
 cloud_at_1_4km_moves(4,NE,2019,11,1,15).
 cloud_at_1_4km_moves(4,E,2019,11,1,16).

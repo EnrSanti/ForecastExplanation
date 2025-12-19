@@ -1,14 +1,15 @@
 % format: cloud_moves(cell_id, direction, yyyy, mm, dd, h).
 
-cloud_at_5_5km_moves(2,S,2019,11,1,16).
-cloud_at_5_5km_moves(2,SE,2019,11,1,17).
+cloud_at_5_5km_moves(2,SE,2019,11,1,16).
+cloud_at_5_5km_moves(2,S,2019,11,1,17).
+cloud_at_5_5km_moves(2,S,2019,11,1,18).
 cloud_at_5_5km_moves(3,E,2019,11,1,18).
 cloud_at_5_5km_moves(3,N,2019,11,1,19).
-cloud_at_5_5km_moves(4,N,2019,11,1,19).
-cloud_at_5_5km_moves(2,NW,2019,11,1,20).
+cloud_at_5_5km_moves(2,S,2019,11,1,19).
+cloud_at_5_5km_moves(6,NW,2019,11,1,20).
 cloud_at_5_5km_moves(8,N,2019,11,1,21).
 cloud_at_5_5km_moves(10,NE,2019,11,1,22).
-cloud_at_5_5km_moves(11,S,2019,11,1,22).
+cloud_at_5_5km_moves(11,SW,2019,11,1,22).
 cloud_at_5_5km_moves(11,SE,2019,11,1,23).
 cloud_at_5_5km_moves(10,NW,2019,11,1,23).
 cloud_at_5_5km_moves(13,E,2019,11,1,23).
