@@ -1,7 +1,7 @@
 % format: cloud_at(location, cloud_id, yyyy, mm, dd, h).
 
-cloud_at_5_5km_covers(Sappada_Forni_villa,5,2019,11,1,19).
-cloud_at_5_5km_covers(Barcis,5,2019,11,1,19).
+cloud_at_5_5km_covers(Sappada_Forni_villa,4,2019,11,1,19).
+cloud_at_5_5km_covers(Barcis,4,2019,11,1,19).
 cloud_at_5_5km_covers(Sappada_Forni_villa,8,2019,11,1,20).
 cloud_at_5_5km_covers(Pontebba_Tarvisio,8,2019,11,1,20).
 cloud_at_5_5km_covers(Lignano_Grado,8,2019,11,1,20).

@@ -1,18 +1,18 @@
 % format: cloud_at(location, cloud_id, yyyy, mm, dd, h).
 
 cloud_at_750m_covers(Pontebba_Tarvisio,4,2019,11,1,3).
-cloud_at_750m_covers(Lignano_Grado,16,2019,11,2,2).
-cloud_at_750m_covers(Lignano_Grado,16,2019,11,2,3).
-cloud_at_750m_covers(Trieste,21,2019,11,2,4).
-cloud_at_750m_covers(Trieste,16,2019,11,2,5).
-cloud_at_750m_covers(Pordenone,16,2019,11,2,5).
-cloud_at_750m_covers(Lignano_Grado,16,2019,11,2,6).
-cloud_at_750m_covers(Udine_Palamnova,16,2019,11,2,6).
-cloud_at_750m_covers(Gorizia,16,2019,11,2,6).
-cloud_at_750m_covers(Trieste,16,2019,11,2,6).
-cloud_at_750m_covers(Pordenone,16,2019,11,2,6).
-cloud_at_750m_covers(Lignano_Grado,16,2019,11,2,7).
-cloud_at_750m_covers(Udine_Palamnova,16,2019,11,2,7).
-cloud_at_750m_covers(Gorizia,16,2019,11,2,7).
-cloud_at_750m_covers(Gemona_stolvizza,16,2019,11,2,7).
-cloud_at_750m_covers(Pordenone,16,2019,11,2,7).
+cloud_at_750m_covers(Lignano_Grado,15,2019,11,2,2).
+cloud_at_750m_covers(Lignano_Grado,15,2019,11,2,3).
+cloud_at_750m_covers(Trieste,20,2019,11,2,4).
+cloud_at_750m_covers(Trieste,15,2019,11,2,5).
+cloud_at_750m_covers(Pordenone,15,2019,11,2,5).
+cloud_at_750m_covers(Lignano_Grado,15,2019,11,2,6).
+cloud_at_750m_covers(Udine_Palamnova,15,2019,11,2,6).
+cloud_at_750m_covers(Gorizia,15,2019,11,2,6).
+cloud_at_750m_covers(Trieste,15,2019,11,2,6).
+cloud_at_750m_covers(Pordenone,15,2019,11,2,6).
+cloud_at_750m_covers(Lignano_Grado,15,2019,11,2,7).
+cloud_at_750m_covers(Udine_Palamnova,15,2019,11,2,7).
+cloud_at_750m_covers(Gorizia,15,2019,11,2,7).
+cloud_at_750m_covers(Gemona_stolvizza,15,2019,11,2,7).
+cloud_at_750m_covers(Pordenone,15,2019,11,2,7).

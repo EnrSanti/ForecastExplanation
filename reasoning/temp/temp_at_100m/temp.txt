@@ -9,7 +9,7 @@ temperature_at_at_100m(gorizia, 294, 2019,11,1,1).
 temperature_at_at_100m(trieste, 294, 2019,11,1,1).
 temperature_at_at_100m(gemona_stolvizza, 291, 2019,11,1,1).
 temperature_at_at_100m(pordenone, 294, 2019,11,1,1).
-temperature_at_at_100m(sappada_forni_villa, 288, 2019,11,1,2).
+temperature_at_at_100m(sappada_forni_villa, 286, 2019,11,1,2).
 temperature_at_at_100m(pontebba_tarvisio, 294, 2019,11,1,2).
 temperature_at_at_100m(lignano_grado, 294, 2019,11,1,2).
 temperature_at_at_100m(barcis, 285, 2019,11,1,2).
@@ -45,7 +45,7 @@ temperature_at_at_100m(gorizia, 294, 2019,11,1,5).
 temperature_at_at_100m(trieste, 294, 2019,11,1,5).
 temperature_at_at_100m(gemona_stolvizza, 294, 2019,11,1,5).
 temperature_at_at_100m(pordenone, 294, 2019,11,1,5).
-temperature_at_at_100m(sappada_forni_villa, 289, 2019,11,1,6).
+temperature_at_at_100m(sappada_forni_villa, 290, 2019,11,1,6).
 temperature_at_at_100m(pontebba_tarvisio, 294, 2019,11,1,6).
 temperature_at_at_100m(lignano_grado, 294, 2019,11,1,6).
 temperature_at_at_100m(barcis, 291, 2019,11,1,6).
@@ -165,7 +165,7 @@ temperature_at_at_100m(pordenone, 294, 2019,11,1,18).
 temperature_at_at_100m(sappada_forni_villa, 294, 2019,11,1,19).
 temperature_at_at_100m(pontebba_tarvisio, 294, 2019,11,1,19).
 temperature_at_at_100m(lignano_grado, 294, 2019,11,1,19).
-temperature_at_at_100m(barcis, 294, 2019,11,1,19).
+temperature_at_at_100m(barcis, 293, 2019,11,1,19).
 temperature_at_at_100m(udine_palamnova, 294, 2019,11,1,19).
 temperature_at_at_100m(gorizia, 294, 2019,11,1,19).
 temperature_at_at_100m(trieste, 294, 2019,11,1,19).

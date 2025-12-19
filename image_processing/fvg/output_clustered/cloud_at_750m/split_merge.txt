@@ -10,15 +10,15 @@ Cell 5 split but also remained at frame 3
 Cell 1 changed (SPLIT) into 'new' cell 8 at frame 4 (according to tobac)
 Cell 1 split but also remained at frame 4
 -------------------
-Cell 13 changed (MERGE) into cell 12 at frame 16 (according to tobac)
+Cell 12 changed (MERGE) into cell 11 at frame 16 (according to tobac)
 -------------------
-Cell 18 changed (MERGE) into cell 19 at frame 24 (according to tobac)
+Cell 17 changed (MERGE) into cell 18 at frame 24 (according to tobac)
 -------------------
-Cell 19 changed (MERGE) into cell 21 at frame 27 (according to tobac)
+Cell 18 changed (MERGE) into cell 20 at frame 27 (according to tobac)
 -------------------
-Cell 22 changed (MERGE) into cell 17 at frame 28 (according to tobac)
+Cell 21 changed (MERGE) into cell 16 at frame 28 (according to tobac)
 -------------------
-Cell 11 changed (MERGE) into cell 15 at frame 29 (according to tobac)
+Cell 10 changed (MERGE) into cell 14 at frame 29 (according to tobac)
 -------------------
-Cell 24 changed (MERGE) into cell 16 at frame 30 (according to tobac)
+Cell 10 changed (MERGE) into cell 15 at frame 30 (according to tobac)
 -------------------

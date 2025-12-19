@@ -383,7 +383,8 @@ def extract_date_from_filename(filename):
     Returns a tuple of integers: (year, month, day)
     If no date is found, returns None.
     """
-    match = re.search(r'(\d{4})_(\d{2})_(\d{2})', filename)
+    
+    match = re.search(r'(\d{4})_(\d{1,2})_(\d{1,2})', filename)
     if match:
         year, month, day = map(int, match.groups())
         return year, month, day

@@ -1,9 +1,8 @@
 % format: cloud_moves(cell_id, direction, yyyy, mm, dd, h).
 
-cloud_at_3km_moves(1,NE,2019,11,1,12).
-cloud_at_3km_moves(2,NE,2019,11,1,13).
 cloud_at_3km_moves(1,NE,2019,11,1,13).
-cloud_at_3km_moves(2,N,2019,11,1,14).
+cloud_at_3km_moves(2,NE,2019,11,1,13).
+cloud_at_3km_moves(1,N,2019,11,1,14).
 cloud_at_3km_moves(3,W,2019,11,1,15).
 cloud_at_3km_moves(3,NE,2019,11,1,16).
 cloud_at_3km_moves(4,SE,2019,11,1,17).
@@ -34,6 +33,6 @@ cloud_at_3km_moves(17,E,2019,11,2,5).
 cloud_at_3km_moves(19,N,2019,11,2,6).
 cloud_at_3km_moves(17,S,2019,11,2,6).
 cloud_at_3km_moves(19,SW,2019,11,2,7).
-cloud_at_3km_moves(21,SW,2019,11,2,7).
+cloud_at_3km_moves(21,S,2019,11,2,7).
 cloud_at_3km_moves(22,N,2019,11,2,7).
 cloud_at_3km_moves(24,NE,2019,11,2,7).

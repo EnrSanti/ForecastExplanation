@@ -1,7 +1,10 @@
-Cell 5 changed (SPLIT) into 'new' cell 8 at frame 19 (according to tobac)
+Cell 3 changed (SPLIT) into 'new' cell 6 at frame 18 (according to tobac)
+Cell 3 split but also remained at frame 18
+-------------------
+Cell 4 changed (SPLIT) into 'new' cell 8 at frame 19 (according to tobac)
+Cell 2 merged into 8 at frame 19
+Cell 4 merged into 8 at frame 19
 Cell 5 merged into 8 at frame 19
-Cell 6 merged into 8 at frame 19
-Cell 7 merged into 8 at frame 19
 -------------------
 Cell 8 changed (SPLIT) into 'new' cell 9 at frame 20 (according to tobac)
 Cell 8 split but also remained at frame 20

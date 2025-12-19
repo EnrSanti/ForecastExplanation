@@ -156,7 +156,7 @@ humidity_percentage_at_1_4km(pordenone, 40, 2019,11,1,17).
 humidity_percentage_at_1_4km(sappada_forni_villa, 20, 2019,11,1,18).
 humidity_percentage_at_1_4km(pontebba_tarvisio, 60, 2019,11,1,18).
 humidity_percentage_at_1_4km(lignano_grado, 100, 2019,11,1,18).
-humidity_percentage_at_1_4km(barcis, 40, 2019,11,1,18).
+humidity_percentage_at_1_4km(barcis, 20, 2019,11,1,18).
 humidity_percentage_at_1_4km(udine_palamnova, 100, 2019,11,1,18).
 humidity_percentage_at_1_4km(gorizia, 100, 2019,11,1,18).
 humidity_percentage_at_1_4km(trieste, 100, 2019,11,1,18).
@@ -173,7 +173,7 @@ humidity_percentage_at_1_4km(gemona_stolvizza, 40, 2019,11,1,19).
 humidity_percentage_at_1_4km(pordenone, 0, 2019,11,1,19).
 humidity_percentage_at_1_4km(sappada_forni_villa, 20, 2019,11,1,20).
 humidity_percentage_at_1_4km(pontebba_tarvisio, 60, 2019,11,1,20).
-humidity_percentage_at_1_4km(lignano_grado, 40, 2019,11,1,20).
+humidity_percentage_at_1_4km(lignano_grado, 20, 2019,11,1,20).
 humidity_percentage_at_1_4km(barcis, 20, 2019,11,1,20).
 humidity_percentage_at_1_4km(udine_palamnova, 20, 2019,11,1,20).
 humidity_percentage_at_1_4km(gorizia, 60, 2019,11,1,20).
@@ -190,7 +190,7 @@ humidity_percentage_at_1_4km(trieste, 60, 2019,11,1,21).
 humidity_percentage_at_1_4km(gemona_stolvizza, 20, 2019,11,1,21).
 humidity_percentage_at_1_4km(pordenone, 0, 2019,11,1,21).
 humidity_percentage_at_1_4km(sappada_forni_villa, 40, 2019,11,1,22).
-humidity_percentage_at_1_4km(pontebba_tarvisio, 20, 2019,11,1,22).
+humidity_percentage_at_1_4km(pontebba_tarvisio, 40, 2019,11,1,22).
 humidity_percentage_at_1_4km(lignano_grado, 0, 2019,11,1,22).
 humidity_percentage_at_1_4km(barcis, 40, 2019,11,1,22).
 humidity_percentage_at_1_4km(udine_palamnova, 0, 2019,11,1,22).
