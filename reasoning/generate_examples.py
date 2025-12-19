@@ -324,7 +324,7 @@ def generate_cloud_facts_over_cities(base_path):
                         cloud_at_string=f"{full_path.rsplit('/', 1)[-1]}"
                         loc_lower = location.lower().replace(" ", "_")
                        
-                        full_str+=f"{cloud_at_string}_covers({location},{cell_id},{yyyy},{mm},{dd},{h}).\n"
+                        full_str+=f"{cloud_at_string}_covers({loc_lower},{cell_id},{yyyy},{mm},{dd},{h}).\n"
 
             path = "reasoning/clouds/" + full_path.rsplit('/', 1)[-1] + "/clouds_covering.txt"
             with open(path, "w") as f:
