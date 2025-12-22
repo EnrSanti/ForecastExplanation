@@ -251,14 +251,14 @@ def segment_direction(x1, y1, x2, y2):
     angle = (angle + 360) % 360
 
     directions = [
-        "E",   # 0°
-        "NE",  # 45°
-        "N",   # 90°
-        "NW",  # 135°
-        "W",   # 180°
-        "SW",  # 225°
-        "S",   # 270°
-        "SE"   # 315°
+        "e",   # 0°
+        "ne",  # 45°
+        "n",   # 90°
+        "nw",  # 135°
+        "w",   # 180°
+        "sw",  # 225°
+        "s",   # 270°
+        "se"   # 315°
     ]
 
     index = int((angle + 22.5) // 45) % 8
@@ -373,7 +373,7 @@ def rewrite_facts_no_dates(lines):
 
         # Create timestamp only once per frame
         if timestamp is None:
-            timestamp = f"date({yyyy},{mm},{dd})."
+            timestamp = f"% date({yyyy},{mm},{dd})."
 
         # Rebuild predicate with remaining args
         new_pred = f"{pred_name}(" + (",".join(arg_parts)) + f", {str(hh)})."
@@ -437,20 +437,17 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         #open file "clouds_covering.txt" to get which clouds cover which locations
         cloud_covering_file = os.path.join(full_cloud_folder, "clouds_covering.txt")
         cloud_moving_file = os.path.join(full_cloud_folder, "moving.txt")
-        
+        print("Processing cloud folder:", cloud_covering_file)
                 
         # Precompute frame timestamp strings
 
-        print("frame strings ", frame_strings)
         print("date_days ", date_list)
         # Scan line by line
         with open(cloud_covering_file, 'r') as f:
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
-                    print("line: ", line, " ts_str: ", ts_str)
                     if ts_str in line:
-                        print("APPEND \n")
                         cloud_covering_data[date_day].append(line)
                         break  # if a line can only belong to one frame
 
@@ -462,8 +459,8 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                     if ts_str in line:
                         cloud_moving_data[date_day].append(line)
                         break  # if a line can only belong to one frame
-
-
+       
+    '''
     hum_front_data = {date: [] for date in date_list}
     hum_data = {date: [] for date in date_list}
 
@@ -519,11 +516,11 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                         temp_data[date_day].append(line)
                         break  # if a line can only belong to one frame
 
-
+    '''
     for date in date_list:
 
         y, m, d = date
-        output_path = os.path.join(output_folder, f"example_day_{y}_{m}_{d}.txt")
+        output_path = os.path.join(output_folder, f"example_day_{y}_{m}_{d}.las")
 
         os.makedirs(output_folder, exist_ok=True)
         
@@ -531,17 +528,17 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         cloud_moving_timestamp, cloud_moving_stripped = rewrite_facts_no_dates(cloud_moving_data[date])
 
         # Transform the humidity front data
-        hum_front_timestamp, hum_front_stripped = rewrite_facts_no_dates(hum_front_data[date])
+        #um_front_timestamp, hum_front_stripped = rewrite_facts_no_dates(hum_front_data[date])
 
         # Transform the temperature data
-        temp_front_timestamp, temp_front_stripped = rewrite_facts_no_dates(temp_data[date])
+        #temp_front_timestamp, temp_front_stripped = rewrite_facts_no_dates(temp_data[date])
 
-        hum_timestamp, hum_stripped = rewrite_facts_no_dates(hum_data[date])
+        #hum_timestamp, hum_stripped = rewrite_facts_no_dates(hum_data[date])
 
 
         # Determine which timestamp to use (they MUST be the same)
         # If some datasets are empty, pick first non-empty
-        timestamp = cloud_timestamp or hum_timestamp or temp_front_timestamp or hum_front_timestamp
+        timestamp = cloud_timestamp #or hum_timestamp or temp_front_timestamp or hum_front_timestamp
         
         #get the date as yyyy_mm_dd
         date_str = f"{y}_{m}_{d}"
@@ -551,23 +548,28 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         #open the pictogram file for that date
         pictogram_file=os.path.join(folder_pictograms,f"{date_str}_locations.txt")
         
-        negative_facts=""
+        negative_facts = []
+
         if os.path.isfile(pictogram_file):
             with open(pictogram_file, 'r') as f_picto:
                 pictogram_lines = f_picto.readlines()
-                positive_facts+="".join(pictogram_lines)+"\n"
+                print("pictogram lines:", pictogram_lines)
+                positive_facts += "".join(pictogram_lines) + "\n"
+
                 for line in pictogram_lines:
-                    line=line.strip()
-                    negative_facts+=compute_negative_facts(line)
-        positive_facts+="}, \n"
+                    line = line.strip()
+                    negative_facts.append(compute_negative_facts(line))
+        #print(f"pictogram file {pictogram_file} positive facts for day:{date}: {positive_facts}")
+        positive_facts+="},\n"
+        negative_facts = "".join(negative_facts).rstrip(", \n")
 
         excluded_facts="{\n"
-
+        #print("negative facts:", negative_facts)
         excluded_facts+=negative_facts
 
 
 
-        excluded_facts+="},\n"
+        excluded_facts+="\n},\n"
 
         context_facts="{\n"
 
@@ -579,7 +581,6 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
             context_facts+=fact + "\n"
         context_facts+="\n"
 
-        print("cloud moving stripped:", cloud_moving_stripped)
         for fact in cloud_moving_stripped:
             context_facts+=fact + "\n"
         context_facts+="\n"
@@ -587,7 +588,8 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         context_facts+="% Humidity front data:\n"
         context_facts+="% humidty_front(location_1,location_2,hh): between the two locations there's a sharp change \n"
 
-        for fact in hum_front_stripped:
+        '''
+        for in hum_front_stripped:
             context_facts+=fact + "\n"
         context_facts+="\n"
 
@@ -601,31 +603,158 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         for fact in temp_front_stripped:
             context_facts+=fact + "\n"
         context_facts+="\n"
+        '''
         context_facts+="}). \n"
-
+        
+ 
         background="""
 %general bg rules
 
-# RAINS
-rains_at(X) :- forecasted_rain(X, Y), Y > 0.
-:- rains_at(X), forecasted_rain(X, 0).   % constraint for “only if”
+%RAINS
+%rains_at(X) :- forecasted_rain(X, Y), Y > 0.
+%:- rains_at(X), forecasted_rain(X, 0).   % constraint for “only if”
 
-# CLOUD COVER (if)
+%CLOUD COVER (if)
 sunny_at(X) :- forecasted_sky(X, "sunny").
 sunny_at(X) :- forecasted_sky(X, "mostly_clear").
 partially_sunny_at(X) :- forecasted_sky(X, "partly_cloudy").
 covered_at(X) :- forecasted_sky(X, "mostly_cloudy").
 covered_at(X) :- forecasted_sky(X, "cloudy").
 
-#other implication verse
+%other implication verse
 :- sunny_at(X), not forecasted_sky(X, "sunny"), not forecasted_sky(X, "mostly_clear").
 :- partially_sunny_at(X), not forecasted_sky(X, "partly_cloudy").
 :- covered_at(X), not forecasted_sky(X, "mostly_cloudy"), not forecasted_sky(X, "cloudy").
 
-#only one is true
+%only one is true
 :- sunny_at(X), partially_sunny_at(X).
 :- sunny_at(X), covered_at(X).
 :- partially_sunny_at(X), covered_at(X).
+
+
+cloud(C,L,H) :- cloud_at_100m_covers(C,_,H),  L=100.
+cloud(C,L,H) :- cloud_at_750m_covers(C,_,H),  L=750.
+cloud(C,L,H) :- cloud_at_1_4km_covers(C,_,H), L=1400.
+cloud(C,L,H) :- cloud_at_3km_covers(C,_,H),   L=3000.
+cloud(C,L,H) :- cloud_at_5_5km_covers(C,_,H), L=5500.
+cloud(C,L,H) :- cloud_at_9km_covers(C,_,H),   L=9000.
+
+covered_at_hour(C,H) :-
+    cloud(C,L1,H),
+    cloud(C,L2,H),
+    L1 != L2.
+
+city_covered_at_least(C,2) :-
+    covered_hour(C,H1),
+    covered_hour(C,H2),
+    H1 != H2.
+
+city_covered_at_least(C,3) :-
+    covered_hour(C,H1),
+    covered_hour(C,H2),
+    covered_hour(C,H3),
+    H1 != H2, H1 != H3, H2 != H3.
+
+city_covered_at_least(C,4) :-
+    covered_at_hour(C,H1),
+    covered_at_hour(C,H2),
+    covered_at_hour(C,H3),
+    covered_at_hour(C,H4),
+    H1 != H2, H1 != H3, H1 != H4,
+    H2 != H3, H2 != H4,
+    H3 != H4.
+
+city_covered_at_least(C,5) :-
+    covered_at_hour(C,H1),
+    covered_at_hour(C,H2),
+    covered_at_hour(C,H3),
+    covered_at_hour(C,H4),
+    covered_at_hour(C,H5),
+    H1 != H2, H1 != H3, H1 != H4, H1 != H5,
+    H2 != H3, H2 != H4, H2 != H5,
+    H3 != H4, H3 != H5,
+    H4 != H5.
+
+city_covered_at_least(C,6) :-
+    covered_at_hour(C,H1),
+    covered_at_hour(C,H2),
+    covered_at_hour(C,H3),
+    covered_at_hour(C,H4),
+    covered_at_hour(C,H5),
+    covered_at_hour(C,H6),
+    H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6,
+    H2 != H3, H2 != H4, H2 != H5, H2 != H6,
+    H3 != H4, H3 != H5, H3 != H6,
+    H4 != H5, H4 != H6,
+    H5 != H6.
+
+city_covered_at_least(C,7) :-
+    covered_at_hour(C,H1),
+    covered_at_hour(C,H2),
+    covered_at_hour(C,H3),
+    covered_at_hour(C,H4),
+    covered_at_hour(C,H5),
+    covered_at_hour(C,H6),
+    covered_at_hour(C,H7),
+    H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6, H1 != H7,
+    H2 != H3, H2 != H4, H2 != H5, H2 != H6, H2 != H7,
+    H3 != H4, H3 != H5, H3 != H6, H3 != H7,
+    H4 != H5, H4 != H6, H4 != H7,
+    H5 != H6, H5 != H7,
+    H6 != H7.
+
+
+
+city_covered_at_least(C,8) :-
+    covered_at_hour(C,H1),
+    covered_at_hour(C,H2),
+    covered_at_hour(C,H3),
+    covered_at_hour(C,H4),
+    covered_at_hour(C,H5),
+    covered_at_hour(C,H6),
+    covered_at_hour(C,H7),
+    covered_at_hour(C,H8),
+
+    H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6, H1 != H7, H1 != H8,
+    H2 != H3, H2 != H4, H2 != H5, H2 != H6, H2 != H7, H2 != H8,
+    H3 != H4, H3 != H5, H3 != H6, H3 != H7, H3 != H8,
+    H4 != H5, H4 != H6, H4 != H7, H4 != H8,
+    H5 != H6, H5 != H7, H5 != H8,
+    H6 != H7, H6 != H8,
+    H7 != H8.
+
+time(0..23).
+                    
+location(sappada_forni_villa).
+location(pontebba_tarvisio).
+location(lignano_grado).
+location(barcis).
+location(udine_palamnova).
+location(gorizia).
+location(trieste).
+location(gemona_stolvizza).
+location(pordenone).
+
+coverage("mostly_cloudy").
+coverage("partly_cloudy").
+coverage("small_cloud").
+coverage("mostly_clear").
+coverage("cloud").
+coverage("cloudy").
+coverage("sunny").
+%coverage("ND").
+
+#maxv(3).
+#modeh(forecasted_sky(var(location),var(coverage))).
+#modeh(forecasted_sky(const(location),var(coverage))).
+#modeb(city_covered_at_least(var(location),2)).
+#modeb(city_covered_at_least(var(location),3)).
+#modeb(city_covered_at_least(var(location),8)).
+
+#modeb(not city_covered_at_least(var(location),2)).
+#modeb(not city_covered_at_least(var(location),3)).
+#modeb(not city_covered_at_least(var(location),8)).
+
                     """
         with open(output_path, 'w') as f_out:
             f_out.write(positive_facts)
@@ -652,11 +781,11 @@ def compute_negative_facts(line):
         try:
             value = int(raw_value)  # value is numeric
             if(value != 0):
-                return "sunny_at("+city+"). \n"
+                return "sunny_at("+city+"), \n"
             else:
-                return "rains_at("+city+"). \n"
+                return "rains_at("+city+"), \n"
         except:
-            return "unkown_rain_at("+city+"). \n"
+            return "unkown_rain_at("+city+"), \n"
     # Case 2: forecasted_sky(..., "string")
     else:
         # Remove surrounding quotes if present
@@ -666,13 +795,13 @@ def compute_negative_facts(line):
             value = raw_value
         
         if value == "sunny" or value == "mostly_clear":
-            return "partially_sunny_at("+city+"). \n"+"covered_at("+city+"). \n"
+            return "partially_sunny_at("+city+"), \n"+"covered_at("+city+"), \n"
         elif value == "partly_cloudy":
-            return "sunny_at("+city+"). \n"+"covered_at("+city+"). \n"
+            return "sunny_at("+city+"), \n"+"covered_at("+city+"), \n"
         elif value == "mostly_cloudy" or value == "cloudy":
-            return "sunny_at("+city+"). \n"+"partially_sunny_at("+city+"). \n"
+            return "sunny_at("+city+"), \n"+"partially_sunny_at("+city+"), \n"
         else:
-            return "unkown_sky_at("+city+"). \n"
+            return "unkown_sky_at("+city+"), \n"
     return ""
 
 

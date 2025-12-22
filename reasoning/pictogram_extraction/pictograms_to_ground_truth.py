@@ -347,11 +347,8 @@ def icon_name_to_rain_level(icon_name):
     match = re.search(r'rain_([1-4]|6)', icon_name)
     if match:
         return int(match.group(1))
-    
-    match = re.search(r'no_rain', icon_name)
-    if match:
-        return 0
-    return "atom_ND"
+    return 0
+    return 0
 
 def icon_name_to_sky_level(icon_name):
     """
@@ -443,24 +440,31 @@ def generate_ground_truth():
 
         yyyy,mm,dd=extract_date_from_filename(img_path)
         with open(txt_path, 'w') as f:
-            f.write(f"%% Format: forecasted_rain(location, drops_in_pictogram).\n")
-            f.write(f"%% Format: forecasted_sky(location, description).\n")
-            f.write(f'date({yyyy},{mm},{dd}).\n\n')
+            #f.write(f"%% Format: forecasted_rain(location, drops_in_pictogram).\n")
+            #f.write(f"%% Format: forecasted_sky(location, description).\n")
+            f.write(f'% date({yyyy},{mm},{dd}),\n\n')
+
+            lines = []
 
             for loc in all_locations:
                 loc_lower = loc.lower().replace(" ", "_")
-                if(loc in detections):
-                    det= detections[loc]
-                    x, y, w, h = det["bbox"]
-                    name = det["type"]
-                    icon_name = os.path.splitext(name)[0]
-                    print(loc)
-                    f.write(f'forecasted_rain({loc_lower}, {icon_name_to_rain_level(icon_name)}). \n') #,{yyyy},{mm},{dd}
-                    f.write(f'forecasted_sky({loc_lower}, "{icon_name_to_sky_level(icon_name)}"). \n') #,{yyyy},{mm},{dd}
-                else:
-                    f.write(f'forecasted_rain({loc_lower}, atom_ND). \n') #,{yyyy},{mm},{dd}
-                    f.write(f'forecasted_sky({loc_lower}, "ND"). \n') #,{yyyy},{mm},{dd}
 
+                if loc in detections:
+                    det = detections[loc]
+                    icon_name = os.path.splitext(det["type"])[0]
+                    #DONT ADD RAIN FOR NOW
+                    #lines.append(
+                    #    f'forecasted_rain({loc_lower}, {icon_name_to_rain_level(icon_name)})'
+                    #)
+                    lines.append(
+                        f'forecasted_sky({loc_lower}, "{icon_name_to_sky_level(icon_name)}")'
+                    )
+                else:
+                    #lines.append(f'forecasted_rain({loc_lower}, atom_ND)')
+                    lines.append(f'forecasted_sky({loc_lower}, "ND")')
+
+            f.write(",\n".join(lines))
+            
         visualize_detections(img_path, detections, final_img_path)
 
         print(f"  Saved: {txt_path}, {final_img_path}\n")
