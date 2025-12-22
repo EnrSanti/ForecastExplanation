@@ -1,22 +1,11 @@
-%% Format: forecasted_rain(location, drops_in_pictogram).
-%% Format: forecasted_sky(location, description).
-date(2019,11,1).
+% date(2019,11,1),
 
-forecasted_rain(sappada_forni_villa, atom_ND). 
-forecasted_sky(sappada_forni_villa, "mostly_clear"). 
-forecasted_rain(pontebba_tarvisio, atom_ND). 
-forecasted_sky(pontebba_tarvisio, "partly_cloudy"). 
-forecasted_rain(lignano_grado, atom_ND). 
-forecasted_sky(lignano_grado, "mostly_clear"). 
-forecasted_rain(barcis, atom_ND). 
-forecasted_sky(barcis, "mostly_clear"). 
-forecasted_rain(udine_palamnova, atom_ND). 
-forecasted_sky(udine_palamnova, "mostly_clear"). 
-forecasted_rain(gorizia, atom_ND). 
-forecasted_sky(gorizia, "mostly_clear"). 
-forecasted_rain(trieste, atom_ND). 
-forecasted_sky(trieste, "mostly_clear"). 
-forecasted_rain(gemona_stolvizza, atom_ND). 
-forecasted_sky(gemona_stolvizza, "mostly_clear"). 
-forecasted_rain(pordenone, atom_ND). 
-forecasted_sky(pordenone, "mostly_clear"). 
+forecasted_sky(sappada_forni_villa, "mostly_clear"),
+forecasted_sky(pontebba_tarvisio, "partly_cloudy"),
+forecasted_sky(lignano_grado, "mostly_clear"),
+forecasted_sky(barcis, "mostly_clear"),
+forecasted_sky(udine_palamnova, "mostly_clear"),
+forecasted_sky(gorizia, "mostly_clear"),
+forecasted_sky(trieste, "mostly_clear"),
+forecasted_sky(gemona_stolvizza, "mostly_clear"),
+forecasted_sky(pordenone, "mostly_clear")

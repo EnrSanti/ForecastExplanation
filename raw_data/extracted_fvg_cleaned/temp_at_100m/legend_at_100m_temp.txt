@@ -1,2 +1,2 @@
-Temperature range at 1000 hPa: 273.31 K to 296.73 K
+Temperature range at 1000 hPa: 276.21 K to 300.26 K
 Respective colors: (255, 247, 236), (127, 0, 0)
