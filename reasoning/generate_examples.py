@@ -373,7 +373,7 @@ def rewrite_facts_no_dates(lines):
 
         # Create timestamp only once per frame
         if timestamp is None:
-            timestamp = f"% date({yyyy},{mm},{dd})."
+            timestamp = f"date({yyyy},{mm},{dd})."
 
         # Rebuild predicate with remaining args
         new_pred = f"{pred_name}(" + (",".join(arg_parts)) + f", {str(hh)})."
@@ -573,7 +573,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
 
         context_facts="{\n"
 
-        #context_facts+=timestamp + "\n\n"
+        context_facts+=timestamp + " %to drive the season (winter, spring, summer, autumn)\n\n"
         context_facts+="% Cloud coverage data:\n"
         context_facts+="% Cloud_covers(location,cloud_id,hh)\n"
 
@@ -607,7 +607,14 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         context_facts+="}). \n"
         
  
-        background="""
+        with open(output_path, 'w') as f_out:
+            f_out.write(positive_facts)
+            f_out.write(excluded_facts)
+            f_out.write(context_facts)
+
+        print(f"Wrote example data to {output_path}")
+
+    background="""
 %general bg rules
 
 %RAINS
@@ -639,63 +646,75 @@ cloud(C,L,H) :- cloud_at_3km_covers(C,_,H),   L=3000.
 cloud(C,L,H) :- cloud_at_5_5km_covers(C,_,H), L=5500.
 cloud(C,L,H) :- cloud_at_9km_covers(C,_,H),   L=9000.
 
-covered_at_hour(C,H) :-
-    cloud(C,L1,H),
-    cloud(C,L2,H),
-    L1 != L2.
 
-city_covered_at_least(C,2) :-
-    covered_hour(C,H1),
-    covered_hour(C,H2),
+covered_at_hour_single_lv(C,H) :-
+    cloud(C,L1,H).
+
+city_covered_at_least_single(C,2) :-
+    covered_at_hour_single_lv(C,H1),
+    covered_at_hour_single_lv(C,H2),
     H1 != H2.
 
-city_covered_at_least(C,3) :-
-    covered_hour(C,H1),
-    covered_hour(C,H2),
-    covered_hour(C,H3),
+city_covered_at_least_single(C,3) :-
+    covered_at_hour_single_lv(C,H1),
+    covered_at_hour_single_lv(C,H2),
+    covered_at_hour_single_lv(C,H3),
     H1 != H2, H1 != H3, H2 != H3.
 
-city_covered_at_least(C,4) :-
-    covered_at_hour(C,H1),
-    covered_at_hour(C,H2),
-    covered_at_hour(C,H3),
-    covered_at_hour(C,H4),
+city_covered_at_least_single(C,4) :-
+    covered_at_hour_single_lv(C,H1),
+    covered_at_hour_single_lv(C,H2),
+    covered_at_hour_single_lv(C,H3),
+    covered_at_hour_single_lv(C,H4),
     H1 != H2, H1 != H3, H1 != H4,
     H2 != H3, H2 != H4,
     H3 != H4.
 
-city_covered_at_least(C,5) :-
-    covered_at_hour(C,H1),
-    covered_at_hour(C,H2),
-    covered_at_hour(C,H3),
-    covered_at_hour(C,H4),
-    covered_at_hour(C,H5),
+
+city_covered_at_least_single(C,5) :-
+    covered_at_hour_single_lv(C,H1),
+    covered_at_hour_single_lv(C,H2),
+    covered_at_hour_single_lv(C,H3),
+    covered_at_hour_single_lv(C,H4),
+    covered_at_hour_single_lv(C,H5),
     H1 != H2, H1 != H3, H1 != H4, H1 != H5,
     H2 != H3, H2 != H4, H2 != H5,
     H3 != H4, H3 != H5,
     H4 != H5.
 
-city_covered_at_least(C,6) :-
-    covered_at_hour(C,H1),
-    covered_at_hour(C,H2),
-    covered_at_hour(C,H3),
-    covered_at_hour(C,H4),
-    covered_at_hour(C,H5),
-    covered_at_hour(C,H6),
+city_covered_at_least_single(C,5) :-
+    covered_at_hour_single_lv(C,H1),
+    covered_at_hour_single_lv(C,H2),
+    covered_at_hour_single_lv(C,H3),
+    covered_at_hour_single_lv(C,H4),
+    covered_at_hour_single_lv(C,H5),
+    H1 != H2, H1 != H3, H1 != H4, H1 != H5,
+    H2 != H3, H2 != H4, H2 != H5,
+    H3 != H4, H3 != H5,
+    H4 != H5.
+
+city_covered_at_least_single(C,6) :-
+    covered_at_hour_single_lv(C,H1),
+    covered_at_hour_single_lv(C,H2),
+    covered_at_hour_single_lv(C,H3),
+    covered_at_hour_single_lv(C,H4),
+    covered_at_hour_single_lv(C,H5),
+    covered_at_hour_single_lv(C,H6),
     H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6,
     H2 != H3, H2 != H4, H2 != H5, H2 != H6,
     H3 != H4, H3 != H5, H3 != H6,
     H4 != H5, H4 != H6,
     H5 != H6.
 
-city_covered_at_least(C,7) :-
-    covered_at_hour(C,H1),
-    covered_at_hour(C,H2),
-    covered_at_hour(C,H3),
-    covered_at_hour(C,H4),
-    covered_at_hour(C,H5),
-    covered_at_hour(C,H6),
-    covered_at_hour(C,H7),
+
+city_covered_at_least_single(C,7) :-
+    covered_at_hour_single_lv(C,H1),
+    covered_at_hour_single_lv(C,H2),
+    covered_at_hour_single_lv(C,H3),
+    covered_at_hour_single_lv(C,H4),
+    covered_at_hour_single_lv(C,H5),
+    covered_at_hour_single_lv(C,H6),
+    covered_at_hour_single_lv(C,H7),
     H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6, H1 != H7,
     H2 != H3, H2 != H4, H2 != H5, H2 != H6, H2 != H7,
     H3 != H4, H3 != H5, H3 != H6, H3 != H7,
@@ -703,17 +722,15 @@ city_covered_at_least(C,7) :-
     H5 != H6, H5 != H7,
     H6 != H7.
 
-
-
-city_covered_at_least(C,8) :-
-    covered_at_hour(C,H1),
-    covered_at_hour(C,H2),
-    covered_at_hour(C,H3),
-    covered_at_hour(C,H4),
-    covered_at_hour(C,H5),
-    covered_at_hour(C,H6),
-    covered_at_hour(C,H7),
-    covered_at_hour(C,H8),
+city_covered_at_least_single(C,8) :-
+    covered_at_hour_single_lv(C,H1),
+    covered_at_hour_single_lv(C,H2),
+    covered_at_hour_single_lv(C,H3),
+    covered_at_hour_single_lv(C,H4),
+    covered_at_hour_single_lv(C,H5),
+    covered_at_hour_single_lv(C,H6),
+    covered_at_hour_single_lv(C,H7),
+    covered_at_hour_single_lv(C,H8),
 
     H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6, H1 != H7, H1 != H8,
     H2 != H3, H2 != H4, H2 != H5, H2 != H6, H2 != H7, H2 != H8,
@@ -744,6 +761,34 @@ coverage("cloudy").
 coverage("sunny").
 %coverage("ND").
 
+
+is_winter(date(Y,M,D)) :-
+    date(Y,M,D),
+    M = 12.
+
+is_winter(date(Y,M,D)) :-
+    date(Y,M,D),
+    M = 1.
+
+is_winter(date(Y,M,D)) :-
+    date(Y,M,D),
+    M = 2.
+
+is_summer(date(Y,M,D)) :-
+    date(Y,M,D),
+    M >= 6,
+    M <= 8.
+
+is_spring(date(Y,M,D)) :-
+    date(Y,M,D),
+    M >= 3,
+    M <= 5.
+
+is_autumn(date(Y,M,D)) :-
+    date(Y,M,D),
+    M >= 9,
+    M <= 11.
+
 #maxv(3).
 #modeh(forecasted_sky(var(location),var(coverage))).
 #modeh(forecasted_sky(const(location),var(coverage))).
@@ -755,15 +800,10 @@ coverage("sunny").
 #modeb(not city_covered_at_least(var(location),3)).
 #modeb(not city_covered_at_least(var(location),8)).
 
-                    """
-        with open(output_path, 'w') as f_out:
-            f_out.write(positive_facts)
-            f_out.write(excluded_facts)
-            f_out.write(context_facts)
-            f_out.write(background)
+    """
 
-        print(f"Wrote example data to {output_path}")
-
+    with open(output_folder+"bg.las", 'w') as f_out:
+        f_out.write(background)
 def compute_negative_facts(line):
 
     
