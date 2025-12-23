@@ -1,5 +1,8 @@
 
-%general bg rules
+
+%RAINS
+%rains_at(X) :- forecasted_rain(X, Y), Y > 0.
+%:- rains_at(X), forecasted_rain(X, 0).   % constraint for “only if”
 
 %CLOUD COVER (if)
 sunny_at(X) :- forecasted_sky(X, "sunny").
@@ -28,74 +31,70 @@ cloud(C,L,H) :- cloud_at_5_5km_covers(C,_,H), L=5500.
 cloud(C,L,H) :- cloud_at_9km_covers(C,_,H),   L=9000.
 
 
-covered_at_hour_single_lv(C,H) :-
-    cloud(C,L1,H).
+clear_at_hour(C,H) :-
+    sun_hour(H),
+    location(C),
+    not cloud(C,_,H).
 
-city_covered_at_least_single(C,2) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
+city_clear_at_least(C,1) :-
+    clear_at_hour(C,H).
+
+% >= 2 hours of sun
+city_clear_at_least(C,2) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
     H1 != H2.
 
-city_covered_at_least_single(C,3) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
+city_clear_at_least(C,3) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
+    clear_at_hour(C,H3),
     H1 != H2, H1 != H3, H2 != H3.
 
-city_covered_at_least_single(C,4) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
-    covered_at_hour_single_lv(C,H4),
+city_clear_at_least(C,4) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
+    clear_at_hour(C,H3),
+    clear_at_hour(C,H4),
     H1 != H2, H1 != H3, H1 != H4,
     H2 != H3, H2 != H4,
     H3 != H4.
 
+city_clear_at_least(C,5) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
+    clear_at_hour(C,H3),
+    clear_at_hour(C,H4),
+    clear_at_hour(C,H5),
 
-city_covered_at_least_single(C,5) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
-    covered_at_hour_single_lv(C,H4),
-    covered_at_hour_single_lv(C,H5),
     H1 != H2, H1 != H3, H1 != H4, H1 != H5,
     H2 != H3, H2 != H4, H2 != H5,
     H3 != H4, H3 != H5,
     H4 != H5.
 
-city_covered_at_least_single(C,5) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
-    covered_at_hour_single_lv(C,H4),
-    covered_at_hour_single_lv(C,H5),
-    H1 != H2, H1 != H3, H1 != H4, H1 != H5,
-    H2 != H3, H2 != H4, H2 != H5,
-    H3 != H4, H3 != H5,
-    H4 != H5.
+city_clear_at_least(C,6) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
+    clear_at_hour(C,H3),
+    clear_at_hour(C,H4),
+    clear_at_hour(C,H5),
+    clear_at_hour(C,H6),
 
-city_covered_at_least_single(C,6) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
-    covered_at_hour_single_lv(C,H4),
-    covered_at_hour_single_lv(C,H5),
-    covered_at_hour_single_lv(C,H6),
     H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6,
     H2 != H3, H2 != H4, H2 != H5, H2 != H6,
     H3 != H4, H3 != H5, H3 != H6,
     H4 != H5, H4 != H6,
     H5 != H6.
 
+city_clear_at_least(C,7) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
+    clear_at_hour(C,H3),
+    clear_at_hour(C,H4),
+    clear_at_hour(C,H5),
+    clear_at_hour(C,H6),
+    clear_at_hour(C,H7),
 
-city_covered_at_least_single(C,7) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
-    covered_at_hour_single_lv(C,H4),
-    covered_at_hour_single_lv(C,H5),
-    covered_at_hour_single_lv(C,H6),
-    covered_at_hour_single_lv(C,H7),
     H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6, H1 != H7,
     H2 != H3, H2 != H4, H2 != H5, H2 != H6, H2 != H7,
     H3 != H4, H3 != H5, H3 != H6, H3 != H7,
@@ -103,15 +102,15 @@ city_covered_at_least_single(C,7) :-
     H5 != H6, H5 != H7,
     H6 != H7.
 
-city_covered_at_least_single(C,8) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
-    covered_at_hour_single_lv(C,H4),
-    covered_at_hour_single_lv(C,H5),
-    covered_at_hour_single_lv(C,H6),
-    covered_at_hour_single_lv(C,H7),
-    covered_at_hour_single_lv(C,H8),
+city_clear_at_least(C,8) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
+    clear_at_hour(C,H3),
+    clear_at_hour(C,H4),
+    clear_at_hour(C,H5),
+    clear_at_hour(C,H6),
+    clear_at_hour(C,H7),
+    clear_at_hour(C,H8),
 
     H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6, H1 != H7, H1 != H8,
     H2 != H3, H2 != H4, H2 != H5, H2 != H6, H2 != H7, H2 != H8,
@@ -121,7 +120,9 @@ city_covered_at_least_single(C,8) :-
     H6 != H7, H6 != H8,
     H7 != H8.
 
+
 time(0..23).
+sun_hours_to_check(1..8).
                     
 location(sappada_forni_villa).
 location(pontebba_tarvisio).
@@ -140,49 +141,48 @@ coverage("mostly_clear").
 coverage("cloud").
 coverage("cloudy").
 coverage("sunny").
-%coverage("ND").
+
+
+is_winter(date(Y,M,D)) :-
+    date(Y,M,D),
+    M = 12.
+
+is_winter(date(Y,M,D)) :-
+    date(Y,M,D),
+    M = 1.
+
+is_winter(date(Y,M,D)) :-
+    date(Y,M,D),
+    M = 2.
+
+is_summer(date(Y,M,D)) :-
+    date(Y,M,D),
+    M >= 6,
+    M <= 8.
+
+is_spring(date(Y,M,D)) :-
+    date(Y,M,D),
+    M >= 3,
+    M <= 5.
+
+is_autumn(date(Y,M,D)) :-
+    date(Y,M,D),
+    M >= 9,
+    M <= 11.
+    
+
+sun_hour(H) :- time(H), is_autumn(date(Y,M,D)), H >= 6, H <= 17.
+sun_hour(H) :- time(H), is_winter(date(Y,M,D)), H >= 8, H <= 16.
+sun_hour(H) :- time(H), is_summer(date(Y,M,D)), H >= 5, H <= 21.
+sun_hour(H) :- time(H), is_spring(date(Y,M,D)), H >= 6, H <= 19.
 
 #maxv(3).
 #modeh(forecasted_sky(var(location),var(coverage))).
 #modeh(forecasted_sky(const(location),var(coverage))).
-#modeh(forecasted_sky(var(location),const(coverage))).
-#modeh(forecasted_sky(const(location),const(coverage))).
 
-#modeb(city_covered_at_least(var(location),1)).
-#modeb(city_covered_at_least(var(location),2)).
-#modeb(city_covered_at_least(var(location),3)).
-#modeb(city_covered_at_least(var(location),4)).
-#modeb(city_covered_at_least(var(location),5)).
-#modeb(city_covered_at_least(var(location),6)).
-#modeb(city_covered_at_least(var(location),7)).
-#modeb(city_covered_at_least(var(location),8)).
+#modeb(city_clear_at_least(var(location),const(sun_hours_to_check))).
+#modeb(not city_clear_at_least(var(location),const(sun_hours_to_check))).
+#modeb(city_clear_at_least(const(location),const(sun_hours_to_check))).
+#modeb(not city_clear_at_least(const(location),const(sun_hours_to_check))).
 
-#modeb(not city_covered_at_least(var(location),1)).
-#modeb(not city_covered_at_least(var(location),2)).
-#modeb(not city_covered_at_least(var(location),3)).
-#modeb(not city_covered_at_least(var(location),4)).
-#modeb(not city_covered_at_least(var(location),5)).
-#modeb(not city_covered_at_least(var(location),6)).
-#modeb(not city_covered_at_least(var(location),7)).
-#modeb(not city_covered_at_least(var(location),8)).
-
-#modeb(city_covered_at_least(const(location),1)).
-#modeb(city_covered_at_least(const(location),2)).
-#modeb(city_covered_at_least(const(location),3)).
-#modeb(city_covered_at_least(const(location),4)).
-#modeb(city_covered_at_least(const(location),5)).
-#modeb(city_covered_at_least(const(location),6)).
-#modeb(city_covered_at_least(const(location),7)).
-#modeb(city_covered_at_least(const(location),8)).
-
-#modeb(not city_covered_at_least(const(location),1)).
-#modeb(not city_covered_at_least(const(location),2)).
-#modeb(not city_covered_at_least(const(location),3)).
-#modeb(not city_covered_at_least(const(location),4)).
-#modeb(not city_covered_at_least(const(location),5)).
-#modeb(not city_covered_at_least(const(location),6)).
-#modeb(not city_covered_at_least(const(location),7)).
-#modeb(not city_covered_at_least(const(location),8)).
-
-                    
-
+    
