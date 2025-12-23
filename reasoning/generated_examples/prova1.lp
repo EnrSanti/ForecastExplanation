@@ -1,4 +1,19 @@
+#show max_city_clear/2.
+forecasted_sky(sappada_forni_villa, "cloudy").
+forecasted_sky(pontebba_tarvisio, "cloudy").
+forecasted_sky(lignano_grado, "mostly_cloudy").
+forecasted_sky(barcis, "cloudy").
+forecasted_sky(udine_palamnova, "cloudy").
+forecasted_sky(gorizia, "cloudy").
+forecasted_sky(trieste, "mostly_cloudy").
+forecasted_sky(gemona_stolvizza, "cloudy").
+forecasted_sky(pordenone, "mostly_cloudy").
 
+date(2019,11,3). %to drive the season (winter, spring, summer, autumn)
+
+
+% Cloud coverage data:
+% Cloud_covers(location,cloud_id,hh)
 cloud_at_100m_covers(gorizia,44, 4).
 cloud_at_100m_covers(gemona_stolvizza,44, 5).
 cloud_at_100m_covers(gemona_stolvizza,44, 6).
@@ -414,59 +429,7 @@ cloud_at_9km_covers(gorizia,97, 23).
 cloud_at_9km_covers(trieste,97, 23).
 cloud_at_9km_covers(gemona_stolvizza,97, 23).
 
-% E+
-forecasted_sky(sappada_forni_villa, "mostly_clear").
-forecasted_sky(pontebba_tarvisio, "partly_cloudy").
-forecasted_sky(lignano_grado, "mostly_clear").
-forecasted_sky(barcis, "mostly_clear").
-forecasted_sky(udine_palamnova, "mostly_clear").
-forecasted_sky(gorizia, "mostly_clear").
-forecasted_sky(trieste, "mostly_clear").
-forecasted_sky(gemona_stolvizza, "mostly_clear").
-forecasted_sky(pordenone, "mostly_clear").
-
-% E-
-
-:-partially_sunny_at(sappada_forni_villa). 
-:-covered_at(sappada_forni_villa). 
-:-sunny_at(pontebba_tarvisio). 
-:-covered_at(pontebba_tarvisio). 
-:-partially_sunny_at(lignano_grado). 
-:-covered_at(lignano_grado). 
-:-partially_sunny_at(barcis). 
-:-covered_at(barcis). 
-:-partially_sunny_at(udine_palamnova). 
-:-covered_at(udine_palamnova). 
-:-partially_sunny_at(gorizia). 
-:-covered_at(gorizia). 
-:-partially_sunny_at(trieste). 
-:-covered_at(trieste). 
-:-partially_sunny_at(gemona_stolvizza). 
-:-covered_at(gemona_stolvizza). 
-:-partially_sunny_at(pordenone). 
-:-covered_at(pordenone).
-
-
-
-%CLOUD COVER (if)
-sunny_at(X) :- forecasted_sky(X, "sunny").
-sunny_at(X) :- forecasted_sky(X, "mostly_clear").
-partially_sunny_at(X) :- forecasted_sky(X, "partly_cloudy").
-covered_at(X) :- forecasted_sky(X, "mostly_cloudy").
-covered_at(X) :- forecasted_sky(X, "cloudy").
-
-%other implication verse
-:- sunny_at(X), not forecasted_sky(X, "sunny"), not forecasted_sky(X, "mostly_clear").
-:- partially_sunny_at(X), not forecasted_sky(X, "partly_cloudy").
-:- covered_at(X), not forecasted_sky(X, "mostly_cloudy"), not forecasted_sky(X, "cloudy").
-
-%only one is true
-:- sunny_at(X), partially_sunny_at(X).
-:- sunny_at(X), covered_at(X).
-:- partially_sunny_at(X), covered_at(X).
-
-
-
+%general bg rules
 
 
 
@@ -478,74 +441,70 @@ cloud(C,L,H) :- cloud_at_5_5km_covers(C,_,H), L=5500.
 cloud(C,L,H) :- cloud_at_9km_covers(C,_,H),   L=9000.
 
 
-covered_at_hour_single_lv(C,H) :-
-    cloud(C,L1,H).
+clear_at_hour(C,H) :-
+    sun_hour(H),
+    location(C),
+    not cloud(C,_,H).
 
-city_covered_at_least_single(C,2) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
+city_clear(C,1) :-
+    clear_at_hour(C,H).
+
+% >= 2 hours of sun
+city_clear(C,2) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
     H1 != H2.
 
-city_covered_at_least_single(C,3) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
+city_clear(C,3) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
+    clear_at_hour(C,H3),
     H1 != H2, H1 != H3, H2 != H3.
 
-city_covered_at_least_single(C,4) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
-    covered_at_hour_single_lv(C,H4),
+city_clear(C,4) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
+    clear_at_hour(C,H3),
+    clear_at_hour(C,H4),
     H1 != H2, H1 != H3, H1 != H4,
     H2 != H3, H2 != H4,
     H3 != H4.
 
+city_clear(C,5) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
+    clear_at_hour(C,H3),
+    clear_at_hour(C,H4),
+    clear_at_hour(C,H5),
 
-city_covered_at_least_single(C,5) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
-    covered_at_hour_single_lv(C,H4),
-    covered_at_hour_single_lv(C,H5),
     H1 != H2, H1 != H3, H1 != H4, H1 != H5,
     H2 != H3, H2 != H4, H2 != H5,
     H3 != H4, H3 != H5,
     H4 != H5.
 
-city_covered_at_least_single(C,5) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
-    covered_at_hour_single_lv(C,H4),
-    covered_at_hour_single_lv(C,H5),
-    H1 != H2, H1 != H3, H1 != H4, H1 != H5,
-    H2 != H3, H2 != H4, H2 != H5,
-    H3 != H4, H3 != H5,
-    H4 != H5.
+city_clear(C,6) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
+    clear_at_hour(C,H3),
+    clear_at_hour(C,H4),
+    clear_at_hour(C,H5),
+    clear_at_hour(C,H6),
 
-city_covered_at_least_single(C,6) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
-    covered_at_hour_single_lv(C,H4),
-    covered_at_hour_single_lv(C,H5),
-    covered_at_hour_single_lv(C,H6),
     H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6,
     H2 != H3, H2 != H4, H2 != H5, H2 != H6,
     H3 != H4, H3 != H5, H3 != H6,
     H4 != H5, H4 != H6,
     H5 != H6.
 
+city_clear(C,7) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
+    clear_at_hour(C,H3),
+    clear_at_hour(C,H4),
+    clear_at_hour(C,H5),
+    clear_at_hour(C,H6),
+    clear_at_hour(C,H7),
 
-city_covered_at_least_single(C,7) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
-    covered_at_hour_single_lv(C,H4),
-    covered_at_hour_single_lv(C,H5),
-    covered_at_hour_single_lv(C,H6),
-    covered_at_hour_single_lv(C,H7),
     H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6, H1 != H7,
     H2 != H3, H2 != H4, H2 != H5, H2 != H6, H2 != H7,
     H3 != H4, H3 != H5, H3 != H6, H3 != H7,
@@ -553,15 +512,15 @@ city_covered_at_least_single(C,7) :-
     H5 != H6, H5 != H7,
     H6 != H7.
 
-city_covered_at_least_single(C,8) :-
-    covered_at_hour_single_lv(C,H1),
-    covered_at_hour_single_lv(C,H2),
-    covered_at_hour_single_lv(C,H3),
-    covered_at_hour_single_lv(C,H4),
-    covered_at_hour_single_lv(C,H5),
-    covered_at_hour_single_lv(C,H6),
-    covered_at_hour_single_lv(C,H7),
-    covered_at_hour_single_lv(C,H8),
+city_clear(C,8) :-
+    clear_at_hour(C,H1),
+    clear_at_hour(C,H2),
+    clear_at_hour(C,H3),
+    clear_at_hour(C,H4),
+    clear_at_hour(C,H5),
+    clear_at_hour(C,H6),
+    clear_at_hour(C,H7),
+    clear_at_hour(C,H8),
 
     H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6, H1 != H7, H1 != H8,
     H2 != H3, H2 != H4, H2 != H5, H2 != H6, H2 != H7, H2 != H8,
@@ -571,7 +530,19 @@ city_covered_at_least_single(C,8) :-
     H6 != H7, H6 != H8,
     H7 != H8.
 
+not_max_clear(C,H) :-
+    city_clear_up_to(C,H),
+    city_clear_up_to(C,H1),
+    H1 > H.
+
+max_city_clear(C,H) :-
+    city_clear_up_to(C,H),
+    not not_max_clear(C,H).
+    
+city_clear_up_to(C,H) :- sun_hours_to_check(H),sun_hours_to_check(H1), city_clear(C,H1), H1>=H.
+
 time(0..23).
+sun_hours_to_check(1..8).
                     
 location(sappada_forni_villa).
 location(pontebba_tarvisio).
@@ -620,3 +591,9 @@ is_autumn(date(Y,M,D)) :-
     date(Y,M,D),
     M >= 9,
     M <= 11.
+
+
+sun_hour(H) :- time(H), is_autumn(date(Y,M,D)), H >= 6, H <= 17.
+sun_hour(H) :- time(H), is_winter(date(Y,M,D)), H >= 8, H <= 16.
+sun_hour(H) :- time(H), is_summer(date(Y,M,D)), H >= 5, H <= 21.
+sun_hour(H) :- time(H), is_spring(date(Y,M,D)), H >= 6, H <= 19.
