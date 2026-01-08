@@ -278,8 +278,7 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
     for (x, y, name, w, h, score) in all_detections_raw:
         if((x>350 and x<370) and (y>205 and y<225) or not np.isfinite(score)):
             continue
-        print(f" Detected: {name} at ({x}, {y}), size=({w}x{h}), score={score:.2f}")
-            
+           
         print_detections["-"].append({
             "type": name,
             "bbox": (x, y, w, h),

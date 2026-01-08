@@ -1,7 +1,8 @@
 % Example generated data for day (2019, 11, 2)
 
-#pos(e1@10000,{ 
+#pos(e1,{ 
 
+% date(2019,11,2),
 
 forecasted_sky(sappada_forni_villa, "cloudy"),
 forecasted_sky(pontebba_tarvisio, "mostly_cloudy"),
@@ -14,10 +15,28 @@ forecasted_sky(gemona_stolvizza, "cloudy"),
 forecasted_sky(pordenone, "cloudy")
 },
 {
-
+sunny_at(sappada_forni_villa), 
+partially_sunny_at(sappada_forni_villa), 
+sunny_at(pontebba_tarvisio), 
+partially_sunny_at(pontebba_tarvisio), 
+sunny_at(lignano_grado), 
+partially_sunny_at(lignano_grado), 
+sunny_at(barcis), 
+partially_sunny_at(barcis), 
+sunny_at(udine_palamnova), 
+partially_sunny_at(udine_palamnova), 
+sunny_at(gorizia), 
+partially_sunny_at(gorizia), 
+sunny_at(trieste), 
+partially_sunny_at(trieste), 
+sunny_at(gemona_stolvizza), 
+partially_sunny_at(gemona_stolvizza), 
+sunny_at(pordenone), 
+partially_sunny_at(pordenone)
 },
 {
-date(2019,11,2). %to drive the season (winter, spring, summer, autumn)
+date(2019, 11, 2).
+ %to drive the season (winter, spring, summer, autumn)
 
 % Cloud coverage data:
 % Cloud_covers(location,cloud_id,hh)

@@ -344,9 +344,8 @@ def rewrite_facts_no_dates(lines):
     - Returns (timestamp_fact, stripped_predicates)
     """
 
-    timestamp = None
     stripped_facts = []
-
+    
     for line in lines:
         line = line.strip()
         if not line or line.startswith('%'):
@@ -371,15 +370,12 @@ def rewrite_facts_no_dates(lines):
 
         *arg_parts, yyyy, mm, dd, hh = args
 
-        # Create timestamp only once per frame
-        if timestamp is None:
-            timestamp = f"date({yyyy},{mm},{dd})."
 
         # Rebuild predicate with remaining args
         new_pred = f"{pred_name}(" + (",".join(arg_parts)) + f", {str(hh)})."
         stripped_facts.append(new_pred)
 
-    return timestamp, stripped_facts
+    return stripped_facts
 
 def get_all_dates():
     
@@ -459,7 +455,9 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                     if ts_str in line:
                         cloud_moving_data[date_day].append(line)
                         break  # if a line can only belong to one frame
-       
+    
+    print("Finished processing cloud data.")
+    #print(cloud_covering_data)
     '''
     hum_front_data = {date: [] for date in date_list}
     hum_data = {date: [] for date in date_list}
@@ -523,9 +521,9 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         output_path = os.path.join(output_folder, f"example_day_{y}_{m}_{d}.las")
 
         os.makedirs(output_folder, exist_ok=True)
-        
-        cloud_timestamp, cloud_stripped = rewrite_facts_no_dates(cloud_covering_data[date])
-        cloud_moving_timestamp, cloud_moving_stripped = rewrite_facts_no_dates(cloud_moving_data[date])
+        print("Generating example for date:", date)
+        cloud_stripped = rewrite_facts_no_dates(cloud_covering_data[date])
+        #cloud_moving_timestamp, cloud_moving_stripped = rewrite_facts_no_dates(cloud_moving_data[date])
 
         # Transform the humidity front data
         #um_front_timestamp, hum_front_stripped = rewrite_facts_no_dates(hum_front_data[date])
@@ -538,7 +536,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
 
         # Determine which timestamp to use (they MUST be the same)
         # If some datasets are empty, pick first non-empty
-        timestamp = cloud_timestamp #or hum_timestamp or temp_front_timestamp or hum_front_timestamp
+        timestamp = "date({}, {}, {}).\n".format(y, m, d)
         
         #get the date as yyyy_mm_dd
         date_str = f"{y}_{m}_{d}"
