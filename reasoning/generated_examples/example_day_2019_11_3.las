@@ -2,12 +2,41 @@
 
 #pos(e1,{ 
 
-},
-{
+% date(2019,11,3),
 
+forecasted_sky(sappada_forni_villa, "cloudy"),
+forecasted_sky(pontebba_tarvisio, "cloudy"),
+forecasted_sky(lignano_grado, "mostly_cloudy"),
+forecasted_sky(barcis, "cloudy"),
+forecasted_sky(udine_palamnova, "cloudy"),
+forecasted_sky(gorizia, "cloudy"),
+forecasted_sky(trieste, "mostly_cloudy"),
+forecasted_sky(gemona_stolvizza, "cloudy"),
+forecasted_sky(pordenone, "mostly_cloudy")
 },
 {
-date(2019,11,3). %to drive the season (winter, spring, summer, autumn)
+sunny_at(sappada_forni_villa), 
+partially_sunny_at(sappada_forni_villa), 
+sunny_at(pontebba_tarvisio), 
+partially_sunny_at(pontebba_tarvisio), 
+sunny_at(lignano_grado), 
+partially_sunny_at(lignano_grado), 
+sunny_at(barcis), 
+partially_sunny_at(barcis), 
+sunny_at(udine_palamnova), 
+partially_sunny_at(udine_palamnova), 
+sunny_at(gorizia), 
+partially_sunny_at(gorizia), 
+sunny_at(trieste), 
+partially_sunny_at(trieste), 
+sunny_at(gemona_stolvizza), 
+partially_sunny_at(gemona_stolvizza), 
+sunny_at(pordenone), 
+partially_sunny_at(pordenone)
+},
+{
+date(2019, 11, 3).
+ %to drive the season (winter, spring, summer, autumn)
 
 % Cloud coverage data:
 % Cloud_covers(location,cloud_id,hh)

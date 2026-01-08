@@ -3,20 +3,21 @@ import os
 from datetime import datetime, timedelta
 from glob import glob
 
+
 def get_next_date_string(date_str: str):
     """
-    Takes a date string in "YYYY_MM_DD" format and returns the next date 
-    in the same format.
+    Takes a date string in "YYYY_MM_DD" format and returns the next date
+    with a non-zero-padded day when possible.
     """
     try:
-        date_format = "%Y_%m_%d"
-        current_date = datetime.strptime(date_str, date_format)
+        current_date = datetime.strptime(date_str, "%Y_%m_%d")
     except ValueError as e:
         print(f"Error: Input date format must be YYYY_MM_DD. Error: {e}")
         return ""
-    
+
     next_date = current_date + timedelta(days=1)
-    return next_date.strftime(date_format)
+
+    return f"{next_date.year:04d}_{next_date.month:02d}_{next_date.day}"
 
 def extract_third_image_from_folder(pdf_folder: str):
     """

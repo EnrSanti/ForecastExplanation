@@ -1,2 +1,2 @@
-Humidity range at 1000 hPa: 29.42 K to 99.98 K
+Humidity range at 1000 hPa: 27.95 K to 100.01 K
 Respective colors: (255, 255, 217), (8, 29, 88)
