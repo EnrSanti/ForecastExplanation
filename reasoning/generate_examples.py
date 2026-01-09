@@ -433,7 +433,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         #open file "clouds_covering.txt" to get which clouds cover which locations
         cloud_covering_file = os.path.join(full_cloud_folder, "clouds_covering.txt")
         cloud_moving_file = os.path.join(full_cloud_folder, "moving.txt")
-        print("Processing cloud folder:", cloud_covering_file)
+        #print("Processing cloud folder:", cloud_covering_file)
                 
         # Precompute frame timestamp strings
 
@@ -515,6 +515,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                         break  # if a line can only belong to one frame
 
     '''
+    i=0
     for date in date_list:
 
         y, m, d = date
@@ -542,7 +543,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         date_str = f"{y}_{m}_{d}"
 
         positive_facts="% Example generated data for day {}\n\n".format(date)
-        positive_facts+="#pos(e1,{ \n\n"
+        positive_facts+="#pos(e"+str(i)+"@100,{ \n\n"
         #open the pictogram file for that date
         pictogram_file=os.path.join(folder_pictograms,f"{date_str}_locations.txt")
         
@@ -611,7 +612,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
             f_out.write(context_facts)
 
         print(f"Wrote example data to {output_path}")
-
+        i+=1
     background="""
 
 %RAINS
@@ -655,9 +656,7 @@ city_clear_at_least(C,1) :-
 
 % >= 2 hours of sun
 city_clear_at_least(C,2) :-
-    clear_at_hour(C,H1),
-    clear_at_hour(C,H2),
-    H1 != H2.
+    clear_at_hour(C,H1).
 
 city_clear_at_least(C,3) :-
     clear_at_hour(C,H1),
@@ -735,8 +734,17 @@ city_clear_at_least(C,8) :-
     H7 != H8.
 
 
+city_not_covered_more_than(C,8) :- not city_covered_at_least(C,8), location(C). %placeholder
+city_not_covered_more_than(C,7) :- not city_covered_at_least(C,8), location(C). 
+city_not_covered_more_than(C,6) :- not city_covered_at_least(C,7), location(C). 
+city_not_covered_more_than(C,5) :- not city_covered_at_least(C,6), location(C). 
+city_not_covered_more_than(C,4) :- not city_covered_at_least(C,5), location(C).
+city_not_covered_more_than(C,3) :- not city_covered_at_least(C,4), location(C).
+city_not_covered_more_than(C,2) :- not city_covered_at_least(C,3), location(C).
+city_not_covered_more_than(C,1) :- not city_covered_at_least(C,2), location(C).
+
 time(0..23).
-sun_hours_to_check(1..8).
+lv(1..8).
                     
 location(sappada_forni_villa).
 location(pontebba_tarvisio).
@@ -748,13 +756,13 @@ location(trieste).
 location(gemona_stolvizza).
 location(pordenone).
 
-coverage("mostly_cloudy").
-coverage("partly_cloudy").
-coverage("small_cloud").
-coverage("mostly_clear").
-coverage("cloud").
-coverage("cloudy").
-coverage("sunny").
+
+coverage("cloudy"). 
+coverage("partly_cloudy"). 
+coverage("mostly_cloudy"). 
+coverage("mostly_clear"). 
+coverage("sunny"). 
+
 
 
 is_winter(date(Y,M,D)) :-
@@ -790,14 +798,11 @@ sun_hour(H) :- time(H), is_winter(date(Y,M,D)), H >= 8, H <= 16.
 sun_hour(H) :- time(H), is_summer(date(Y,M,D)), H >= 5, H <= 21.
 sun_hour(H) :- time(H), is_spring(date(Y,M,D)), H >= 6, H <= 19.
 
-#maxv(3).
-#modeh(forecasted_sky(var(location),var(coverage))).
-#modeh(forecasted_sky(const(location),var(coverage))).
 
-#modeb(city_clear_at_least(var(location),const(sun_hours_to_check))).
-#modeb(not city_clear_at_least(var(location),const(sun_hours_to_check))).
-#modeb(city_clear_at_least(const(location),const(sun_hours_to_check))).
-#modeb(not city_clear_at_least(const(location),const(sun_hours_to_check))).
+#modeh(forecasted_sky(var(location),const(coverage))).
+#modeb(city_covered_at_least(var(location),const(lv))).
+#modeb(city_not_covered_more_than(var(location),const(lv))).
+#bias("penalty(1, body(X)) :- in_body(X).").
 
     """
     with open(output_folder+"/bg.las", 'w') as f_out:
