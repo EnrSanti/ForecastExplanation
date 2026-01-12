@@ -23,6 +23,7 @@ folders_suff = {
     300: "_at_9km"
 }
 locations_name_px_pos={}
+location_names=[]
 
 fact_pattern = re.compile(
     r'(?P<pred>forecasted_rain|forecasted_sky)\('
@@ -60,7 +61,6 @@ def load_locations(coordinates,image_input_folder):
     # Load image
     img = mpimg.imread(input_path)
     height, width = img.shape[:2]
-    print(type(locations_data))
 
     for _, row in locations_data.iterrows():
         px, py = geo_to_pixel(
@@ -71,6 +71,15 @@ def load_locations(coordinates,image_input_folder):
         )
         locations_name_px_pos[row["Location"]]=(px,py)
     return locations_name_px_pos
+
+def load_location_names():
+    global location_names
+    locations_data = pd.read_csv("reasoning/locations.csv")  # same folder or specify full path
+    print(f"Loaded {len(locations_data)} locations.")
+
+
+    for _, row in locations_data.iterrows():
+        location_names.append((row["Location"]).lower())
 
 def get_starting_date(filename):
     global starting_date
@@ -395,7 +404,7 @@ def get_all_dates():
 
 def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
     global starting_date
-    
+    global location_names
     folder_split_merge="./image_processing/fvg/output" #ha le subfolder per ogni livello (considera solo le clouds)
     folder_clouds="./reasoning/clouds" #ha le subfolder per ogni livello
     folder_hum="./reasoning/humidity" #ha le subfolder per ogni livello
@@ -458,7 +467,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
     
     print("Finished processing cloud data.")
     #print(cloud_covering_data)
-    '''
+    
     hum_front_data = {date: [] for date in date_list}
     hum_data = {date: [] for date in date_list}
 
@@ -470,7 +479,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
             continue
         hum_front_file = os.path.join(full_hum_folder, "humidity_fronts.txt")
         hum_file=os.path.join(full_hum_folder, "humidity.txt")
-
+        '''
         with open(hum_front_file, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -478,7 +487,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                     if ts_str in line:
                         hum_front_data[date_day].append(line)
                         break  # if a line can only belong to one frame
-
+        '''
         with open(hum_file, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -498,6 +507,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         temp_front_file = os.path.join(full_temp_folder, "temp_fronts.txt")
         temp_file = os.path.join(full_temp_folder, "temp.txt")
 
+        '''
         with open(temp_file, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -505,7 +515,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                     if ts_str in line:
                         hum_front_data[date_day].append(line)
                         break  # if a line can only belong to one frame
-
+        '''
         with open(temp_front_file, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -514,8 +524,10 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                         temp_data[date_day].append(line)
                         break  # if a line can only belong to one frame
 
-    '''
+    
     i=0
+    load_location_names()
+    print(location_names)
     for date in date_list:
 
         y, m, d = date
@@ -543,7 +555,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         date_str = f"{y}_{m}_{d}"
 
         positive_facts="% Example generated data for day {}\n\n".format(date)
-        positive_facts+="#pos(e"+str(i)+"@100,{ \n\n"
+        positive_facts+="#pos(e"+str(i)+",{ \n\n"
         #open the pictogram file for that date
         pictogram_file=os.path.join(folder_pictograms,f"{date_str}_locations.txt")
         
@@ -637,7 +649,6 @@ covered_at(X) :- forecasted_sky(X, "cloudy").
 :- partially_sunny_at(X), covered_at(X).
 
 
-
 cloud(C,L,H) :- cloud_at_100m_covers(C,_,H),  L=100.
 cloud(C,L,H) :- cloud_at_750m_covers(C,_,H),  L=750.
 cloud(C,L,H) :- cloud_at_1_4km_covers(C,_,H), L=1400.
@@ -645,69 +656,66 @@ cloud(C,L,H) :- cloud_at_3km_covers(C,_,H),   L=3000.
 cloud(C,L,H) :- cloud_at_5_5km_covers(C,_,H), L=5500.
 cloud(C,L,H) :- cloud_at_9km_covers(C,_,H),   L=9000.
 
+covered_at_hour(C,H) :-
+    cloud(C,L1,H),
+    cloud(C,L2,H),
+    L1!=L2.
 
-clear_at_hour(C,H) :-
-    sun_hour(H),
-    location(C),
-    not cloud(C,_,H).
+city_covered_at_least(C,1) :-
+    covered_at_hour(C,H1).
 
-city_clear_at_least(C,1) :-
-    clear_at_hour(C,H).
+city_covered_at_least(C,2) :-
+    covered_at_hour(C,H1),
+    covered_at_hour(C,H2),
+    H1 != H2.
 
-% >= 2 hours of sun
-city_clear_at_least(C,2) :-
-    clear_at_hour(C,H1).
-
-city_clear_at_least(C,3) :-
-    clear_at_hour(C,H1),
-    clear_at_hour(C,H2),
-    clear_at_hour(C,H3),
+city_covered_at_least(C,3) :-
+    covered_at_hour(C,H1),
+    covered_at_hour(C,H2),
+    covered_at_hour(C,H3),
     H1 != H2, H1 != H3, H2 != H3.
 
-city_clear_at_least(C,4) :-
-    clear_at_hour(C,H1),
-    clear_at_hour(C,H2),
-    clear_at_hour(C,H3),
-    clear_at_hour(C,H4),
+city_covered_at_least(C,4) :-
+    covered_at_hour(C,H1),
+    covered_at_hour(C,H2),
+    covered_at_hour(C,H3),
+    covered_at_hour(C,H4),
     H1 != H2, H1 != H3, H1 != H4,
     H2 != H3, H2 != H4,
     H3 != H4.
 
-city_clear_at_least(C,5) :-
-    clear_at_hour(C,H1),
-    clear_at_hour(C,H2),
-    clear_at_hour(C,H3),
-    clear_at_hour(C,H4),
-    clear_at_hour(C,H5),
-
+city_covered_at_least(C,5) :-
+    covered_at_hour(C,H1),
+    covered_at_hour(C,H2),
+    covered_at_hour(C,H3),
+    covered_at_hour(C,H4),
+    covered_at_hour(C,H5),
     H1 != H2, H1 != H3, H1 != H4, H1 != H5,
     H2 != H3, H2 != H4, H2 != H5,
     H3 != H4, H3 != H5,
     H4 != H5.
 
-city_clear_at_least(C,6) :-
-    clear_at_hour(C,H1),
-    clear_at_hour(C,H2),
-    clear_at_hour(C,H3),
-    clear_at_hour(C,H4),
-    clear_at_hour(C,H5),
-    clear_at_hour(C,H6),
-
+city_covered_at_least(C,6) :-
+    covered_at_hour(C,H1),
+    covered_at_hour(C,H2),
+    covered_at_hour(C,H3),
+    covered_at_hour(C,H4),
+    covered_at_hour(C,H5),
+    covered_at_hour(C,H6),
     H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6,
     H2 != H3, H2 != H4, H2 != H5, H2 != H6,
     H3 != H4, H3 != H5, H3 != H6,
     H4 != H5, H4 != H6,
     H5 != H6.
 
-city_clear_at_least(C,7) :-
-    clear_at_hour(C,H1),
-    clear_at_hour(C,H2),
-    clear_at_hour(C,H3),
-    clear_at_hour(C,H4),
-    clear_at_hour(C,H5),
-    clear_at_hour(C,H6),
-    clear_at_hour(C,H7),
-
+city_covered_at_least(C,7) :-
+    covered_at_hour(C,H1),
+    covered_at_hour(C,H2),
+    covered_at_hour(C,H3),
+    covered_at_hour(C,H4),
+    covered_at_hour(C,H5),
+    covered_at_hour(C,H6),
+    covered_at_hour(C,H7),
     H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6, H1 != H7,
     H2 != H3, H2 != H4, H2 != H5, H2 != H6, H2 != H7,
     H3 != H4, H3 != H5, H3 != H6, H3 != H7,
@@ -715,27 +723,7 @@ city_clear_at_least(C,7) :-
     H5 != H6, H5 != H7,
     H6 != H7.
 
-city_clear_at_least(C,8) :-
-    clear_at_hour(C,H1),
-    clear_at_hour(C,H2),
-    clear_at_hour(C,H3),
-    clear_at_hour(C,H4),
-    clear_at_hour(C,H5),
-    clear_at_hour(C,H6),
-    clear_at_hour(C,H7),
-    clear_at_hour(C,H8),
-
-    H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6, H1 != H7, H1 != H8,
-    H2 != H3, H2 != H4, H2 != H5, H2 != H6, H2 != H7, H2 != H8,
-    H3 != H4, H3 != H5, H3 != H6, H3 != H7, H3 != H8,
-    H4 != H5, H4 != H6, H4 != H7, H4 != H8,
-    H5 != H6, H5 != H7, H5 != H8,
-    H6 != H7, H6 != H8,
-    H7 != H8.
-
-
-city_not_covered_more_than(C,8) :- not city_covered_at_least(C,8), location(C). %placeholder
-city_not_covered_more_than(C,7) :- not city_covered_at_least(C,8), location(C). 
+city_not_covered_more_than(C,7) :- not city_covered_at_least(C,7), location(C). %placeholder
 city_not_covered_more_than(C,6) :- not city_covered_at_least(C,7), location(C). 
 city_not_covered_more_than(C,5) :- not city_covered_at_least(C,6), location(C). 
 city_not_covered_more_than(C,4) :- not city_covered_at_least(C,5), location(C).
@@ -743,9 +731,11 @@ city_not_covered_more_than(C,3) :- not city_covered_at_least(C,4), location(C).
 city_not_covered_more_than(C,2) :- not city_covered_at_least(C,3), location(C).
 city_not_covered_more_than(C,1) :- not city_covered_at_least(C,2), location(C).
 
-time(0..23).
-lv(1..8).
-                    
+
+time(0..23).                    
+lv(1..7).
+
+               
 location(sappada_forni_villa).
 location(pontebba_tarvisio).
 location(lignano_grado).
@@ -764,45 +754,34 @@ coverage("mostly_clear").
 coverage("sunny"). 
 
 
+%CLOUD COVER (if)
+sunny_at(X) :- forecasted_sky(X, "sunny").
+sunny_at(X) :- forecasted_sky(X, "mostly_clear").
+partially_sunny_at(X) :- forecasted_sky(X, "partly_cloudy").
+covered_at(X) :- forecasted_sky(X, "mostly_cloudy").
+covered_at(X) :- forecasted_sky(X, "cloudy").
 
-is_winter(date(Y,M,D)) :-
-    date(Y,M,D),
-    M = 12.
+%other implication verse
+:- sunny_at(X), not forecasted_sky(X, "sunny"), not forecasted_sky(X, "mostly_clear").
+:- partially_sunny_at(X), not forecasted_sky(X, "partly_cloudy").
+:- covered_at(X), not forecasted_sky(X, "mostly_cloudy"), not forecasted_sky(X, "cloudy").
 
-is_winter(date(Y,M,D)) :-
-    date(Y,M,D),
-    M = 1.
+%only one is true
+:- sunny_at(X), partially_sunny_at(X).
+:- sunny_at(X), covered_at(X).
+:- partially_sunny_at(X), covered_at(X).
 
-is_winter(date(Y,M,D)) :-
-    date(Y,M,D),
-    M = 2.
-
-is_summer(date(Y,M,D)) :-
-    date(Y,M,D),
-    M >= 6,
-    M <= 8.
-
-is_spring(date(Y,M,D)) :-
-    date(Y,M,D),
-    M >= 3,
-    M <= 5.
-
-is_autumn(date(Y,M,D)) :-
-    date(Y,M,D),
-    M >= 9,
-    M <= 11.
-    
-
-sun_hour(H) :- time(H), is_autumn(date(Y,M,D)), H >= 6, H <= 17.
-sun_hour(H) :- time(H), is_winter(date(Y,M,D)), H >= 8, H <= 16.
-sun_hour(H) :- time(H), is_summer(date(Y,M,D)), H >= 5, H <= 21.
-sun_hour(H) :- time(H), is_spring(date(Y,M,D)), H >= 6, H <= 19.
-
-
+#maxv(1).
 #modeh(forecasted_sky(var(location),const(coverage))).
+
+#modeh(forecasted_sky(const(location),const(coverage))).
 #modeb(city_covered_at_least(var(location),const(lv))).
 #modeb(city_not_covered_more_than(var(location),const(lv))).
-#bias("penalty(1, body(X)) :- in_body(X).").
+
+#modeb(city_covered_at_least(const(location),const(lv))).
+#modeb(city_not_covered_more_than(const(location),const(lv))).
+
+%#bias("penalty(1, body(X)) :- in_body(X).").
 
     """
     with open(output_folder+"/bg.las", 'w') as f_out:
@@ -846,6 +825,7 @@ def compute_negative_facts(line):
             return "sunny_at("+city+"), \n"+"partially_sunny_at("+city+"), \n"
         else:
             return "unkown_sky_at("+city+"), \n"
+        
     return ""
 
 

@@ -1,6 +1,6 @@
 % Example generated data for day (2019, 11, 7)
 
-#pos(e7@100,{ 
+#pos(e7,{ 
 
 % date(2019,11,7),
 
