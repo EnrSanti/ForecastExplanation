@@ -450,9 +450,12 @@ covered_at(X) :- forecasted_sky(X, "cloudy").
 
 #modeb(city_covered_at_least_morning(const(location),const(lv))).
 #modeb(city_covered_at_least_afternoon(const(location),const(lv))).
+
 #modeb(city_covered_at_least(const(location),const(lv))).
 #modeb(city_covered_less_than(const(location),const(lv))).
 #modeb(city_covered_exactly(const(location),const(lv))).
+
+
 #modeb(not city_covered_at_least_morning(const(location),const(lv))).
 #modeb(not city_covered_at_least_afternoon(const(location),const(lv))).
 
