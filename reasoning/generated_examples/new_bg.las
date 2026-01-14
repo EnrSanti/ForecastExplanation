@@ -10,9 +10,7 @@ cloud(C,L,H) :- cloud_at_9km_covers(C,_,H),   L=9000.
 
 
 covered_at_hour(C,H) :-
-    cloud(C,L1,H),
-    cloud(C,L2,H),
-    L1!=L2.
+    cloud(C,L1,H).
 
 city_covered_at_least(C,1) :-
     covered_at_hour(C,H1).
