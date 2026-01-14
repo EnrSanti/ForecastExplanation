@@ -41,6 +41,9 @@ date(2019, 11, 10).
 % Cloud coverage data:
 % Cloud_covers(location,cloud_id,hh)
 
+%summing up temperature and humidity facts 
+
+
 % Humidity front data:
 % humidty_front(location_1,location_2,hh): between the two locations there's a sharp change 
 }). 

@@ -346,6 +346,83 @@ def generate_cloud_facts_over_cities(base_path):
 def generate_cloud_split_merges():
     pass
 
+def sum_up_morning_afternoon(temp_data, location_names,hum_or_tmp):
+    """
+    Transformer:
+    - Removes timestamp (last four comma-separated fields)
+    - Skips hours <7 or >19
+    - Adds "m" if 7 <= hour < 12, "a" if 12 <= hour <= 19
+    - Collects stripped predicates
+    - Computes per-location average temperatures for morning and afternoon
+      truncated to 3 digits after the decimal
+    """
+
+    stripped_facts = []
+    # Store temperatures per location and period
+    temps = defaultdict(lambda: {"m": [], "a": []})
+
+    for line in temp_data:
+        line = line.strip()
+        if not line or line.startswith('%'):
+            continue
+
+        # Remove trailing ")." safely
+        if line.endswith(")."):
+            body = line[:-2]
+        elif line.endswith(")"):
+            body = line[:-1]
+        else:
+            body = line
+
+        if "(" not in body:
+            continue  # malformed
+        pred_name, args_str = body.split("(", 1)
+        args = [a.strip() for a in args_str.split(",")]
+
+        # Must have at least 5 arguments for location + temperature + timestamp
+        if len(args) < 5:
+            continue
+
+        *arg_parts, yyyy, mm, dd, hh = args
+
+        # Assume first argument is location, second argument is temperature
+        loc = arg_parts[0]
+        try:
+            temp = float(arg_parts[1])
+            hour = int(hh)
+        except ValueError:
+            continue  # skip malformed data
+
+        # Skip hours outside 7..19
+        if hour < 7 or hour > 19:
+            continue
+
+        # Determine period
+        period = "m" if hour < 12 else "a"
+
+        # Rebuild predicate with period as last argument
+        time_label = f"\"{period}\""
+        new_pred = f"{pred_name}(" + ",".join(arg_parts + [time_label]) + ")."
+        stripped_facts.append(new_pred)
+
+        # Add temperature to period collection if location is relevant
+        if loc in location_names:
+            temps[loc][period].append(temp)
+
+    # Compute average temperature per location and period
+    average_facts = []
+    for loc, periods in temps.items():
+        for period in ["m", "a"]:
+            temps_list = periods[period]
+            if temps_list:  # avoid division by zero
+                avg = sum(temps_list) / len(temps_list)
+                avg_truncated = f"{avg:.3f}"
+                avg_fact = f"{hum_or_tmp}_at_{period}m({loc},{avg_truncated})."
+                average_facts.append(avg_fact)
+
+    return average_facts
+
+
 def rewrite_facts_no_dates(lines):
     """
     Generic transformer:
@@ -508,13 +585,13 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         temp_front_file = os.path.join(full_temp_folder, "temp_fronts.txt")
         temp_file = os.path.join(full_temp_folder, "temp.txt")
 
-        '''
+        
         with open(temp_file, 'r') as f:
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
                     if ts_str in line:
-                        hum_front_data[date_day].append(line)
+                        temp_data[date_day].append(line)
                         break  # if a line can only belong to one frame
         '''
         with open(temp_front_file, 'r') as f:
@@ -524,7 +601,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                     if ts_str in line:
                         temp_data[date_day].append(line)
                         break  # if a line can only belong to one frame
-
+        '''
     
     i=0
     load_location_names()
@@ -537,6 +614,9 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         os.makedirs(output_folder, exist_ok=True)
         print("Generating example for date:", date)
         cloud_stripped = rewrite_facts_no_dates(cloud_covering_data[date])
+        temp_morning_afternoon= sum_up_morning_afternoon(temp_data[date], location_names,"temperature")
+
+        hum_morning_afternoon= sum_up_morning_afternoon(hum_data[date], location_names,"humidity")
         #cloud_moving_timestamp, cloud_moving_stripped = rewrite_facts_no_dates(cloud_moving_data[date])
 
         # Transform the humidity front data
@@ -591,6 +671,13 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
 
         for fact in cloud_stripped:
             context_facts+=fact + "\n"
+        context_facts+="\n%summing up temperature and humidity facts \n\n"
+        for fact in temp_morning_afternoon:
+            context_facts+=fact + "\n"
+        
+        for fact in hum_morning_afternoon:
+            context_facts+=fact + "\n"
+        
         context_facts+="\n"
 
         #for fact in cloud_moving_stripped:
