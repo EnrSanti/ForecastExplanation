@@ -233,7 +233,7 @@ city_covered_less_than(C,3) :-
 city_covered_less_than(C,3) :-
     city_covered_exactly_morning(C,2),
     city_clear_afternoon(C),
-    location(C).:
+    location(C).
 
 city_covered_less_than(C,3) :-
     city_clear_morning(C),
@@ -402,10 +402,10 @@ city_covered_less_than(C,6) :-
 city_covered_less_than(C,6) :-
     city_covered_exactly_morning(C,1), city_covered_exactly_afternoon(C,5), location(C).
 
-temperature_increased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X>Y location(C).
-temperature_decreased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X<Y location(C).
-humidity_increased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X>Y location(C).
-humidity_decreased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X<Y location(C).
+temperature_increased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X>Y, location(C).
+temperature_decreased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X<Y, location(C).
+humidity_increased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X>Y, location(C).
+humidity_decreased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X<Y, location(C).
 
 time(0..23).                    
 lv(1..6).
@@ -447,25 +447,58 @@ covered_at(X) :- forecasted_sky(X, "cloudy").
 :- sunny_at(X), covered_at(X).
 :- partially_sunny_at(X), covered_at(X).
 
-#maxv(1).
 
 
-#modeh(forecasted_sky(const(location),const(coverage))).
 
-#modeb(city_covered_at_least_morning(const(location),const(lv))).
-#modeb(city_covered_at_least_afternoon(const(location),const(lv))).
+adjacent(sappada_forni_villa,pontebba_tarvisio).
+adjacent(sappada_forni_villa,gemona_stolvizza).
+adjacent(sappada_forni_villa,udine_palamnova).
+adjacent(sappada_forni_villa,pordenone).
+adjacent(sappada_forni_villa,barcis).
 
-#modeb(city_covered_at_least(const(location),const(lv))).
-#modeb(city_covered_less_than(const(location),const(lv))).
-#modeb(city_covered_exactly(const(location),const(lv))).
+adjacent(pontebba_tarvisio,gemona_stolvizza).
+adjacent(pontebba_tarvisio,gorizia).
+
+adjacent(gemona_stolvizza,udine_palamnova).
+adjacent(gemona_stolvizza,gorizia).
+
+adjacent(barcis,pordenone).
+
+adjacent(pordenone,udine_palamnova).
+adjacent(pordenone,lignano_grado).
+
+adjacent(udine_palamnova,gorizia).
+adjacent(udine_palamnova,lignano_grado).
+
+adjacent(gorizia,trieste).
+adjacent(lignano_grado,trieste).
 
 
-#modeb(not city_covered_at_least_morning(const(location),const(lv))).
-#modeb(not city_covered_at_least_afternoon(const(location),const(lv))).
-#modeb(temperature_increased_at_afternoon(const(location))).
-#modeb(temperature_decreased_at_afternoon(const(location))).
-#modeb(humidity_increased_at_afternoon(const(location))).
-#modeb(humidity_decreased_at_afternoon(const(location))).
+adjacent(X,Y) :- adjacent(Y,X),location(X),location(y).
 
-%#bias("penalty(1, body(X)) :- in_body(X).").
+#maxv(2).
+
+#modeh(forecasted_sky(var(location),const(coverage))).
+
+#modeb(adjacent(var(location), const(location))).
+
+#modeb(adjacent(var(location), var(location))).
+
+#modeb(city_covered_at_least_morning(var(location),const(lv))).
+#modeb(city_covered_at_least_afternoon(var(location),const(lv))).
+
+#modeb(city_covered_at_least(var(location),const(lv))).
+#modeb(city_covered_less_than(var(location),const(lv))).
+#modeb(city_covered_exactly(var(location),const(lv))).
+
+#modeb(not city_covered_at_least_morning(var(location),const(lv))).
+#modeb(not city_covered_at_least_afternoon(var(location),const(lv))).
+#modeb(temperature_increased_at_afternoon(var(location))).
+#modeb(temperature_decreased_at_afternoon(var(location))).
+#modeb(humidity_increased_at_afternoon(var(location))).
+#modeb(humidity_decreased_at_afternoon(var(location))).
+
+#bias("penalty(5, no_adj) :- not in_body(adjacent(_, _)).").
+
+#bias("penalty(1, body(X)) :- in_body(X).").
 
