@@ -337,6 +337,10 @@ if __name__ == "__main__":
         (folders_pref[2] + suff,  folders_pref[2])
         for suff in folders_suff.values()
     ]
+    folder_list_wind = [
+        (folders_pref[3] + suff,  folders_pref[3])
+        for suff in folders_suff.values()
+    ]
 
     #print info
     if mode == 0:
@@ -378,7 +382,7 @@ if __name__ == "__main__":
     elif mode == 5:
         
         init_starting_date()
-        merge_into_examples(folder_list_clouds,folder_list_humidity,folder_list_temp)
+        merge_into_examples(folder_list_clouds,folder_list_humidity,folder_list_temp,folder_list_wind, folders_suff)
         
     elif mode == 6:
         
