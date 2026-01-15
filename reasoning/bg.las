@@ -233,7 +233,7 @@ city_covered_less_than(C,3) :-
 city_covered_less_than(C,3) :-
     city_covered_exactly_morning(C,2),
     city_clear_afternoon(C),
-    location(C).
+    location(C).:
 
 city_covered_less_than(C,3) :-
     city_clear_morning(C),
@@ -402,10 +402,10 @@ city_covered_less_than(C,6) :-
 city_covered_less_than(C,6) :-
     city_covered_exactly_morning(C,1), city_covered_exactly_afternoon(C,5), location(C).
 
-temperature_increased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X>Y, location(C).
-temperature_decreased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X<Y, location(C).
-humidity_increased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X>Y, location(C).
-humidity_decreased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X<Y, location(C).
+temperature_increased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X>Y location(C).
+temperature_decreased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X<Y location(C).
+humidity_increased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X>Y location(C).
+humidity_decreased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X<Y location(C).
 
 time(0..23).                    
 lv(1..6).

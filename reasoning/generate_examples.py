@@ -480,6 +480,10 @@ def get_all_dates():
     
     return date_list
 
+def calculate_winds():    
+    load_locations(coordinates,"./reasoning/clouds/")
+    print(locations_name_px_pos)
+
 def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
     global starting_date
     global location_names
@@ -615,8 +619,10 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         print("Generating example for date:", date)
         cloud_stripped = rewrite_facts_no_dates(cloud_covering_data[date])
         temp_morning_afternoon= sum_up_morning_afternoon(temp_data[date], location_names,"temperature")
-
         hum_morning_afternoon= sum_up_morning_afternoon(hum_data[date], location_names,"humidity")
+        #wind_facts=calculate_winds()
+
+
         #cloud_moving_timestamp, cloud_moving_stripped = rewrite_facts_no_dates(cloud_moving_data[date])
 
         # Transform the humidity front data
@@ -636,7 +642,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         date_str = f"{y}_{m}_{d}"
 
         positive_facts="% Example generated data for day {}\n\n".format(date)
-        positive_facts+="#pos(e@500"+str(i)+",{ \n\n"
+        positive_facts+="#pos(e"+str(i)+",{ \n\n"
         #open the pictogram file for that date
         pictogram_file=os.path.join(folder_pictograms,f"{date_str}_locations.txt")
         
