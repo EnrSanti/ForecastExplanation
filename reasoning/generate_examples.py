@@ -359,7 +359,7 @@ def sum_up_morning_afternoon(temp_data, location_names,hum_or_tmp):
 
     stripped_facts = []
     # Store temperatures per location and period
-    temps = defaultdict(lambda: {"m": [], "a": []})
+    temps = defaultdict(lambda: {"morning": [], "afternoon": []})
 
     for line in temp_data:
         line = line.strip()
@@ -398,7 +398,7 @@ def sum_up_morning_afternoon(temp_data, location_names,hum_or_tmp):
             continue
 
         # Determine period
-        period = "m" if hour < 12 else "a"
+        period = "morning" if hour < 12 else "afternoon"
 
         # Rebuild predicate with period as last argument
         time_label = f"\"{period}\""
@@ -412,12 +412,12 @@ def sum_up_morning_afternoon(temp_data, location_names,hum_or_tmp):
     # Compute average temperature per location and period
     average_facts = []
     for loc, periods in temps.items():
-        for period in ["m", "a"]:
+        for period in ["morning", "afternoon"]:
             temps_list = periods[period]
             if temps_list:  # avoid division by zero
                 avg = sum(temps_list) / len(temps_list)
                 avg_truncated = f"{avg:.3f}"
-                avg_fact = f"{hum_or_tmp}_at_{period}m({loc},{avg_truncated})."
+                avg_fact = f"{hum_or_tmp}_at_{period}({loc},{avg_truncated})."
                 average_facts.append(avg_fact)
 
     return average_facts
@@ -636,7 +636,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         date_str = f"{y}_{m}_{d}"
 
         positive_facts="% Example generated data for day {}\n\n".format(date)
-        positive_facts+="#pos(e"+str(i)+",{ \n\n"
+        positive_facts+="#pos(e@500"+str(i)+",{ \n\n"
         #open the pictogram file for that date
         pictogram_file=os.path.join(folder_pictograms,f"{date_str}_locations.txt")
         
