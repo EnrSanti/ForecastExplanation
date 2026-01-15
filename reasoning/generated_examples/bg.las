@@ -9,10 +9,10 @@ cloud(C,L,H) :- cloud_at_9km_covers(C,_,H),   L=9000.
 
 
 covered_at_hour_morning(C,H) :-
-    cloud(C,L1,H), H>=7, H<=12.
+    cloud(C,L1,H),cloud(C,L2,H), L1!=L2, H>=7, H<=12.
 
 covered_at_hour_afternoon(C,H) :-
-    cloud(C,L1,H), H>=13, H<=19.
+    cloud(C,L1,H),cloud(C,L2,H), L1!=L2, H>=13, H<=19.
 
 
 city_covered_at_least_morning(C,1) :-
@@ -402,6 +402,10 @@ city_covered_less_than(C,6) :-
 city_covered_less_than(C,6) :-
     city_covered_exactly_morning(C,1), city_covered_exactly_afternoon(C,5), location(C).
 
+temperature_increased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X>Y, location(C).
+temperature_decreased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X<Y, location(C).
+humidity_increased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X>Y, location(C).
+humidity_decreased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X<Y, location(C).
 
 time(0..23).                    
 lv(1..6).
@@ -447,18 +451,17 @@ covered_at(X) :- forecasted_sky(X, "cloudy").
 
 
 #modeh(forecasted_sky(const(location),const(coverage))).
-
 #modeb(city_covered_at_least_morning(const(location),const(lv))).
 #modeb(city_covered_at_least_afternoon(const(location),const(lv))).
-
 #modeb(city_covered_at_least(const(location),const(lv))).
 #modeb(city_covered_less_than(const(location),const(lv))).
 #modeb(city_covered_exactly(const(location),const(lv))).
-
-
 #modeb(not city_covered_at_least_morning(const(location),const(lv))).
 #modeb(not city_covered_at_least_afternoon(const(location),const(lv))).
+#modeb(temperature_increased_at_afternoon(const(location))).
+#modeb(temperature_decreased_at_afternoon(const(location))).
+#modeb(humidity_increased_at_afternoon(const(location))).
+#modeb(humidity_decreased_at_afternoon(const(location))).
 
-
-%#bias("penalty(1, body(X)) :- in_body(X).").
+#bias("penalty(1, body(X)) :- in_body(X).").
 

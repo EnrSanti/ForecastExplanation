@@ -402,6 +402,10 @@ city_covered_less_than(C,6) :-
 city_covered_less_than(C,6) :-
     city_covered_exactly_morning(C,1), city_covered_exactly_afternoon(C,5), location(C).
 
+temperature_increased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X>Y, location(C).
+temperature_decreased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X<Y, location(C).
+humidity_increased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X>Y, location(C).
+humidity_decreased_at_afternoon(C) :- humidity_at_afternoon(C,X), humidity_at_morning(C,Y), X<Y, location(C).
 
 time(0..23).                    
 lv(1..6).
@@ -458,7 +462,10 @@ covered_at(X) :- forecasted_sky(X, "cloudy").
 
 #modeb(not city_covered_at_least_morning(const(location),const(lv))).
 #modeb(not city_covered_at_least_afternoon(const(location),const(lv))).
-
+#modeb(temperature_increased_at_afternoon(const(location))).
+#modeb(temperature_decreased_at_afternoon(const(location))).
+#modeb(humidity_increased_at_afternoon(const(location))).
+#modeb(humidity_decreased_at_afternoon(const(location))).
 
 %#bias("penalty(1, body(X)) :- in_body(X).").
 
