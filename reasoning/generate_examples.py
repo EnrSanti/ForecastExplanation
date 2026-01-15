@@ -9,6 +9,8 @@ from PIL import Image
 import re
 import math
 import shutil
+import matplotlib.pyplot as plt
+
 
 #longmin longmax latmin latmax of FVG and Italy, longmin longmax, latmin latmax
 coordinates=[11,15,44.5,48]
@@ -81,6 +83,45 @@ def load_location_names():
 
     for _, row in locations_data.iterrows():
         location_names.append((row["Location"]).lower())
+
+def plot_vectors_and_locations(df, locations_name_px_pos):
+    plt.figure(figsize=(10, 10))
+
+    # --- Plot wind vectors ---
+    plt.scatter(
+        df["pixel_x_scaled"],
+        df["pixel_y_scaled"],
+        s=10,
+        alpha=0.6,
+        label="Wind vectors"
+    )
+
+    # Label each vector with its ID (can be noisy!)
+    for _, row in df.iterrows():
+        plt.text(
+            row["pixel_x_scaled"],
+            row["pixel_y_scaled"],
+            str(int(row["vector_id"])),
+            fontsize=6,
+            alpha=0.6
+        )
+
+    # --- Plot city locations ---
+    for city, (cx, cy) in locations_name_px_pos.items():
+        plt.scatter(cx, cy, marker="x", s=100)
+        plt.text(cx + 3, cy + 3, city, fontsize=9, weight="bold")
+
+    # --- Formatting ---
+    plt.title("City locations and wind vectors (pixel space)")
+    plt.xlabel("Pixel X")
+    plt.ylabel("Pixel Y")
+    plt.gca().invert_yaxis()  # IMPORTANT for image coordinates
+    plt.legend()
+    plt.grid(True)
+
+    plt.savefig("wind_vectors_debug.png", dpi=200, bbox_inches="tight")
+    plt.close()
+
 
 def get_starting_date(filename):
     global starting_date
@@ -422,6 +463,117 @@ def sum_up_morning_afternoon(temp_data, location_names,hum_or_tmp):
 
     return average_facts
 
+import math
+
+DIR_TO_ANGLE = {
+    "E": 0,
+    "NE": 45,
+    "N": 90,
+    "NW": 135,
+    "W": 180,
+    "SW": 225,
+    "S": 270,
+    "SE": 315,
+}
+
+ANGLE_TO_DIR = ["E", "NE", "N", "NW", "W", "SW", "S", "SE"]
+
+def angle_to_compass(angle_deg):
+    angle = angle_deg % 360
+    idx = int((angle + 22.5) // 45) % 8
+    return ANGLE_TO_DIR[idx]
+
+from collections import defaultdict
+
+def sum_up_morning_afternoon_winds(wind_data, location_names):
+    """
+    - Skips hours <7 or >19
+    - Morning: 7–11, Afternoon: 12–19
+    - Averages wind vectors (u,v), NOT magnitudes
+    - Produces one wind fact per location per period
+    """
+    print("Summing up winds for morning and afternoon...")
+    print(wind_data)
+    # Store u,v components per location and period
+    winds = defaultdict(lambda: {
+        "morning": {"u": [], "v": []},
+        "afternoon": {"u": [], "v": []}
+    })
+
+    for line in wind_data:
+        line = line.strip()
+        if not line or line.startswith('%'):
+            continue
+
+        # Strip ")."
+        body = line[:-2] if line.endswith(").") else line.rstrip(")")
+        if "(" not in body:
+            continue
+
+        pred_name, args_str = body.split("(", 1)
+        args = [a.strip() for a in args_str.split(",")]
+
+        # Expect: loc, dir, speed, yyyy, mm, dd, hh
+        if len(args) != 7:
+            continue
+
+        loc, direction, speed, yyyy, mm, dd, hh = args
+
+        if loc not in location_names:
+            continue
+
+        try:
+            speed = float(speed)
+            hour = int(hh)
+        except ValueError:
+            continue
+
+        if hour < 7 or hour > 19:
+            continue
+
+        period = "morning" if hour < 12 else "afternoon"
+
+        if direction not in DIR_TO_ANGLE:
+            continue
+
+        # Convert to vector
+        angle_rad = math.radians(DIR_TO_ANGLE[direction])
+        u = speed * math.cos(angle_rad)
+        v = speed * math.sin(angle_rad)
+
+        winds[loc][period]["u"].append(u)
+        winds[loc][period]["v"].append(v)
+
+    # --- Build averaged facts ---
+    final_facts = []
+
+    for loc, periods in winds.items():
+        for period in ["morning", "afternoon"]:
+            u_list = periods[period]["u"]
+            v_list = periods[period]["v"]
+
+            if not u_list:
+                continue
+
+            u_avg = sum(u_list) / len(u_list)
+            v_avg = sum(v_list) / len(v_list)
+
+            speed_avg = math.sqrt(u_avg**2 + v_avg**2)
+
+            if speed_avg < 1e-6:  # calm wind
+                direction_avg = "calm"
+            else:
+                angle_avg = math.degrees(math.atan2(v_avg, u_avg))
+                direction_avg = angle_to_compass(angle_avg)
+
+            final_facts.append(
+                f"wind_blowing_{period}({loc},{direction_avg},{speed_avg:.3f})."
+            )
+
+    return final_facts
+
+
+
 
 def rewrite_facts_no_dates(lines):
     """
@@ -480,20 +632,78 @@ def get_all_dates():
     
     return date_list
 
-def calculate_winds():    
+def calculate_winds(date,file_str,suffix,hh):    
+    global locations_name_px_pos
     load_locations(coordinates,"./reasoning/clouds/")
-    print(locations_name_px_pos)
+    
 
-def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
+    df = pd.read_csv(file_str)  # adjust filename
+    # --- Rescale CSV pixel coordinates ---
+    df["pixel_x_scaled"] = df["pixel_x"] / 4.0
+    df["pixel_y_scaled"] = df["pixel_y"] / 4.0
+    #plot_vectors_and_locations(df, locations_name_px_pos)
+    # --- City pixel coordinates ---
+
+
+    # --- Find nearest wind vector for each city ---
+    results = {}
+
+    for city, (cx, cy) in locations_name_px_pos.items():
+        distances = np.sqrt(
+            (df["pixel_x_scaled"] - cx) ** 2 +
+            (df["pixel_y_scaled"] - cy) ** 2
+        )
+        
+        idx = distances.idxmin()
+        results[city] = df.loc[idx]
+
+    # --- Display results ---
+    facts = []
+    date_y, date_m, date_d = date
+    for city, row in results.items():
+        direction = angle_to_compass(row.alpha_deg)
+        #get the magnitude if needed: row.magnitude
+        magnitude = row.magnitude if "magnitude" in df.columns else None
+        fact = f"wind_blowing{suffix}({city.lower()}, {direction}, {magnitude}, {date_y},{date_m},{date_d},{hh})."
+        facts.append(fact)
+    
+    return facts
+
+
+def angle_to_compass(alpha_deg):
+    """
+    Convert angle in degrees to one of:
+    N, NE, E, SE, S, SW, W, NW
+    Assumes:
+      - 0° = East
+      - 90° = North
+      - CCW positive
+    """
+    directions = ["E", "NE", "N", "NW", "W", "SW", "S", "SE"]
+
+    # Normalize angle to [0, 360)
+    alpha = alpha_deg % 360
+
+    # Each sector is 45°
+    idx = int((alpha + 22.5) // 45) % 8
+    return directions[idx]
+
+def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,folder_list_wind,folders_suff):
+  
     global starting_date
     global location_names
+   
+   
+    print(folder_list_clouds)
+    print(folder_list_wind)
+   
     folder_split_merge="./image_processing/fvg/output" #ha le subfolder per ogni livello (considera solo le clouds)
     folder_clouds="./reasoning/clouds" #ha le subfolder per ogni livello
     folder_hum="./reasoning/humidity" #ha le subfolder per ogni livello
     folder_temp="./reasoning/temp" #ha le subfolder per ogni livello
     folder_pictograms="./reasoning/pictogram_extraction/extracted"
-
-    output_folder="./reasoning/generated_examples"
+    folder_winds="./raw_data/extracted_fvg_cleaned" #ha le subfolder per ogni livello
+    output_folder="./raw_data/generated_examples"
 
     date_list=get_all_dates()
 
@@ -606,7 +816,27 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
                         temp_data[date_day].append(line)
                         break  # if a line can only belong to one frame
         '''
-    
+
+    wind_data = {date: [] for date in date_list}
+
+
+    for win_folder_name,_ in folder_list_wind:
+        full_wind_folder = os.path.join(folder_winds, win_folder_name)
+
+        if not os.path.isdir(full_wind_folder):
+            print(f"Skipping missing folder: {full_wind_folder}")
+            continue
+
+        for date in date_list:
+            y, m, d = date
+            hPa= next((k for k, v in folders_suff.items() if v in win_folder_name), None)
+            suffix= folders_suff[hPa]
+            for hour in range(1,24):
+                wind_file=os.path.join(full_wind_folder, f"wind_{hPa}_{y:04d}{m:02d}{d:02d}_{hour:02d}00.csv")
+                wind_data[date].extend(calculate_winds(date,wind_file,suffix,hour))
+                print("Processing wind file:", wind_file)
+        
+
     i=0
     load_location_names()
     print(location_names)
@@ -620,8 +850,11 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
         cloud_stripped = rewrite_facts_no_dates(cloud_covering_data[date])
         temp_morning_afternoon= sum_up_morning_afternoon(temp_data[date], location_names,"temperature")
         hum_morning_afternoon= sum_up_morning_afternoon(hum_data[date], location_names,"humidity")
-        #wind_facts=calculate_winds()
-
+        
+        wind_facts=wind_data[date]
+        winds_morning_afternoon= sum_up_morning_afternoon_winds(wind_data[date], location_names)
+        #wind_facts_morning=sum_up_morning_afternoon(wind_facts[date], location_names,"wind_blowing")
+        #wind_facts_morning=sum_up_morning_afternoon(wind_facts[date], location_names,"wind_blowing")
 
         #cloud_moving_timestamp, cloud_moving_stripped = rewrite_facts_no_dates(cloud_moving_data[date])
 
@@ -682,6 +915,9 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp):
             context_facts+=fact + "\n"
         
         for fact in hum_morning_afternoon:
+            context_facts+=fact + "\n"
+
+        for fact in winds_morning_afternoon:
             context_facts+=fact + "\n"
         
         context_facts+="\n"
