@@ -1,2 +1,0 @@
-Temperature range at 925 hPa: 273.06 K to 293.96 K
-Respective colors: (255, 247, 236), (127, 0, 0)
