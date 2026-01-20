@@ -1,0 +1,11 @@
+% date(2019,4,2),
+
+forecasted_sky(sappada_forni_villa, "partly_cloudy"),
+forecasted_sky(pontebba_tarvisio, "partly_cloudy"),
+forecasted_sky(lignano_grado, "mostly_clear"),
+forecasted_sky(barcis, "partly_cloudy"),
+forecasted_sky(udine_palamnova, "mostly_clear"),
+forecasted_sky(gorizia, "mostly_clear"),
+forecasted_sky(trieste, "mostly_clear"),
+forecasted_sky(gemona_stolvizza, "partly_cloudy"),
+forecasted_sky(pordenone, "partly_cloudy")
