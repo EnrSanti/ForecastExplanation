@@ -1,2 +1,0 @@
-Temperature range at 300 hPa: 217.81 K to 232.71 K
-Respective colors: (255, 247, 236), (127, 0, 0)

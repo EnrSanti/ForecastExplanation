@@ -1,2 +1,0 @@
-Temperature range at 500 hPa: 243.47 K to 261.48 K
-Respective colors: (255, 247, 236), (127, 0, 0)
