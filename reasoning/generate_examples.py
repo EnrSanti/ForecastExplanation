@@ -274,20 +274,32 @@ def get_clouds_covering_locations(locations_name_px_pos, segment_labels_path,tra
     
     return frame_cloud_map
 
-def frame_index_to_timestamp(index, starting_date, frame_time_interval=1):
+
+def get_sorted_png_files(folder_path):
+    print("Getting PNG files from:", folder_path)
+    return sorted(
+        f for f in os.listdir(folder_path)
+        if f.lower().endswith(".png")
+    )
+
+
+def extract_timestamp_from_filename(filename):
     """
-    Calculate the timestamp of a frame and return (yyyy, mm, dd, h).
+    Extract (yyyy, mm, dd, hh) from filenames like:
+    cloud_1000_20190401_0300.png
     """
-    if index < 0:
-        raise ValueError("Frame index must be >= 0")
-    
-    # Convert integer hours to timedelta if necessary
-    if isinstance(frame_time_interval, int):
-        frame_time_interval = timedelta(hours=frame_time_interval)
-    
-    timestamp = starting_date + index * frame_time_interval
-    return timestamp.year, timestamp.month, timestamp.day, timestamp.hour
-    
+    match = re.search(r'(\d{8})_(\d{4})', filename)
+    if not match:
+        raise ValueError(f"Cannot extract timestamp from {filename}")
+
+    date_str, hour_str = match.groups()
+
+    yyyy = int(date_str[0:4])
+    mm   = int(date_str[4:6])
+    dd   = int(date_str[6:8])
+    hh   = int(hour_str[0:2])
+
+    return yyyy, mm, dd, hh
 
 
 def segment_direction(x1, y1, x2, y2):
@@ -322,7 +334,7 @@ def generate_cloud_movements(base_path):
         full_path = os.path.join(base_path, folder_types[0] + suff)
         full_str="% format: cloud_moves(cell_id, direction, yyyy, mm, dd, h).\n\n"
         with open(full_path+"/movements.txt", "r") as f:
-            
+            png_files = get_sorted_png_files(full_path)
             for line in f:
                 line = line.strip()
                 if not line:
@@ -339,7 +351,8 @@ def generate_cloud_movements(base_path):
                     direction = segment_direction(x_start, y_start, x_end, y_end)
 
                     # Generate facts for this movement
-                    yyyy,mm,dd,h=frame_index_to_timestamp(int(frame_num),starting_date,1)
+                    filename = png_files[int(frame_num)]
+                    yyyy, mm, dd, h = extract_timestamp_from_filename(filename)
                     full_str+=f"{full_path.rsplit('/', 1)[-1]}_moves({cell_id},{direction},{yyyy},{mm},{dd},{h}).\n"
         
         path = "reasoning/clouds/" + full_path.rsplit('/', 1)[-1] + "/moving.txt"
@@ -368,10 +381,12 @@ def generate_cloud_facts_over_cities(base_path):
             # Example: print clouds covering each location in frame 0
             #full_str="starting date: "+str(starting_date)+"\n"
             full_str="% format: cloud_at(location, cloud_id, yyyy, mm, dd, h).\n\n"
+            png_files = get_sorted_png_files(full_path)
             for key in frame_cloud_map.keys():
                 for cell_id, locs in frame_cloud_map[key].items():
                     for location in locs:
-                        yyyy,mm,dd,h=frame_index_to_timestamp(key,starting_date,1) #1h between each frame
+                        filename = png_files[key]
+                        yyyy, mm, dd, h = extract_timestamp_from_filename(filename)
                         cloud_at_string=f"{full_path.rsplit('/', 1)[-1]}"
                         loc_lower = location.lower().replace(" ", "_")
                        
@@ -703,7 +718,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
     folder_temp="./reasoning/temp" #ha le subfolder per ogni livello
     folder_pictograms="./reasoning/pictogram_extraction/extracted"
     folder_winds="./raw_data/extracted_fvg_cleaned" #ha le subfolder per ogni livello
-    output_folder="./raw_data/generated_examples"
+    output_folder="./reasoning/generated_examples"
 
     date_list=get_all_dates()
 
@@ -1038,10 +1053,13 @@ def generate_humidity_facts_over_cities(base_path):
             hum_values=get_humidity_over_locations_color(locations_name_px_pos,full_path,legend_colors, legend_values)
 
             path="reasoning/humidity/" + full_path.rsplit('/', 1)[-1] + "/humidity.txt"
+            
+            png_files = get_sorted_png_files(full_path)
             with open(path, "w") as f:
                 f.write("% format humidity_percentage_at(location, humidity_percentage, yyyy, mm, dd, h).\n\n")
                 for frame, values in hum_values.items():
-                    yyyy,mm,dd,h=frame_index_to_timestamp(frame, starting_date, 1)
+                    filename = png_files[frame]
+                    yyyy, mm, dd, h = extract_timestamp_from_filename(filename)
                     for location_name, _ in locations_name_px_pos.items():
                         loc_lower = location_name.lower().replace(" ", "_")
                         #witout appproximation use: int(values[location_name])
@@ -1135,10 +1153,13 @@ def generate_temp_facts_over_cities(base_path):
             
             hum_values=get_humidity_over_locations_color(locations_name_px_pos,full_path,legend_colors, legend_values)
             path="reasoning/temp/" + full_path.rsplit('/', 1)[-1] + "/temp.txt"
+
+            png_files = get_sorted_png_files(full_path)
             with open(path, "w") as f:
                 f.write("% format temperature_at(location, temperature, yyyy, mm, dd, h).\n\n")
                 for frame, values in hum_values.items():
-                    yyyy,mm,dd,h=frame_index_to_timestamp(frame, starting_date, 1)
+                    filename = png_files[frame]
+                    yyyy, mm, dd, h = extract_timestamp_from_filename(filename)
                     for location_name, _ in locations_name_px_pos.items():
                         loc_lower = location_name.lower().replace(" ", "_")
                         #witout appproximation use: int(values[location_name])

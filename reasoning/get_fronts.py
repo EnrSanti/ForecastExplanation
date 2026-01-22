@@ -1,11 +1,11 @@
 import numpy as np
-from reasoning.generate_examples import load_locations
+from reasoning.generate_examples import extract_timestamp_from_filename, get_sorted_png_files, load_locations
 import pandas as pd
 from scipy.spatial import Delaunay
 
 import matplotlib.pyplot as plt
 from PIL import Image
-from reasoning.generate_examples import folder_types, folders_suff, frame_index_to_timestamp
+from reasoning.generate_examples import folder_types, folders_suff, get_sorted_png_files
 
 import os
 from collections import defaultdict
@@ -287,9 +287,12 @@ def generate_fronts_hum(starting_date):
             altitude_facts = []
             
 
+            png_files = get_sorted_png_files(full_path)
+            
             for frame_idx, seg_labels in enumerate(segment_labels_list):
 
-                yyyy, mm, dd, h = frame_index_to_timestamp(frame_idx, starting_date, 1) 
+                filename = png_files[frame_idx]
+                yyyy, mm, dd, h = extract_timestamp_from_filename(filename)
                 
                  # Iterate over all adjacent city pairs
                 for city1, adjacents in map.items():
@@ -370,9 +373,13 @@ def generate_fronts_temp(starting_date):
             altitude_facts = []
             
 
+            
+            png_files = get_sorted_png_files(full_path)
+            
             for frame_idx, seg_labels in enumerate(segment_labels_list):
 
-                yyyy, mm, dd, h = frame_index_to_timestamp(frame_idx, starting_date, 1) 
+                filename = png_files[frame_idx]
+                yyyy, mm, dd, h = extract_timestamp_from_filename(filename)
                 
                  # Iterate over all adjacent city pairs
                 for city1, adjacents in map.items():

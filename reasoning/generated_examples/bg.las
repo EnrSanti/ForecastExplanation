@@ -21,22 +21,20 @@ city_covered_at_least_morning(C,1) :-
 city_covered_at_least_morning(C,2) :-
     covered_at_hour_morning(C,H1),
     covered_at_hour_morning(C,H2),
-    H1 != H2.
+    H1 < H2.
 
 city_covered_at_least_morning(C,3) :-
     covered_at_hour_morning(C,H1),
     covered_at_hour_morning(C,H2),
     covered_at_hour_morning(C,H3),
-    H1 != H2, H1 != H3, H2 != H3.
+    H1 < H2, H2 < H3.
 
 city_covered_at_least_morning(C,4) :-
     covered_at_hour_morning(C,H1),
     covered_at_hour_morning(C,H2),
     covered_at_hour_morning(C,H3),
     covered_at_hour_morning(C,H4),
-    H1 != H2, H1 != H3, H1 != H4,
-    H2 != H3, H2 != H4,
-    H3 != H4.
+    H1 < H2, H2 < H3, H3 < H4.
 
 city_covered_at_least_morning(C,5) :-
     covered_at_hour_morning(C,H1),
@@ -44,10 +42,8 @@ city_covered_at_least_morning(C,5) :-
     covered_at_hour_morning(C,H3),
     covered_at_hour_morning(C,H4),
     covered_at_hour_morning(C,H5),
-    H1 != H2, H1 != H3, H1 != H4, H1 != H5,
-    H2 != H3, H2 != H4, H2 != H5,
-    H3 != H4, H3 != H5,
-    H4 != H5.
+    H1 < H2, H2 < H3, H3 < H4, H4 < H5.
+
 
 city_covered_at_least_morning(C,6) :-
     covered_at_hour_morning(C,H1),
@@ -56,35 +52,31 @@ city_covered_at_least_morning(C,6) :-
     covered_at_hour_morning(C,H4),
     covered_at_hour_morning(C,H5),
     covered_at_hour_morning(C,H6),
-    H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6,
-    H2 != H3, H2 != H4, H2 != H5, H2 != H6,
-    H3 != H4, H3 != H5, H3 != H6,
-    H4 != H5, H4 != H6,
-    H5 != H6.
-
+    H1 < H2, H2 < H3, H3 < H4, H4 < H5, H5 < H6.
     
+
+
+
 city_covered_at_least_afternoon(C,1) :-
     covered_at_hour_afternoon(C,H1).
 
 city_covered_at_least_afternoon(C,2) :-
     covered_at_hour_afternoon(C,H1),
     covered_at_hour_afternoon(C,H2),
-    H1 != H2.
+    H1 < H2.
 
 city_covered_at_least_afternoon(C,3) :-
     covered_at_hour_afternoon(C,H1),
     covered_at_hour_afternoon(C,H2),
     covered_at_hour_afternoon(C,H3),
-    H1 != H2, H1 != H3, H2 != H3.
+    H1 < H2, H2 < H3.
 
 city_covered_at_least_afternoon(C,4) :-
     covered_at_hour_afternoon(C,H1),
     covered_at_hour_afternoon(C,H2),
     covered_at_hour_afternoon(C,H3),
     covered_at_hour_afternoon(C,H4),
-    H1 != H2, H1 != H3, H1 != H4,
-    H2 != H3, H2 != H4,
-    H3 != H4.
+    H1 < H2, H2 < H3, H3 < H4.
 
 city_covered_at_least_afternoon(C,5) :-
     covered_at_hour_afternoon(C,H1),
@@ -92,10 +84,8 @@ city_covered_at_least_afternoon(C,5) :-
     covered_at_hour_afternoon(C,H3),
     covered_at_hour_afternoon(C,H4),
     covered_at_hour_afternoon(C,H5),
-    H1 != H2, H1 != H3, H1 != H4, H1 != H5,
-    H2 != H3, H2 != H4, H2 != H5,
-    H3 != H4, H3 != H5,
-    H4 != H5.
+    H1 < H2, H2 < H3, H3 < H4, H4 < H5.
+
 
 city_covered_at_least_afternoon(C,6) :-
     covered_at_hour_afternoon(C,H1),
@@ -104,11 +94,8 @@ city_covered_at_least_afternoon(C,6) :-
     covered_at_hour_afternoon(C,H4),
     covered_at_hour_afternoon(C,H5),
     covered_at_hour_afternoon(C,H6),
-    H1 != H2, H1 != H3, H1 != H4, H1 != H5, H1 != H6,
-    H2 != H3, H2 != H4, H2 != H5, H2 != H6,
-    H3 != H4, H3 != H5, H3 != H6,
-    H4 != H5, H4 != H6,
-    H5 != H6.
+    H1 < H2, H2 < H3, H3 < H4, H4 < H5, H5 < H6.
+
 
 % exactly 0
 city_covered_exactly_morning(C,0) :-
@@ -473,7 +460,7 @@ adjacent(udine_palamnova,lignano_grado).
 adjacent(gorizia,trieste).
 adjacent(lignano_grado,trieste).
 
-
+same_city(X,X) :- location(X).
 adjacent(X,Y) :- adjacent(Y,X),location(X),location(y).
 
 #maxv(2).
@@ -499,6 +486,6 @@ adjacent(X,Y) :- adjacent(Y,X),location(X),location(y).
 #modeb(humidity_decreased_at_afternoon(var(location))).
 
 #bias("penalty(5, no_adj) :- not in_body(adjacent(_, _)).").
-
+#bias("penalty(2, no_adj) :- in_body(adjacent(_, _)).").
 #bias("penalty(1, body(X)) :- in_body(X).").
 

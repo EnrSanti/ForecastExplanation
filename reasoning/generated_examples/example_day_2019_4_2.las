@@ -1673,24 +1673,6 @@ humidity_at_morning(gemona_stolvizza,48.083).
 humidity_at_afternoon(gemona_stolvizza,49.322).
 humidity_at_morning(pordenone,43.833).
 humidity_at_afternoon(pordenone,44.011).
-wind_blowing_morning(sappada_forni_villa,NE,11.796).
-wind_blowing_afternoon(sappada_forni_villa,NE,15.363).
-wind_blowing_morning(pontebba_tarvisio,NE,12.010).
-wind_blowing_afternoon(pontebba_tarvisio,NE,13.253).
-wind_blowing_morning(lignano_grado,NE,14.542).
-wind_blowing_afternoon(lignano_grado,NE,12.537).
-wind_blowing_morning(barcis,NE,14.678).
-wind_blowing_afternoon(barcis,NE,13.972).
-wind_blowing_morning(udine_palamnova,NE,14.045).
-wind_blowing_afternoon(udine_palamnova,NE,12.557).
-wind_blowing_morning(gorizia,NE,14.045).
-wind_blowing_afternoon(gorizia,NE,12.557).
-wind_blowing_morning(trieste,E,13.444).
-wind_blowing_afternoon(trieste,NE,12.857).
-wind_blowing_morning(gemona_stolvizza,NE,14.045).
-wind_blowing_afternoon(gemona_stolvizza,NE,12.557).
-wind_blowing_morning(pordenone,NE,14.678).
-wind_blowing_afternoon(pordenone,NE,13.972).
 
 % Humidity front data:
 % humidty_front(location_1,location_2,hh): between the two locations there's a sharp change 
