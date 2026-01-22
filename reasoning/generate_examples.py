@@ -49,7 +49,7 @@ def geo_to_pixel(lon, lat, lon_min, lon_max, lat_min, lat_max, img_width, img_he
 def load_locations(coordinates,image_input_folder):
     global locations_name_px_pos
     locations_data = pd.read_csv("reasoning/locations.csv")  # same folder or specify full path
-    print(f"Loaded {len(locations_data)} locations.")
+    #print(f"Loaded {len(locations_data)} locations.")
 
     lon_min, lon_max = coordinates[0], coordinates[1]
     lat_min, lat_max = coordinates[2], coordinates[3]
@@ -759,7 +759,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
-                    if ts_str in line:
+                    if f"{ts_str}," in line:
                         cloud_covering_data[date_day].append(line)
                         break  # if a line can only belong to one frame
 
@@ -768,7 +768,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
-                    if ts_str in line:
+                    if f"{ts_str}," in line:
                         cloud_moving_data[date_day].append(line)
                         break  # if a line can only belong to one frame
     
@@ -799,7 +799,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
-                    if ts_str in line:
+                    if f"{ts_str}," in line:
                         hum_data[date_day].append(line)                        
                         break  # if a line can only belong to one frame
                     
@@ -819,7 +819,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
-                    if ts_str in line:
+                    if f"{ts_str}," in line:
                         temp_data[date_day].append(line)
                         break  # if a line can only belong to one frame
         '''
@@ -849,7 +849,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
             for hour in range(1,24):
                 wind_file=os.path.join(full_wind_folder, f"wind_{hPa}_{y:04d}{m:02d}{d:02d}_{hour:02d}00.csv")
                 wind_data[date].extend(calculate_winds(date,wind_file,suffix,hour))
-                print("Processing wind file:", wind_file)
+                #print("Processing wind file:", wind_file)
         
 
     i=0
@@ -905,6 +905,8 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
                 for line in pictogram_lines:
                     line = line.strip()
                     negative_facts.append(compute_negative_facts(line))
+        else:
+            print(f"Pictogram file not found: {pictogram_file}")
         #print(f"pictogram file {pictogram_file} positive facts for day:{date}: {positive_facts}")
         positive_facts+="},\n"
         negative_facts = "".join(negative_facts).rstrip(", \n")
