@@ -43,24 +43,6 @@ date(2019, 11, 11).
 
 %summing up temperature and humidity facts 
 
-wind_blowing_morning(sappada_forni_villa,NE,23.264).
-wind_blowing_afternoon(sappada_forni_villa,NE,28.722).
-wind_blowing_morning(pontebba_tarvisio,NE,22.424).
-wind_blowing_afternoon(pontebba_tarvisio,NE,27.395).
-wind_blowing_morning(lignano_grado,NE,20.713).
-wind_blowing_afternoon(lignano_grado,NE,26.971).
-wind_blowing_morning(barcis,NE,21.916).
-wind_blowing_afternoon(barcis,NE,28.099).
-wind_blowing_morning(udine_palamnova,NE,21.901).
-wind_blowing_afternoon(udine_palamnova,NE,28.440).
-wind_blowing_morning(gorizia,NE,21.901).
-wind_blowing_afternoon(gorizia,NE,28.440).
-wind_blowing_morning(trieste,NE,19.609).
-wind_blowing_afternoon(trieste,NE,26.395).
-wind_blowing_morning(gemona_stolvizza,NE,21.901).
-wind_blowing_afternoon(gemona_stolvizza,NE,28.440).
-wind_blowing_morning(pordenone,NE,21.916).
-wind_blowing_afternoon(pordenone,NE,28.099).
 
 % Humidity front data:
 % humidty_front(location_1,location_2,hh): between the two locations there's a sharp change 

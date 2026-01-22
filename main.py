@@ -5,7 +5,7 @@ from image_processing.segment_track import run_tobac_merge_split, run_tobac_fron
 from raw_data.extract_features_nc import save_feature_maps
 from raw_data.cut_long_lat import cut_grib_long_lat
 from reasoning.pictogram_extraction.pictograms_to_ground_truth import generate_ground_truth
-from reasoning.generate_examples import generate_cloud_facts_over_cities,generate_cloud_movements, generate_humidity_facts_over_cities,generate_temp_facts_over_cities , merge_into_examples
+from reasoning.generate_examples import generate_cloud_facts_over_cities,generate_cloud_movements, generate_humidity_facts_over_cities,generate_temp_facts_over_cities, get_all_dates , merge_into_examples
 from reasoning.get_fronts import init_fronts_generation,generate_fronts_hum,generate_fronts_temp
 
 import iris
@@ -269,7 +269,7 @@ def extract_data():
     grib_files = [f for f in os.listdir(input_dir_extraction) if f.endswith(".grib")]
 
     #no threads, processes HDF5 has some thread issues #each worker extacts one grib
-    with ProcessPoolExecutor(max_workers=3) as executor:
+    with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {executor.submit(extract, grib_file, coordinates,coordinates_italy,True): grib_file for grib_file in grib_files}
 
         for future in as_completed(futures):
@@ -382,6 +382,7 @@ if __name__ == "__main__":
     elif mode == 5:
         
         init_starting_date()
+        
         merge_into_examples(folder_list_clouds,folder_list_humidity,folder_list_temp,folder_list_wind, folders_suff)
         
     elif mode == 6:
@@ -429,7 +430,7 @@ if __name__ == "__main__":
         generate_ground_truth()
         
         init_starting_date()
-        merge_into_examples(folder_list_clouds,folder_list_humidity,folder_list_temp)
+        merge_into_examples(folder_list_clouds,folder_list_humidity,folder_list_temp,folder_list_wind,folders_suff)
         t1 = time.time()
         print("-------------------------------------------------")
         print(f"------------------ Process completed in {t1 - t0:.2f}s -------------------")
