@@ -410,7 +410,7 @@ def sum_up_morning_afternoon(temp_data, location_names,hum_or_tmp):
     - Adds "m" if 7 <= hour < 12, "a" if 12 <= hour <= 19
     - Collects stripped predicates
     - Computes per-location average temperatures for morning and afternoon
-      truncated to 3 digits after the decimal
+      truncated to 2 digits after the decimal
     """
 
     stripped_facts = []
@@ -472,7 +472,7 @@ def sum_up_morning_afternoon(temp_data, location_names,hum_or_tmp):
             temps_list = periods[period]
             if temps_list:  # avoid division by zero
                 avg = sum(temps_list) / len(temps_list)
-                avg_truncated = f"{avg:.3f}"
+                avg_truncated = f"{avg:.2f}"
                 avg_fact = f"{hum_or_tmp}_at_{period}({loc},{avg_truncated})."
                 average_facts.append(avg_fact)
 
@@ -890,7 +890,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
         date_str = f"{y}_{m}_{d}"
 
         positive_facts="% Example generated data for day {}\n\n".format(date)
-        positive_facts+="#pos(e"+str(i)+",{ \n\n"
+        positive_facts+="#pos(e"+str(i)+"@100,{ \n\n"
         #open the pictogram file for that date
         pictogram_file=os.path.join(folder_pictograms,f"{date_str}_locations.txt")
         
