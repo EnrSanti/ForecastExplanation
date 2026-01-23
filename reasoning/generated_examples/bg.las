@@ -402,7 +402,7 @@ location(sappada_forni_villa).
 location(pontebba_tarvisio).
 location(lignano_grado).
 location(barcis).
-location(udine_palamnova).
+location(udine_palmanova).
 location(gorizia).
 location(trieste).
 location(gemona_stolvizza).
@@ -439,29 +439,29 @@ covered_at(X) :- forecasted_sky(X, "cloudy").
 
 adjacent(sappada_forni_villa,pontebba_tarvisio).
 adjacent(sappada_forni_villa,gemona_stolvizza).
-adjacent(sappada_forni_villa,udine_palamnova).
+adjacent(sappada_forni_villa,udine_palmanova).
 adjacent(sappada_forni_villa,pordenone).
 adjacent(sappada_forni_villa,barcis).
 
 adjacent(pontebba_tarvisio,gemona_stolvizza).
 adjacent(pontebba_tarvisio,gorizia).
 
-adjacent(gemona_stolvizza,udine_palamnova).
+adjacent(gemona_stolvizza,udine_palmanova).
 adjacent(gemona_stolvizza,gorizia).
 
 adjacent(barcis,pordenone).
 
-adjacent(pordenone,udine_palamnova).
+adjacent(pordenone,udine_palmanova).
 adjacent(pordenone,lignano_grado).
 
-adjacent(udine_palamnova,gorizia).
-adjacent(udine_palamnova,lignano_grado).
+adjacent(udine_palmanova,gorizia).
+adjacent(udine_palmanova,lignano_grado).
 
 adjacent(gorizia,trieste).
 adjacent(lignano_grado,trieste).
 
-same_city(X,X) :- location(X).
 adjacent(X,Y) :- adjacent(Y,X),location(X),location(y).
+adjacent(X,X) :- location(X).
 
 #maxv(2).
 

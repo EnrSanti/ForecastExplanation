@@ -25,7 +25,7 @@ cloud_at_3km_covers(pordenone,178, 16).
 cloud_at_3km_covers(pontebba_tarvisio,177, 19).
 cloud_at_3km_covers(pontebba_tarvisio,177, 20).
 cloud_at_5_5km_covers(lignano_grado,143, 5).
-cloud_at_5_5km_covers(udine_palamnova,143, 6).
+cloud_at_5_5km_covers(udine_palmanova,143, 6).
 cloud_at_5_5km_covers(trieste,145, 10).
 cloud_at_5_5km_covers(barcis,151, 11).
 cloud_at_5_5km_covers(trieste,151, 11).
@@ -33,7 +33,7 @@ cloud_at_5_5km_covers(pordenone,151, 11).
 cloud_at_5_5km_covers(pontebba_tarvisio,153, 12).
 cloud_at_5_5km_covers(lignano_grado,153, 12).
 cloud_at_5_5km_covers(barcis,153, 12).
-cloud_at_5_5km_covers(udine_palamnova,153, 12).
+cloud_at_5_5km_covers(udine_palmanova,153, 12).
 cloud_at_5_5km_covers(gorizia,153, 12).
 cloud_at_5_5km_covers(trieste,153, 12).
 cloud_at_5_5km_covers(gemona_stolvizza,153, 12).
@@ -47,7 +47,7 @@ cloud_at_9km_covers(sappada_forni_villa,184, 0).
 cloud_at_9km_covers(pontebba_tarvisio,184, 0).
 cloud_at_9km_covers(lignano_grado,184, 0).
 cloud_at_9km_covers(barcis,184, 0).
-cloud_at_9km_covers(udine_palamnova,184, 0).
+cloud_at_9km_covers(udine_palmanova,184, 0).
 cloud_at_9km_covers(gorizia,184, 0).
 cloud_at_9km_covers(trieste,184, 0).
 cloud_at_9km_covers(gemona_stolvizza,184, 0).
@@ -56,7 +56,7 @@ cloud_at_9km_covers(sappada_forni_villa,184, 1).
 cloud_at_9km_covers(pontebba_tarvisio,184, 1).
 cloud_at_9km_covers(lignano_grado,184, 1).
 cloud_at_9km_covers(barcis,184, 1).
-cloud_at_9km_covers(udine_palamnova,184, 1).
+cloud_at_9km_covers(udine_palmanova,184, 1).
 cloud_at_9km_covers(gorizia,184, 1).
 cloud_at_9km_covers(trieste,184, 1).
 cloud_at_9km_covers(gemona_stolvizza,184, 1).
@@ -64,7 +64,7 @@ cloud_at_9km_covers(pordenone,184, 1).
 cloud_at_9km_covers(sappada_forni_villa,184, 2).
 cloud_at_9km_covers(pontebba_tarvisio,184, 2).
 cloud_at_9km_covers(barcis,184, 2).
-cloud_at_9km_covers(udine_palamnova,184, 2).
+cloud_at_9km_covers(udine_palmanova,184, 2).
 cloud_at_9km_covers(gorizia,184, 2).
 cloud_at_9km_covers(gemona_stolvizza,184, 2).
 cloud_at_9km_covers(sappada_forni_villa,184, 3).
@@ -92,8 +92,8 @@ temperature_at_morning(lignano_grado,267.333).
 temperature_at_afternoon(lignano_grado,268.292).
 temperature_at_morning(barcis,267.600).
 temperature_at_afternoon(barcis,269.062).
-temperature_at_morning(udine_palamnova,266.633).
-temperature_at_afternoon(udine_palamnova,266.896).
+temperature_at_morning(udine_palmanova,266.633).
+temperature_at_afternoon(udine_palmanova,266.896).
 temperature_at_morning(gorizia,264.833).
 temperature_at_afternoon(gorizia,266.938).
 temperature_at_morning(trieste,266.167).
@@ -110,8 +110,8 @@ humidity_at_morning(lignano_grado,48.000).
 humidity_at_afternoon(lignano_grado,52.500).
 humidity_at_morning(barcis,48.000).
 humidity_at_afternoon(barcis,57.500).
-humidity_at_morning(udine_palamnova,55.333).
-humidity_at_afternoon(udine_palamnova,50.833).
+humidity_at_morning(udine_palmanova,55.333).
+humidity_at_afternoon(udine_palmanova,50.833).
 humidity_at_morning(gorizia,56.000).
 humidity_at_afternoon(gorizia,44.167).
 humidity_at_morning(trieste,52.000).
