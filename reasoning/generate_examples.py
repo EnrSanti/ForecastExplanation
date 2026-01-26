@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 #longmin longmax latmin latmax of FVG and Italy, longmin longmax, latmin latmax
 coordinates=[11,15,44.5,48]
-coordinates_italy=[6.5,18.5,36.5,48]
+coordinates_italy=[10,16,42,48]
 folder_types = ["cloud","humidity","temp"]
 
 folders_suff = {
