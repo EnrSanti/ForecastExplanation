@@ -35,6 +35,27 @@ n_min_threshold_fronts=2000
 
 input_dir_extraction = "./raw_data/data/original_CERRA"
 output_dir_extraction = "./raw_data/data/CERRA_cut"
+
+
+
+def just_cut(grib_file,coordinates_fvg,coordinates_italy, is_fvg):
+    global input_dir_extraction, output_dir_extraction
+
+    
+    #get the file name and paths
+    grib_path = os.path.join(input_dir_extraction, grib_file)
+    base_name = os.path.splitext(grib_file)[0]  #remove .nc
+    output_path = os.path.join(output_dir_extraction, base_name + ".nc")
+    
+    #if already cut skip
+    if not os.path.exists(output_path):
+        #always cut the big chunk, we want to keep a single file, which is still smaller than the original grib
+        cut_grib_long_lat(grib_path, output_path, coordinates_italy)
+        print(f"GRIB CUT: {output_path}")
+    else:
+        print(f"ALREADY CUT: {output_path}")
+
+   
 def extract(grib_file,coordinates_fvg,coordinates_italy, is_fvg):
     global input_dir_extraction, output_dir_extraction
     """
@@ -74,7 +95,21 @@ def extract(grib_file,coordinates_fvg,coordinates_italy, is_fvg):
 
     print(f"Processed: {grib_file} -> {output_path}")
 
+def extract_no_cut(grib_file,coordinates_fvg,coordinates_italy, is_fvg):
+    global input_dir_extraction, output_dir_extraction
 
+
+    #get the file name and paths
+    base_name = os.path.splitext(grib_file)[0]  #remove .grib
+    output_path = os.path.join(output_dir_extraction, base_name + ".nc")
+    
+    #proper image extraction
+    if(is_fvg):
+        save_feature_maps(output_path, coordinates_fvg,True,True)
+    else:
+        save_feature_maps(output_path, coordinates_italy,False,True)
+
+    print(f"Processed: {grib_file} -> {output_path}")
 
 
 
@@ -279,10 +314,52 @@ def extract_data():
             except Exception as e:
                 print(f"Extract failed for {grib_file}: {e}")
 
+def extract_data_no_cut():
+    global coordinates, coordinates_italy
+    
+    #extract nc from grib for FVG & save feature maps (multithreaded, beware more threads use lots of RAM) 
+    input_dir_extraction_nc = "./raw_data/data/CERRA_cut"
+    os.makedirs(output_dir_extraction, exist_ok=True)
+    
+    # all grib files
+    grib_files = [f for f in os.listdir(input_dir_extraction_nc) if f.endswith(".nc")]
+
+    #no threads, processes HDF5 has some thread issues #each worker extacts one grib
+    with ProcessPoolExecutor(max_workers=12) as executor:
+        futures = {executor.submit(extract_no_cut, grib_file, coordinates,coordinates_italy,True): grib_file for grib_file in grib_files}
+
+        for future in as_completed(futures):
+            grib_file = futures[future]
+            try:
+                future.result()  # raises exception if any
+            except Exception as e:
+                print(f"Extract (WITHOUT CUT) failed for {grib_file}: {e}")
+
+def just_cut_data():
+    global coordinates, coordinates_italy
+    global input_dir_extraction, output_dir_extraction
+    #extract nc from grib for FVG & save feature maps (multithreaded, beware more threads use lots of RAM) 
+    
+    os.makedirs(output_dir_extraction, exist_ok=True)
+    
+    # all grib files
+    grib_files = [f for f in os.listdir(input_dir_extraction) if f.endswith(".grib")]
+
+    #no threads, processes HDF5 has some thread issues #each worker extacts one grib
+    with ProcessPoolExecutor(max_workers=18) as executor:
+        futures = {executor.submit(just_cut, grib_file, coordinates,coordinates_italy,True): grib_file for grib_file in grib_files}
+
+        for future in as_completed(futures):
+            grib_file = futures[future]
+            try:
+                future.result()  # raises exception if any
+            except Exception as e:
+                print(f"CUT failed for {grib_file}: {e}")
+
 if __name__ == "__main__":
-    print("\n-------------------------------------------------\n[0] Info\n")
 
     print("-------------- From GRIB to images --------------")
+    print("[0]: CUT Girb to NC")
     print("[1]: CUT Girb & extract FVG DATA")
     
     print("-------------- Processing (single steps) -----------------")
@@ -296,6 +373,7 @@ if __name__ == "__main__":
     print("-------------- Processing (ALL IN ONE) -----------------")
 
     print("[6]: CLEAR EXISTING DATA and do the whole pipeline")
+    print("[7]: CLEAR EXISTING DATA and do the whole pipeline FROM NC DATA")
 
     print("\nselect: ",end='')
 
@@ -344,22 +422,8 @@ if __name__ == "__main__":
 
     #print info
     if mode == 0:
-        text = """
-        The first two commands (1) cut (in latitude and long.) the gribs file under ./raw_data/data/original_CERRA, save it as .nc.
-        Then extracts feature maps for the FVG region and stores them in "./raw_data/extracted_fvg".
         
-        The remaining three commands (2,3) work on data under "./image_processing/":
-            [2] clusters the FVG images and runs TOBAC on them
-                Generate facts (coulds, humidty...) over each city
-            [3] scales FVG images and runs TOBAC on them
-                Generate facts (coulds, humidty...) over each city
-            [4] extract ground truth from pictograms (put them under ./reasoning/pictogram_extraction/pictograms)
-            [5]: Generate full ILP examples 
-            
-            [6]: CLEARS EXISTING DATA (clustered & non) and does all the steps from (2) to (5) in sequence.
-
-        """
-        print(text)
+        just_cut_data()
 
     elif mode == 1:
 
@@ -416,6 +480,53 @@ if __name__ == "__main__":
         extract_data()
         print("-------------------------------------------------")
         print("--------------- Extracted data ------------------")
+        
+
+        t1 = time.time()
+        print("-------------------------------------------------")
+        print(f"------------------ DATA in {t1 - t0:.2f}s -------------------")
+        
+        run_clustered(folders_pref, folder_params, folders_suff,
+                                folder_list, folder_list_clouds, folder_list_humidity, folder_list_temp)
+        t1 = time.time()
+        print("-------------------------------------------------")
+        print(f"------------------ CLUSTERED in {t1 - t0:.2f}s -------------------")
+        generate_ground_truth()
+        
+        init_starting_date()
+        merge_into_examples(folder_list_clouds,folder_list_humidity,folder_list_temp,folder_list_wind,folders_suff)
+        t1 = time.time()
+        print("-------------------------------------------------")
+        print(f"------------------ Process completed in {t1 - t0:.2f}s -------------------")
+    
+    elif mode == 7:
+        
+        t0 = time.time()
+        print("EXTRACTING WITHOUT CUTTING")
+        #remove existing data
+        shutil.rmtree("./image_processing/fvg/clustered", ignore_errors=True)
+        shutil.rmtree("./image_processing/fvg/output", ignore_errors=True)
+        shutil.rmtree("./image_processing/fvg/output_clustered", ignore_errors=True)
+        shutil.rmtree("./image_processing/fvg/resized", ignore_errors=True)
+
+        shutil.rmtree("./raw_data/extracted_fvg_cleaned", ignore_errors=True)
+        os.makedirs("./raw_data/extracted_fvg_cleaned", exist_ok=True)
+
+        # 3. Copy the borders
+        shutil.copy("./raw_data/borders.png", "./raw_data/extracted_fvg_cleaned/borders.png")
+        shutil.rmtree("./reasoning/clouds", ignore_errors=True)
+        shutil.rmtree("./reasoning/humidity", ignore_errors=True)
+        shutil.rmtree("./reasoning/temp", ignore_errors=True)
+
+        shutil.rmtree("./reasoning/pictogram_extraction/extracted", ignore_errors=True)
+
+        os.makedirs("./reasoning/pictogram_extraction/extracted", exist_ok=True)
+        shutil.rmtree("./reasoning/generated_examples", ignore_errors=True)
+
+        
+        extract_data_no_cut()
+        print("-------------------------------------------------")
+        print("--------------- Extracted data from CUT ------------------")
         
 
         t1 = time.time()
