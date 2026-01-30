@@ -582,7 +582,7 @@ def sum_up_morning_afternoon_winds(wind_data, location_names):
                 direction_avg = angle_to_compass(angle_avg)
 
             final_facts.append(
-                f"wind_blowing_{period}({loc},{direction_avg},{speed_avg:.3f})."
+                f'wind_blowing_{period}({loc},"{direction_avg}",{speed_avg:.3f}).'
             )
 
     return final_facts
@@ -885,6 +885,17 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
         # Determine which timestamp to use (they MUST be the same)
         # If some datasets are empty, pick first non-empty
         timestamp = "date({}, {}, {}).\n".format(y, m, d)
+
+        m_int = int(m)  # just to be safe
+
+        if m_int == 12 or m_int <= 2:
+            season = 1      # winter
+        elif 3 <= m_int <= 5:
+            season = 2      # spring
+        elif 6 <= m_int <= 8:
+            season = 3      # summer
+        elif 9 <= m_int <= 11:
+            season = 4      # autumn
         
         #get the date as yyyy_mm_dd
         date_str = f"{y}_{m}_{d}"
@@ -899,12 +910,26 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
         if os.path.isfile(pictogram_file):
             with open(pictogram_file, 'r') as f_picto:
                 pictogram_lines = f_picto.readlines()
-                print("pictogram lines:", pictogram_lines)
-                positive_facts += "".join(pictogram_lines) + "\n"
+                modified_lines = []
+
+                for line in pictogram_lines:
+                    line = line.rstrip("\n")  # remove newline safely
+
+                    idx = line.rfind(")")
+                    if idx == -1:
+                        # No closing paren → leave unchanged (or raise error if you prefer)
+                        modified_lines.append(line + "\n")
+                        continue
+
+                    # Insert ", season" before the last ')'
+                    new_line = line[:idx] + f", {season}" + line[idx:]
+                    modified_lines.append(new_line + "\n")
+
+                positive_facts += "".join(modified_lines) + "\n"
 
                 for line in pictogram_lines:
                     line = line.strip()
-                    negative_facts.append(compute_negative_facts(line))
+                    negative_facts.append(compute_negative_facts(line,season))
         else:
             print(f"Pictogram file not found: {pictogram_file}")
         #print(f"pictogram file {pictogram_file} positive facts for day:{date}: {positive_facts}")
@@ -976,7 +1001,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
     
     shutil.copyfile("./reasoning/bg.las", output_folder+"/bg.las")
 
-def compute_negative_facts(line):
+def compute_negative_facts(line,season):
 
     
     match = fact_pattern.search(line)
@@ -1007,13 +1032,13 @@ def compute_negative_facts(line):
             value = raw_value
         
         if value == "sunny" or value == "mostly_clear":
-            return "partially_sunny_at("+city+"), \n"+"covered_at("+city+"), \n"
+            return "partially_sunny_at("+city+"), \n"+"covered_at("+city+","+str(season)+"), \n"
         elif value == "partly_cloudy":
-            return "sunny_at("+city+"), \n"+"covered_at("+city+"), \n"
+            return "sunny_at("+city+"), \n"+"covered_at("+city+","+str(season)+"), \n"
         elif value == "mostly_cloudy" or value == "cloudy":
-            return "sunny_at("+city+"), \n"+"partially_sunny_at("+city+"), \n"
+            return "sunny_at("+city+"), \n"+"partially_sunny_at("+city+","+str(season)+"), \n"
         else:
-            return "unkown_sky_at("+city+"), \n"
+            return "unkown_sky_at("+city+","+str(season)+"), \n"
         
     return ""
 

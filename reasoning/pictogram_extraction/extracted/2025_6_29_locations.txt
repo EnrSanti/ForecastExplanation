@@ -1,0 +1,11 @@
+% date(2025,6,29),
+
+forecasted_sky(sappada_forni_villa, "sunny"),
+forecasted_sky(pontebba_tarvisio, "sunny"),
+forecasted_sky(lignano_grado, "sunny"),
+forecasted_sky(barcis, "sunny"),
+forecasted_sky(udine_palmanova, "sunny"),
+forecasted_sky(gorizia, "sunny"),
+forecasted_sky(trieste, "sunny"),
+forecasted_sky(gemona_stolvizza, "sunny"),
+forecasted_sky(pordenone, "sunny")
