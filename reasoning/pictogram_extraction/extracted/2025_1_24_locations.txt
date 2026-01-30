@@ -1,0 +1,11 @@
+% date(2025,1,24),
+
+forecasted_sky(sappada_forni_villa, "mostly_clear"),
+forecasted_sky(pontebba_tarvisio, "partly_cloudy"),
+forecasted_sky(lignano_grado, "mostly_cloudy"),
+forecasted_sky(barcis, "partly_cloudy"),
+forecasted_sky(udine_palmanova, "partly_cloudy"),
+forecasted_sky(gorizia, "mostly_cloudy"),
+forecasted_sky(trieste, "partly_cloudy"),
+forecasted_sky(gemona_stolvizza, "partly_cloudy"),
+forecasted_sky(pordenone, "mostly_cloudy")

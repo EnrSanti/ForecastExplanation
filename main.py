@@ -45,7 +45,7 @@ def just_cut(grib_file,coordinates_fvg,coordinates_italy, is_fvg):
     #get the file name and paths
     grib_path = os.path.join(input_dir_extraction, grib_file)
     base_name = os.path.splitext(grib_file)[0]  #remove .nc
-    output_path = os.path.join(output_dir_extraction, base_name + ".nc")
+    output_path = os.path.join(output_dir_extraction, base_name + "_cut.nc")
     
     #if already cut skip
     if not os.path.exists(output_path):
