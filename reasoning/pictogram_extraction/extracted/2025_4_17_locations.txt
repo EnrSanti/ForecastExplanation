@@ -1,11 +1,20 @@
 % date(2025,4,17),
 
 forecasted_sky(sappada_forni_villa, "cloudy"),
+forecasted_rain(sappada_forni_villa, 6),
 forecasted_sky(pontebba_tarvisio, "cloudy"),
+forecasted_rain(pontebba_tarvisio, 4),
 forecasted_sky(lignano_grado, "mostly_cloudy"),
+forecasted_rain(lignano_grado, 2),
 forecasted_sky(barcis, "cloudy"),
+forecasted_rain(barcis, 6),
 forecasted_sky(udine_palmanova, "cloudy"),
+forecasted_rain(udine_palmanova, 4),
 forecasted_sky(gorizia, "mostly_cloudy"),
+forecasted_rain(gorizia, 2),
 forecasted_sky(trieste, "mostly_cloudy"),
+forecasted_rain(trieste, 1),
 forecasted_sky(gemona_stolvizza, "cloudy"),
-forecasted_sky(pordenone, "cloudy")
+forecasted_rain(gemona_stolvizza, 6),
+forecasted_sky(pordenone, "cloudy"),
+forecasted_rain(pordenone, 4)
