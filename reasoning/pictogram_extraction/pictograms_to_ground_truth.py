@@ -518,9 +518,9 @@ def generate_ground_truth():
                         f'forecasted_sky({loc_lower}, "{sky_description}")'
                     )
                     
-                    # Optional: If you want to keep the rain level logic available
-                    # rain_lvl = icon_name_to_rain_level(full_icon_name)
-                    # lines.append(f'forecasted_rain({loc_lower}, {rain_lvl})')
+                    #Optional: If you want to keep the rain level logic available
+                    rain_lvl = icon_name_to_rain_level(full_icon_name)
+                    lines.append(f'forecasted_rain({loc_lower}, {rain_lvl})')
 
                 else:
                     lines.append(f'forecasted_sky({loc_lower}, "ND")')

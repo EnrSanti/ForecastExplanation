@@ -401,7 +401,77 @@ def generate_cloud_facts_over_cities(base_path):
 
 def generate_cloud_split_merges():
     pass
+from collections import defaultdict
+import re
 
+def get_fronts(front_data, location_names, hum_or_tmp):
+    """
+    front_data: list of strings (facts for ONE day)
+    location_names: set/list of valid locations
+    hum_or_tmp: "hum" or "temp"
+    """
+
+    from collections import defaultdict
+    import re
+
+    fronts = defaultdict(list)
+    result = []
+
+    # Example:
+    # hum_front_500_hPa(l1,l2,YYYY,MM,DD,HH).
+    front_re = re.compile(
+        r"(hum|temp)_front_(\d+)_hPa\(([^,]+),([^,]+),(\d+),(\d+),(\d+),(\d+)\)"
+    )
+
+    for line in front_data:
+        line = line.strip()
+        if not line or line.startswith("%"):
+            continue
+
+        if line.endswith("."):
+            line = line[:-1]
+
+        m = front_re.match(line)
+        if not m:
+            continue
+
+        _, height, l1, l2, yyyy, mm, dd, hh = m.groups()
+
+        if l1 not in location_names or l2 not in location_names:
+            continue
+
+        try:
+            hour = int(hh)
+        except ValueError:
+            continue
+
+        # Keep only daytime hours
+        if hour < 7 or hour > 19:
+            continue
+
+        period = "morning" if hour < 12 else "afternoon"
+
+        key = (l1, l2, period, height)
+        fronts[key].append(hour)
+
+    # Generate ONE fact if there exist ≥3 consecutive hours
+    for (l1, l2, period, height), hours in fronts.items():
+        hours = sorted(set(hours))
+
+        has_3_consecutive = any(
+            h2 == h1 + 1 and h3 == h2 + 1
+            for h1, h2, h3 in zip(hours, hours[1:], hours[2:])
+        )
+
+        if has_3_consecutive:
+            result.append(
+                f"{hum_or_tmp}_{period}{folders_suff[int(height)]}({l1},{l2})."
+            )
+
+    return result
+
+        
+    
 def sum_up_morning_afternoon(temp_data, location_names,hum_or_tmp):
     """
     Transformer:
@@ -467,15 +537,27 @@ def sum_up_morning_afternoon(temp_data, location_names,hum_or_tmp):
 
     # Compute average temperature per location and period
     average_facts = []
+    avg_truncated_morning = 0
+    avg_truncated_afternoon = 0
     for loc, periods in temps.items():
-        for period in ["morning", "afternoon"]:
-            temps_list = periods[period]
-            if temps_list:  # avoid division by zero
-                avg = sum(temps_list) / len(temps_list)
-                avg_truncated = f"{avg:.2f}"
-                avg_fact = f"{hum_or_tmp}_at_{period}({loc},{avg_truncated})."
-                average_facts.append(avg_fact)
-
+        temps_list_morning = periods["morning"]
+        if temps_list_morning:  # avoid division by zero
+            avg = sum(temps_list_morning) / len(temps_list_morning)
+            avg_truncated_morning = f"{avg:.2f}"
+            avg_fact = f"% {hum_or_tmp}_at_morning({loc},{avg_truncated_morning})."
+            average_facts.append(avg_fact)
+        temps_list_afternoon = periods["afternoon"]
+        if temps_list_afternoon:  # avoid division by zero
+            avg = sum(temps_list_afternoon) / len(temps_list_afternoon)
+            avg_truncated_afternoon = f"{avg:.2f}"
+            avg_fact = f"% {hum_or_tmp}_at_afternoon({loc},{avg_truncated_afternoon})."
+            average_facts.append(avg_fact)
+        static_fact=""
+        if float(avg_truncated_morning) <= float(avg_truncated_afternoon): 
+            static_fact = f"{hum_or_tmp}_increased_at_afternoon({loc})." 
+        else:
+            static_fact = f"{hum_or_tmp}_decreased_at_afternoon({loc})."
+        average_facts.append(static_fact)
     return average_facts
 
 import math
@@ -561,7 +643,7 @@ def sum_up_morning_afternoon_winds(wind_data, location_names):
 
     # --- Build averaged facts ---
     final_facts = []
-
+    max_speed_overall = 0
     for loc, periods in winds.items():
         for period in ["morning", "afternoon"]:
             u_list = periods[period]["u"]
@@ -581,10 +663,12 @@ def sum_up_morning_afternoon_winds(wind_data, location_names):
                 angle_avg = math.degrees(math.atan2(v_avg, u_avg))
                 direction_avg = angle_to_compass(angle_avg)
 
+            speed_avg=int(speed_avg) #o :.3f
+            max_speed_overall = max(max_speed_overall, speed_avg)
             final_facts.append(
-                f'wind_blowing_{period}({loc},"{direction_avg}",{speed_avg:.3f}).'
+                f'wind_blowing_{period}({loc},"{direction_avg}",{speed_avg}).'
             )
-
+    print("Max average wind speed found:", max_speed_overall)
     return final_facts
 
 
@@ -707,8 +791,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
   
     global starting_date
     global location_names
-   
-   
+
     print(folder_list_clouds)
     print(folder_list_wind)
    
@@ -786,7 +869,7 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
             continue
         hum_front_file = os.path.join(full_hum_folder, "humidity_fronts.txt")
         hum_file=os.path.join(full_hum_folder, "humidity.txt")
-        '''
+    
         with open(hum_front_file, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -794,7 +877,6 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
                     if ts_str in line:
                         hum_front_data[date_day].append(line)
                         break  # if a line can only belong to one frame
-        '''
         with open(hum_file, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -805,16 +887,17 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
                     
     temp_data = {date: [] for date in date_list}
 
+    temp_front_data = {date: [] for date in date_list}
     for temp_folder_name,_ in folder_list_temp:
         full_temp_folder = os.path.join(folder_temp, temp_folder_name)
 
         if not os.path.isdir(full_temp_folder):
             print(f"Skipping missing folder: {full_temp_folder}")
             continue
+
         temp_front_file = os.path.join(full_temp_folder, "temp_fronts.txt")
         temp_file = os.path.join(full_temp_folder, "temp.txt")
 
-        
         with open(temp_file, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -822,15 +905,15 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
                     if f"{ts_str}," in line:
                         temp_data[date_day].append(line)
                         break  # if a line can only belong to one frame
-        '''
+        
         with open(temp_front_file, 'r') as f:
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
                     if ts_str in line:
-                        temp_data[date_day].append(line)
+                        temp_front_data[date_day].append(line)
                         break  # if a line can only belong to one frame
-        '''
+        
 
     wind_data = {date: [] for date in date_list}
 
@@ -854,156 +937,162 @@ def merge_into_examples(folder_list_clouds,folder_list_hum, folder_list_temp,fol
 
     i=0
     load_location_names()
-    print(location_names)
-    for date in date_list:
+    for city in location_names:
 
-        y, m, d = date
-        output_path = os.path.join(output_folder, f"example_day_{y}_{m}_{d}.las")
+        for date in date_list:
 
-        os.makedirs(output_folder, exist_ok=True)
-        print("Generating example for date:", date)
-        cloud_stripped = rewrite_facts_no_dates(cloud_covering_data[date])
-        temp_morning_afternoon= sum_up_morning_afternoon(temp_data[date], location_names,"temperature")
-        hum_morning_afternoon= sum_up_morning_afternoon(hum_data[date], location_names,"humidity")
-        
-        wind_facts=wind_data[date]
-        winds_morning_afternoon= sum_up_morning_afternoon_winds(wind_data[date], location_names)
-        #wind_facts_morning=sum_up_morning_afternoon(wind_facts[date], location_names,"wind_blowing")
-        #wind_facts_morning=sum_up_morning_afternoon(wind_facts[date], location_names,"wind_blowing")
+            y, m, d = date
+            output_path = os.path.join(output_folder, f"example_day_{y}_{m}_{d}_{city}.las")
+            os.makedirs(output_folder, exist_ok=True)
+            print("Generating example for date:", date)
+            cloud_stripped = rewrite_facts_no_dates(cloud_covering_data[date])
+            temp_morning_afternoon= sum_up_morning_afternoon(temp_data[date], location_names,"temperature")
+            hum_morning_afternoon= sum_up_morning_afternoon(hum_data[date], location_names,"humidity")
+            temp_fronts=get_fronts(temp_front_data[date],location_names,"temp_front")
+            hum_fronts=get_fronts(hum_front_data[date],location_names,"hum_front")
+            wind_facts=wind_data[date]
+            winds_morning_afternoon= sum_up_morning_afternoon_winds(wind_data[date], location_names)
+            #wind_facts_morning=sum_up_morning_afternoon(wind_facts[date], location_names,"wind_blowing")
+            #wind_facts_morning=sum_up_morning_afternoon(wind_facts[date], location_names,"wind_blowing")
 
-        #cloud_moving_timestamp, cloud_moving_stripped = rewrite_facts_no_dates(cloud_moving_data[date])
+            #cloud_moving_timestamp, cloud_moving_stripped = rewrite_facts_no_dates(cloud_moving_data[date])
 
-        # Transform the humidity front data
-        #um_front_timestamp, hum_front_stripped = rewrite_facts_no_dates(hum_front_data[date])
+            # Transform the humidity front data
+            #um_front_timestamp, hum_front_stripped = rewrite_facts_no_dates(hum_front_data[date])
 
-        # Transform the temperature data
-        #temp_front_timestamp, temp_front_stripped = rewrite_facts_no_dates(temp_data[date])
+            # Transform the temperature data
+            #temp_front_timestamp, temp_front_stripped = rewrite_facts_no_dates(temp_data[date])
 
-        #hum_timestamp, hum_stripped = rewrite_facts_no_dates(hum_data[date])
-
-
-        # Determine which timestamp to use (they MUST be the same)
-        # If some datasets are empty, pick first non-empty
-        timestamp = "date({}, {}, {}).\n".format(y, m, d)
-
-        m_int = int(m)  # just to be safe
-
-        if m_int == 12 or m_int <= 2:
-            season = 1      # winter
-        elif 3 <= m_int <= 5:
-            season = 2      # spring
-        elif 6 <= m_int <= 8:
-            season = 3      # summer
-        elif 9 <= m_int <= 11:
-            season = 4      # autumn
-        
-        #get the date as yyyy_mm_dd
-        date_str = f"{y}_{m}_{d}"
-
-        positive_facts="% Example generated data for day {}\n\n".format(date)
-        positive_facts+="#pos(e"+str(i)+"@100,{ \n\n"
-        #open the pictogram file for that date
-        pictogram_file=os.path.join(folder_pictograms,f"{date_str}_locations.txt")
-        
-        negative_facts = []
-
-        if os.path.isfile(pictogram_file):
-            with open(pictogram_file, 'r') as f_picto:
-                pictogram_lines = f_picto.readlines()
-                modified_lines = []
-
-                for line in pictogram_lines:
-                    line = line.rstrip("\n")  # remove newline safely
-
-                    idx = line.rfind(")")
-                    if idx == -1:
-                        # No closing paren → leave unchanged (or raise error if you prefer)
-                        modified_lines.append(line + "\n")
-                        continue
-
-                    # Insert ", season" before the last ')'
-                    new_line = line[:idx] + f", {season}" + line[idx:]
-                    modified_lines.append(new_line + "\n")
-
-                positive_facts += "".join(modified_lines) + "\n"
-
-                for line in pictogram_lines:
-                    line = line.strip()
-                    negative_facts.append(compute_negative_facts(line,season))
-        else:
-            print(f"Pictogram file not found: {pictogram_file}")
-        #print(f"pictogram file {pictogram_file} positive facts for day:{date}: {positive_facts}")
-        positive_facts+="},\n"
-        negative_facts = "".join(negative_facts).rstrip(", \n")
-
-        excluded_facts="{\n"
-        #print("negative facts:", negative_facts)
-        excluded_facts+=negative_facts
+            #hum_timestamp, hum_stripped = rewrite_facts_no_dates(hum_data[date])
 
 
+            # Determine which timestamp to use (they MUST be the same)
+            # If some datasets are empty, pick first non-empty
+            timestamp = "date({}, {}, {}).\n".format(y, m, d)
 
-        excluded_facts+="\n},\n"
+            m_int = int(m)  # just to be safe
 
-        context_facts="{\n"
+            if m_int == 12 or m_int <= 2:
+                season = "winter"      # winter
+            elif 3 <= m_int <= 5:
+                season = "spring"      # spring
+            elif 6 <= m_int <= 8:
+                season = "summer"      # summer
+            elif 9 <= m_int <= 11:
+                season = "autumn"      # autumn
+            
+            #get the date as yyyy_mm_dd
+            date_str = f"{y}_{m}_{d}"
 
-        context_facts+=timestamp + " %to drive the season (winter, spring, summer, autumn)\n\n"
-        context_facts+="% Cloud coverage data:\n"
-        context_facts+="% Cloud_covers(location,cloud_id,hh)\n"
+            positive_facts="% Example generated data for day {}\n\n".format(date)
+            positive_facts+="#pos(e"+str(i)+"@1000,{ \n\n"
+            #open the pictogram file for that date
+            pictogram_file=os.path.join(folder_pictograms,f"{date_str}_locations.txt")
+            
+            negative_facts = []
 
-        for fact in cloud_stripped:
-            context_facts+=fact + "\n"
-        context_facts+="\n%summing up temperature and humidity facts \n\n"
-        for fact in temp_morning_afternoon:
-            context_facts+=fact + "\n"
-        
-        for fact in hum_morning_afternoon:
-            context_facts+=fact + "\n"
+            if os.path.isfile(pictogram_file):
+                with open(pictogram_file, 'r') as f_picto:
+                    pictogram_lines = f_picto.readlines()
+                    modified_lines = []
 
-        for fact in winds_morning_afternoon:
-            context_facts+=fact + "\n"
-        
-        context_facts+="\n"
+                    for line in pictogram_lines:
+                        raw = line.rstrip("\n")          # keep original line
+                        stripped = raw.strip()           # remove ALL surrounding whitespace
+                        if(city in stripped):
+                            # Skip comments
+                            if stripped.startswith("%") or stripped == "":
+                                modified_lines.append(raw + "\n")
+                                continue
 
-        #for fact in cloud_moving_stripped:
-        #    context_facts+=fact + "\n"
-        #context_facts+="\n"
+                            # Match predicate(args) optionally followed by comma
+                            m = re.match(r'^(\w+)\(([^)]*)\)(,?)$', stripped)
+                            if not m:
+                                # Structural line → keep unchanged
+                                modified_lines.append(raw + "\n")
+                                continue
 
-        context_facts+="% Humidity front data:\n"
-        context_facts+="% humidty_front(location_1,location_2,hh): between the two locations there's a sharp change \n"
+                            pred, args, comma = m.groups()
+                            new_line = f"{pred}({args}, {season}){comma}"
+                            modified_lines.append(new_line + "\n")
 
-        '''
-        for in hum_front_stripped:
-            context_facts+=fact + "\n"
-        context_facts+="\n"
+                    positive_facts += "".join(modified_lines).rstrip(", \n")
 
-        context_facts+="% hum(location_1,humidity_percentage,hh): the percentage is discretized in 0, 20, 40 ... \n"
-        for fact in hum_stripped:
-            context_facts+=fact + "\n"
-        context_facts+="\n"
+                    for line in pictogram_lines:
+                        if(city in line):
+                            line = line.strip()
+                            negative_facts.append(compute_negative_facts(line,season))
+            else:
+                print(f"Pictogram file not found: {pictogram_file}")
+            #print(f"pictogram file {pictogram_file} positive facts for day:{date}: {positive_facts}")
+            positive_facts+="},\n"
+            negative_facts = "".join(negative_facts).rstrip(", \n")
+
+            excluded_facts="{\n"
+            #print("negative facts:", negative_facts)
+            excluded_facts+=negative_facts
+
+            excluded_facts+="\n},\n"
+
+            context_facts="{\n"
+            context_facts+=f"location_considered({city}). \n"
+            context_facts+="%to drive the season (winter, spring, summer, autumn)\n"+timestamp+"\n"
+            context_facts+="% Cloud coverage data:\n"
+            context_facts+="% Cloud_covers(location,cloud_id,hh)\n"
+
+            for fact in cloud_stripped:
+                context_facts+=fact + "\n"
+            context_facts+="\n%summing up temperature and humidity facts \n\n"
+            for fact in temp_morning_afternoon:
+                context_facts+=fact + "\n"
+            
+            for fact in hum_morning_afternoon:
+                context_facts+=fact + "\n"
+
+            for fact in winds_morning_afternoon:
+                context_facts+=fact + "\n"
+            
+            context_facts+="\n"
+
+            #for fact in cloud_moving_stripped:
+            #    context_facts+=fact + "\n"
+            #context_facts+="\n"
+
+            
+            for fact in temp_fronts:
+                context_facts+=fact + "\n"
+            context_facts+="\n"
+            for fact in hum_fronts:
+                context_facts+=fact + "\n"
+            context_facts+="\n"
+            '''
+            context_facts+="% hum(location_1,humidity_percentage,hh): the percentage is discretized in 0, 20, 40 ... \n"
+            for fact in hum_stripped:
+                context_facts+=fact + "\n"
+            context_facts+="\n"
 
 
-        context_facts+="% Temperature data (in kelvin), last parameter is the hour:\n"
-        for fact in temp_front_stripped:
-            context_facts+=fact + "\n"
-        context_facts+="\n"
-        '''
-        context_facts+="}). \n"
-        
- 
-        with open(output_path, 'w') as f_out:
-            f_out.write(positive_facts)
-            f_out.write(excluded_facts)
-            f_out.write(context_facts)
+            context_facts+="% Temperature data (in kelvin), last parameter is the hour:\n"
+            for fact in temp_front_stripped:
+                context_facts+=fact + "\n"
+            context_facts+="\n"
+            '''
+            context_facts+="}). \n"
+            
+    
+            with open(output_path, 'w') as f_out:
+                f_out.write(positive_facts)
+                f_out.write(excluded_facts)
+                f_out.write(context_facts)
 
-        print(f"Wrote example data to {output_path}")
-        i+=1
-    #copy in output_folder+"/bg.las" the file output_folder+"/../bg.las"
+            print(f"Wrote example data to {output_path}")
+            i+=1
+        #copy in output_folder+"/bg.las" the file output_folder+"/../bg.las"
     
     shutil.copyfile("./reasoning/bg.las", output_folder+"/bg.las")
 
 def compute_negative_facts(line,season):
-
-    
+    RAIN_VALUES = [0, 1, 2, 4, 6]
     match = fact_pattern.search(line)
     if not match:
         return ""  # not a matching forecast fact
@@ -1016,13 +1105,18 @@ def compute_negative_facts(line,season):
     # Case 1: forecasted_rain(..., number)
     if pred == "forecasted_rain":
         try:
-            value = int(raw_value)  # value is numeric
-            if(value != 0):
-                return "sunny_at("+city+"), \n"
-            else:
-                return "rains_at("+city+"), \n"
-        except:
-            return "unkown_rain_at("+city+"), \n"
+            value = int(raw_value)
+        except ValueError:
+            return "unkown_rain_at("+city+","+str(season)+"), \n"
+
+        negatives = [
+            f"rains_at({city},{v},{season})"
+            for v in RAIN_VALUES
+            if v != value
+        ]
+
+        return ", \n".join(negatives) + ", \n"
+    
     # Case 2: forecasted_sky(..., "string")
     else:
         # Remove surrounding quotes if present
@@ -1032,11 +1126,11 @@ def compute_negative_facts(line,season):
             value = raw_value
         
         if value == "sunny" or value == "mostly_clear":
-            return "partially_sunny_at("+city+"), \n"+"covered_at("+city+","+str(season)+"), \n"
+            return "partially_sunny_at("+city+","+str(season)+"), \n"+"covered_at("+city+","+str(season)+"), \n"
         elif value == "partly_cloudy":
-            return "sunny_at("+city+"), \n"+"covered_at("+city+","+str(season)+"), \n"
+            return "sunny_at("+city+","+str(season)+"), \n"+"covered_at("+city+","+str(season)+"), \n"
         elif value == "mostly_cloudy" or value == "cloudy":
-            return "sunny_at("+city+"), \n"+"partially_sunny_at("+city+","+str(season)+"), \n"
+            return "sunny_at("+city+","+str(season)+"), \n"+"partially_sunny_at("+city+","+str(season)+"), \n"
         else:
             return "unkown_sky_at("+city+","+str(season)+"), \n"
         
