@@ -156,9 +156,19 @@ def save_cloud_maps(input_path, coordinates,clean_plot):
 
         for i in range(cloud_level.sizes['time']):
             base_time = pd.to_datetime(str(cloud_level['time'].isel(time=i).values))
+
+            # Allowed window: 01:00 of base day → 00:00 of next day
+            day_start = base_time.normalize() + pd.Timedelta(hours=1)
+            day_end   = day_start + pd.Timedelta(days=1)
+
             for j in range(cloud_level.sizes['step']):
                 step_val = int(cloud_level['step'].isel(step=j).values)
                 valid_time = base_time + pd.Timedelta(hours=step_val)
+
+                # ---- FILTER OUT OVERLAPPING FRAMES ----
+                if not (day_start <= valid_time <= day_end):
+                    continue
+
 
                 cloud_slice = cloud_level.isel(time=i, step=j)
                 if not np.isfinite(cloud_slice).any():
@@ -245,10 +255,19 @@ def save_temperature_maps(input_path,coordinates, clean_plot):
         for i in range(temp_level.sizes['time']):
             base_time = pd.to_datetime(str(temp_level['time'].isel(time=i).values))
 
+            # Allowed window: 01:00 of base day → 00:00 of next day
+            day_start = base_time.normalize() + pd.Timedelta(hours=1)
+            day_end   = day_start + pd.Timedelta(days=1)
+
             for j in range(temp_level.sizes['step']):
                 step_val = temp_level['step'].isel(step=j).values
                 leadtime_hours = int(step_val)
                 valid_time = base_time + pd.Timedelta(hours=leadtime_hours)
+
+                # ---- FILTER OUT OVERLAPS ----
+                if not (day_start <= valid_time <= day_end):
+                    continue
+
 
                 temp_slice = temp_level.isel(time=i, step=j)
                 if not np.isfinite(temp_slice).any():
@@ -337,9 +356,18 @@ def save_wind_maps(input_path, coordinates, clean_plot):
         out_dir = os.path.join(output_base, wind_folders[lvl])
         for i in range(u_lvl.sizes["time"]):
             base_time = pd.to_datetime(str(u_lvl["time"].isel(time=i).values))
+
+            # Allowed window: 01:00 of base day → 00:00 of next day
+            day_start = base_time.normalize() + pd.Timedelta(hours=1)
+            day_end   = day_start + pd.Timedelta(days=1)
+
             for j in range(u_lvl.sizes["step"]):
                 step_val = int(u_lvl["step"].isel(step=j).values)
                 valid_time = base_time + pd.Timedelta(hours=step_val)
+
+                # ---- FILTER OUT OVERLAPS ----
+                if not (day_start <= valid_time <= day_end):
+                    continue
 
                 u_slice = u_lvl.isel(time=i, step=j)
                 v_slice = v_lvl.isel(time=i, step=j)
@@ -528,9 +556,19 @@ def save_humidity_maps(input_path, coordinates, clean_plot):
 
         for i in range(rh_level.sizes['time']):
             base_time = pd.to_datetime(str(rh_level['time'].isel(time=i).values))
+
+            # Define allowed time window:
+            # from 01:00 of base day to 00:00 of next day
+            day_start = base_time.normalize() + pd.Timedelta(hours=1)
+            day_end   = day_start + pd.Timedelta(days=1)
+
             for j in range(rh_level.sizes['step']):
                 step_val = int(rh_level['step'].isel(step=j).values)
                 valid_time = base_time + pd.Timedelta(hours=step_val)
+
+                # ---- FILTER ----
+                if not (day_start <= valid_time <= day_end):
+                    continue
 
             
                 rh_slice = rh_level.isel(time=i, step=j)

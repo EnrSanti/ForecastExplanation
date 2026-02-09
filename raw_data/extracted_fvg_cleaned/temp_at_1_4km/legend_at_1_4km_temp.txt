@@ -1,2 +1,0 @@
-Temperature range at 850 hPa: 270.66 K to 289.08 K
-Respective colors: (255, 247, 236), (127, 0, 0)
