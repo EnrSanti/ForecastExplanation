@@ -1,0 +1,527 @@
+% Example generated data for day (2025, 4, 15)
+
+#pos(e380@1000,{ 
+
+forecasted_sky(gorizia, "cloudy", spring),
+forecasted_rain(gorizia, 6, spring)},
+{
+sunny_at(gorizia,spring), 
+partially_sunny_at(gorizia,spring), 
+rains_at(gorizia,0,spring), 
+rains_at(gorizia,1,spring), 
+rains_at(gorizia,2,spring), 
+rains_at(gorizia,4,spring)
+},
+{
+location_considered(gorizia). 
+%to drive the season (winter, spring, summer, autumn)
+date(2025, 4, 15).
+
+% Cloud coverage data:
+% Cloud_covers(location,cloud_id,hh)
+cloud_at_100m_covers(gemona_stolvizza,356, 11).
+cloud_at_100m_covers(gemona_stolvizza,355, 12).
+cloud_at_100m_covers(gemona_stolvizza,355, 13).
+cloud_at_100m_covers(gemona_stolvizza,358, 14).
+cloud_at_100m_covers(gemona_stolvizza,358, 15).
+cloud_at_100m_covers(gemona_stolvizza,358, 16).
+cloud_at_100m_covers(pordenone,358, 16).
+cloud_at_100m_covers(gemona_stolvizza,358, 17).
+cloud_at_100m_covers(pordenone,358, 17).
+cloud_at_100m_covers(gemona_stolvizza,358, 18).
+cloud_at_100m_covers(pordenone,358, 18).
+cloud_at_100m_covers(gemona_stolvizza,358, 19).
+cloud_at_100m_covers(pordenone,358, 19).
+cloud_at_100m_covers(gemona_stolvizza,358, 20).
+cloud_at_100m_covers(pordenone,358, 20).
+cloud_at_100m_covers(gemona_stolvizza,358, 21).
+cloud_at_100m_covers(pordenone,358, 21).
+cloud_at_100m_covers(gemona_stolvizza,368, 22).
+cloud_at_100m_covers(pordenone,368, 22).
+cloud_at_100m_covers(gemona_stolvizza,371, 23).
+cloud_at_100m_covers(pordenone,371, 23).
+cloud_at_750m_covers(lignano_grado,321, 2).
+cloud_at_750m_covers(lignano_grado,321, 3).
+cloud_at_750m_covers(udine_palmanova,321, 3).
+cloud_at_750m_covers(pordenone,321, 3).
+cloud_at_750m_covers(lignano_grado,321, 4).
+cloud_at_750m_covers(udine_palmanova,321, 4).
+cloud_at_750m_covers(pordenone,321, 4).
+cloud_at_750m_covers(lignano_grado,321, 5).
+cloud_at_750m_covers(barcis,321, 5).
+cloud_at_750m_covers(udine_palmanova,321, 5).
+cloud_at_750m_covers(gemona_stolvizza,321, 5).
+cloud_at_750m_covers(pordenone,321, 5).
+cloud_at_750m_covers(lignano_grado,321, 6).
+cloud_at_750m_covers(udine_palmanova,321, 6).
+cloud_at_750m_covers(pordenone,321, 6).
+cloud_at_750m_covers(lignano_grado,321, 7).
+cloud_at_750m_covers(udine_palmanova,321, 7).
+cloud_at_750m_covers(pordenone,321, 7).
+cloud_at_750m_covers(lignano_grado,321, 8).
+cloud_at_750m_covers(udine_palmanova,321, 8).
+cloud_at_750m_covers(gorizia,321, 8).
+cloud_at_750m_covers(pordenone,321, 8).
+cloud_at_750m_covers(lignano_grado,331, 9).
+cloud_at_750m_covers(udine_palmanova,331, 9).
+cloud_at_750m_covers(gorizia,331, 9).
+cloud_at_750m_covers(pordenone,331, 9).
+cloud_at_750m_covers(lignano_grado,332, 10).
+cloud_at_750m_covers(udine_palmanova,332, 10).
+cloud_at_750m_covers(gorizia,332, 10).
+cloud_at_750m_covers(gemona_stolvizza,332, 10).
+cloud_at_750m_covers(pordenone,332, 10).
+cloud_at_750m_covers(lignano_grado,313, 11).
+cloud_at_750m_covers(udine_palmanova,313, 11).
+cloud_at_750m_covers(gorizia,313, 11).
+cloud_at_750m_covers(gemona_stolvizza,313, 11).
+cloud_at_750m_covers(pordenone,313, 11).
+cloud_at_750m_covers(lignano_grado,313, 12).
+cloud_at_750m_covers(udine_palmanova,313, 12).
+cloud_at_750m_covers(gorizia,313, 12).
+cloud_at_750m_covers(gemona_stolvizza,313, 12).
+cloud_at_750m_covers(pordenone,313, 12).
+cloud_at_750m_covers(udine_palmanova,313, 13).
+cloud_at_750m_covers(gorizia,313, 13).
+cloud_at_750m_covers(gemona_stolvizza,313, 13).
+cloud_at_750m_covers(pordenone,313, 13).
+cloud_at_750m_covers(lignano_grado,313, 14).
+cloud_at_750m_covers(udine_palmanova,313, 14).
+cloud_at_750m_covers(gorizia,313, 14).
+cloud_at_750m_covers(gemona_stolvizza,313, 14).
+cloud_at_750m_covers(pordenone,313, 14).
+cloud_at_750m_covers(lignano_grado,331, 15).
+cloud_at_750m_covers(udine_palmanova,331, 15).
+cloud_at_750m_covers(gorizia,331, 15).
+cloud_at_750m_covers(gemona_stolvizza,331, 15).
+cloud_at_750m_covers(lignano_grado,340, 16).
+cloud_at_750m_covers(udine_palmanova,340, 16).
+cloud_at_750m_covers(gorizia,340, 16).
+cloud_at_750m_covers(gemona_stolvizza,340, 16).
+cloud_at_750m_covers(udine_palmanova,331, 17).
+cloud_at_750m_covers(gorizia,331, 17).
+cloud_at_750m_covers(gemona_stolvizza,331, 17).
+cloud_at_750m_covers(lignano_grado,331, 18).
+cloud_at_750m_covers(udine_palmanova,331, 18).
+cloud_at_750m_covers(gemona_stolvizza,331, 18).
+cloud_at_750m_covers(pordenone,331, 18).
+cloud_at_750m_covers(udine_palmanova,331, 19).
+cloud_at_750m_covers(gemona_stolvizza,331, 19).
+cloud_at_750m_covers(pordenone,331, 19).
+cloud_at_750m_covers(udine_palmanova,331, 20).
+cloud_at_750m_covers(gemona_stolvizza,331, 20).
+cloud_at_750m_covers(pordenone,331, 20).
+cloud_at_750m_covers(udine_palmanova,331, 21).
+cloud_at_750m_covers(gemona_stolvizza,331, 21).
+cloud_at_750m_covers(udine_palmanova,331, 22).
+cloud_at_750m_covers(gemona_stolvizza,331, 22).
+cloud_at_750m_covers(udine_palmanova,331, 23).
+cloud_at_750m_covers(gemona_stolvizza,331, 23).
+cloud_at_750m_covers(pordenone,331, 23).
+cloud_at_1_4km_covers(sappada_forni_villa,454, 1).
+cloud_at_1_4km_covers(lignano_grado,454, 1).
+cloud_at_1_4km_covers(barcis,454, 1).
+cloud_at_1_4km_covers(udine_palmanova,454, 1).
+cloud_at_1_4km_covers(gorizia,454, 1).
+cloud_at_1_4km_covers(gemona_stolvizza,454, 1).
+cloud_at_1_4km_covers(pordenone,454, 1).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 2).
+cloud_at_1_4km_covers(lignano_grado,460, 2).
+cloud_at_1_4km_covers(barcis,460, 2).
+cloud_at_1_4km_covers(udine_palmanova,460, 2).
+cloud_at_1_4km_covers(gorizia,460, 2).
+cloud_at_1_4km_covers(trieste,460, 2).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 2).
+cloud_at_1_4km_covers(pordenone,460, 2).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 3).
+cloud_at_1_4km_covers(lignano_grado,460, 3).
+cloud_at_1_4km_covers(barcis,460, 3).
+cloud_at_1_4km_covers(udine_palmanova,460, 3).
+cloud_at_1_4km_covers(gorizia,460, 3).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 3).
+cloud_at_1_4km_covers(pordenone,460, 3).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 4).
+cloud_at_1_4km_covers(lignano_grado,460, 4).
+cloud_at_1_4km_covers(barcis,460, 4).
+cloud_at_1_4km_covers(udine_palmanova,460, 4).
+cloud_at_1_4km_covers(gorizia,460, 4).
+cloud_at_1_4km_covers(trieste,460, 4).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 4).
+cloud_at_1_4km_covers(pordenone,460, 4).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 5).
+cloud_at_1_4km_covers(lignano_grado,460, 5).
+cloud_at_1_4km_covers(barcis,460, 5).
+cloud_at_1_4km_covers(udine_palmanova,460, 5).
+cloud_at_1_4km_covers(gorizia,460, 5).
+cloud_at_1_4km_covers(trieste,460, 5).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 5).
+cloud_at_1_4km_covers(pordenone,460, 5).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 6).
+cloud_at_1_4km_covers(lignano_grado,460, 6).
+cloud_at_1_4km_covers(barcis,460, 6).
+cloud_at_1_4km_covers(udine_palmanova,460, 6).
+cloud_at_1_4km_covers(gorizia,460, 6).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 6).
+cloud_at_1_4km_covers(pordenone,460, 6).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 7).
+cloud_at_1_4km_covers(lignano_grado,460, 7).
+cloud_at_1_4km_covers(barcis,460, 7).
+cloud_at_1_4km_covers(udine_palmanova,460, 7).
+cloud_at_1_4km_covers(gorizia,460, 7).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 7).
+cloud_at_1_4km_covers(pordenone,460, 7).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 8).
+cloud_at_1_4km_covers(lignano_grado,460, 8).
+cloud_at_1_4km_covers(barcis,460, 8).
+cloud_at_1_4km_covers(udine_palmanova,460, 8).
+cloud_at_1_4km_covers(gorizia,460, 8).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 8).
+cloud_at_1_4km_covers(pordenone,460, 8).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 9).
+cloud_at_1_4km_covers(lignano_grado,460, 9).
+cloud_at_1_4km_covers(barcis,460, 9).
+cloud_at_1_4km_covers(udine_palmanova,460, 9).
+cloud_at_1_4km_covers(gorizia,460, 9).
+cloud_at_1_4km_covers(trieste,460, 9).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 9).
+cloud_at_1_4km_covers(pordenone,460, 9).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 10).
+cloud_at_1_4km_covers(lignano_grado,460, 10).
+cloud_at_1_4km_covers(barcis,460, 10).
+cloud_at_1_4km_covers(udine_palmanova,460, 10).
+cloud_at_1_4km_covers(gorizia,460, 10).
+cloud_at_1_4km_covers(trieste,460, 10).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 10).
+cloud_at_1_4km_covers(pordenone,460, 10).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 11).
+cloud_at_1_4km_covers(barcis,460, 11).
+cloud_at_1_4km_covers(udine_palmanova,460, 11).
+cloud_at_1_4km_covers(gorizia,460, 11).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 11).
+cloud_at_1_4km_covers(pordenone,460, 11).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 12).
+cloud_at_1_4km_covers(lignano_grado,460, 12).
+cloud_at_1_4km_covers(barcis,460, 12).
+cloud_at_1_4km_covers(udine_palmanova,460, 12).
+cloud_at_1_4km_covers(gorizia,460, 12).
+cloud_at_1_4km_covers(trieste,460, 12).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 12).
+cloud_at_1_4km_covers(pordenone,460, 12).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 13).
+cloud_at_1_4km_covers(barcis,460, 13).
+cloud_at_1_4km_covers(udine_palmanova,460, 13).
+cloud_at_1_4km_covers(gorizia,460, 13).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 13).
+cloud_at_1_4km_covers(pordenone,460, 13).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 14).
+cloud_at_1_4km_covers(barcis,460, 14).
+cloud_at_1_4km_covers(udine_palmanova,460, 14).
+cloud_at_1_4km_covers(gorizia,460, 14).
+cloud_at_1_4km_covers(trieste,460, 14).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 14).
+cloud_at_1_4km_covers(pordenone,460, 14).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 15).
+cloud_at_1_4km_covers(pontebba_tarvisio,460, 15).
+cloud_at_1_4km_covers(barcis,460, 15).
+cloud_at_1_4km_covers(udine_palmanova,460, 15).
+cloud_at_1_4km_covers(gorizia,460, 15).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 15).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 16).
+cloud_at_1_4km_covers(pontebba_tarvisio,460, 16).
+cloud_at_1_4km_covers(gorizia,460, 16).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 16).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 17).
+cloud_at_1_4km_covers(pontebba_tarvisio,460, 17).
+cloud_at_1_4km_covers(barcis,460, 17).
+cloud_at_1_4km_covers(gorizia,460, 17).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 17).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 18).
+cloud_at_1_4km_covers(pontebba_tarvisio,460, 18).
+cloud_at_1_4km_covers(barcis,460, 18).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 18).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 19).
+cloud_at_1_4km_covers(pontebba_tarvisio,460, 19).
+cloud_at_1_4km_covers(barcis,460, 19).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 19).
+cloud_at_1_4km_covers(sappada_forni_villa,460, 20).
+cloud_at_1_4km_covers(pontebba_tarvisio,460, 20).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 20).
+cloud_at_1_4km_covers(pontebba_tarvisio,460, 21).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 21).
+cloud_at_1_4km_covers(pontebba_tarvisio,460, 22).
+cloud_at_1_4km_covers(udine_palmanova,460, 22).
+cloud_at_1_4km_covers(gorizia,460, 22).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 22).
+cloud_at_1_4km_covers(pontebba_tarvisio,460, 23).
+cloud_at_1_4km_covers(gemona_stolvizza,460, 23).
+cloud_at_3km_covers(pontebba_tarvisio,441, 1).
+cloud_at_3km_covers(gemona_stolvizza,441, 1).
+cloud_at_3km_covers(pontebba_tarvisio,441, 2).
+cloud_at_3km_covers(gemona_stolvizza,441, 2).
+cloud_at_3km_covers(sappada_forni_villa,441, 3).
+cloud_at_3km_covers(pontebba_tarvisio,441, 3).
+cloud_at_3km_covers(gemona_stolvizza,441, 3).
+cloud_at_3km_covers(sappada_forni_villa,441, 4).
+cloud_at_3km_covers(pontebba_tarvisio,441, 4).
+cloud_at_3km_covers(sappada_forni_villa,441, 5).
+cloud_at_3km_covers(pontebba_tarvisio,441, 5).
+cloud_at_3km_covers(gemona_stolvizza,441, 5).
+cloud_at_3km_covers(trieste,444, 5).
+cloud_at_3km_covers(sappada_forni_villa,441, 6).
+cloud_at_3km_covers(pontebba_tarvisio,441, 6).
+cloud_at_3km_covers(gemona_stolvizza,441, 6).
+cloud_at_3km_covers(pontebba_tarvisio,455, 7).
+cloud_at_3km_covers(gemona_stolvizza,455, 7).
+cloud_at_3km_covers(lignano_grado,456, 7).
+cloud_at_3km_covers(pontebba_tarvisio,455, 8).
+cloud_at_3km_covers(lignano_grado,455, 8).
+cloud_at_3km_covers(gorizia,455, 8).
+cloud_at_3km_covers(gemona_stolvizza,455, 8).
+cloud_at_3km_covers(pordenone,455, 8).
+cloud_at_3km_covers(sappada_forni_villa,455, 9).
+cloud_at_3km_covers(pontebba_tarvisio,455, 9).
+cloud_at_3km_covers(barcis,455, 9).
+cloud_at_3km_covers(gorizia,455, 9).
+cloud_at_3km_covers(gemona_stolvizza,455, 9).
+cloud_at_3km_covers(sappada_forni_villa,455, 10).
+cloud_at_3km_covers(pontebba_tarvisio,455, 10).
+cloud_at_3km_covers(udine_palmanova,455, 10).
+cloud_at_3km_covers(gorizia,455, 10).
+cloud_at_3km_covers(gemona_stolvizza,455, 10).
+cloud_at_3km_covers(sappada_forni_villa,455, 11).
+cloud_at_3km_covers(pontebba_tarvisio,455, 11).
+cloud_at_3km_covers(udine_palmanova,455, 11).
+cloud_at_3km_covers(gemona_stolvizza,455, 11).
+cloud_at_3km_covers(pontebba_tarvisio,455, 12).
+cloud_at_3km_covers(barcis,465, 12).
+cloud_at_3km_covers(udine_palmanova,465, 12).
+cloud_at_3km_covers(pordenone,465, 12).
+cloud_at_3km_covers(trieste,458, 12).
+cloud_at_3km_covers(lignano_grado,465, 13).
+cloud_at_3km_covers(udine_palmanova,465, 13).
+cloud_at_3km_covers(gemona_stolvizza,465, 13).
+cloud_at_3km_covers(pordenone,465, 13).
+cloud_at_3km_covers(barcis,471, 14).
+cloud_at_3km_covers(udine_palmanova,471, 14).
+cloud_at_3km_covers(gorizia,471, 14).
+cloud_at_3km_covers(pordenone,471, 14).
+cloud_at_3km_covers(sappada_forni_villa,455, 15).
+cloud_at_3km_covers(pontebba_tarvisio,455, 15).
+cloud_at_3km_covers(gemona_stolvizza,455, 15).
+cloud_at_3km_covers(pontebba_tarvisio,455, 16).
+cloud_at_3km_covers(gorizia,455, 16).
+cloud_at_3km_covers(gemona_stolvizza,455, 16).
+cloud_at_3km_covers(gemona_stolvizza,480, 21).
+cloud_at_5_5km_covers(trieste,559, 1).
+cloud_at_5_5km_covers(trieste,551, 2).
+cloud_at_5_5km_covers(trieste,551, 3).
+cloud_at_5_5km_covers(gorizia,551, 4).
+cloud_at_5_5km_covers(trieste,551, 4).
+cloud_at_5_5km_covers(barcis,561, 5).
+cloud_at_5_5km_covers(pordenone,561, 5).
+cloud_at_5_5km_covers(barcis,561, 6).
+cloud_at_5_5km_covers(udine_palmanova,561, 6).
+cloud_at_5_5km_covers(pordenone,561, 6).
+cloud_at_5_5km_covers(lignano_grado,561, 7).
+cloud_at_5_5km_covers(barcis,561, 7).
+cloud_at_5_5km_covers(udine_palmanova,561, 7).
+cloud_at_5_5km_covers(gemona_stolvizza,561, 7).
+cloud_at_5_5km_covers(pordenone,561, 7).
+cloud_at_5_5km_covers(pontebba_tarvisio,561, 8).
+cloud_at_5_5km_covers(udine_palmanova,561, 8).
+cloud_at_5_5km_covers(gemona_stolvizza,561, 8).
+cloud_at_5_5km_covers(trieste,576, 9).
+cloud_at_5_5km_covers(pordenone,571, 10).
+cloud_at_5_5km_covers(lignano_grado,588, 11).
+cloud_at_5_5km_covers(udine_palmanova,588, 11).
+cloud_at_5_5km_covers(gorizia,588, 11).
+cloud_at_5_5km_covers(udine_palmanova,588, 12).
+cloud_at_5_5km_covers(gorizia,588, 12).
+cloud_at_5_5km_covers(trieste,588, 12).
+cloud_at_5_5km_covers(barcis,593, 13).
+cloud_at_5_5km_covers(gorizia,597, 15).
+cloud_at_9km_covers(sappada_forni_villa,662, 1).
+cloud_at_9km_covers(pontebba_tarvisio,662, 1).
+cloud_at_9km_covers(lignano_grado,662, 1).
+cloud_at_9km_covers(barcis,662, 1).
+cloud_at_9km_covers(udine_palmanova,662, 1).
+cloud_at_9km_covers(gorizia,662, 1).
+cloud_at_9km_covers(trieste,662, 1).
+cloud_at_9km_covers(gemona_stolvizza,662, 1).
+cloud_at_9km_covers(pordenone,662, 1).
+cloud_at_9km_covers(pontebba_tarvisio,662, 2).
+cloud_at_9km_covers(lignano_grado,662, 2).
+cloud_at_9km_covers(barcis,662, 2).
+cloud_at_9km_covers(udine_palmanova,662, 2).
+cloud_at_9km_covers(gorizia,662, 2).
+cloud_at_9km_covers(gemona_stolvizza,662, 2).
+cloud_at_9km_covers(pordenone,662, 2).
+cloud_at_9km_covers(sappada_forni_villa,662, 3).
+cloud_at_9km_covers(pontebba_tarvisio,662, 3).
+cloud_at_9km_covers(lignano_grado,662, 3).
+cloud_at_9km_covers(barcis,662, 3).
+cloud_at_9km_covers(udine_palmanova,662, 3).
+cloud_at_9km_covers(gorizia,662, 3).
+cloud_at_9km_covers(trieste,662, 3).
+cloud_at_9km_covers(gemona_stolvizza,662, 3).
+cloud_at_9km_covers(pordenone,662, 3).
+cloud_at_9km_covers(sappada_forni_villa,662, 4).
+cloud_at_9km_covers(pontebba_tarvisio,662, 4).
+cloud_at_9km_covers(lignano_grado,662, 4).
+cloud_at_9km_covers(barcis,662, 4).
+cloud_at_9km_covers(udine_palmanova,662, 4).
+cloud_at_9km_covers(gorizia,662, 4).
+cloud_at_9km_covers(trieste,662, 4).
+cloud_at_9km_covers(gemona_stolvizza,662, 4).
+cloud_at_9km_covers(pordenone,662, 4).
+cloud_at_9km_covers(sappada_forni_villa,662, 5).
+cloud_at_9km_covers(pontebba_tarvisio,662, 5).
+cloud_at_9km_covers(lignano_grado,662, 5).
+cloud_at_9km_covers(barcis,662, 5).
+cloud_at_9km_covers(udine_palmanova,662, 5).
+cloud_at_9km_covers(gorizia,662, 5).
+cloud_at_9km_covers(trieste,662, 5).
+cloud_at_9km_covers(gemona_stolvizza,662, 5).
+cloud_at_9km_covers(pordenone,662, 5).
+cloud_at_9km_covers(sappada_forni_villa,662, 6).
+cloud_at_9km_covers(pontebba_tarvisio,662, 6).
+cloud_at_9km_covers(lignano_grado,662, 6).
+cloud_at_9km_covers(barcis,662, 6).
+cloud_at_9km_covers(udine_palmanova,662, 6).
+cloud_at_9km_covers(gorizia,662, 6).
+cloud_at_9km_covers(trieste,662, 6).
+cloud_at_9km_covers(pordenone,662, 6).
+cloud_at_9km_covers(pontebba_tarvisio,662, 7).
+cloud_at_9km_covers(lignano_grado,662, 7).
+cloud_at_9km_covers(barcis,662, 7).
+cloud_at_9km_covers(udine_palmanova,662, 7).
+cloud_at_9km_covers(gorizia,662, 7).
+cloud_at_9km_covers(gemona_stolvizza,662, 7).
+cloud_at_9km_covers(pordenone,662, 7).
+cloud_at_9km_covers(pontebba_tarvisio,662, 8).
+cloud_at_9km_covers(lignano_grado,662, 8).
+cloud_at_9km_covers(barcis,662, 8).
+cloud_at_9km_covers(udine_palmanova,662, 8).
+cloud_at_9km_covers(gorizia,662, 8).
+cloud_at_9km_covers(gemona_stolvizza,662, 8).
+cloud_at_9km_covers(pordenone,662, 8).
+cloud_at_9km_covers(pontebba_tarvisio,662, 9).
+cloud_at_9km_covers(barcis,662, 9).
+cloud_at_9km_covers(trieste,662, 9).
+cloud_at_9km_covers(pordenone,662, 9).
+cloud_at_9km_covers(lignano_grado,662, 10).
+cloud_at_9km_covers(barcis,662, 10).
+cloud_at_9km_covers(gorizia,662, 10).
+cloud_at_9km_covers(trieste,662, 10).
+cloud_at_9km_covers(pordenone,662, 10).
+cloud_at_9km_covers(sappada_forni_villa,662, 11).
+cloud_at_9km_covers(pontebba_tarvisio,662, 11).
+cloud_at_9km_covers(lignano_grado,662, 11).
+cloud_at_9km_covers(barcis,662, 11).
+cloud_at_9km_covers(udine_palmanova,662, 11).
+cloud_at_9km_covers(gorizia,662, 11).
+cloud_at_9km_covers(trieste,662, 11).
+cloud_at_9km_covers(gemona_stolvizza,662, 11).
+cloud_at_9km_covers(pordenone,662, 11).
+cloud_at_9km_covers(sappada_forni_villa,662, 12).
+cloud_at_9km_covers(pontebba_tarvisio,662, 12).
+cloud_at_9km_covers(barcis,662, 12).
+cloud_at_9km_covers(udine_palmanova,662, 12).
+cloud_at_9km_covers(gorizia,662, 12).
+cloud_at_9km_covers(trieste,662, 12).
+cloud_at_9km_covers(gemona_stolvizza,662, 12).
+cloud_at_9km_covers(pontebba_tarvisio,662, 13).
+cloud_at_9km_covers(lignano_grado,662, 13).
+cloud_at_9km_covers(barcis,662, 13).
+cloud_at_9km_covers(gorizia,662, 13).
+cloud_at_9km_covers(gemona_stolvizza,662, 13).
+cloud_at_9km_covers(pordenone,662, 13).
+cloud_at_9km_covers(sappada_forni_villa,682, 14).
+cloud_at_9km_covers(pontebba_tarvisio,682, 14).
+cloud_at_9km_covers(barcis,682, 14).
+cloud_at_9km_covers(gemona_stolvizza,682, 14).
+cloud_at_9km_covers(pontebba_tarvisio,688, 15).
+cloud_at_9km_covers(pordenone,700, 21).
+cloud_at_9km_covers(udine_palmanova,700, 22).
+cloud_at_9km_covers(pontebba_tarvisio,700, 23).
+cloud_at_9km_covers(trieste,706, 23).
+
+%summing up temperature and humidity facts 
+
+% temperature_at_morning(sappada_forni_villa,278.07).
+% temperature_at_afternoon(sappada_forni_villa,278.44).
+temperature_increased_at_afternoon(sappada_forni_villa).
+% temperature_at_morning(pontebba_tarvisio,278.20).
+% temperature_at_afternoon(pontebba_tarvisio,279.04).
+temperature_increased_at_afternoon(pontebba_tarvisio).
+% temperature_at_morning(lignano_grado,279.10).
+% temperature_at_afternoon(lignano_grado,277.94).
+temperature_decreased_at_afternoon(lignano_grado).
+% temperature_at_morning(barcis,279.13).
+% temperature_at_afternoon(barcis,278.92).
+temperature_decreased_at_afternoon(barcis).
+% temperature_at_morning(udine_palmanova,278.93).
+% temperature_at_afternoon(udine_palmanova,278.33).
+temperature_decreased_at_afternoon(udine_palmanova).
+% temperature_at_morning(gorizia,278.50).
+% temperature_at_afternoon(gorizia,278.19).
+temperature_decreased_at_afternoon(gorizia).
+% temperature_at_morning(trieste,278.20).
+% temperature_at_afternoon(trieste,278.06).
+temperature_decreased_at_afternoon(trieste).
+% temperature_at_morning(gemona_stolvizza,278.50).
+% temperature_at_afternoon(gemona_stolvizza,278.21).
+temperature_decreased_at_afternoon(gemona_stolvizza).
+% temperature_at_morning(pordenone,279.13).
+% temperature_at_afternoon(pordenone,278.88).
+temperature_decreased_at_afternoon(pordenone).
+% humidity_at_morning(sappada_forni_villa,17.33).
+% humidity_at_afternoon(sappada_forni_villa,18.75).
+humidity_increased_at_afternoon(sappada_forni_villa).
+% humidity_at_morning(pontebba_tarvisio,20.00).
+% humidity_at_afternoon(pontebba_tarvisio,25.00).
+humidity_increased_at_afternoon(pontebba_tarvisio).
+% humidity_at_morning(lignano_grado,16.67).
+% humidity_at_afternoon(lignano_grado,33.33).
+humidity_increased_at_afternoon(lignano_grado).
+% humidity_at_morning(barcis,10.67).
+% humidity_at_afternoon(barcis,24.58).
+humidity_increased_at_afternoon(barcis).
+% humidity_at_morning(udine_palmanova,9.33).
+% humidity_at_afternoon(udine_palmanova,17.50).
+humidity_increased_at_afternoon(udine_palmanova).
+% humidity_at_morning(gorizia,22.67).
+% humidity_at_afternoon(gorizia,32.08).
+humidity_increased_at_afternoon(gorizia).
+% humidity_at_morning(trieste,29.33).
+% humidity_at_afternoon(trieste,49.17).
+humidity_increased_at_afternoon(trieste).
+% humidity_at_morning(gemona_stolvizza,12.00).
+% humidity_at_afternoon(gemona_stolvizza,19.58).
+humidity_increased_at_afternoon(gemona_stolvizza).
+% humidity_at_morning(pordenone,10.00).
+% humidity_at_afternoon(pordenone,27.50).
+humidity_increased_at_afternoon(pordenone).
+wind_blowing_morning(sappada_forni_villa,"N",16).
+wind_blowing_afternoon(sappada_forni_villa,"N",17).
+wind_blowing_morning(pontebba_tarvisio,"N",15).
+wind_blowing_afternoon(pontebba_tarvisio,"N",15).
+wind_blowing_morning(lignano_grado,"N",16).
+wind_blowing_afternoon(lignano_grado,"N",17).
+wind_blowing_morning(barcis,"N",16).
+wind_blowing_afternoon(barcis,"N",17).
+wind_blowing_morning(udine_palmanova,"N",15).
+wind_blowing_afternoon(udine_palmanova,"N",16).
+wind_blowing_morning(gorizia,"N",15).
+wind_blowing_afternoon(gorizia,"N",16).
+wind_blowing_morning(trieste,"N",15).
+wind_blowing_afternoon(trieste,"N",16).
+wind_blowing_morning(gemona_stolvizza,"N",15).
+wind_blowing_afternoon(gemona_stolvizza,"N",15).
+wind_blowing_morning(pordenone,"N",16).
+wind_blowing_afternoon(pordenone,"N",17).
+
+temp_front_afternoon_at_5_5km(pontebba_tarvisio,sappada_forni_villa).
+
+
+}). 
