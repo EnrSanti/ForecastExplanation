@@ -19,18 +19,18 @@ season(spring) :- date(_, MM, _), MM >= 3, MM <= 5.
 season(summer) :- date(_, MM, _), MM >= 6, MM <= 8.
 season(autumn) :- date(_, MM, _), MM >= 9, MM <= 11.
 
-sunlight_range(1, 8, 16).
-sunlight_range(2, 7, 18).
-sunlight_range(3, 6, 20).
-sunlight_range(4, 7, 17).
+sunlight_range(winter, 8, 16).
+sunlight_range(spring, 7, 18).
+sunlight_range(summer, 6, 20).
+sunlight_range(autumn, 7, 17).
 
 sunlight(H) :- season(S), sunlight_range(S, From, To), time(H), H >= From, H <= To.
 
 covered_at_hour_morning(C,H) :-
-    cloud(C,L1,H), sunlight(H), time(H),location_considered(C).
+    cloud(C,L1,H), sunlight(H), time(H),location_considered(C), H<=12.
 
 covered_at_hour_afternoon(C,H) :-
-    cloud(C,L1,H), sunlight(H), time(H),location_considered(C).
+    cloud(C,L1,H), sunlight(H), time(H),location_considered(C), H>12.
 
 city_covered_at_least_morning(C,1) :-
     covered_at_hour_morning(C,H1),location_considered(C).
@@ -617,8 +617,6 @@ not_city_covered_at_least_afternoon_neighbour(X,LV) :- not city_covered_at_least
 :- rains_at(X,1,S), forecasted_rain(X,6,S), season(S), location_considered(X).
 :- rains_at(X,2,S), forecasted_rain(X,6,S), season(S), location_considered(X).
 :- rains_at(X,4,S), forecasted_rain(X,6,S), season(S), location_considered(X).
-
-
 
 
 rains_at(X,LV,S) :- forecasted_rain(X,LV,S), season(S), location_considered(X),rain_lvs(LV).
