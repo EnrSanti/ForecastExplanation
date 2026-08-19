@@ -14,28 +14,26 @@ logger = logging.getLogger(__name__)
 
 
 def cut_grib_long_lat(grib_path: str, output_path: str, coordinates: Tuple[float, float, float, float]) -> None:
-    ds = xr.open_dataset(grib_path, engine="cfgrib", decode_cf=True, decode_times=True, decode_timedelta=False)
-    mask = (ds.longitude >= coordinates[0]) & (ds.longitude <= coordinates[1]) & \
+    with xr.open_dataset(grib_path, engine="cfgrib", decode_cf=True, decode_times=True, decode_timedelta=False) as ds:
+        mask = (ds.longitude >= coordinates[0]) & (ds.longitude <= coordinates[1]) & \
            (ds.latitude >= coordinates[2]) & (ds.latitude <= coordinates[3])
 
-    ds_sub = ds.where(mask, drop=True)
-    ds_sub.to_netcdf(output_path)
-
-    ds.close()
-    ds_sub.close()
+        ds_sub = ds.where(mask, drop=True)
+        ds_sub.to_netcdf(output_path)
+        ds_sub.close()
 
 
-def extract_nc_worker(date: datetime, coordinates: Region) -> None:
+def extract_nc_worker(date: datetime, region: Region) -> None:
     base_name = date.strftime("%Y-%m-%d")
     grib_file = f"{base_name}.grib"
     grib_path = os.path.join(RAW_DATA_DIR, grib_file)
-    output_path = os.path.join(CUT_DATA_DIR, base_name + "_" + coordinates.name + "_cut.nc")
+    output_path = os.path.join(CUT_DATA_DIR, base_name + "_" + region.name + "_cut.nc")
 
     if not os.path.exists(output_path):
         download_grib_if_needed(date, grib_path)
 
         logger.debug(f"CUTTING GRIB: {grib_path} -> {output_path}")
-        cut_grib_long_lat(grib_path, output_path, coordinates.value)
+        cut_grib_long_lat(grib_path, output_path, region.value)
     else:
         logger.debug(f"ALREADY CUT: {output_path}")
 
@@ -57,7 +55,7 @@ def extract_nc(dates: List[datetime], region: Region) -> None:
             try:
                 future.result()
             except Exception as e:
-                logger.error(f"Extract failed for {date}: {e}")
+                logger.error(f"Extract failed for {date}", exc_info=True)
 
     logger.info("Data extraction completed.")
 

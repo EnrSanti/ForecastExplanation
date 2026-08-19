@@ -1,4 +1,3 @@
-import gc
 import logging
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -6,6 +5,8 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -14,10 +15,9 @@ from cartopy.io import shapereader
 
 from . import Region, CUT_DATA_DIR
 from datetime import datetime
-from typing import List, Tuple
+from typing import List
 
 logger = logging.getLogger(__name__)
-matplotlib.use("Agg")
 
 # define the hPa of the data considered, moreover define a more symbolic name for them
 LEVELS = [1000, 925, 850, 700, 500, 300]
@@ -67,20 +67,14 @@ def extract_features_from_nc(dates: List[datetime], coordinates: Region, output_
 
 def save_feature_maps(input_path: str, coordinates: Region, output_base: str) -> None:
     with xr.open_dataset(input_path) as ds:
-        if 'ccl' not in ds:
-            print("Error: 'ccl' variable not found in dataset.")
-            return
-
-        if 'r' not in ds and 'rhum' not in ds:
-            print("Error: 'r' (Relative Humidity) variable not found in dataset.")
+        if any(var not in ds for var in ['ccl', 't', 'u', 'v', 'r', 'rhum']):
+            logger.error("Error: One or more required variables not found in dataset.")
             return
 
         save_cloud_maps(ds, coordinates, output_base)
         save_temperature_maps(ds, coordinates, output_base)
         save_wind_maps(ds, coordinates, output_base)
         save_humidity_maps(ds, coordinates, output_base)
-
-        ds.close()
 
     logger.debug(f"Feature maps saved for {input_path} in {output_base}")
 
@@ -113,7 +107,7 @@ def save_borders_png(output_base: str, coordinates: Region) -> None:
     # --- Styling and export ---
     ax.axis("off")
     fig.savefig(
-        output_base + "/borders.png",
+        os.path.join(output_base, "borders.png"),
         dpi=130,
         bbox_inches="tight",
         pad_inches=0,
@@ -229,7 +223,7 @@ def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> No
 
                 fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
                 ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
-                pcm = ax.pcolormesh(
+                ax.pcolormesh(
                     cloud_slice['longitude'], cloud_slice['latitude'], cloud_slice,
                     cmap="viridis", shading='auto', vmin=MINIMUM_CLOUD_VALUE, vmax=MAXIMUM_CLOUD_VALUE,
                     transform=ccrs.PlateCarree()
@@ -281,7 +275,7 @@ def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str)
                 fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
                 ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
 
-                pcm = ax.pcolormesh(
+                ax.pcolormesh(
                     temp_slice['longitude'],
                     temp_slice['latitude'],
                     temp_slice,
@@ -295,7 +289,6 @@ def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str)
                 fname = os.path.join(out_dir, f"temp_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
                 plt.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
                 plt.close(fig)
-                gc.collect()
 
 
 def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
@@ -344,12 +337,12 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
 
                 fig, ax = plt.subplots(
                     figsize=(10, 8),
-                    dpi=380,
+                    dpi=130,
                     subplot_kw={"projection": ccrs.PlateCarree()},
                 )
                 ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
 
-                pcm = ax.pcolormesh(
+                ax.pcolormesh(
                     u_slice["longitude"],
                     u_slice["latitude"],
                     wind_speed,
@@ -387,13 +380,11 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
                 fig.canvas.draw()
                 bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
                 x0, y0, width_in, height_in = bbox.x0, bbox.y0, bbox.width, bbox.height
-                width_px = int(width_in * fig.dpi)
-                height_px = int(height_in * fig.dpi)
 
                 disp = ax.transData.transform(np.column_stack((lon_visible, lat_visible)))
 
                 px = np.round(disp[:, 0] - x0 * fig.dpi).astype(int)
-                py = np.round(height_px - (disp[:, 1] - y0 * fig.dpi)).astype(int)
+                py = np.round(int(height_in * fig.dpi) - (disp[:, 1] - y0 * fig.dpi)).astype(int)
 
                 # ---- MAGNITUDE & ANGLE ----
                 mags = np.sqrt(u_visible ** 2 + v_visible ** 2)
@@ -402,7 +393,7 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
                 mags[~np.isfinite(mags)] = 0
 
                 txt_path = os.path.join(
-                    output_base, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.csv"
+                    out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.csv"
                 )
                 with open(txt_path, "w") as ftxt:
                     ftxt.write(
@@ -465,7 +456,7 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
                 fig, ax = plt.subplots(figsize=(10, 8),
                                        subplot_kw={'projection': ccrs.PlateCarree()})
                 ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
-                pcm = ax.pcolormesh(
+                ax.pcolormesh(
                     rh_slice['longitude'], rh_slice['latitude'], rh_slice,
                     cmap="YlGnBu", shading='auto', vmin=MINIMUM_HUMIDITY_VALUE, vmax=MAXIMUM_HUMIDITY_VALUE,
                     transform=ccrs.PlateCarree()
@@ -474,5 +465,3 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
                 fname = os.path.join(out_dir, f"humidity_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
                 plt.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
                 plt.close(fig)
-
-            gc.collect()
