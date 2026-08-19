@@ -64,7 +64,7 @@ def extract_features_from_nc(dates: list, coordinates: Region, output_base: str)
 
 
 def save_feature_maps(input_path, coordinates: Region, output_base: str):
-    with xr.open_dataset(input_path, decode_times=True, decode_timedelta=False) as ds:
+    with xr.open_dataset(input_path) as ds:
         if 'ccl' not in ds:
             print("Error: 'ccl' variable not found in dataset.")
             return
@@ -112,7 +112,7 @@ def save_borders_png(output_base, coordinates):
     ax.axis("off")
     fig.savefig(
         output_base + "/borders.png",
-        dpi=380,  # so no need to resize, we don't loose data in the borders
+        dpi=130,
         bbox_inches="tight",
         pad_inches=0,
         transparent=True
@@ -121,85 +121,70 @@ def save_borders_png(output_base, coordinates):
 
 
 def create_legends(output_base):
-    # Create legends for each level and feature
-    # features = {
-    #     "cloud": ("viridis", MINIMUM_CLOUD_VALUE, MAXIMUM_CLOUD_VALUE, "Cloud cover [%]"),
-    #     "temp": ("OrRd", None, None, "Temperature [K]"),
-    #     "winds": ("viridis", None, None, "Wind speed [m/s]"),
-    #     "humidity": ("YlGnBu", None, None, "Relative humidity [%]")
-    # }
+    features = {
+        "cloud": {
+            "cmap": "viridis",
+            "vmin": MINIMUM_CLOUD_VALUE,
+            "vmax": MAXIMUM_CLOUD_VALUE,
+            "label": "Cloud cover [fraction]"
+        },
+        "temp": {
+            "cmap": "OrRd",
+            "vmin": MINIMUM_TEMP_VALUE,
+            "vmax": MAXIMUM_TEMP_VALUE,
+            "label": "Temperature [K]",
+            "txt_prefix": "Temperature",
+            "txt_unit": "K"
+        },
+        "wind": {
+            "cmap": "viridis",
+            "vmin": MINIMUM_WIND_SPEED_VALUE,
+            "vmax": MAXIMUM_WIND_SPEED_VALUE,
+            "label": "Wind speed [m/s]"
+        },
+        "humidity": {
+            "cmap": "YlGnBu",
+            "vmin": MINIMUM_HUMIDITY_VALUE,
+            "vmax": MAXIMUM_HUMIDITY_VALUE,
+            "label": "Relative humidity [%]",
+            "txt_prefix": "Humidity",
+            "txt_unit": "%"
+        }
+    }
 
-    # CLOUD
-    fig, ax = plt.subplots(figsize=(6, 1))
-    norm = plt.Normalize(vmin=MINIMUM_CLOUD_VALUE, vmax=MAXIMUM_CLOUD_VALUE)
-    cb = plt.colorbar(
-        plt.cm.ScalarMappable(norm=norm, cmap="viridis"),
-        cax=ax,
-        orientation='horizontal'
-    )
-    cb.set_label(f'Cloud cover [fraction]')
-    legend_path = os.path.join(output_base, f"legend_cloud.png")
-    plt.savefig(legend_path, dpi=130, bbox_inches='tight', pad_inches=0)
-    plt.close(fig)
+    for key, props in features.items():
+        fig, ax = plt.subplots(figsize=(6, 1))
+        norm = plt.Normalize(vmin=props["vmin"], vmax=props["vmax"])
 
-    # TEMPERATURE
-    fig, ax = plt.subplots(figsize=(6, 1))
-    norm = plt.Normalize(vmin=MINIMUM_TEMP_VALUE, vmax=MAXIMUM_TEMP_VALUE)
-    cb = plt.colorbar(
-        plt.cm.ScalarMappable(norm=norm, cmap="OrRd"),
-        cax=ax, orientation='horizontal'
-    )
-    cb.set_label(f'Temperature [K]')
-    plt.savefig(os.path.join(output_base, f"legend_temp.png"), dpi=130, bbox_inches='tight',
-                pad_inches=0)
-    plt.close(fig)
-    cmap_obj = plt.get_cmap("OrRd")
-    rgba_min = cmap_obj(norm(MINIMUM_TEMP_VALUE))
-    rgba_max = cmap_obj(norm(MAXIMUM_TEMP_VALUE))
-    rgb255_min = tuple(int(255 * c) for c in rgba_min[:3])
-    rgb255_max = tuple(int(255 * c) for c in rgba_max[:3])
+        cb = plt.colorbar(
+            plt.cm.ScalarMappable(norm=norm, cmap=props["cmap"]),
+            cax=ax,
+            orientation='horizontal'
+        )
+        cb.set_label(props["label"])
 
-    with open(os.path.join(output_base, f"legend_temp.txt"), 'w') as ftxt:
-        ftxt.write(f"Temperature range: {MINIMUM_TEMP_VALUE:.2f} K to {MAXIMUM_TEMP_VALUE:.2f} K\n")
-        ftxt.write(f"Respective colors: {rgb255_min}, {rgb255_max}\n")
+        png_path = os.path.join(output_base, f"legend_{key}.png")
+        plt.savefig(png_path, dpi=130, bbox_inches='tight', pad_inches=0)
+        plt.close(fig)
 
-    # WIND
-    fig, ax = plt.subplots(figsize=(6, 1))
-    norm = plt.Normalize(vmin=MINIMUM_WIND_SPEED_VALUE, vmax=MAXIMUM_WIND_SPEED_VALUE)
-    cb = plt.colorbar(
-        plt.cm.ScalarMappable(norm=norm, cmap="viridis"),
-        cax=ax,
-        orientation="horizontal",
-    )
-    cb.set_label(f"Wind speed [m/s]")
-    plt.savefig(
-        os.path.join(output_base, f"legend_wind.png"),
-        dpi=130,
-        bbox_inches="tight",
-        pad_inches=0,
-    )
-    plt.close(fig)
+        if "txt_prefix" in props:
+            cmap_obj = plt.get_cmap(props["cmap"])
 
-    # HUMIDITY
-    fig, ax = plt.subplots(figsize=(6, 1))
-    norm = plt.Normalize(vmin=MINIMUM_HUMIDITY_VALUE, vmax=MAXIMUM_HUMIDITY_VALUE)
-    cb = plt.colorbar(
-        plt.cm.ScalarMappable(norm=norm, cmap="YlGnBu"),
-        cax=ax, orientation='horizontal'
-    )
-    cb.set_label(f'Relative humidity [%]')
-    plt.savefig(os.path.join(output_base, f"legend_humidity.png"),
-                dpi=130, bbox_inches='tight')
-    plt.close(fig)
+            # Calculate RGB max/min
+            rgba_min = cmap_obj(norm(props["vmin"]))
+            rgba_max = cmap_obj(norm(props["vmax"]))
+            rgb255_min = tuple(int(255 * c) for c in rgba_min[:3])
+            rgb255_max = tuple(int(255 * c) for c in rgba_max[:3])
 
-    cmap_obj = plt.get_cmap("YlGnBu")
-    rgba_min = cmap_obj(norm(MINIMUM_HUMIDITY_VALUE))
-    rgba_max = cmap_obj(norm(MAXIMUM_HUMIDITY_VALUE))
-    rgb255_min = tuple(int(255 * c) for c in rgba_min[:3])
-    rgb255_max = tuple(int(255 * c) for c in rgba_max[:3])
-    with open(os.path.join(output_base, f"legend_hum.txt"), 'w') as ftxt:
-        ftxt.write(f"Humidity range: {MINIMUM_HUMIDITY_VALUE:.2f} K to {MAXIMUM_HUMIDITY_VALUE:.2f} K\n")
-        ftxt.write(f"Respective colors: {rgb255_min}, {rgb255_max}\n")
+            txt_path = os.path.join(output_base, f"legend_{key}.txt")
+
+            with open(txt_path, 'w') as ftxt:
+                prefix = props["txt_prefix"]
+                unit = props["txt_unit"]
+                vmin, vmax = props["vmin"], props["vmax"]
+
+                ftxt.write(f"{prefix} range: {vmin:.2f} {unit} to {vmax:.2f} {unit}\n")
+                ftxt.write(f"Respective colors: {rgb255_min}, {rgb255_max}\n")
 
 
 def save_cloud_maps(ds, coordinates, output_base):
