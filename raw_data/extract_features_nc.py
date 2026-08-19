@@ -188,6 +188,7 @@ def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> No
     cloud = ds['ccl']
 
     fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+    ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
     
     for lvl in LEVELS:
         cloud_level = cloud.sel(isobaricInhPa=lvl)
@@ -210,15 +211,14 @@ def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> No
                 if not np.isfinite(cloud_slice).any():
                     continue
 
-                ax.clear()
-                ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
-                ax.pcolormesh(
+                mesh = ax.pcolormesh(
                     cloud_slice['longitude'], cloud_slice['latitude'], cloud_slice,
                     cmap="viridis", shading='auto', vmin=MINIMUM_CLOUD_VALUE, vmax=MAXIMUM_CLOUD_VALUE,
                     transform=ccrs.PlateCarree()
                 )
                 fname = os.path.join(out_dir, f"cloud_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
                 fig.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
+                mesh.remove()
     plt.close(fig)
 
 
@@ -227,6 +227,7 @@ def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str)
     temperature = ds['t']
 
     fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+    ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
     
     for lvl in LEVELS:
         temp_level = temperature.sel(isobaricInhPa=lvl)
@@ -249,9 +250,7 @@ def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str)
                 if not np.isfinite(temp_slice).any():
                     continue
 
-                ax.clear()
-                ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
-                ax.pcolormesh(
+                mesh = ax.pcolormesh(
                     temp_slice['longitude'],
                     temp_slice['latitude'],
                     temp_slice,
@@ -264,6 +263,7 @@ def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str)
 
                 fname = os.path.join(out_dir, f"temp_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
                 fig.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
+                mesh.remove()
     plt.close(fig)
 
 
@@ -273,6 +273,8 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
     v_var = ds["v"]
 
     fig, ax = plt.subplots(figsize=(10, 8), dpi=130, subplot_kw={"projection": ccrs.PlateCarree()})
+    ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
+    ax.axis("off")
     
     for lvl in LEVELS:
         u_lvl = u_var.sel(isobaricInhPa=lvl)
@@ -299,10 +301,7 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
                 if not np.isfinite(wind_speed).any():
                     continue
 
-                ax.clear()
-                ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
-
-                ax.pcolormesh(
+                mesh = ax.pcolormesh(
                     u_slice["longitude"],
                     u_slice["latitude"],
                     wind_speed,
@@ -313,7 +312,6 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
                     transform=ccrs.PlateCarree(),
                 )
 
-                # ---- SUBSAMPLE ----
                 step = 10
                 lon2d = u_slice["longitude"].broadcast_like(u_slice).values
                 lat2d = u_slice["latitude"].broadcast_like(u_slice).values
@@ -351,15 +349,13 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
 
                 txt_path = os.path.join(out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.csv")
                 with open(txt_path, "w") as ftxt:
-                    ftxt.write("vector_id,pixel_x,pixel_y,latitude,longitude,magnitude,alpha_deg
-")
+                    ftxt.write("vector_id,pixel_x,pixel_y,latitude,longitude,magnitude,alpha_deg")
                     for idx in range(len(lon_visible)):
-                        ftxt.write(f"{idx},{px[idx]},{py[idx]},{lat_visible[idx]:.6f},{lon_visible[idx]:.6f},{mags[idx]:.6f},{alphas[idx]:.2f}
-")
+                        ftxt.write(f"{idx},{px[idx]},{py[idx]},{lat_visible[idx]:.6f},{lon_visible[idx]:.6f},{mags[idx]:.6f},{alphas[idx]:.2f}")
 
-                ax.axis("off")
                 fname = os.path.join(out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
                 fig.savefig(fname, dpi=130, bbox_inches="tight", pad_inches=0)
+                mesh.remove()
     plt.close(fig)
 
 
@@ -368,6 +364,7 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
     humidity = ds['r'] if 'r' in ds else ds['rhum']
 
     fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+    ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
     
     for lvl in LEVELS:
         rh_level = humidity.sel(isobaricInhPa=lvl)
@@ -390,9 +387,7 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
                 if not np.isfinite(rh_slice).any():
                     continue
 
-                ax.clear()
-                ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
-                ax.pcolormesh(
+                mesh = ax.pcolormesh(
                     rh_slice['longitude'], rh_slice['latitude'], rh_slice,
                     cmap="YlGnBu", shading='auto', vmin=MINIMUM_HUMIDITY_VALUE, vmax=MAXIMUM_HUMIDITY_VALUE,
                     transform=ccrs.PlateCarree()
@@ -400,4 +395,5 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
 
                 fname = os.path.join(out_dir, f"humidity_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
                 fig.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
+                mesh.remove()
     plt.close(fig)
