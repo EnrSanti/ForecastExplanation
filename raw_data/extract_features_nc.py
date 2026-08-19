@@ -184,19 +184,11 @@ def create_legends(output_base: str) -> None:
 
 
 def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    """
-       Given a xarray dataset, it saves the images with the data related to the clouds. Data at different height is stored in different folders
-
-       Parameters
-       ----------
-       ds: the xarray dataset from which to extract the data
-       coordinates: are the coordinates of the region to be plotted (extrema)
-       output_base: the base directory where the extracted features will be saved
-    """
     cloud_folders = {k: "cloud" + v for k, v in FOLDERS.items()}
     cloud = ds['ccl']
 
-    # ---- PLOT LOOP ----
+    fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+    
     for lvl in LEVELS:
         cloud_level = cloud.sel(isobaricInhPa=lvl)
         out_dir = os.path.join(output_base, cloud_folders[lvl])
@@ -204,8 +196,6 @@ def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> No
 
         for i in range(cloud_level.sizes['time']):
             base_time = pd.to_datetime(str(cloud_level['time'].isel(time=i).values))
-
-            # Allowed window: 01:00 of base day → 00:00 of next day
             day_start = base_time.normalize() + pd.Timedelta(hours=1)
             day_end = day_start + pd.Timedelta(days=1)
 
@@ -213,7 +203,6 @@ def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> No
                 step_val = int(cloud_level['step'].isel(step=j).values)
                 valid_time = base_time + pd.Timedelta(nanoseconds=step_val)
 
-                # ---- FILTER OUT OVERLAPPING FRAMES ----
                 if not (day_start <= valid_time <= day_end):
                     continue
 
@@ -221,7 +210,7 @@ def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> No
                 if not np.isfinite(cloud_slice).any():
                     continue
 
-                fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+                ax.clear()
                 ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
                 ax.pcolormesh(
                     cloud_slice['longitude'], cloud_slice['latitude'], cloud_slice,
@@ -229,33 +218,23 @@ def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> No
                     transform=ccrs.PlateCarree()
                 )
                 fname = os.path.join(out_dir, f"cloud_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                plt.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
-                plt.close(fig)
+                fig.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
 
 
 def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    """
-       Given a xarray dataset, it saves the images with the data related to the temperatures. Data at different height is stored in different folders
-
-       Parameters
-       ----------
-       ds: the xarray dataset from which to extract the data
-       coordinates: are the coordinates of the region to be plotted (extrema)
-       output_base: the base directory where the extracted features will be saved
-    """
     temp_folders = {k: "temp" + v for k, v in FOLDERS.items()}
     temperature = ds['t']
 
+    fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+    
     for lvl in LEVELS:
         temp_level = temperature.sel(isobaricInhPa=lvl)
-
         out_dir = os.path.join(output_base, temp_folders[lvl])
         os.makedirs(out_dir, exist_ok=True)
 
         for i in range(temp_level.sizes['time']):
             base_time = pd.to_datetime(str(temp_level['time'].isel(time=i).values))
-
-            # Allowed window: 01:00 of base day → 00:00 of next day
             day_start = base_time.normalize() + pd.Timedelta(hours=1)
             day_end = day_start + pd.Timedelta(days=1)
 
@@ -263,7 +242,6 @@ def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str)
                 step_val = temp_level['step'].isel(step=j).values
                 valid_time = base_time + pd.Timedelta(nanoseconds=int(step_val))
 
-                # ---- FILTER OUT OVERLAPS ----
                 if not (day_start <= valid_time <= day_end):
                     continue
 
@@ -271,9 +249,8 @@ def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str)
                 if not np.isfinite(temp_slice).any():
                     continue
 
-                fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+                ax.clear()
                 ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
-
                 ax.pcolormesh(
                     temp_slice['longitude'],
                     temp_slice['latitude'],
@@ -286,24 +263,17 @@ def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str)
                 )
 
                 fname = os.path.join(out_dir, f"temp_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                plt.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
-                plt.close(fig)
+                fig.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
 
 
 def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    """
-       Given a xarray dataset, it saves the images with the data related to the wind (vectors included). Data at different height is stored in different folders
-
-       Parameters
-       ----------
-        ds: the xarray dataset from which to extract the data
-       coordinates: are the coordinates of the region to be plotted (extrema)
-       output_base: the base directory where the extracted features will be saved
-    """
     wind_folders = {k: "winds" + v for k, v in FOLDERS.items()}
     u_var = ds["u"]
     v_var = ds["v"]
 
+    fig, ax = plt.subplots(figsize=(10, 8), dpi=130, subplot_kw={"projection": ccrs.PlateCarree()})
+    
     for lvl in LEVELS:
         u_lvl = u_var.sel(isobaricInhPa=lvl)
         v_lvl = v_var.sel(isobaricInhPa=lvl)
@@ -312,8 +282,6 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
         os.makedirs(out_dir, exist_ok=True)
         for i in range(u_lvl.sizes["time"]):
             base_time = pd.to_datetime(str(u_lvl["time"].isel(time=i).values))
-
-            # Allowed window: 01:00 of base day → 00:00 of next day
             day_start = base_time.normalize() + pd.Timedelta(hours=1)
             day_end = day_start + pd.Timedelta(days=1)
 
@@ -321,7 +289,6 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
                 step_val = int(u_lvl["step"].isel(step=j).values)
                 valid_time = base_time + pd.Timedelta(nanoseconds=step_val)
 
-                # ---- FILTER OUT OVERLAPS ----
                 if not (day_start <= valid_time <= day_end):
                     continue
 
@@ -332,13 +299,7 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
                 if not np.isfinite(wind_speed).any():
                     continue
 
-                # ---- FIGURE ----
-
-                fig, ax = plt.subplots(
-                    figsize=(10, 8),
-                    dpi=130,
-                    subplot_kw={"projection": ccrs.PlateCarree()},
-                )
+                ax.clear()
                 ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
 
                 ax.pcolormesh(
@@ -361,7 +322,6 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
                 u_subset = u_slice.values[::step, ::step]
                 v_subset = v_slice.values[::step, ::step]
 
-                # ---- APPLY VISIBLE MASK ----
                 lon_min, lon_max, lat_min, lat_max = coordinates.value
                 mask = (
                         (lon_subset >= lon_min)
@@ -375,7 +335,6 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
                 u_visible = u_subset[mask]
                 v_visible = v_subset[mask]
 
-                # ---- COMPUTE PIXEL COORDS (axes-relative, DPI-invariant) ----
                 fig.canvas.draw()
                 bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
                 x0, y0, width_in, height_in = bbox.x0, bbox.y0, bbox.width, bbox.height
@@ -385,48 +344,31 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
                 px = np.round(disp[:, 0] - x0 * fig.dpi).astype(int)
                 py = np.round(int(height_in * fig.dpi) - (disp[:, 1] - y0 * fig.dpi)).astype(int)
 
-                # ---- MAGNITUDE & ANGLE ----
                 mags = np.sqrt(u_visible ** 2 + v_visible ** 2)
                 alphas = np.degrees(np.arctan2(v_visible, u_visible))
                 alphas[~np.isfinite(alphas)] = 0
                 mags[~np.isfinite(mags)] = 0
 
-                txt_path = os.path.join(
-                    out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.csv"
-                )
+                txt_path = os.path.join(out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.csv")
                 with open(txt_path, "w") as ftxt:
-                    ftxt.write(
-                        "vector_id,pixel_x,pixel_y,latitude,longitude,magnitude,alpha_deg\n"
-                    )
+                    ftxt.write("vector_id,pixel_x,pixel_y,latitude,longitude,magnitude,alpha_deg
+")
                     for idx in range(len(lon_visible)):
-                        ftxt.write(
-                            f"{idx},{px[idx]},{py[idx]},{lat_visible[idx]:.6f},{lon_visible[idx]:.6f},{mags[idx]:.6f},{alphas[idx]:.2f}\n"
-                        )
+                        ftxt.write(f"{idx},{px[idx]},{py[idx]},{lat_visible[idx]:.6f},{lon_visible[idx]:.6f},{mags[idx]:.6f},{alphas[idx]:.2f}
+")
 
-                # ---- SAVE FIGURE ----
                 ax.axis("off")
-                fname = os.path.join(
-                    out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png"
-                )
+                fname = os.path.join(out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
                 fig.savefig(fname, dpi=130, bbox_inches="tight", pad_inches=0)
-                plt.close(fig)
+    plt.close(fig)
 
 
 def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    """
-       Given a xarray dataset, it saves the images with the data related to the humidity. Data at different height is stored in different folders
-
-       Parameters
-       ----------
-       ds: the xarray dataset from which to extract the data
-       coordinates: are the coordinates of the region to be plotted (extrema)
-       output_base: the base directory where the extracted features will be saved
-    """
-
     humidity_folders = {k: "humidity" + v for k, v in FOLDERS.items()}
     humidity = ds['r'] if 'r' in ds else ds['rhum']
 
-    # ---- PLOT LOOP ----
+    fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+    
     for lvl in LEVELS:
         rh_level = humidity.sel(isobaricInhPa=lvl)
         out_dir = os.path.join(output_base, humidity_folders[lvl])
@@ -434,9 +376,6 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
 
         for i in range(rh_level.sizes['time']):
             base_time = pd.to_datetime(str(rh_level['time'].isel(time=i).values))
-
-            # Define allowed time window:
-            # from 01:00 of base day to 00:00 of next day
             day_start = base_time.normalize() + pd.Timedelta(hours=1)
             day_end = day_start + pd.Timedelta(days=1)
 
@@ -444,7 +383,6 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
                 step_val = int(rh_level['step'].isel(step=j).values)
                 valid_time = base_time + pd.Timedelta(nanoseconds=step_val)
 
-                # ---- FILTER ----
                 if not (day_start <= valid_time <= day_end):
                     continue
 
@@ -452,8 +390,7 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
                 if not np.isfinite(rh_slice).any():
                     continue
 
-                fig, ax = plt.subplots(figsize=(10, 8),
-                                       subplot_kw={'projection': ccrs.PlateCarree()})
+                ax.clear()
                 ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
                 ax.pcolormesh(
                     rh_slice['longitude'], rh_slice['latitude'], rh_slice,
@@ -462,5 +399,5 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
                 )
 
                 fname = os.path.join(out_dir, f"humidity_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                plt.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
-                plt.close(fig)
+                fig.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
