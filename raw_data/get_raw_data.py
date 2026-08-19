@@ -7,12 +7,13 @@ import cdsapi
 import xarray as xr
 
 from . import Region, RAW_DATA_DIR, CUT_DATA_DIR
+from typing import List, Tuple
 from .extract_features_nc import extract_features_from_nc
 
 logger = logging.getLogger(__name__)
 
 
-def cut_grib_long_lat(grib_path, output_path, coordinates):
+def cut_grib_long_lat(grib_path: str, output_path: str, coordinates: Tuple[float, float, float, float]) -> None:
     ds = xr.open_dataset(grib_path, engine="cfgrib", decode_cf=True, decode_times=True, decode_timedelta=False)
     mask = (ds.longitude >= coordinates[0]) & (ds.longitude <= coordinates[1]) & \
            (ds.latitude >= coordinates[2]) & (ds.latitude <= coordinates[3])
@@ -24,7 +25,7 @@ def cut_grib_long_lat(grib_path, output_path, coordinates):
     ds_sub.close()
 
 
-def extract_nc_worker(date: datetime, coordinates: Region):
+def extract_nc_worker(date: datetime, coordinates: Region) -> None:
     base_name = date.strftime("%Y-%m-%d")
     grib_file = f"{base_name}.grib"
     grib_path = os.path.join(RAW_DATA_DIR, grib_file)
@@ -39,7 +40,7 @@ def extract_nc_worker(date: datetime, coordinates: Region):
         logger.debug(f"ALREADY CUT: {output_path}")
 
 
-def extract_nc(dates, region: Region):
+def extract_nc(dates: List[datetime], region: Region) -> None:
     os.makedirs(RAW_DATA_DIR, exist_ok=True)
     os.makedirs(CUT_DATA_DIR, exist_ok=True)
 
@@ -61,12 +62,12 @@ def extract_nc(dates, region: Region):
     logger.info("Data extraction completed.")
 
 
-def extract(dates, region: Region, output_dir: str):
+def extract(dates: List[datetime], region: Region, output_dir: str) -> None:
     extract_nc(dates, region)
     extract_features_from_nc(dates, region, output_dir)
 
 
-def download_grib_if_needed(date: datetime, grib_path: str):
+def download_grib_if_needed(date: datetime, grib_path: str) -> None:
     if os.path.exists(grib_path):
         logger.debug(f"GRIB already exists: {grib_path}")
         return

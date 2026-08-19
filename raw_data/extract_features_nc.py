@@ -13,6 +13,8 @@ import xarray as xr
 from cartopy.io import shapereader
 
 from . import Region, CUT_DATA_DIR
+from datetime import datetime
+from typing import List, Tuple
 
 logger = logging.getLogger(__name__)
 matplotlib.use("Agg")
@@ -38,7 +40,7 @@ MINIMUM_HUMIDITY_VALUE = 0
 MAXIMUM_HUMIDITY_VALUE = 100
 
 
-def extract_features_from_nc(dates: list, coordinates: Region, output_base: str):
+def extract_features_from_nc(dates: List[datetime], coordinates: Region, output_base: str) -> None:
     logger.info("Starting feature extraction from .nc files...")
     os.makedirs(output_base, exist_ok=True)
 
@@ -63,7 +65,7 @@ def extract_features_from_nc(dates: list, coordinates: Region, output_base: str)
     logger.info("Feature extraction completed.")
 
 
-def save_feature_maps(input_path, coordinates: Region, output_base: str):
+def save_feature_maps(input_path: str, coordinates: Region, output_base: str) -> None:
     with xr.open_dataset(input_path) as ds:
         if 'ccl' not in ds:
             print("Error: 'ccl' variable not found in dataset.")
@@ -83,7 +85,7 @@ def save_feature_maps(input_path, coordinates: Region, output_base: str):
     logger.debug(f"Feature maps saved for {input_path} in {output_base}")
 
 
-def save_borders_png(output_base, coordinates):
+def save_borders_png(output_base: str, coordinates: Region) -> None:
     fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
     ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
 
@@ -120,7 +122,7 @@ def save_borders_png(output_base, coordinates):
     plt.close(fig)
 
 
-def create_legends(output_base):
+def create_legends(output_base: str) -> None:
     features = {
         "cloud": {
             "cmap": "viridis",
@@ -187,7 +189,7 @@ def create_legends(output_base):
                 ftxt.write(f"Respective colors: {rgb255_min}, {rgb255_max}\n")
 
 
-def save_cloud_maps(ds, coordinates, output_base):
+def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
     """
        Given a xarray dataset, it saves the images with the data related to the clouds. Data at different height is stored in different folders
 
@@ -237,7 +239,7 @@ def save_cloud_maps(ds, coordinates, output_base):
                 plt.close(fig)
 
 
-def save_temperature_maps(ds, coordinates, output_base):
+def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
     """
        Given a xarray dataset, it saves the images with the data related to the temperatures. Data at different height is stored in different folders
 
@@ -296,7 +298,7 @@ def save_temperature_maps(ds, coordinates, output_base):
                 gc.collect()
 
 
-def save_wind_maps(ds, coordinates, output_base):
+def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
     """
        Given a xarray dataset, it saves the images with the data related to the wind (vectors included). Data at different height is stored in different folders
 
@@ -420,7 +422,7 @@ def save_wind_maps(ds, coordinates, output_base):
                 plt.close(fig)
 
 
-def save_humidity_maps(ds, coordinates, output_base):
+def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
     """
        Given a xarray dataset, it saves the images with the data related to the humidity. Data at different height is stored in different folders
 
