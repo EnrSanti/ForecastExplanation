@@ -1,20 +1,16 @@
-from PIL import Image, ImageOps
-from skimage.measure import label, regionprops
-from skimage import draw
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
-import math, os, time
-import cv2
-from glob import glob
-
-import multiprocessing as mp
-import torch
-
+import os
 import threading
-from concurrent.futures import ThreadPoolExecutor
 
-#----------- CLUSTERING ----------- 
+import cv2
+import numpy as np
+import torch
+from PIL import Image, ImageOps
+from skimage import draw
+from skimage.measure import label, regionprops
+from sklearn.cluster import KMeans
+
+
+# ----------- CLUSTERING -----------
 
 
 def cluster_images(numClusters, reshaped, image, image_f):
@@ -24,7 +20,7 @@ def cluster_images(numClusters, reshaped, image, image_f):
     """
     kmeans = KMeans(n_clusters=numClusters, n_init=40, max_iter=500).fit(reshaped[i])
     clustering = np.reshape(np.array(kmeans.labels_, dtype=np.uint8),
-                                   (image[0].shape[0], image[0].shape[1]))
+                            (image[0].shape[0], image[0].shape[1]))
     print("processing " + image_f[i])
 
     # compute mean brightness per cluster
@@ -37,7 +33,6 @@ def cluster_images(numClusters, reshaped, image, image_f):
     # sort by brightness (dark → bright)
     sortedLabels = sorted(range(numClusters), key=lambda x: means[x])
 
-
     kmeansImage = np.zeros(image[0].shape[:2], dtype=np.uint8)
     for i, label in enumerate(sortedLabels[0]):
         # black = background, gray = border, white = core
@@ -45,15 +40,15 @@ def cluster_images(numClusters, reshaped, image, image_f):
 
     concatImage = np.concatenate(
         (image[0],
-            193 * np.ones((image[0].shape[0], int(0.0625 * image[0].shape[1]), 3), dtype=np.uint8),
-            cv2.cvtColor(kmeansImage, cv2.COLOR_GRAY2BGR)),
+         193 * np.ones((image[0].shape[0], int(0.0625 * image[0].shape[1]), 3), dtype=np.uint8),
+         cv2.cvtColor(kmeansImage, cv2.COLOR_GRAY2BGR)),
         axis=1
     )
 
     return [kmeansImage]
 
 
-#----------- IMG RESIZING -----------
+# ----------- IMG RESIZING -----------
 def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
     """
     function resizing 4 to 1 all the images in the input folder, saves them in the output folder
@@ -66,7 +61,7 @@ def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
     """
     # === SETUP ===
     os.makedirs(output_folder, exist_ok=True)
-    #check if output folder contains as much files as input folder
+    # check if output folder contains as much files as input folder
     if len(os.listdir(output_folder)) >= len(os.listdir(input_folder)):
         print(f"Output folder '{output_folder}' already contains images. Skipping resizing.")
         return
@@ -95,12 +90,13 @@ def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
             output_path = os.path.join(output_folder, filename)
             img_resized.save(output_path)
 
-            #print(f"Resized: {filename} -> {new_size}")
+            # print(f"Resized: {filename} -> {new_size}")
 
         except Exception as e:
             print(f"Skipping {filename}: {e}")
 
-def kmeans_torch(X, num_clusters=3, max_iter=500,n_init=40, tol=1e-4, device=None):
+
+def kmeans_torch(X, num_clusters=3, max_iter=500, n_init=40, tol=1e-4, device=None):
     """
     GPU-based K-Means using PyTorch.
 
@@ -146,7 +142,7 @@ def kmeans_torch(X, num_clusters=3, max_iter=500,n_init=40, tol=1e-4, device=Non
 
         # Compute inertia (sum of squared distances)
         dists_final = torch.cdist(X_t, centers)
-        inertia = torch.sum((dists_final[torch.arange(X_t.shape[0]), labels])**2).item()
+        inertia = torch.sum((dists_final[torch.arange(X_t.shape[0]), labels]) ** 2).item()
         if inertia < best_inertia:
             best_inertia = inertia
             best_labels = labels.clone()
@@ -154,10 +150,10 @@ def kmeans_torch(X, num_clusters=3, max_iter=500,n_init=40, tol=1e-4, device=Non
 
     return best_labels.cpu().numpy(), best_centers.cpu().numpy()
 
-def cluster_images_gpu( numClusters, reshaped, image, image_f):
 
+def cluster_images_gpu(numClusters, reshaped, image, image_f):
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    
+
     X = reshaped[0]
     labels, _ = kmeans_torch(X, num_clusters=numClusters, max_iter=200, device=device)
     clustering = labels.reshape(image[0].shape[:2])
@@ -169,14 +165,14 @@ def cluster_images_gpu( numClusters, reshaped, image, image_f):
         mask = (clustering == lbl)
         means.append(np.mean(gray[mask]) if np.any(mask) else 0)
     sortedLabels = sorted(range(numClusters), key=lambda x: means[x])
-        
-    
+
     img_mapped = np.zeros_like(clustering, dtype=np.uint8)
     for idx, label in enumerate(sortedLabels):
-        img_mapped[clustering == label] = int((255)/(numClusters-1))*idx
+        img_mapped[clustering == label] = int((255) / (numClusters - 1)) * idx
     kmeansImage = img_mapped
 
     return [kmeansImage]
+
 
 num_workers = 4
 _streams = [torch.cuda.Stream(device=0) for _ in range(num_workers)]
@@ -204,7 +200,7 @@ def worker_thread(args, results, idx):
     numClusters, reshaped, image, file, stream_id = args
     stream = _streams[stream_id]
 
-    #print(f"[INFO] Thread {threading.get_ident()} using stream {stream}")
+    # print(f"[INFO] Thread {threading.get_ident()} using stream {stream}")
 
     with torch.cuda.stream(stream):
         result = cluster_images_gpu(
@@ -250,7 +246,6 @@ def cluster_images_auto_4threads(numClusters, reshaped_list, image_list, file_li
             t.join()
 
     return results
-
 
 
 def generate_clustered_images(numClusters, input_dir, output_dir):
