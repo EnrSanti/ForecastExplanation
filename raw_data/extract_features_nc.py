@@ -60,14 +60,14 @@ def extract_features_from_nc(dates: List[datetime], coordinates: Region, output_
             try:
                 future.result()
             except Exception as e:
-                logger.error(f"Feature extraction failed for {date}: {e}")
+                logger.error(f"Feature extraction failed for {date}", exc_info=True)
 
     logger.info("Feature extraction completed.")
 
 
 def save_feature_maps(input_path: str, coordinates: Region, output_base: str) -> None:
     with xr.open_dataset(input_path) as ds:
-        if any(var not in ds for var in ['ccl', 't', 'u', 'v', 'r', 'rhum']):
+        if any(var not in ds for var in ['ccl', 't', 'u', 'v', 'r']):
             logger.error("Error: One or more required variables not found in dataset.")
             return
 
@@ -211,7 +211,7 @@ def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> No
 
             for j in range(cloud_level.sizes['step']):
                 step_val = int(cloud_level['step'].isel(step=j).values)
-                valid_time = base_time + pd.Timedelta(hours=step_val)
+                valid_time = base_time + pd.Timedelta(nanoseconds=step_val)
 
                 # ---- FILTER OUT OVERLAPPING FRAMES ----
                 if not (day_start <= valid_time <= day_end):
@@ -261,8 +261,7 @@ def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str)
 
             for j in range(temp_level.sizes['step']):
                 step_val = temp_level['step'].isel(step=j).values
-                leadtime_hours = int(step_val)
-                valid_time = base_time + pd.Timedelta(hours=leadtime_hours)
+                valid_time = base_time + pd.Timedelta(nanoseconds=int(step_val))
 
                 # ---- FILTER OUT OVERLAPS ----
                 if not (day_start <= valid_time <= day_end):
@@ -320,7 +319,7 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
 
             for j in range(u_lvl.sizes["step"]):
                 step_val = int(u_lvl["step"].isel(step=j).values)
-                valid_time = base_time + pd.Timedelta(hours=step_val)
+                valid_time = base_time + pd.Timedelta(nanoseconds=step_val)
 
                 # ---- FILTER OUT OVERLAPS ----
                 if not (day_start <= valid_time <= day_end):
@@ -443,7 +442,7 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
 
             for j in range(rh_level.sizes['step']):
                 step_val = int(rh_level['step'].isel(step=j).values)
-                valid_time = base_time + pd.Timedelta(hours=step_val)
+                valid_time = base_time + pd.Timedelta(nanoseconds=step_val)
 
                 # ---- FILTER ----
                 if not (day_start <= valid_time <= day_end):

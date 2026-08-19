@@ -6,10 +6,9 @@ import yaml
 
 import raw_data
 
-
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger("ForecastExplanation")
 
@@ -28,7 +27,7 @@ def main():
         logger.error("No dates provided. ")
         sys.exit(1)
 
-    print("-------------- From GRIB to images (V2) --------------")
+    print("-------------- From GRIB to images --------------")
     print("[1]: CUT Girb & extract DATA")
     mode = int(input("Enter mode: ").strip())
 
