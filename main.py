@@ -25,7 +25,7 @@ def main():
         dates = config.get("dates", [])
 
     if not dates:
-        logger.error("No dates provided. Please use --dates or --config.")
+        logger.error("No dates provided. ")
         sys.exit(1)
 
     print("-------------- From GRIB to images (V2) --------------")
