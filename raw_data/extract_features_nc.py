@@ -40,33 +40,20 @@ MINIMUM_HUMIDITY_VALUE = 0
 MAXIMUM_HUMIDITY_VALUE = 100
 
 
-def extract_features_from_nc(dates: List[datetime], coordinates: Region, output_base: str) -> None:
-    logger.info("Starting feature extraction from .nc files...")
-    os.makedirs(output_base, exist_ok=True)
-
+def create_one_time_images(coordinates: Region, output_base: str) -> None:
     save_borders_png(output_base, coordinates)
     create_legends(output_base)
 
-    with ProcessPoolExecutor(max_workers=12) as executor:
-        futures = {
-            executor.submit(save_feature_maps,
-                            os.path.join(CUT_DATA_DIR, date.strftime("%Y-%m-%d") + "_" + coordinates.name + "_cut.nc"),
-                            coordinates, output_base): date
-            for date in dates
-        }
-
-        for future in as_completed(futures):
-            date = futures[future]
-            try:
-                future.result()
-            except Exception as e:
-                logger.error(f"Feature extraction failed for {date}", exc_info=True)
-
-    logger.info("Feature extraction completed.")
-
 
 def save_feature_maps(input_path: str, coordinates: Region, output_base: str) -> None:
-    with xr.open_dataset(input_path) as ds:
+    with xr.open_dataset(input_path, decode_cf=False) as ds:
+
+        if "dtype" in ds["step"].attrs:
+            del ds["step"].attrs["dtype"]
+
+        ds = xr.decode_cf(ds)
+
+
         if any(var not in ds for var in ['ccl', 't', 'u', 'v', 'r']):
             logger.error("Error: One or more required variables not found in dataset.")
             return
@@ -75,6 +62,8 @@ def save_feature_maps(input_path: str, coordinates: Region, output_base: str) ->
         save_temperature_maps(ds, coordinates, output_base)
         save_wind_maps(ds, coordinates, output_base)
         save_humidity_maps(ds, coordinates, output_base)
+
+        ds.close()
 
     logger.debug(f"Feature maps saved for {input_path} in {output_base}")
 

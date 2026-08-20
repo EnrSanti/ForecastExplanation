@@ -8,12 +8,12 @@ import xarray as xr
 
 from . import Region, RAW_DATA_DIR, CUT_DATA_DIR
 from typing import List, Tuple
-from .extract_features_nc import extract_features_from_nc
+from .extract_features_nc import create_one_time_images, save_feature_maps
 
 logger = logging.getLogger(__name__)
 
 
-def cut_grib_long_lat(grib_path: str, output_path: str, coordinates: Tuple[float, float, float, float]) -> None:
+def cut_grib_long_lat(grib_path: str, output_path: str, coordinates: List[int]) -> None:
     with xr.open_dataset(grib_path, engine="cfgrib", decode_cf=True, decode_times=True, decode_timedelta=False) as ds:
         mask = (ds.longitude >= coordinates[0]) & (ds.longitude <= coordinates[1]) & \
            (ds.latitude >= coordinates[2]) & (ds.latitude <= coordinates[3])
@@ -23,7 +23,7 @@ def cut_grib_long_lat(grib_path: str, output_path: str, coordinates: Tuple[float
         ds_sub.close()
 
 
-def extract_nc_worker(date: datetime, region: Region) -> None:
+def extract_nc(date: datetime, region: Region) -> str:
     base_name = date.strftime("%Y-%m-%d")
     grib_file = f"{base_name}.grib"
     grib_path = os.path.join(RAW_DATA_DIR, grib_file)
@@ -34,19 +34,28 @@ def extract_nc_worker(date: datetime, region: Region) -> None:
 
         logger.debug(f"CUTTING GRIB: {grib_path} -> {output_path}")
         cut_grib_long_lat(grib_path, output_path, region.value)
+        
     else:
         logger.debug(f"ALREADY CUT: {output_path}")
+    
+    return output_path
 
 
-def extract_nc(dates: List[datetime], region: Region) -> None:
-    os.makedirs(RAW_DATA_DIR, exist_ok=True)
-    os.makedirs(CUT_DATA_DIR, exist_ok=True)
 
+def extract_day_worker(date,region, output_dir):
+    
+    nc_file = extract_nc(date,region)
+    if not nc_file:
+        return
+    save_feature_maps(nc_file,region, output_dir)
+
+
+def extract_day(dates: List[datetime], region: Region, output_dir) -> None:
     logger.info("Starting data extraction...")
 
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
-            executor.submit(extract_nc_worker, date, region): date
+            executor.submit(extract_day_worker, date, region, output_dir): date
             for date in dates
         }
 
@@ -61,8 +70,13 @@ def extract_nc(dates: List[datetime], region: Region) -> None:
 
 
 def extract(dates: List[datetime], region: Region, output_dir: str) -> None:
-    extract_nc(dates, region)
-    extract_features_from_nc(dates, region, output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(RAW_DATA_DIR, exist_ok=True)
+    os.makedirs(CUT_DATA_DIR, exist_ok=True)
+
+
+    create_one_time_images(region, output_dir)
+    extract_day(dates, region, output_dir)
 
 
 def download_grib_if_needed(date: datetime, grib_path: str) -> None:
