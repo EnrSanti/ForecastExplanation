@@ -1,0 +1,2 @@
+Temperature range: 215.00 K to 315.00 K
+Respective colors: (255, 247, 236), (127, 0, 0)

@@ -4,7 +4,7 @@ import sys
 
 import yaml
 
-import raw_data
+import data_extraction
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,7 +32,7 @@ def main():
     mode = int(input("Enter mode: ").strip())
 
     if mode == 1:
-        raw_data.extract(dates, raw_data.Region.FVG, output_dir="./raw_data/data/test")
+        data_extraction.extract(dates, data_extraction.Region.FVG, output_dir="./data/test")
     else:
         logger.error("Invalid option.")
 

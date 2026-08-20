@@ -49,52 +49,6 @@ def cluster_images(numClusters, reshaped, image, image_f):
 
 
 # ----------- IMG RESIZING -----------
-def resize_1_4_and_simplify(input_folder, output_folder, scale_factor=0.25):
-    """
-    function resizing 4 to 1 all the images in the input folder, saves them in the output folder
-    
-    Parameters
-    ----------
-        input_folder: the path of the folder where the images to be resized are present
-        output_folder: the path of the folder where the images resized are saved
-        scale_factor: the scaling factor of the image
-    """
-    # === SETUP ===
-    os.makedirs(output_folder, exist_ok=True)
-    # check if output folder contains as much files as input folder
-    if len(os.listdir(output_folder)) >= len(os.listdir(input_folder)):
-        print(f"Output folder '{output_folder}' already contains images. Skipping resizing.")
-        return
-    # Supported image formats
-    valid_extensions = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"}
-
-    # === PROCESS IMAGES ===
-    for filename in os.listdir(input_folder):
-        file_path = os.path.join(input_folder, filename)
-        name, ext = os.path.splitext(filename)
-
-        if ext.lower() not in valid_extensions:
-            continue  # skip non-image files
-
-        try:
-            # open image
-            img = Image.open(file_path)
-
-            # compute new size
-            new_size = (int(img.width * scale_factor), int(img.height * scale_factor))
-
-            # resize with high-quality downsampling
-            img_resized = img.resize(new_size, Image.Resampling.LANCZOS)
-
-            # save to output folder
-            output_path = os.path.join(output_folder, filename)
-            img_resized.save(output_path)
-
-            # print(f"Resized: {filename} -> {new_size}")
-
-        except Exception as e:
-            print(f"Skipping {filename}: {e}")
-
 
 def kmeans_torch(X, num_clusters=3, max_iter=500, n_init=40, tol=1e-4, device=None):
     """

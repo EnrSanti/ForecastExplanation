@@ -9,8 +9,8 @@ import iris
 from image_processing.image_proc import generate_clustered_images
 from image_processing.image_proc import resize_1_4_and_simplify
 from image_processing.segment_track import run_tobac_merge_split, run_tobac_fronts
-from raw_data.cut_long_lat import cut_grib_long_lat
-from raw_data.extract_features_nc import save_feature_maps
+from data_extraction.cut_long_lat import cut_grib_long_lat
+from data_extraction.extract_features_nc import save_feature_maps
 from reasoning.generate_examples import generate_cloud_facts_over_cities, generate_cloud_movements, \
     generate_humidity_facts_over_cities, generate_temp_facts_over_cities, merge_into_examples
 from reasoning.generate_examples import init_starting_date

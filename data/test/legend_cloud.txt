@@ -1,0 +1,2 @@
+Cloud cover range: 0.00 % to 100.00 %
+Respective colors: (68, 1, 84), (253, 231, 36)

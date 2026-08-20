@@ -1,6 +1,5 @@
 # Ignore GRIBS directory
-raw_data/data/*
-image_processing/fvg/*
+tmp_data/*
 
 # Ignore all Python bytecode cache directories recursively
 __pycache__/
