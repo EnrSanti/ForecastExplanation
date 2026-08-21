@@ -16,6 +16,7 @@ logger = logging.getLogger("ForecastExplanation")
 def main():
     parser = argparse.ArgumentParser(description="ForecastExplanation Pipeline")
     parser.add_argument("--config", type=str, help="Path to config YAML file containing dates", default="config.yaml")
+    parser.add_argument("-c", dest="clean", action="count", default=0, help="Clean tmp folders: -c to keep 2, -cc to delete all")
 
     args, unknown = parser.parse_known_args()
 
@@ -27,14 +28,7 @@ def main():
         logger.error("No dates provided. ")
         sys.exit(1)
 
-    print("-------------- From GRIB to images --------------")
-    print("[1]: CUT Girb & extract DATA")
-    mode = int(input("Enter mode: ").strip())
-
-    if mode == 1:
-        data_extraction.extract(dates, data_extraction.Region.FVG, output_dir="./data/test")
-    else:
-        logger.error("Invalid option.")
+    data_extraction.extract(dates, data_extraction.Region.FVG, output_dir="./data/test", clean_level=args.clean)
 
 
 if __name__ == "__main__":
