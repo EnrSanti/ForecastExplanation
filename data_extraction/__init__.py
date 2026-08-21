@@ -9,6 +9,7 @@ class Region(Enum):
 RAW_DATA_DIR = "./tmp_data/original_CERRA"
 CUT_DATA_DIR = "./tmp_data/CERRA_cut"
 DISCRETE_DATA_DIR = "./tmp_data/imgs_discrete"
+CLUSTERED_DATA_DIR = "./tmp_data/clustered"
 
 from .main import extract
 

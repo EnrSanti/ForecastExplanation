@@ -9,11 +9,10 @@ import numpy as np
 import torch
 
 logger = logging.getLogger(__name__)
-DEVICE = "cuda"  # if torch.cuda.is_available() else "cpu"
 
 
 def batched_kmeans_torch(X, num_clusters, max_iter=200, n_init=8, tol=1e-4,
-                         device=DEVICE, stream=None):
+                         device="cpu", stream=None):
     """
     Vectorized-over-B KMeans for a batch of same-shaped images, run on the GPU.
 
