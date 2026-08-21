@@ -1,2 +1,0 @@
-Wind Speed range: 0.00 m/s to 100.00 m/s
-Respective colors: (68, 1, 84), (253, 231, 36)
