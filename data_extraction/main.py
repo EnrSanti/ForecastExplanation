@@ -13,13 +13,18 @@ from .image_proc import cluster, cluster_in_memory
 logger = logging.getLogger(__name__)
 
 
-def extract_day_worker(date, region, clean_level: int = 0, clustering: bool = True):
+def extract_day_worker(
+        date: datetime,
+        region: Region,
+        clean_level: int = 0,
+        clustering: bool = True,
+) -> None:
     clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
     raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
     cut_data_dir = os.path.join(CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
     discrete_data_dir = os.path.join(DISCRETE_DATA_DIR, date.strftime("%Y-%m-%d"))
 
-    if os.path.exists(clustered_dir) and len(os.listdir(clustered_dir)) == 0:  # todo: flag to force re-clustering
+    if os.path.exists(clustered_dir) and len(os.listdir(clustered_dir)) > 0:  # todo: flag to force re-clustering
         logger.info(f"Output folder '{clustered_dir}' already contains images. Use flag to force re-clustering.")
         return
 
@@ -46,7 +51,12 @@ def extract_day_worker(date, region, clean_level: int = 0, clustering: bool = Tr
         shutil.rmtree(discrete_data_dir, ignore_errors=True)
 
 
-def extract_day_worker_in_memory(date, region, clean_level: int = 0, clustering: bool = True):
+def extract_day_worker_in_memory(
+        date: datetime,
+        region: Region,
+        clean_level: int = 0,
+        clustering: bool = True,
+) -> None:
     """In-memory pipeline: GRIB -> xr.Dataset -> Dict[images] -> cluster -> disk output."""
     clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
     raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
@@ -64,7 +74,13 @@ def extract_day_worker_in_memory(date, region, clean_level: int = 0, clustering:
         shutil.rmtree(raw_data_dir, ignore_errors=True)
 
 
-def extract_day(dates: List[datetime], region: Region, clean_level: int = 0, in_memory: bool = False, clustering: bool = True) -> None:
+def extract_day(
+        dates: List[datetime],
+        region: Region,
+        clean_level: int = 0,
+        in_memory: bool = False,
+        clustering: bool = True,
+) -> None:
     logger.info("Starting data extraction...")
 
     worker = extract_day_worker_in_memory if in_memory else extract_day_worker
@@ -85,7 +101,13 @@ def extract_day(dates: List[datetime], region: Region, clean_level: int = 0, in_
     logger.info("Data extraction completed.")
 
 
-def extract(dates: List[datetime], region: Region, clean_level: int = 0, in_memory: bool = False, clustering: bool = True) -> None:
+def extract(
+        dates: List[datetime],
+        region: Region,
+        clean_level: int = 0,
+        in_memory: bool = False,
+        clustering: bool = True,
+) -> None:
     os.makedirs(CLUSTERED_DATA_DIR, exist_ok=True)
     os.makedirs(RAW_DATA_DIR, exist_ok=True)
     if not in_memory:
