@@ -5,6 +5,7 @@ import sys
 import yaml
 
 import data_extraction
+import image_processing
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,6 +33,8 @@ def main():
 
     data_extraction.extract(dates, data_extraction.Region.FVG, clean_level=args.clean, in_memory=args.in_memory)
 
+    #data_extraction.extract(dates, data_extraction.Region.FVG, output_dir="./tmp_data/clustered", clean_level=args.clean)
+    image_processing.run_tobac(dates, input_dir="./tmp_data/clustered", output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG)
 
 if __name__ == "__main__":
     main()
