@@ -1,24 +1,19 @@
 import logging
 import os
-import threading
-from collections import defaultdict
+import re
 import time
+from collections import defaultdict
 
 import cv2
 import numpy as np
 import torch
-import re
-from contextlib import nullcontext
+
 logger = logging.getLogger(__name__)
-
-DEVICE = "cuda" #if torch.cuda.is_available() else "cpu"
-
-
-
+DEVICE = "cuda"  # if torch.cuda.is_available() else "cpu"
 
 
 def batched_kmeans_torch(X, num_clusters, max_iter=200, n_init=8, tol=1e-4,
-                          device=DEVICE, stream=None):
+                         device=DEVICE, stream=None):
     """
     Vectorized-over-B KMeans for a batch of same-shaped images, run on the GPU.
 
@@ -58,8 +53,8 @@ def batched_kmeans_torch(X, num_clusters, max_iter=200, n_init=8, tol=1e-4,
             centers = torch.gather(X_t, 1, idx.unsqueeze(-1).expand(-1, -1, C))
 
             for _ in range(max_iter):
-                dist = torch.cdist(X_t, centers)             # (B, P, K)
-                labels = torch.argmin(dist, dim=-1)           # (B, P)
+                dist = torch.cdist(X_t, centers)  # (B, P, K)
+                labels = torch.argmin(dist, dim=-1)  # (B, P)
 
                 new_centers = torch.zeros_like(centers)
                 new_centers.scatter_add_(1, labels.unsqueeze(-1).expand(-1, -1, C), X_t)
@@ -77,7 +72,7 @@ def batched_kmeans_torch(X, num_clusters, max_iter=200, n_init=8, tol=1e-4,
 
             dist_final = torch.cdist(X_t, centers)
             min_dist, labels = dist_final.min(dim=-1)
-            inertia = (min_dist ** 2).sum(dim=1)               # (B,)
+            inertia = (min_dist ** 2).sum(dim=1)  # (B,)
 
             improved = inertia < best_inertia
             best_inertia = torch.where(improved, inertia, best_inertia)
@@ -85,6 +80,7 @@ def batched_kmeans_torch(X, num_clusters, max_iter=200, n_init=8, tol=1e-4,
             best_centers = torch.where(improved.unsqueeze(-1).unsqueeze(-1), centers, best_centers)
 
         return best_labels.cpu().numpy(), best_centers.cpu().numpy()
+
 
 def _order_labels_by_brightness(clustering, gray, num_clusters):
     """Remap arbitrary cluster ids to brightness rank (0=darkest .. K-1=brightest)."""
@@ -101,8 +97,8 @@ def _order_labels_by_brightness(clustering, gray, num_clusters):
     return remapped
 
 
-
 _LEGEND_RANGE_RE = re.compile(r'range:\s*([-\d.]+)\s*(\S+)\s*to\s*([-\d.]+)\s*\S+')
+
 
 def _parse_legend_range(legend_dir, feature_key):
     """
@@ -113,37 +109,34 @@ def _parse_legend_range(legend_dir, feature_key):
     """
     if not legend_dir or not feature_key:
         return None, None, None
- 
+
     txt_path = os.path.join(legend_dir, f"legend_{feature_key}.txt")
     if not os.path.exists(txt_path):
         logger.warning(f"Legend file not found: '{txt_path}'.")
         return None, None, None
- 
+
     with open(txt_path) as f:
         first_line = f.readline()
- 
+
     m = _LEGEND_RANGE_RE.search(first_line)
     if not m:
         logger.warning(f"Could not parse range from '{txt_path}': {first_line!r}")
         return None, None, None
- 
+
     vmin, unit, vmax = m.group(1), m.group(2), m.group(3)
     return float(vmin), float(vmax), unit
 
 
-
-def generate_clustered_images(numClusters, input_dir, output_dir, 
-                               legend_dir, feature_key,
-                               batch_size=8, n_init=8, max_iter=200):
-
-    
+def generate_clustered_images(numClusters, input_dir, output_dir,
+                              legend_dir, feature_key,
+                              batch_size=8, n_init=8, max_iter=200):
     vmin, vmax, unit = _parse_legend_range(legend_dir, feature_key)
     if vmin is None or vmax is None or unit is None:
         logger.error(f"Legend range not found for feature '{feature_key}'.")
         return
- 
+
     files = [f for f in os.listdir(input_dir) if f.endswith(".png")]
- 
+
     # Group by shape so each GPU batch has a uniform pixel count.
     groups = defaultdict(list)  # (H, W, C) -> [(filename, img)]
     for f in files:
@@ -153,7 +146,6 @@ def generate_clustered_images(numClusters, input_dir, output_dir,
             logger.warning(f"Failed to read image '{img_path}'. Skipping.")
             continue
         groups[img.shape].append((f, img))
-
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     stream = torch.cuda.Stream(device=0) if device == "cuda" else None
@@ -165,7 +157,8 @@ def generate_clustered_images(numClusters, input_dir, output_dir,
             batch_files = [f for f, _ in chunk]
             batch_imgs = [img for _, img in chunk]
 
-            logger.debug(time.time(), f"Clustering {len(batch_imgs)} images of shape {shape} from '{input_dir}' -> '{output_dir}'")
+            logger.debug(time.time(),
+                         f"Clustering {len(batch_imgs)} images of shape {shape} from '{input_dir}' -> '{output_dir}'")
 
             X = np.stack([img.reshape(-1, C) for img in batch_imgs], axis=0)  # (B, P, C)
             labels, _ = batched_kmeans_torch(
@@ -173,7 +166,8 @@ def generate_clustered_images(numClusters, input_dir, output_dir,
                 device=DEVICE, stream=stream,
             )
 
-            logger.debug(time.time(), f"Finished clustering {len(batch_imgs)} images of shape {shape} from '{input_dir}' -> '{output_dir}'")
+            logger.debug(time.time(),
+                         f"Finished clustering {len(batch_imgs)} images of shape {shape} from '{input_dir}' -> '{output_dir}'")
 
             for f, img, lbl in zip(batch_files, batch_imgs, labels):
                 clustering = lbl.reshape(H, W)
@@ -188,7 +182,7 @@ def generate_clustered_images(numClusters, input_dir, output_dir,
             del X, labels, batch_imgs, chunk
             if device == "cuda":
                 torch.cuda.synchronize(stream)
-                torch.cuda.empty_cache()    
+                torch.cuda.empty_cache()
 
 
 def cluster(input_dir, output_dir, label_dir):
@@ -198,8 +192,6 @@ def cluster(input_dir, output_dir, label_dir):
     label_dir) triples — each call only touches its own folders, and the
     output-folder "already done" check is lock-protected per output_dir.
     """
-    
-
 
     for folder in os.listdir(input_dir):
         folder_path = os.path.join(input_dir, folder)

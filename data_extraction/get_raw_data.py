@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 def cut_grib_long_lat(grib_path: str, output_path: str, coordinates: List[int]) -> None:
     with xr.open_dataset(grib_path, engine="cfgrib", decode_cf=True, decode_times=True, decode_timedelta=False) as ds:
         mask = (ds.longitude >= coordinates[0]) & (ds.longitude <= coordinates[1]) & \
-           (ds.latitude >= coordinates[2]) & (ds.latitude <= coordinates[3])
+               (ds.latitude >= coordinates[2]) & (ds.latitude <= coordinates[3])
 
         ds_sub = ds.where(mask, drop=True)
         ds_sub.to_netcdf(output_path)
@@ -32,12 +32,11 @@ def extract_nc(date: datetime, region: Region, input_dir: str, output_dir: str) 
 
         logger.debug(f"CUTTING GRIB: {grib_path} -> {output_path}")
         cut_grib_long_lat(grib_path, output_path, region.value)
-        
+
     else:
         logger.debug(f"ALREADY CUT: {output_path}")
-    
-    return output_path
 
+    return output_path
 
 
 def download_grib_if_needed(date: datetime, grib_path: str) -> None:

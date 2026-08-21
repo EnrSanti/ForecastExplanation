@@ -1,6 +1,5 @@
 import logging
 import os
-from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -13,9 +12,7 @@ import pandas as pd
 import xarray as xr
 from cartopy.io import shapereader
 
-from . import Region, CUT_DATA_DIR
-from datetime import datetime
-from typing import List
+from . import Region
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +49,6 @@ def save_feature_maps(input_path: str, coordinates: Region, output_base: str) ->
             del ds["step"].attrs["dtype"]
 
         ds = xr.decode_cf(ds)
-
 
         if any(var not in ds for var in ['ccl', 't', 'u', 'v', 'r']):
             logger.error("Error: One or more required variables not found in dataset.")
@@ -182,7 +178,7 @@ def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> No
 
     fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
     ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
-    
+
     for lvl in LEVELS:
         cloud_level = cloud.sel(isobaricInhPa=lvl)
         out_dir = os.path.join(output_base, cloud_folders[lvl])
@@ -221,7 +217,7 @@ def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str)
 
     fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
     ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
-    
+
     for lvl in LEVELS:
         temp_level = temperature.sel(isobaricInhPa=lvl)
         out_dir = os.path.join(output_base, temp_folders[lvl])
@@ -268,7 +264,7 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
     fig, ax = plt.subplots(figsize=(10, 8), dpi=130, subplot_kw={"projection": ccrs.PlateCarree()})
     ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
     ax.axis("off")
-    
+
     for lvl in LEVELS:
         u_lvl = u_var.sel(isobaricInhPa=lvl)
         v_lvl = v_var.sel(isobaricInhPa=lvl)
@@ -344,7 +340,8 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
                 with open(txt_path, "w") as ftxt:
                     ftxt.write("vector_id,pixel_x,pixel_y,latitude,longitude,magnitude,alpha_deg")
                     for idx in range(len(lon_visible)):
-                        ftxt.write(f"{idx},{px[idx]},{py[idx]},{lat_visible[idx]:.6f},{lon_visible[idx]:.6f},{mags[idx]:.6f},{alphas[idx]:.2f}")
+                        ftxt.write(
+                            f"{idx},{px[idx]},{py[idx]},{lat_visible[idx]:.6f},{lon_visible[idx]:.6f},{mags[idx]:.6f},{alphas[idx]:.2f}")
 
                 fname = os.path.join(out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
                 fig.savefig(fname, dpi=130, bbox_inches="tight", pad_inches=0)
@@ -358,7 +355,7 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
 
     fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={'projection': ccrs.PlateCarree()})
     ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
-    
+
     for lvl in LEVELS:
         rh_level = humidity.sel(isobaricInhPa=lvl)
         out_dir = os.path.join(output_base, humidity_folders[lvl])
