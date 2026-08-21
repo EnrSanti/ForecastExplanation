@@ -28,7 +28,7 @@ def main():
         logger.error("No dates provided. ")
         sys.exit(1)
 
-    data_extraction.extract(dates, data_extraction.Region.FVG, output_dir="./data/test", clean_level=args.clean)
+    data_extraction.extract(dates, data_extraction.Region.FVG, output_dir="./tmp_data/clustered", clean_level=args.clean)
 
 
 if __name__ == "__main__":
