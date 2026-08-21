@@ -8,16 +8,19 @@ import cv2
 import numpy as np
 import torch
 import re
-
+from contextlib import nullcontext
 logger = logging.getLogger(__name__)
 
 DEVICE = "cuda" #if torch.cuda.is_available() else "cpu"
 
 
+
+
+
 def batched_kmeans_torch(X, num_clusters, max_iter=200, n_init=8, tol=1e-4,
                           device=DEVICE, stream=None):
     """
-    Vectorized KMeans over a batch of same-shaped images, run together on the GPU.
+    Vectorized-over-B KMeans for a batch of same-shaped images, run on the GPU.
 
     Parameters
     ----------
@@ -25,9 +28,13 @@ def batched_kmeans_torch(X, num_clusters, max_iter=200, n_init=8, tol=1e-4,
         B images, each with P pixels and C channels (already flattened per-image).
     num_clusters : int
     n_init : int
-        Random restarts per image, run in parallel (as extra batch elements),
-        not sequentially. Kept lower than sklearn's default since GPU restarts
-        are cheap but memory scales with B * n_init.
+        Random restarts per image. Looped (not vectorized as extra batch
+        elements) deliberately: vectorizing restarts requires duplicating the
+        full pixel data n_init times (via expand().reshape(), which forces a
+        real copy since the expanded tensor is non-contiguous), which blows
+        up VRAM by a factor of n_init for little real speed benefit — the
+        pixel data is identical across restarts, only the centers differ.
+        Looping keeps peak memory proportional to B, not B*n_init.
     stream : torch.cuda.Stream or None
         If given, all GPU work runs on this stream (caller's responsibility to
         create one stream per thread — do not share a stream across threads).
@@ -37,51 +44,47 @@ def batched_kmeans_torch(X, num_clusters, max_iter=200, n_init=8, tol=1e-4,
     labels : np.ndarray, shape (B, P)
     centers : np.ndarray, shape (B, num_clusters, C)
     """
-    ctx = torch.cuda.stream(stream) 
+    ctx = torch.cuda.stream(stream)
     with ctx:
         X_t = torch.as_tensor(X, dtype=torch.float32, device=device)
         B, P, C = X_t.shape
 
-        # Expand each image into n_init independent restarts, all processed
-        # together as one bigger batch dimension -> real parallel GPU work.
-        Xr = X_t.unsqueeze(1).expand(B, n_init, P, C).reshape(B * n_init, P, C)
-        BN = B * n_init
+        best_inertia = torch.full((B,), float("inf"), device=device)
+        best_labels = torch.zeros(B, P, dtype=torch.long, device=device)
+        best_centers = torch.zeros(B, num_clusters, C, device=device)
 
-        # Random initial centers: num_clusters distinct pixel indices per restart.
-        idx = torch.randint(0, P, (BN, num_clusters), device=device)
-        centers = torch.gather(Xr, 1, idx.unsqueeze(-1).expand(-1, -1, C))
+        for _init in range(n_init):
+            idx = torch.randint(0, P, (B, num_clusters), device=device)
+            centers = torch.gather(X_t, 1, idx.unsqueeze(-1).expand(-1, -1, C))
 
-        for _ in range(max_iter):
-            dist = torch.cdist(Xr, centers)                 # (BN, P, K)
-            labels = torch.argmin(dist, dim=-1)              # (BN, P)
+            for _ in range(max_iter):
+                dist = torch.cdist(X_t, centers)             # (B, P, K)
+                labels = torch.argmin(dist, dim=-1)           # (B, P)
 
-            new_centers = torch.zeros_like(centers)
-            new_centers.scatter_add_(1, labels.unsqueeze(-1).expand(-1, -1, C), Xr)
-            counts = torch.zeros(BN, num_clusters, device=device)
-            counts.scatter_add_(1, labels, torch.ones(BN, P, device=device))
+                new_centers = torch.zeros_like(centers)
+                new_centers.scatter_add_(1, labels.unsqueeze(-1).expand(-1, -1, C), X_t)
+                counts = torch.zeros(B, num_clusters, device=device)
+                counts.scatter_add_(1, labels, torch.ones(B, P, device=device))
 
-            empty = (counts == 0).unsqueeze(-1)
-            new_centers = new_centers / counts.clamp(min=1).unsqueeze(-1)
-            new_centers = torch.where(empty, centers, new_centers)
+                empty = (counts == 0).unsqueeze(-1)
+                new_centers = new_centers / counts.clamp(min=1).unsqueeze(-1)
+                new_centers = torch.where(empty, centers, new_centers)
 
-            shift = torch.norm(new_centers - centers, dim=(1, 2))
-            centers = new_centers
-            if torch.max(shift) < tol:
-                break
+                shift = torch.norm(new_centers - centers, dim=(1, 2))
+                centers = new_centers
+                if torch.max(shift) < tol:
+                    break
 
-        # Pick the best-inertia restart per original image.
-        dist_final = torch.cdist(Xr, centers)
-        min_dist, labels = dist_final.min(dim=-1)
-        inertia = (min_dist ** 2).sum(dim=1).reshape(B, n_init)
-        labels = labels.reshape(B, n_init, P)
-        centers = centers.reshape(B, n_init, num_clusters, C)
+            dist_final = torch.cdist(X_t, centers)
+            min_dist, labels = dist_final.min(dim=-1)
+            inertia = (min_dist ** 2).sum(dim=1)               # (B,)
 
-        best = inertia.argmin(dim=1)
-        best_labels = labels[torch.arange(B, device=device), best]
-        best_centers = centers[torch.arange(B, device=device), best]
+            improved = inertia < best_inertia
+            best_inertia = torch.where(improved, inertia, best_inertia)
+            best_labels = torch.where(improved.unsqueeze(-1), labels, best_labels)
+            best_centers = torch.where(improved.unsqueeze(-1).unsqueeze(-1), centers, best_centers)
 
         return best_labels.cpu().numpy(), best_centers.cpu().numpy()
-
 
 def _order_labels_by_brightness(clustering, gray, num_clusters):
     """Remap arbitrary cluster ids to brightness rank (0=darkest .. K-1=brightest)."""
@@ -96,6 +99,8 @@ def _order_labels_by_brightness(clustering, gray, num_clusters):
     for rank, lbl in enumerate(order):
         remapped[clustering == lbl] = step * rank
     return remapped
+
+
 
 _LEGEND_RANGE_RE = re.compile(r'range:\s*([-\d.]+)\s*(\S+)\s*to\s*([-\d.]+)\s*\S+')
 
@@ -179,7 +184,11 @@ def generate_clustered_images(numClusters, input_dir, output_dir,
                 cv2.imwrite(out_path, swapped, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
             logger.debug(time.time(), f"Saved clustered images to '{output_dir}'")
-                        
+
+            del X, labels, batch_imgs, chunk
+            if device == "cuda":
+                torch.cuda.synchronize(stream)
+                torch.cuda.empty_cache()    
 
 
 def cluster(input_dir, output_dir, label_dir):
