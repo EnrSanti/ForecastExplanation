@@ -88,6 +88,7 @@ def extract_day(dates: List[datetime], region: Region, clean_level: int = 0, in_
 def extract(dates: List[datetime], region: Region, clean_level: int = 0, in_memory: bool = False, clustering: bool = True) -> None:
     os.makedirs(CLUSTERED_DATA_DIR, exist_ok=True)
     os.makedirs(RAW_DATA_DIR, exist_ok=True)
+    
     if not in_memory:
         os.makedirs(CUT_DATA_DIR, exist_ok=True)
         os.makedirs(DISCRETE_DATA_DIR, exist_ok=True)

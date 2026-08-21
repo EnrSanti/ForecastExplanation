@@ -54,12 +54,77 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
             frames_gray = [np.mean(f[:, :, :3], axis=2) if f.ndim == 3 else f for f in frames]
 
 
-        #
+    
+
+        # stack into 3D array (time, y, x)
+        data = np.stack(frames_gray)
+        _, frame_height, frame_width = data.shape
+
+        # set spatial coordinates 
+        x_coordinates = np.arange(frame_width)
+        y_coordinates = np.arange(frame_height)
+
+        # create xarray.DataArray with the time info
+        referenced_data = xr.DataArray(
+            data,
+            dims=("time", "y", "x"),
+            coords={
+                "time": datetimes,
+                "y": y_coordinates,
+                "x": x_coordinates
+            }
+        )
+
+        # set the respective lat/long values to corresp pixels
+        lon_min, lon_max, lat_min, lat_max = region.FVG
+        lat = np.linspace(lat_min, lat_max, frame_height)
+        lon = np.linspace(lon_min, lon_max, frame_width)
+        longitude = np.tile(lon[np.newaxis, :], (frame_height, 1))
+        latitude = np.tile(lat[:, np.newaxis], (1, frame_width))
+        
+        referenced_data = referenced_data.assign_coords(latitude=(("y", "x"), latitude),
+                                            longitude=(("y", "x"), longitude))
+
+        # run tobac to get the spacings
+        dxy, dt = tobac.get_spacings(referenced_data, time_spacing=3600)
 
 
+        # normalize all data in the different plots so we can use a single scale/legend and threshold
 
-        print(f"Running {height_input_dir}")
+        vmin = float(referenced_data.min())
+        vmax = float(referenced_data.max())
+        referenced_data_norm = (referenced_data - vmin) / (vmax - vmin)
 
+        # === FEATURE DETECTION ===
+        # Locate twice just to get the segmentation right (i.e. with "extreme" i know the center will be inside the object)
+        features = tobac.feature_detection_multithreshold(
+            referenced_data_norm,
+            threshold=[threshold],  # single threshold in normalized space
+            dxy=dxy,  # 1 px 3km
+            target=target,
+            position_threshold="extreme",
+            sigma_threshold=smooth,
+            n_min_threshold=n_min_threshold,
+            min_distance=1000  # at least 500m between 2 objects
+        )
+        # this will be used for getting the center of the objects, the one above for segmentation
+        features_weighted_points = tobac.feature_detection_multithreshold(
+            referenced_data_norm,
+            threshold=[threshold],
+            dxy=dxy,
+            target=target,
+            position_threshold="weighted_abs",
+            sigma_threshold=smooth,
+            n_min_threshold=n_min_threshold,
+            min_distance=1000  # at least 1000m between 2 objects
+        )
+
+        v_max = 70
+        gap_features_frames = 1  # for how many frames a feature can disappear and still be linked (2 full frames in this case, it reappers in the 3)
+        radius = v_max * dt / dxy
+
+        ...............
+        
 def extract_keys(filename):
     """
     extracts date and number from filename for sorting purposes.
