@@ -71,7 +71,6 @@ def locate_track_merge(input_folder, output_folder, border_path, n_min_threshold
     lon_max: the maximum longitude of the area in the images
     n_min_threshold: minimum number of pixels for object detection (default 0)
     smooth: smoothing factor for gaussian filter (default 8)
-
     """
 
     # create folder if it doesn't exist
