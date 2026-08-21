@@ -3,6 +3,7 @@ import os
 import re
 import time
 from collections import defaultdict
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -11,8 +12,15 @@ import torch
 logger = logging.getLogger(__name__)
 
 
-def batched_kmeans_torch(X, num_clusters, max_iter=200, n_init=8, tol=1e-4,
-                         device="cpu", stream=None):
+def batched_kmeans_torch(
+        X: np.ndarray,
+        num_clusters: int,
+        max_iter: int = 200,
+        n_init: int = 8,
+        tol: float = 1e-4,
+        device: str = "cpu",
+        stream: Optional[torch.cuda.Stream] = None,
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Vectorized-over-B KMeans for a batch of same-shaped images, run on the GPU.
 
@@ -27,7 +35,7 @@ def batched_kmeans_torch(X, num_clusters, max_iter=200, n_init=8, tol=1e-4,
         full pixel data n_init times (via expand().reshape(), which forces a
         real copy since the expanded tensor is non-contiguous), which blows
         up VRAM by a factor of n_init for little real speed benefit — the
-        pixel data is identical across restarts, only the centers differ.
+        pixel data is identical across restarts, only the centres differ.
         Looping keeps peak memory proportional to B, not B*n_init.
     stream : torch.cuda.Stream or None
         If given, all GPU work runs on this stream (caller's responsibility to
@@ -81,7 +89,11 @@ def batched_kmeans_torch(X, num_clusters, max_iter=200, n_init=8, tol=1e-4,
         return best_labels.cpu().numpy(), best_centers.cpu().numpy()
 
 
-def _order_labels_by_brightness(clustering, gray, num_clusters):
+def _order_labels_by_brightness(
+        clustering: np.ndarray,
+        gray: np.ndarray,
+        num_clusters: int,
+) -> np.ndarray:
     """Remap arbitrary cluster ids to brightness rank (0=darkest .. K-1=brightest)."""
     means = []
     for lbl in range(num_clusters):
@@ -99,7 +111,10 @@ def _order_labels_by_brightness(clustering, gray, num_clusters):
 _LEGEND_RANGE_RE = re.compile(r'range:\s*([-\d.]+)\s*(\S+)\s*to\s*([-\d.]+)\s*\S+')
 
 
-def _parse_legend_range(legend_dir, feature_key):
+def _parse_legend_range(
+        legend_dir: str,
+        feature_key: str,
+) -> Tuple[Optional[float], Optional[float], Optional[str]]:
     """
     Read legend_{feature_key}.txt (written by create_legends) and return
     (vmin, vmax, unit). Returns (None, None, None) if the file is missing or
@@ -126,7 +141,14 @@ def _parse_legend_range(legend_dir, feature_key):
     return float(vmin), float(vmax), unit
 
 
-def _run_clustering(items, numClusters, output_dir, batch_size=8, n_init=8, max_iter=200):
+def _run_clustering(
+        items: List[Tuple[str, np.ndarray]],
+        numClusters: int,
+        output_dir: str,
+        batch_size: int = 8,
+        n_init: int = 8,
+        max_iter: int = 200,
+) -> None:
     """Core clustering logic. items is a list of (filename, np.ndarray) tuples."""
     groups = defaultdict(list)
     for f, img in items:
@@ -168,9 +190,16 @@ def _run_clustering(items, numClusters, output_dir, batch_size=8, n_init=8, max_
                 torch.cuda.empty_cache()
 
 
-def generate_clustered_images(numClusters, input_dir, output_dir,
-                              legend_dir, feature_key,
-                              batch_size=8, n_init=8, max_iter=200):
+def generate_clustered_images(
+        numClusters: int,
+        input_dir: str,
+        output_dir: str,
+        legend_dir: str,
+        feature_key: str,
+        batch_size: int = 8,
+        n_init: int = 8,
+        max_iter: int = 200,
+) -> None:
     vmin, vmax, unit = _parse_legend_range(legend_dir, feature_key)
     if vmin is None or vmax is None or unit is None:
         logger.error(f"Legend range not found for feature '{feature_key}'.")
@@ -190,9 +219,16 @@ def generate_clustered_images(numClusters, input_dir, output_dir,
     _run_clustering(items, numClusters, output_dir, batch_size, n_init, max_iter)
 
 
-def generate_clustered_images_in_memory(numClusters, images_dict, output_dir,
-                                        legend_dir, feature_key,
-                                        batch_size=8, n_init=8, max_iter=200):
+def generate_clustered_images_in_memory(
+        numClusters: int,
+        images_dict: Dict[str, np.ndarray],
+        output_dir: str,
+        legend_dir: str,
+        feature_key: str,
+        batch_size: int = 8,
+        n_init: int = 8,
+        max_iter: int = 200,
+) -> None:
     """Like generate_clustered_images but reads from an in-memory dict {filename: np.ndarray}."""
     vmin, vmax, unit = _parse_legend_range(legend_dir, feature_key)
     if vmin is None or vmax is None or unit is None:
@@ -203,7 +239,7 @@ def generate_clustered_images_in_memory(numClusters, images_dict, output_dir,
     _run_clustering(items, numClusters, output_dir, batch_size, n_init, max_iter)
 
 
-def cluster(input_dir, output_dir, label_dir):
+def cluster(input_dir: str, output_dir: str, label_dir: str) -> None:
     """
     Iterates variable-type subfolders and clusters each with its own K.
     Safe to call from multiple threads on different (input_dir, output_dir,
@@ -232,7 +268,11 @@ def cluster(input_dir, output_dir, label_dir):
             logger.warning(f"Unknown folder type '{folder}'. Skipping clustering for this folder.")
 
 
-def cluster_in_memory(images_dict, output_dir, label_dir):
+def cluster_in_memory(
+        images_dict: Dict[str, Dict[str, np.ndarray]],
+        output_dir: str,
+        label_dir: str,
+) -> None:
     """
     Like cluster but reads from an in-memory dict {subfolder: {filename: np.ndarray}}
     instead of iterating filesystem directories.

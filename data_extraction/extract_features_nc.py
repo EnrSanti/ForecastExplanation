@@ -1,6 +1,7 @@
 import io
 import logging
 import os
+from typing import Any, Callable, Dict, Optional, Tuple
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -38,7 +39,7 @@ MINIMUM_HUMIDITY_VALUE = 0
 MAXIMUM_HUMIDITY_VALUE = 100
 
 
-def _fig_to_bgr_array(fig, **savefig_kwargs) -> np.ndarray:
+def _fig_to_bgr_array(fig: Any, **savefig_kwargs: Any) -> np.ndarray:
     """Render a matplotlib figure to a BGR uint8 numpy array (matching cv2.imread output)."""
     with io.BytesIO() as buf:
         fig.savefig(buf, format='png', **savefig_kwargs)
@@ -75,7 +76,7 @@ def save_feature_maps(input_path: str, coordinates: Region, output_base: str) ->
     logger.debug(f"Feature maps saved for {input_path} in {output_base}")
 
 
-def render_feature_maps(ds: xr.Dataset, coordinates: Region) -> dict:
+def render_feature_maps(ds: xr.Dataset, coordinates: Region) -> Dict[str, Dict[str, np.ndarray]]:
     """Render feature maps in memory and return as dict {folder: {filename: np.ndarray(BGR)}}."""
     if any(var not in ds for var in ['ccl', 't', 'u', 'v', 'r']):
         logger.error("Error: One or more required variables not found in dataset.")
@@ -204,7 +205,11 @@ def create_legends(output_base: str) -> None:
                 ftxt.write(f"Respective colors: {rgb255_min}, {rgb255_max}\n")
 
 
-def _render_cloud_frames(ds, coordinates, on_frame):
+def _render_cloud_frames(
+        ds: xr.Dataset,
+        coordinates: Region,
+        on_frame: Callable[[Any, str, str], None],
+) -> None:
     """Core cloud rendering loop. Calls on_frame(fig, folder_name, filename) for each rendered frame."""
     cloud_folders = {k: "cloud" + v for k, v in FOLDERS.items()}
     cloud = ds['ccl']
@@ -243,14 +248,19 @@ def _render_cloud_frames(ds, coordinates, on_frame):
 
 
 def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    def on_frame(fig, folder, fname):
+    def on_frame(fig: Any, folder: str, fname: str) -> None:
         out_dir = os.path.join(output_base, folder)
         os.makedirs(out_dir, exist_ok=True)
         fig.savefig(os.path.join(out_dir, fname), dpi=130, bbox_inches='tight', pad_inches=0)
+
     _render_cloud_frames(ds, coordinates, on_frame)
 
 
-def _render_temperature_frames(ds, coordinates, on_frame):
+def _render_temperature_frames(
+        ds: xr.Dataset,
+        coordinates: Region,
+        on_frame: Callable[[Any, str, str], None],
+) -> None:
     """Core temperature rendering loop. Calls on_frame(fig, folder_name, filename) for each rendered frame."""
     temp_folders = {k: "temp" + v for k, v in FOLDERS.items()}
     temperature = ds['t']
@@ -295,14 +305,20 @@ def _render_temperature_frames(ds, coordinates, on_frame):
 
 
 def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    def on_frame(fig, folder, fname):
+    def on_frame(fig: Any, folder: str, fname: str) -> None:
         out_dir = os.path.join(output_base, folder)
         os.makedirs(out_dir, exist_ok=True)
         fig.savefig(os.path.join(out_dir, fname), dpi=130, bbox_inches='tight', pad_inches=0)
+
     _render_temperature_frames(ds, coordinates, on_frame)
 
 
-def _render_wind_frames(ds, coordinates, on_frame, on_csv=None):
+def _render_wind_frames(
+        ds: xr.Dataset,
+        coordinates: Region,
+        on_frame: Callable[[Any, str, str], None],
+        on_csv: Optional[Callable[[str, str, str], None]] = None,
+) -> None:
     """Core wind rendering loop. Calls on_frame(fig, folder_name, filename) for each PNG frame.
     Optionally calls on_csv(folder_name, filename, content) for each CSV."""
     wind_folders = {k: "winds" + v for k, v in FOLDERS.items()}
@@ -396,12 +412,12 @@ def _render_wind_frames(ds, coordinates, on_frame, on_csv=None):
 
 
 def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    def on_frame(fig, folder, fname):
+    def on_frame(fig: Any, folder: str, fname: str) -> None:
         out_dir = os.path.join(output_base, folder)
         os.makedirs(out_dir, exist_ok=True)
         fig.savefig(os.path.join(out_dir, fname), dpi=130, bbox_inches="tight", pad_inches=0)
 
-    def on_csv(folder, fname, content):
+    def on_csv(folder: str, fname: str, content: str) -> None:
         out_dir = os.path.join(output_base, folder)
         os.makedirs(out_dir, exist_ok=True)
         with open(os.path.join(out_dir, fname), "w") as f:
@@ -410,7 +426,11 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
     _render_wind_frames(ds, coordinates, on_frame, on_csv)
 
 
-def _render_humidity_frames(ds, coordinates, on_frame):
+def _render_humidity_frames(
+        ds: xr.Dataset,
+        coordinates: Region,
+        on_frame: Callable[[Any, str, str], None],
+) -> None:
     """Core humidity rendering loop. Calls on_frame(fig, folder_name, filename) for each rendered frame."""
     humidity_folders = {k: "humidity" + v for k, v in FOLDERS.items()}
     humidity = ds['r'] if 'r' in ds else ds['rhum']
@@ -450,8 +470,9 @@ def _render_humidity_frames(ds, coordinates, on_frame):
 
 
 def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    def on_frame(fig, folder, fname):
+    def on_frame(fig: Any, folder: str, fname: str) -> None:
         out_dir = os.path.join(output_base, folder)
         os.makedirs(out_dir, exist_ok=True)
         fig.savefig(os.path.join(out_dir, fname), dpi=130, bbox_inches='tight', pad_inches=0)
+
     _render_humidity_frames(ds, coordinates, on_frame)

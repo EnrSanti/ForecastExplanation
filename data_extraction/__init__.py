@@ -6,14 +6,14 @@ class Region(Enum):
     ITALY = [10, 16, 42, 48]
 
 
-RAW_DATA_DIR = "./tmp_data/original_CERRA"
-CUT_DATA_DIR = "./tmp_data/CERRA_cut"
-DISCRETE_DATA_DIR = "./tmp_data/imgs_discrete"
-CLUSTERED_DATA_DIR = "./tmp_data/clustered"
+RAW_DATA_DIR: str = "./tmp_data/original_CERRA"
+CUT_DATA_DIR: str = "./tmp_data/CERRA_cut"
+DISCRETE_DATA_DIR: str = "./tmp_data/imgs_discrete"
+CLUSTERED_DATA_DIR: str = "./tmp_data/clustered"
 
 from .main import extract
 
-__all__ = [
+__all__: list[str] = [
     "extract",
     "Region",
     "RAW_DATA_DIR",
