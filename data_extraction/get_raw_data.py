@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 import cdsapi
 import xarray as xr
@@ -87,3 +87,24 @@ def download_grib_if_needed(date: datetime, grib_path: str) -> None:
     except Exception as e:
         logger.error(f"Failed to download GRIB for {date_str}: {e}")
         raise
+
+
+def cut_grib_to_dataset(grib_path: str, coordinates: List[int]) -> xr.Dataset:
+    """Cut a GRIB file to the given coordinates and return the cropped dataset in memory."""
+    with xr.open_dataset(grib_path, engine="cfgrib", decode_cf=True, decode_times=True, decode_timedelta=False) as ds:
+        mask = (ds.longitude >= coordinates[0]) & (ds.longitude <= coordinates[1]) & \
+               (ds.latitude >= coordinates[2]) & (ds.latitude <= coordinates[3])
+
+        ds_sub = ds.where(mask, drop=True)
+        return ds_sub.load()
+
+
+def extract_nc_in_memory(date: datetime, region: Region, raw_data_dir: str) -> xr.Dataset:
+    """Download GRIB (if needed) and return cropped dataset in memory."""
+    base_name = date.strftime("%Y-%m-%d")
+    grib_path = os.path.join(raw_data_dir, f"{base_name}.grib")
+
+    download_grib_if_needed(date, grib_path)
+
+    logger.debug(f"CUTTING GRIB (in-memory): {grib_path}")
+    return cut_grib_to_dataset(grib_path, region.value)

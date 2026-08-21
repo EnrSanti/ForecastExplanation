@@ -127,47 +127,31 @@ def _parse_legend_range(legend_dir, feature_key):
     return float(vmin), float(vmax), unit
 
 
-def generate_clustered_images(numClusters, input_dir, output_dir,
-                              legend_dir, feature_key,
-                              batch_size=8, n_init=8, max_iter=200):
-    vmin, vmax, unit = _parse_legend_range(legend_dir, feature_key)
-    if vmin is None or vmax is None or unit is None:
-        logger.error(f"Legend range not found for feature '{feature_key}'.")
-        return
-
-    files = [f for f in os.listdir(input_dir) if f.endswith(".png")]
-
-    # Group by shape so each GPU batch has a uniform pixel count.
-    groups = defaultdict(list)  # (H, W, C) -> [(filename, img)]
-    for f in files:
-        img_path = os.path.join(input_dir, f)
-        img = cv2.imread(img_path)
-        if img is None:
-            logger.warning(f"Failed to read image '{img_path}'. Skipping.")
-            continue
+def _run_clustering(items, numClusters, output_dir, batch_size=8, n_init=8, max_iter=200):
+    """Core clustering logic. items is a list of (filename, np.ndarray) tuples."""
+    groups = defaultdict(list)
+    for f, img in items:
         groups[img.shape].append((f, img))
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     stream = torch.cuda.Stream(device=0) if device == "cuda" else None
 
-    for shape, items in groups.items():
+    for shape, shape_items in groups.items():
         H, W, C = shape
-        for start in range(0, len(items), batch_size):
-            chunk = items[start:start + batch_size]
+        for start in range(0, len(shape_items), batch_size):
+            chunk = shape_items[start:start + batch_size]
             batch_files = [f for f, _ in chunk]
             batch_imgs = [img for _, img in chunk]
 
-            logger.debug(time.time(),
-                         f"Clustering {len(batch_imgs)} images of shape {shape} from '{input_dir}' -> '{output_dir}'")
+            logger.debug(f"Clustering {len(batch_imgs)} images of shape {shape} -> '{output_dir}'")
 
             X = np.stack([img.reshape(-1, C) for img in batch_imgs], axis=0)  # (B, P, C)
             labels, _ = batched_kmeans_torch(
                 X, numClusters, max_iter=max_iter, n_init=n_init,
-                device=DEVICE, stream=stream,
+                device=device, stream=stream,
             )
 
-            logger.debug(time.time(),
-                         f"Finished clustering {len(batch_imgs)} images of shape {shape} from '{input_dir}' -> '{output_dir}'")
+            logger.debug(f"Finished clustering {len(batch_imgs)} images of shape {shape} -> '{output_dir}'")
 
             for f, img, lbl in zip(batch_files, batch_imgs, labels):
                 clustering = lbl.reshape(H, W)
@@ -177,12 +161,47 @@ def generate_clustered_images(numClusters, input_dir, output_dir,
                 out_path = os.path.join(output_dir, f)
                 cv2.imwrite(out_path, swapped, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
-            logger.debug(time.time(), f"Saved clustered images to '{output_dir}'")
+            logger.debug(f"Saved clustered images to '{output_dir}'")
 
             del X, labels, batch_imgs, chunk
             if device == "cuda":
                 torch.cuda.synchronize(stream)
                 torch.cuda.empty_cache()
+
+
+def generate_clustered_images(numClusters, input_dir, output_dir,
+                              legend_dir, feature_key,
+                              batch_size=8, n_init=8, max_iter=200):
+    vmin, vmax, unit = _parse_legend_range(legend_dir, feature_key)
+    if vmin is None or vmax is None or unit is None:
+        logger.error(f"Legend range not found for feature '{feature_key}'.")
+        return
+
+    items = []
+    for f in os.listdir(input_dir):
+        if not f.endswith(".png"):
+            continue
+        img_path = os.path.join(input_dir, f)
+        img = cv2.imread(img_path)
+        if img is None:
+            logger.warning(f"Failed to read image '{img_path}'. Skipping.")
+            continue
+        items.append((f, img))
+
+    _run_clustering(items, numClusters, output_dir, batch_size, n_init, max_iter)
+
+
+def generate_clustered_images_in_memory(numClusters, images_dict, output_dir,
+                                        legend_dir, feature_key,
+                                        batch_size=8, n_init=8, max_iter=200):
+    """Like generate_clustered_images but reads from an in-memory dict {filename: np.ndarray}."""
+    vmin, vmax, unit = _parse_legend_range(legend_dir, feature_key)
+    if vmin is None or vmax is None or unit is None:
+        logger.error(f"Legend range not found for feature '{feature_key}'.")
+        return
+
+    items = list(images_dict.items())
+    _run_clustering(items, numClusters, output_dir, batch_size, n_init, max_iter)
 
 
 def cluster(input_dir, output_dir, label_dir):
@@ -210,5 +229,27 @@ def cluster(input_dir, output_dir, label_dir):
             generate_clustered_images(3, folder_path, output_folder_path, label_dir, feature_key="cloud")
         elif "hum" in name:
             generate_clustered_images(5, folder_path, output_folder_path, label_dir, feature_key="humidity")
+        else:
+            logger.warning(f"Unknown folder type '{folder}'. Skipping clustering for this folder.")
+
+
+def cluster_in_memory(images_dict, output_dir, label_dir):
+    """
+    Like cluster but reads from an in-memory dict {subfolder: {filename: np.ndarray}}
+    instead of iterating filesystem directories.
+    """
+    for folder, folder_images in images_dict.items():
+        output_folder_path = os.path.join(output_dir, folder)
+        os.makedirs(output_folder_path, exist_ok=True)
+
+        name = folder.lower()
+        if "wind" in name:
+            generate_clustered_images_in_memory(3, folder_images, output_folder_path, label_dir, feature_key="wind")
+        elif "temp" in name:
+            generate_clustered_images_in_memory(5, folder_images, output_folder_path, label_dir, feature_key="temp")
+        elif "cloud" in name:
+            generate_clustered_images_in_memory(3, folder_images, output_folder_path, label_dir, feature_key="cloud")
+        elif "hum" in name:
+            generate_clustered_images_in_memory(5, folder_images, output_folder_path, label_dir, feature_key="humidity")
         else:
             logger.warning(f"Unknown folder type '{folder}'. Skipping clustering for this folder.")

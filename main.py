@@ -16,7 +16,9 @@ logger = logging.getLogger("ForecastExplanation")
 def main():
     parser = argparse.ArgumentParser(description="ForecastExplanation Pipeline")
     parser.add_argument("--config", type=str, help="Path to config YAML file containing dates", default="config.yaml")
-    parser.add_argument("-c", dest="clean", action="count", default=0, help="Clean tmp folders: -c to keep 2, -cc to delete all")
+    parser.add_argument("-c", dest="clean", action="count", default=0, help="Clean tmp folders: -cc to delete all")
+    parser.add_argument("-m", "--in-memory", dest="in_memory", action="store_true",
+                        help="Pass intermediate data in memory instead of writing to disk")
 
     args, unknown = parser.parse_known_args()
 
@@ -28,7 +30,8 @@ def main():
         logger.error("No dates provided. ")
         sys.exit(1)
 
-    data_extraction.extract(dates, data_extraction.Region.FVG, output_dir="./tmp_data/clustered", clean_level=args.clean)
+    data_extraction.extract(dates, data_extraction.Region.FVG, output_dir="./tmp_data/clustered",
+                            clean_level=args.clean, in_memory=args.in_memory)
 
 
 if __name__ == "__main__":

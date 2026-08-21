@@ -1,3 +1,4 @@
+import io
 import logging
 import os
 
@@ -37,6 +38,16 @@ MINIMUM_HUMIDITY_VALUE = 0
 MAXIMUM_HUMIDITY_VALUE = 100
 
 
+def _fig_to_bgr_array(fig, **savefig_kwargs) -> np.ndarray:
+    """Render a matplotlib figure to a BGR uint8 numpy array (matching cv2.imread output)."""
+    with io.BytesIO() as buf:
+        fig.savefig(buf, format='png', **savefig_kwargs)
+        buf.seek(0)
+        img_rgba = plt.imread(buf)
+        img_rgb = (img_rgba[:, :, :3] * 255).astype(np.uint8)
+        return img_rgb[:, :, ::-1]
+
+
 def create_one_time_images(coordinates: Region, output_base: str) -> None:
     save_borders_png(output_base, coordinates)
     create_legends(output_base)
@@ -62,6 +73,27 @@ def save_feature_maps(input_path: str, coordinates: Region, output_base: str) ->
         ds.close()
 
     logger.debug(f"Feature maps saved for {input_path} in {output_base}")
+
+
+def render_feature_maps(ds: xr.Dataset, coordinates: Region) -> dict:
+    """Render feature maps in memory and return as dict {folder: {filename: np.ndarray(BGR)}}."""
+    if any(var not in ds for var in ['ccl', 't', 'u', 'v', 'r']):
+        logger.error("Error: One or more required variables not found in dataset.")
+        return {}
+
+    images = {}
+
+    def on_frame(fig, folder, fname):
+        images.setdefault(folder, {})[fname] = _fig_to_bgr_array(
+            fig, dpi=130, bbox_inches='tight', pad_inches=0)
+
+    _render_cloud_frames(ds, coordinates, on_frame)
+    _render_temperature_frames(ds, coordinates, on_frame)
+    _render_wind_frames(ds, coordinates, on_frame)
+    _render_humidity_frames(ds, coordinates, on_frame)
+
+    logger.debug(f"Feature maps rendered in memory: {sum(len(v) for v in images.values())} images")
+    return images
 
 
 def save_borders_png(output_base: str, coordinates: Region) -> None:
@@ -172,7 +204,8 @@ def create_legends(output_base: str) -> None:
                 ftxt.write(f"Respective colors: {rgb255_min}, {rgb255_max}\n")
 
 
-def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
+def _render_cloud_frames(ds, coordinates, on_frame):
+    """Core cloud rendering loop. Calls on_frame(fig, folder_name, filename) for each rendered frame."""
     cloud_folders = {k: "cloud" + v for k, v in FOLDERS.items()}
     cloud = ds['ccl']
 
@@ -181,8 +214,6 @@ def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> No
 
     for lvl in LEVELS:
         cloud_level = cloud.sel(isobaricInhPa=lvl)
-        out_dir = os.path.join(output_base, cloud_folders[lvl])
-        os.makedirs(out_dir, exist_ok=True)
 
         for i in range(cloud_level.sizes['time']):
             base_time = pd.to_datetime(str(cloud_level['time'].isel(time=i).values))
@@ -205,13 +236,22 @@ def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> No
                     cmap="viridis", shading='auto', vmin=MINIMUM_CLOUD_VALUE, vmax=MAXIMUM_CLOUD_VALUE,
                     transform=ccrs.PlateCarree()
                 )
-                fname = os.path.join(out_dir, f"cloud_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                fig.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
+                fname = f"cloud_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png"
+                on_frame(fig, cloud_folders[lvl], fname)
                 mesh.remove()
     plt.close(fig)
 
 
-def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
+def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
+    def on_frame(fig, folder, fname):
+        out_dir = os.path.join(output_base, folder)
+        os.makedirs(out_dir, exist_ok=True)
+        fig.savefig(os.path.join(out_dir, fname), dpi=130, bbox_inches='tight', pad_inches=0)
+    _render_cloud_frames(ds, coordinates, on_frame)
+
+
+def _render_temperature_frames(ds, coordinates, on_frame):
+    """Core temperature rendering loop. Calls on_frame(fig, folder_name, filename) for each rendered frame."""
     temp_folders = {k: "temp" + v for k, v in FOLDERS.items()}
     temperature = ds['t']
 
@@ -220,8 +260,6 @@ def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str)
 
     for lvl in LEVELS:
         temp_level = temperature.sel(isobaricInhPa=lvl)
-        out_dir = os.path.join(output_base, temp_folders[lvl])
-        os.makedirs(out_dir, exist_ok=True)
 
         for i in range(temp_level.sizes['time']):
             base_time = pd.to_datetime(str(temp_level['time'].isel(time=i).values))
@@ -250,13 +288,23 @@ def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str)
                     transform=ccrs.PlateCarree()
                 )
 
-                fname = os.path.join(out_dir, f"temp_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                fig.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
+                fname = f"temp_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png"
+                on_frame(fig, temp_folders[lvl], fname)
                 mesh.remove()
     plt.close(fig)
 
 
-def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
+def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
+    def on_frame(fig, folder, fname):
+        out_dir = os.path.join(output_base, folder)
+        os.makedirs(out_dir, exist_ok=True)
+        fig.savefig(os.path.join(out_dir, fname), dpi=130, bbox_inches='tight', pad_inches=0)
+    _render_temperature_frames(ds, coordinates, on_frame)
+
+
+def _render_wind_frames(ds, coordinates, on_frame, on_csv=None):
+    """Core wind rendering loop. Calls on_frame(fig, folder_name, filename) for each PNG frame.
+    Optionally calls on_csv(folder_name, filename, content) for each CSV."""
     wind_folders = {k: "winds" + v for k, v in FOLDERS.items()}
     u_var = ds["u"]
     v_var = ds["v"]
@@ -269,8 +317,6 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
         u_lvl = u_var.sel(isobaricInhPa=lvl)
         v_lvl = v_var.sel(isobaricInhPa=lvl)
 
-        out_dir = os.path.join(output_base, wind_folders[lvl])
-        os.makedirs(out_dir, exist_ok=True)
         for i in range(u_lvl.sizes["time"]):
             base_time = pd.to_datetime(str(u_lvl["time"].isel(time=i).values))
             day_start = base_time.normalize() + pd.Timedelta(hours=1)
@@ -336,20 +382,36 @@ def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> Non
                 alphas[~np.isfinite(alphas)] = 0
                 mags[~np.isfinite(mags)] = 0
 
-                txt_path = os.path.join(out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.csv")
-                with open(txt_path, "w") as ftxt:
-                    ftxt.write("vector_id,pixel_x,pixel_y,latitude,longitude,magnitude,alpha_deg")
+                if on_csv:
+                    csv_fname = f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.csv"
+                    csv_content = "vector_id,pixel_x,pixel_y,latitude,longitude,magnitude,alpha_deg\n"
                     for idx in range(len(lon_visible)):
-                        ftxt.write(
-                            f"{idx},{px[idx]},{py[idx]},{lat_visible[idx]:.6f},{lon_visible[idx]:.6f},{mags[idx]:.6f},{alphas[idx]:.2f}")
+                        csv_content += f"{idx},{px[idx]},{py[idx]},{lat_visible[idx]:.6f},{lon_visible[idx]:.6f},{mags[idx]:.6f},{alphas[idx]:.2f}\n"
+                    on_csv(wind_folders[lvl], csv_fname, csv_content)
 
-                fname = os.path.join(out_dir, f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                fig.savefig(fname, dpi=130, bbox_inches="tight", pad_inches=0)
+                png_fname = f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png"
+                on_frame(fig, wind_folders[lvl], png_fname)
                 mesh.remove()
     plt.close(fig)
 
 
-def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
+def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
+    def on_frame(fig, folder, fname):
+        out_dir = os.path.join(output_base, folder)
+        os.makedirs(out_dir, exist_ok=True)
+        fig.savefig(os.path.join(out_dir, fname), dpi=130, bbox_inches="tight", pad_inches=0)
+
+    def on_csv(folder, fname, content):
+        out_dir = os.path.join(output_base, folder)
+        os.makedirs(out_dir, exist_ok=True)
+        with open(os.path.join(out_dir, fname), "w") as f:
+            f.write(content)
+
+    _render_wind_frames(ds, coordinates, on_frame, on_csv)
+
+
+def _render_humidity_frames(ds, coordinates, on_frame):
+    """Core humidity rendering loop. Calls on_frame(fig, folder_name, filename) for each rendered frame."""
     humidity_folders = {k: "humidity" + v for k, v in FOLDERS.items()}
     humidity = ds['r'] if 'r' in ds else ds['rhum']
 
@@ -358,8 +420,6 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
 
     for lvl in LEVELS:
         rh_level = humidity.sel(isobaricInhPa=lvl)
-        out_dir = os.path.join(output_base, humidity_folders[lvl])
-        os.makedirs(out_dir, exist_ok=True)
 
         for i in range(rh_level.sizes['time']):
             base_time = pd.to_datetime(str(rh_level['time'].isel(time=i).values))
@@ -383,7 +443,15 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
                     transform=ccrs.PlateCarree()
                 )
 
-                fname = os.path.join(out_dir, f"humidity_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png")
-                fig.savefig(fname, dpi=130, bbox_inches='tight', pad_inches=0)
+                fname = f"humidity_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png"
+                on_frame(fig, humidity_folders[lvl], fname)
                 mesh.remove()
     plt.close(fig)
+
+
+def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
+    def on_frame(fig, folder, fname):
+        out_dir = os.path.join(output_base, folder)
+        os.makedirs(out_dir, exist_ok=True)
+        fig.savefig(os.path.join(out_dir, fname), dpi=130, bbox_inches='tight', pad_inches=0)
+    _render_humidity_frames(ds, coordinates, on_frame)
