@@ -16,10 +16,10 @@ class WeatherPhenomenon(Enum):
     WIND = "winds"
 
 class WeatherPhenomenonTobacPrams(Enum):
-    TEMPERATURE = {"min_blob_size": 100, "target": "upper", "smooth": 8}
-    HUMIDITY = {"min_blob_size": 100, "target": "upper", "smooth": 8}
-    CLOUDS = {"min_blob_size": 100, "target": "upper", "smooth": 8}
-    WIND = {"min_blob_size": 100, "target": "upper", "smooth": 8}
+    TEMPERATURE = {"min_blob_size": 100, "target": "maximum", "smooth": 8, "threshold": 0.6}
+    HUMIDITY = {"min_blob_size": 100, "target": "minimum", "smooth": 8, "threshold": 0.55}
+    CLOUDS = {"min_blob_size": 100, "target": "maximum", "smooth": 8, "threshold": 0.7}
+    WIND = {"min_blob_size": 100, "target": "maximum", "smooth": 8, "threshold": 0.6}
 
 
 from .main import run_tobac

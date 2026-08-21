@@ -95,16 +95,26 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
         vmax = float(referenced_data.max())
         referenced_data_norm = (referenced_data - vmin) / (vmax - vmin)
 
+
+
+
+        detection_params = WeatherPhenomenonTobacPrams.TEMPERATURE.value
+
+        min_blob_size = detection_params["min_blob_size"]
+        target = detection_params["target"]
+        smooth = detection_params["smooth"]
+        threshold = detection_params["threshold"]
+
         # === FEATURE DETECTION ===
         # Locate twice just to get the segmentation right (i.e. with "extreme" i know the center will be inside the object)
         features = tobac.feature_detection_multithreshold(
             referenced_data_norm,
             threshold=[threshold],  # single threshold in normalized space
-            dxy=dxy,  # 1 px 3km
+            dxy=dxy,  
             target=target,
             position_threshold="extreme",
             sigma_threshold=smooth,
-            n_min_threshold=n_min_threshold,
+            n_min_threshold=min_blob_size,
             min_distance=1000  # at least 500m between 2 objects
         )
         # this will be used for getting the center of the objects, the one above for segmentation
@@ -115,7 +125,7 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
             target=target,
             position_threshold="weighted_abs",
             sigma_threshold=smooth,
-            n_min_threshold=n_min_threshold,
+            n_min_threshold=min_blob_size,
             min_distance=1000  # at least 1000m between 2 objects
         )
 
