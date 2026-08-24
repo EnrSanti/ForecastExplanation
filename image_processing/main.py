@@ -14,6 +14,8 @@ import scipy.ndimage as ndimage
 import seaborn as sns
 from image_processing import Region, WeatherPhenomenon, WeatherPhenomenonTobacPrams, FOLDERS_HEIGHT_SUFF
 import tobac
+import re
+import xarray as xr
 import os
 
 def run_tobac(dates: List[datetime],  input_dir: str, output_dir: str, region: Region):
@@ -40,10 +42,12 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
         height_input_dir = os.path.join(day_input_dir, f"{phenomenon.value}{suffix}")
         height_output_dir = os.path.join(day_output_dir, f"{phenomenon.value}{suffix}")
         os.makedirs(height_output_dir, exist_ok=True)
-
-        image_files = ([f for f in os.listdir(height_input_dir)
+        print(height_input_dir)
+        image_files = ([height_input_dir+"/"+f for f in os.listdir(height_input_dir)
                             if f.lower().endswith((".png"))])
-        images_no = len(image_files)
+
+        #images_no = len(image_files)
+
         image_files = sorted(image_files, key=extract_keys)
         frames = [imageio.v2.imread(f) for f in image_files]
 
@@ -54,7 +58,7 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
             frames_gray = [np.mean(f[:, :, :3], axis=2) if f.ndim == 3 else f for f in frames]
 
 
-    
+        print(len(image_files))
 
         # stack into 3D array (time, y, x)
         data = np.stack(frames_gray)
@@ -69,14 +73,14 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
             data,
             dims=("time", "y", "x"),
             coords={
-                "time": datetimes,
+                "time": date,
                 "y": y_coordinates,
                 "x": x_coordinates
             }
         )
 
         # set the respective lat/long values to corresp pixels
-        lon_min, lon_max, lat_min, lat_max = region.FVG
+        lon_min, lon_max, lat_min, lat_max = region.value
         lat = np.linspace(lat_min, lat_max, frame_height)
         lon = np.linspace(lon_min, lon_max, frame_width)
         longitude = np.tile(lon[np.newaxis, :], (frame_height, 1))
@@ -84,7 +88,7 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
         
         referenced_data = referenced_data.assign_coords(latitude=(("y", "x"), latitude),
                                             longitude=(("y", "x"), longitude))
-
+        print(referenced_data)
         # run tobac to get the spacings
         dxy, dt = tobac.get_spacings(referenced_data, time_spacing=3600)
 
@@ -133,7 +137,7 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
         gap_features_frames = 1  # for how many frames a feature can disappear and still be linked (2 full frames in this case, it reappers in the 3)
         radius = v_max * dt / dxy
 
-        ...............
+        pass
         
 def extract_keys(filename):
     """
