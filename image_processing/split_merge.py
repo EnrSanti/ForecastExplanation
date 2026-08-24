@@ -1,17 +1,10 @@
 from itertools import combinations
 from typing import Dict, List, Set, Union
 
-import cv2
-import imageio
-import imageio as images
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.ndimage as ndimage
-import seaborn as sns
-import tobac
-import xarray as xr
-from matplotlib.colors import ListedColormap, BoundaryNorm
 from skimage.segmentation import mark_boundaries
 
 

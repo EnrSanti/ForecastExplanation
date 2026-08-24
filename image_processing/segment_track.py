@@ -3,15 +3,12 @@ import logging
 import os
 import re
 
-import cv2
 import imageio
-import imageio as images
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.ndimage as ndimage
-import seaborn as sns
 import tobac
 import tobac.testing
 import xarray as xr
@@ -138,7 +135,7 @@ def locate_track_merge(input_folder, output_folder, border_path, n_min_threshold
 
     print(test_data)
     # run tobac to get the spacings
-    dxy, dt = tobac.get_spacings(test_data,time=3600)  
+    dxy, dt = tobac.get_spacings(test_data, time=3600)
 
     # normalize all data in the different plots so we can use a single scale/legend and threshold
     vmin = float(test_data.min())
