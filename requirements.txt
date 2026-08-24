@@ -1,0 +1,14 @@
+SciTools-Iris
+cdsapi>=0.7.7
+cfgrib>=0.9.15.1
+eccodes>=2.47.0
+ecmwflibs>=0.7.0
+numpy>=2.5.2
+opencv-python>=5.0.0.93
+scikit-image>=0.26.0
+scikit-learn>=1.9.0
+scipy>=1.18.1
+seaborn>=0.13.2
+tobac>=1.6.3
+torch>=2.13.0
+xarray>=2026.7.0
