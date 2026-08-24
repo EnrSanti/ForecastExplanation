@@ -205,9 +205,13 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
                 fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in), dpi=100)
                 fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
                 
-                # Plot original image
-                smoothed_frame = ndimage.gaussian_filter(frames[itime], sigma=smooth)
-                axs.imshow(smoothed_frame, origin="upper")
+                # Plot original image (smoothed as background)
+                original_img = frames[itime]
+                if original_img.ndim == 3:
+                    smoothed_bg = ndimage.gaussian_filter(original_img, sigma=(smooth, smooth, 0))
+                else:
+                    smoothed_bg = ndimage.gaussian_filter(original_img, sigma=smooth)
+                axs.imshow(smoothed_bg, origin="upper")
                 xlim = (0, frame_width)
                 ylim = (0, frame_height)
 
@@ -266,6 +270,6 @@ def extract_keys(filename):
     if m:
         date = int(m.group(1))
         num = int(m.group(2))
-        return (date, num)
+        return date, num
     else:
-        return (0, 0)
+        return 0, 0
