@@ -5,7 +5,7 @@ import sys
 import yaml
 
 import data_extraction
-import image_processing
+
 # import image_processing
 
 logging.basicConfig(
@@ -19,8 +19,10 @@ def main():
     parser = argparse.ArgumentParser(description="ForecastExplanation Pipeline")
     parser.add_argument("--config", type=str, help="Path to config YAML file containing dates", default="config.yaml")
     parser.add_argument("-c", dest="clean", action="count", default=0, help="Clean tmp folders: -cc to delete all")
+    parser.add_argument("-f", dest="force", action="count", default=0, help="Force the extraction even if the data is already present, more f for more redone steps")
     parser.add_argument("-m", "--in-memory", dest="in_memory", action="store_true",
                         help="Pass intermediate data in memory instead of writing to disk")
+
 
     args, unknown = parser.parse_known_args()
 
@@ -32,8 +34,9 @@ def main():
         logger.error("No dates provided. ")
         sys.exit(1)
 
-    data_extraction.extract(dates, data_extraction.Region.FVG, clean_level=args.clean, in_memory=args.in_memory)
-    image_processing.run_tobac(dates, input_dir=data_extraction.DISCRETE_DATA_DIR, output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG)
+    data_extraction.extract(dates, data_extraction.Region.FVG, clean_level=args.clean, in_memory=args.in_memory, force_redo=args.force)
+    # image_processing.run_tobac(dates, input_dir=data_extraction.DISCRETE_DATA_DIR, output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG)
+
 
 if __name__ == "__main__":
     main()

@@ -13,36 +13,50 @@ from .image_proc import cluster, cluster_in_memory
 logger = logging.getLogger(__name__)
 
 
-def extract_day_worker(
-        date: datetime,
-        region: Region,
-        clean_level: int = 0,
-        clustering: bool = True,
-) -> None:
+def find_starting_step(date: datetime, region: Region) -> int:
     clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
     raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
     cut_data_dir = os.path.join(CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
     discrete_data_dir = os.path.join(DISCRETE_DATA_DIR, date.strftime("%Y-%m-%d"))
 
-    if os.path.exists(clustered_dir) and len(os.listdir(clustered_dir)) > 0:  # todo: flag to force re-clustering
-        logger.info(f"Output folder '{clustered_dir}' already contains images. Use flag to force re-clustering.")
-        return
-
-    os.makedirs(clustered_dir, exist_ok=True)
-    os.makedirs(raw_data_dir, exist_ok=True)
-    os.makedirs(cut_data_dir, exist_ok=True)
-    os.makedirs(discrete_data_dir, exist_ok=True)
-
-    if len(os.listdir(discrete_data_dir)) == 0:
-        nc_file = extract_nc(date, region, raw_data_dir, cut_data_dir)
-        if not nc_file:
-            return
-        save_feature_maps(nc_file, region, discrete_data_dir)
+    if os.path.exists(clustered_dir) and len(os.listdir(clustered_dir)) > 0:
+        return 4  # Clustering done
+    elif os.path.exists(discrete_data_dir) and len(os.listdir(discrete_data_dir)) > 0:
+        return 3  # Feature maps saved
+    elif os.path.exists(cut_data_dir) and len(os.listdir(cut_data_dir)) > 0:
+        return 2  # GRIB cut
+    elif os.path.exists(raw_data_dir) and len(os.listdir(raw_data_dir)) > 0:
+        return 1  # GRIB downloaded
     else:
-        logger.info(f"Feature maps already exist for {date.strftime('%Y-%m-%d')}, skipping.")
+        return 0  # No data
 
-    if clustering:
+
+def extract_day_worker(date, region, clean_level: int = 0, clustering: bool = True, force_redo: int = 0):
+    clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
+    raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
+    cut_data_dir = os.path.join(CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
+    discrete_data_dir = os.path.join(DISCRETE_DATA_DIR, date.strftime("%Y-%m-%d"))
+
+    starting_step = find_starting_step(date, region)
+    nc_file = ""
+
+    if starting_step in [0, 1, 2]:
+        os.makedirs(raw_data_dir, exist_ok=True)
+        os.makedirs(cut_data_dir, exist_ok=True)
+        nc_file = extract_nc(date, region, raw_data_dir, cut_data_dir)  # this skips 0 1 automatically if already done
+        starting_step = 2
+
+    if starting_step == 2 or force_redo >= 2:
+        os.makedirs(discrete_data_dir, exist_ok=True)
+        save_feature_maps(nc_file, region, discrete_data_dir)
+        starting_step = 3
+
+    if (starting_step == 3 or force_redo >= 1) and clustering:
+        os.makedirs(clustered_dir, exist_ok=True)
         cluster(discrete_data_dir, clustered_dir, CLUSTERED_DATA_DIR)
+
+    if starting_step == 4:
+        logger.info(f"Feature maps already exist for {date.strftime('%Y-%m-%d')}, skipping.")
 
     if clean_level >= 1:
         shutil.rmtree(raw_data_dir, ignore_errors=True)
@@ -80,6 +94,7 @@ def extract_day(
         clean_level: int = 0,
         in_memory: bool = False,
         clustering: bool = True,
+        force_redo: int = 0,
 ) -> None:
     logger.info("Starting data extraction...")
 
@@ -87,7 +102,7 @@ def extract_day(
 
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
-            executor.submit(worker, date, region, clean_level, clustering): date
+            executor.submit(worker, date, region, clean_level, clustering, force_redo): date
             for date in dates
         }
 
@@ -107,10 +122,11 @@ def extract(
         clean_level: int = 0,
         in_memory: bool = False,
         clustering: bool = True,
+        force_redo: int = 0
 ) -> None:
     os.makedirs(CLUSTERED_DATA_DIR, exist_ok=True)
     os.makedirs(RAW_DATA_DIR, exist_ok=True)
-    
+
     if not in_memory:
         os.makedirs(CUT_DATA_DIR, exist_ok=True)
         os.makedirs(DISCRETE_DATA_DIR, exist_ok=True)
