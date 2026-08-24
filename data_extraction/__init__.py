@@ -27,7 +27,9 @@ from .main import extract
 __all__: list[str] = [
     "extract",
     "Region",
+    "LimitValues",
     "RAW_DATA_DIR",
     "CUT_DATA_DIR",
-    "DISCRETE_DATA_DIR"
+    "DISCRETE_DATA_DIR",
+    "CLUSTERED_DATA_DIR",
 ]

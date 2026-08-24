@@ -5,7 +5,6 @@ from datetime import datetime
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from PIL import Image

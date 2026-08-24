@@ -110,7 +110,7 @@ def _valid_times(coord_var: xr.DataArray) -> Iterator[Tuple[int, int, pd.Timesta
         for j in range(coord_var.sizes["step"]):
             step_val = int(coord_var["step"].isel(step=j).values)
             valid_time = base_time + pd.Timedelta(hours=step_val)
-            print(f"Checking valid_time: {valid_time}, day_start: {day_start}, day_end: {day_end}, step_val: {step_val}")
+            logger.debug(f"Checking valid_time: {valid_time}, day_start: {day_start}, day_end: {day_end}, step_val: {step_val}")
 
             if day_start <= valid_time <= day_end:
                 yield i, j, valid_time
@@ -374,10 +374,13 @@ def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) ->
     _save_scalar_maps(ds, coordinates, FEATURE_SPECS["humidity"], output_base)
 
 
-def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    ds = _with_wind_speed(ds)
-    _save_scalar_maps(ds, coordinates, FEATURE_SPECS["wind"], output_base)
-
+def save_wind_vectors(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
     csv_writer = _file_csv_writer(output_base)
     for folder, fname, content in _render_wind_vectors(ds, coordinates):
         csv_writer(folder, fname, content)
+
+
+def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
+    ds = _with_wind_speed(ds)
+    _save_scalar_maps(ds, coordinates, FEATURE_SPECS["wind"], output_base)
+    save_wind_vectors(ds, coordinates, output_base)

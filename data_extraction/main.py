@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List
 
 from . import Region, RAW_DATA_DIR, CUT_DATA_DIR, DISCRETE_DATA_DIR, CLUSTERED_DATA_DIR
-from .extract_features_nc import create_one_time_images, save_feature_maps, render_feature_maps
+from .extract_features_nc import create_one_time_images, save_feature_maps, render_feature_maps, save_wind_vectors
 from .get_raw_data import extract_nc, extract_nc_in_memory
 from .image_proc import cluster, cluster_in_memory
 
@@ -70,6 +70,7 @@ def extract_day_worker_in_memory(
         region: Region,
         clean_level: int = 0,
         clustering: bool = True,
+        force_redo: int = 0,
 ) -> None:
     """In-memory pipeline: GRIB -> xr.Dataset -> Dict[images] -> cluster -> disk output."""
     clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
@@ -80,6 +81,7 @@ def extract_day_worker_in_memory(
 
     ds = extract_nc_in_memory(date, region, raw_data_dir)
     images = render_feature_maps(ds, region)
+    save_wind_vectors(ds, region, clustered_dir)
     ds.close()
     if clustering:
         cluster_in_memory(images, clustered_dir, CLUSTERED_DATA_DIR)

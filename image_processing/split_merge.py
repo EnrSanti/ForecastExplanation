@@ -341,7 +341,6 @@ def detect_splits_by_area(
         str: Description of detected split events at frame.
     """
 
-    splits = []
     already_split = set()
     splits_at_frame = ""
     for cell_id in cell_ids_prev:
@@ -426,7 +425,6 @@ def detect_merge_by_area(
     ----------
         str: Description of detected merge events at frame.
     """
-    merges = []
     already_merged = set()
     merged_at_frame = ""
     for cell_id in cell_ids_curr:

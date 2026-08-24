@@ -1,9 +1,8 @@
 import logging
 import os
 import re
-import time
 from collections import defaultdict
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -180,7 +179,7 @@ def _run_clustering(
                 swapped = _order_labels_by_brightness(clustering, gray, numClusters)
 
                 out_path = os.path.join(output_dir, f)
-                cv2.imwrite(out_path, swapped, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+                cv2.imwrite(out_path, swapped, [int(cv2.IMWRITE_PNG_COMPRESSION), 3])
 
             logger.debug(f"Saved clustered images to '{output_dir}'")
 
@@ -194,17 +193,12 @@ def generate_clustered_images(
         numClusters: int,
         input_dir: str,
         output_dir: str,
-        legend_dir: str,
-        feature_key: str,
+        legend_dir: Optional[str] = None,
+        feature_key: Optional[str] = None,
         batch_size: int = 8,
         n_init: int = 8,
         max_iter: int = 200,
 ) -> None:
-    vmin, vmax, unit = _parse_legend_range(legend_dir, feature_key)
-    if vmin is None or vmax is None or unit is None:
-        logger.error(f"Legend range not found for feature '{feature_key}'.")
-        return
-
     items = []
     for f in os.listdir(input_dir):
         if not f.endswith(".png"):
@@ -223,18 +217,13 @@ def generate_clustered_images_in_memory(
         numClusters: int,
         images_dict: Dict[str, np.ndarray],
         output_dir: str,
-        legend_dir: str,
-        feature_key: str,
+        legend_dir: Optional[str] = None,
+        feature_key: Optional[str] = None,
         batch_size: int = 8,
         n_init: int = 8,
         max_iter: int = 200,
 ) -> None:
     """Like generate_clustered_images but reads from an in-memory dict {filename: np.ndarray}."""
-    vmin, vmax, unit = _parse_legend_range(legend_dir, feature_key)
-    if vmin is None or vmax is None or unit is None:
-        logger.error(f"Legend range not found for feature '{feature_key}'.")
-        return
-
     items = list(images_dict.items())
     _run_clustering(items, numClusters, output_dir, batch_size, n_init, max_iter)
 
@@ -256,7 +245,7 @@ def cluster(input_dir: str, output_dir: str, label_dir: str) -> None:
         os.makedirs(output_folder_path, exist_ok=True)
 
         name = folder.lower()
-        if "wind" in name and False:
+        if "wind" in name:
             generate_clustered_images(3, folder_path, output_folder_path, label_dir, feature_key="wind")
         elif "temp" in name:
             generate_clustered_images(5, folder_path, output_folder_path, label_dir, feature_key="temp")
