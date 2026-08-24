@@ -39,7 +39,7 @@ def extract_day_worker(date, region, clean_level: int = 0, clustering: bool = Tr
 
     starting_step = find_starting_step(date, region)
     nc_file = ""
-    print(starting_step, force_redo)
+
     if starting_step in [0, 1, 2] or force_redo >= 2:
         os.makedirs(raw_data_dir, exist_ok=True)
         os.makedirs(cut_data_dir, exist_ok=True)

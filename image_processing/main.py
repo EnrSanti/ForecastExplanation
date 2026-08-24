@@ -1,30 +1,24 @@
-
-
-
+import os
+import re
 from datetime import datetime
 from typing import List
-import cv2
+
 import imageio
-import imageio as images
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy.ndimage as ndimage
-import seaborn as sns
-from image_processing import Region, WeatherPhenomenon, WeatherPhenomenonTobacPrams, FOLDERS_HEIGHT_SUFF
 import tobac
-import re
 import xarray as xr
-import os
 
-def run_tobac(dates: List[datetime],  input_dir: str, output_dir: str, region: Region):
-    #, minumum_size_blob=100, target="upper", save_split_merges=True, smooth=8
+from image_processing import Region, WeatherPhenomenon, WeatherPhenomenonTobacPrams, FOLDERS_HEIGHT_SUFF
+
+
+def run_tobac(dates: List[datetime], input_dir: str, output_dir: str, region: Region):
+    # , minumum_size_blob=100, target="upper", save_split_merges=True, smooth=8
     # phenomenon: WeatherPhenomenon, minumum_size_blob, target, save_split_merges=True, smooth=8
     os.makedirs(output_dir, exist_ok=True)
 
     for date in dates:
-        #run sui diversi tipi di fenomeno atmosferico
+        # run sui diversi tipi di fenomeno atmosferico
 
         day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
         day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
@@ -32,21 +26,34 @@ def run_tobac(dates: List[datetime],  input_dir: str, output_dir: str, region: R
         run_tobac_single_day(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.TEMPERATURE, WeatherPhenomenonTobacPrams.TEMPERATURE)
         run_tobac_single_day(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.HUMIDITY, WeatherPhenomenonTobacPrams.HUMIDITY)
         run_tobac_single_day(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.CLOUDS, WeatherPhenomenonTobacPrams.CLOUDS)
-        #run_tobac_single_day(date, input_dir, output_dir, region, WeatherPhenomenon.WIND, WeatherPhenomenonTobacPrams.WIND)
+        # run_tobac_single_day(date, input_dir, output_dir, region, WeatherPhenomenon.WIND, WeatherPhenomenonTobacPrams.WIND)
 
 
-def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str, region: Region,phenomenon: WeatherPhenomenon, pheomenonParams: WeatherPhenomenonTobacPrams):
+def extract_times(image_files):
+    times = []
 
-    #loop only on the possible suffixes of the folders (height)
+    for filename in image_files:
+        match = re.search(r"_(\d{8})_(\d{4})\.png$", filename)
+
+        if not match:
+            raise ValueError(f"Could not extract date from filename: {filename}")
+
+        date_str, time_str = match.groups()
+        times.append(pd.to_datetime(date_str + time_str, format="%Y%m%d%H%M") - pd.Timedelta(hours=1))
+
+    return times
+
+
+def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str, region: Region, phenomenon: WeatherPhenomenon, pheomenonParams: WeatherPhenomenonTobacPrams):
+    # loop only on the possible suffixes of the folders (height)
     for suffix in FOLDERS_HEIGHT_SUFF:
         height_input_dir = os.path.join(day_input_dir, f"{phenomenon.value}{suffix}")
         height_output_dir = os.path.join(day_output_dir, f"{phenomenon.value}{suffix}")
         os.makedirs(height_output_dir, exist_ok=True)
-        print(height_input_dir)
-        image_files = ([height_input_dir+"/"+f for f in os.listdir(height_input_dir)
-                            if f.lower().endswith((".png"))])
+        image_files = ([height_input_dir + "/" + f for f in os.listdir(height_input_dir)
+                        if f.lower().endswith(".png")])
 
-        #images_no = len(image_files)
+        # images_no = len(image_files)
 
         image_files = sorted(image_files, key=extract_keys)
         frames = [imageio.v2.imread(f) for f in image_files]
@@ -56,9 +63,6 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
             frames_gray = [1 - np.mean(f[:, :, :3], axis=2) if f.ndim == 3 else f for f in frames]
         else:
             frames_gray = [np.mean(f[:, :, :3], axis=2) if f.ndim == 3 else f for f in frames]
-
-
-        print(len(image_files))
 
         # stack into 3D array (time, y, x)
         data = np.stack(frames_gray)
@@ -73,10 +77,19 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
             data,
             dims=("time", "projection_y_coordinate", "projection_x_coordinate"),
             coords={
-                "time": date,
-                "projection_y_coordinate": y_coordinates,
-                "projection_x_coordinate": x_coordinates
-            }
+                "time": extract_times(image_files),
+                "projection_y_coordinate": (
+                    "projection_y_coordinate",
+                    y_coordinates,
+                    {"units": "m"},
+                ),
+                "projection_x_coordinate": (
+                    "projection_x_coordinate",
+                    x_coordinates,
+                    {"units": "m"},
+                ),
+            },
+            attrs={"units": "m s-1"},
         )
 
         # set the respective lat/long values to corresp pixels
@@ -85,25 +98,23 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
         lon = np.linspace(lon_min, lon_max, frame_width)
         longitude = np.tile(lon[np.newaxis, :], (frame_height, 1))
         latitude = np.tile(lat[:, np.newaxis], (1, frame_width))
-        
-        referenced_data = referenced_data.assign_coords(latitude=(("projection_y_coordinate", "projection_x_coordinate"), latitude),
-                                            longitude=(("projection_y_coordinate", "projection_x_coordinate"), longitude))
-        
-        # run tobac to get the spacings
-        dxy, dt = tobac.get_spacings(referenced_data, grid_spacing=(1, 1), time_spacing=3600)
 
-        #dxy=5000 
-        #dt=3600
-        #print(referenced_data)
+        referenced_data = referenced_data.assign_coords(
+            latitude=(("projection_y_coordinate", "projection_x_coordinate"), latitude),
+            longitude=(("projection_y_coordinate", "projection_x_coordinate"), longitude))
+
+        # run tobac to get the spacings
+        dxy, dt = tobac.get_spacings(referenced_data)
+
+        # dxy=5000
+        # dt=3600
+        # print(referenced_data)
 
         # normalize all data in the different plots so we can use a single scale/legend and threshold
 
         vmin = float(referenced_data.min())
         vmax = float(referenced_data.max())
         referenced_data_norm = (referenced_data - vmin) / (vmax - vmin)
-
-
-
 
         detection_params = WeatherPhenomenonTobacPrams.TEMPERATURE.value
 
@@ -117,7 +128,7 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
         features = tobac.feature_detection_multithreshold(
             referenced_data_norm,
             threshold=[threshold],  # single threshold in normalized space
-            dxy=dxy,  
+            dxy=dxy,
             target=target,
             position_threshold="extreme",
             sigma_threshold=smooth,
@@ -141,7 +152,8 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
         radius = v_max * dt / dxy
 
         pass
-        
+
+
 def extract_keys(filename):
     """
     extracts date and number from filename for sorting purposes.
