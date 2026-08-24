@@ -39,8 +39,8 @@ def extract_day_worker(date, region, clean_level: int = 0, clustering: bool = Tr
 
     starting_step = find_starting_step(date, region)
     nc_file = ""
-
-    if starting_step in [0, 1, 2]:
+    print(starting_step, force_redo)
+    if starting_step in [0, 1, 2] or force_redo >= 2:
         os.makedirs(raw_data_dir, exist_ok=True)
         os.makedirs(cut_data_dir, exist_ok=True)
         nc_file = extract_nc(date, region, raw_data_dir, cut_data_dir)  # this skips 0 1 automatically if already done
@@ -132,4 +132,4 @@ def extract(
         os.makedirs(DISCRETE_DATA_DIR, exist_ok=True)
 
     create_one_time_images(region, CLUSTERED_DATA_DIR)
-    extract_day(dates, region, clean_level, in_memory, clustering)
+    extract_day(dates, region, clean_level, in_memory, clustering, force_redo)
