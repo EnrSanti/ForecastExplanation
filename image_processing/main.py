@@ -71,11 +71,11 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
         # create xarray.DataArray with the time info
         referenced_data = xr.DataArray(
             data,
-            dims=("time", "y", "x"),
+            dims=("time", "projection_y_coordinate", "projection_x_coordinate"),
             coords={
                 "time": date,
-                "y": y_coordinates,
-                "x": x_coordinates
+                "projection_y_coordinate": y_coordinates,
+                "projection_x_coordinate": x_coordinates
             }
         )
 
@@ -86,12 +86,15 @@ def run_tobac_single_day(date: datetime, day_input_dir: str, day_output_dir: str
         longitude = np.tile(lon[np.newaxis, :], (frame_height, 1))
         latitude = np.tile(lat[:, np.newaxis], (1, frame_width))
         
-        referenced_data = referenced_data.assign_coords(latitude=(("y", "x"), latitude),
-                                            longitude=(("y", "x"), longitude))
-        print(referenced_data)
+        referenced_data = referenced_data.assign_coords(latitude=(("projection_y_coordinate", "projection_x_coordinate"), latitude),
+                                            longitude=(("projection_y_coordinate", "projection_x_coordinate"), longitude))
+        
         # run tobac to get the spacings
-        dxy, dt = tobac.get_spacings(referenced_data, time_spacing=3600)
+        dxy, dt = tobac.get_spacings(referenced_data, grid_spacing=(1, 1), time_spacing=3600)
 
+        #dxy=5000 
+        #dt=3600
+        #print(referenced_data)
 
         # normalize all data in the different plots so we can use a single scale/legend and threshold
 

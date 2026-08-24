@@ -136,8 +136,9 @@ def locate_track_merge(input_folder, output_folder, border_path, n_min_threshold
     test_data = test_data.assign_coords(latitude=(("y", "x"), latitude),
                                         longitude=(("y", "x"), longitude))
 
+    print(test_data)
     # run tobac to get the spacings
-    dxy, dt = tobac.get_spacings(test_data, grid_spacing=(1, 1))
+    dxy, dt = tobac.get_spacings(test_data,time=3600)  
 
     # normalize all data in the different plots so we can use a single scale/legend and threshold
     vmin = float(test_data.min())
