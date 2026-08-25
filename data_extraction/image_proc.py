@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
+from zmq import device
 import torch
 
 
@@ -148,54 +149,6 @@ def _parse_legend_range(
     return float(vmin), float(vmax), unit
 
 
-def _run_clustering(
-        items: List[Tuple[str, np.ndarray]],
-        numClusters: int,
-        output_dir: str,
-        batch_size: int = 8,
-        n_init: int = 8,
-        max_iter: int = 200,
-) -> None:
-    """Core clustering logic. items is a list of (filename, np.ndarray) tuples."""
-    groups = defaultdict(list)
-    for f, img in items:
-        groups[img.shape].append((f, img))
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    stream = torch.cuda.Stream(device=0) if device == "cuda" else None
-
-    for shape, shape_items in groups.items():
-        H, W, C = shape
-        for start in range(0, len(shape_items), batch_size):
-            chunk = shape_items[start:start + batch_size]
-            batch_files = [f for f, _ in chunk]
-            batch_imgs = [img for _, img in chunk]
-
-            logger.debug(f"Clustering {len(batch_imgs)} images of shape {shape} -> '{output_dir}'")
-
-            X = np.stack([img.reshape(-1, C) for img in batch_imgs], axis=0)  # (B, P, C)
-            labels, _ = batched_kmeans_torch(
-                X, numClusters, max_iter=max_iter, n_init=n_init,
-                device=device, stream=stream,
-            )
-
-            logger.debug(f"Finished clustering {len(batch_imgs)} images of shape {shape} -> '{output_dir}'")
-
-            for f, img, lbl in zip(batch_files, batch_imgs, labels):
-                clustering = lbl.reshape(H, W)
-                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                swapped = _order_labels_by_brightness(clustering, gray, numClusters)
-
-                out_path = os.path.join(output_dir, f)
-                cv2.imwrite(out_path, swapped, [int(cv2.IMWRITE_PNG_COMPRESSION), 3])
-
-            logger.debug(f"Saved clustered images to '{output_dir}'")
-
-            del X, labels, batch_imgs, chunk
-            if device == "cuda":
-                torch.cuda.synchronize(stream)
-                torch.cuda.empty_cache()
-
 
 def generate_clustered_images(
         numClusters: int,
@@ -218,7 +171,7 @@ def generate_clustered_images(
             continue
         items.append((f, img))
 
-    _run_clustering(items, numClusters, output_dir, batch_size, n_init, max_iter)
+    _run_clustering_cuvs(items, numClusters, output_dir, batch_size, n_init, max_iter)
 
 
 
@@ -250,30 +203,77 @@ def _run_clustering_cuvs(items, numClusters, output_dir, n_init=8, max_iter=200,
     """
     One-image-at-a-time cuVS KMeans clustering + brightness-ordered save.
     items : list of (filename, np.ndarray) pairs, e.g. images_dict.items().
+    or fallback on cpu
     """
+
+    
     os.makedirs(output_dir, exist_ok=True)
-    params = KMeansParams(n_clusters=numClusters, max_iter=max_iter, tol=tol, n_init=n_init)
 
-    for f, img in items:
-        if img is None:
-            logger.warning(f"Skipping '{f}': image is None.")
-            continue
+    #if gpu is available, use cuVS for clustering
+    if(torch.cuda.is_available() and False):
+            #cuvs
+        params = KMeansParams(n_clusters=numClusters, max_iter=max_iter, tol=tol, n_init=n_init)
+        
+        for f, img in items:
+            if img is None:
+                logger.warning(f"Skipping '{f}': image is None.")
+                continue
+    
+            H, W, C = img.shape
+            X = cp.asarray(img.reshape(-1, C), dtype=cp.float32)  # (P, C) on GPU
+    
+            centroids, inertia, n_iter = fit(params, X)
+            labels, inertia = predict(params, X, centroids)
+    
+            clustering = cp.asnumpy(labels).reshape(H, W).astype(np.int64)
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            swapped = _order_labels_by_brightness(clustering, gray, numClusters)
+    
+            out_path = os.path.join(output_dir, f)
+            cv2.imwrite(out_path, swapped, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+    
+            del X, centroids, labels
+            cp.get_default_memory_pool().free_all_blocks()
 
-        H, W, C = img.shape
-        X = cp.asarray(img.reshape(-1, C), dtype=cp.float32)  # (P, C) on GPU
+    else:
+        #device = "cuda" if torch.cuda.is_available() else "cpu"
+        #stream = torch.cuda.Stream(device=0) if device == "cuda" else None
 
-        centroids, inertia, n_iter = fit(params, X)
-        labels, inertia = predict(params, X, centroids)
+        batch_size = 8  # Adjust as needed based on GPU memory
+        groups = defaultdict(list)
+        for f, img in items:
+            groups[img.shape].append((f, img))
+        for shape, shape_items in groups.items():
+            H, W, C = shape
+            for start in range(0, len(shape_items), batch_size):
+                chunk = shape_items[start:start + batch_size]
+                batch_files = [f for f, _ in chunk]
+                batch_imgs = [img for _, img in chunk]
 
-        clustering = cp.asnumpy(labels).reshape(H, W).astype(np.int64)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        swapped = _order_labels_by_brightness(clustering, gray, numClusters)
+                logger.debug(f"Clustering {len(batch_imgs)} images of shape {shape} -> '{output_dir}'")
 
-        out_path = os.path.join(output_dir, f)
-        cv2.imwrite(out_path, swapped, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+                X = np.stack([img.reshape(-1, C) for img in batch_imgs], axis=0)  # (B, P, C)
+                labels, _ = batched_kmeans_torch(
+                    X, numClusters, max_iter=max_iter, n_init=n_init,
+                    device="cpu", stream=None,
+                )
 
-        del X, centroids, labels
-        cp.get_default_memory_pool().free_all_blocks()
+                logger.debug(f"Finished clustering {len(batch_imgs)} images of shape {shape} -> '{output_dir}'")
+
+                for f, img, lbl in zip(batch_files, batch_imgs, labels):
+                    clustering = lbl.reshape(H, W)
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    swapped = _order_labels_by_brightness(clustering, gray, numClusters)
+
+                    out_path = os.path.join(output_dir, f)
+                    cv2.imwrite(out_path, swapped, [int(cv2.IMWRITE_PNG_COMPRESSION), 3])
+
+                logger.debug(f"Saved clustered images to '{output_dir}'")
+
+                del X, labels, batch_imgs, chunk
+
+
+    
 
 def cluster(input_dir: str, output_dir: str, label_dir: str) -> None:
     """

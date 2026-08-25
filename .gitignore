@@ -1,5 +1,6 @@
 # Ignore GRIBS directory
 tmp_data/*
+data/*
 
 # Ignore all Python bytecode cache directories recursively
 __pycache__/
