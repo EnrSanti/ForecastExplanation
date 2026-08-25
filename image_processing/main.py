@@ -63,14 +63,10 @@ def run_tobac_single_day(
         region: Region,
         phenomenon: WeatherPhenomenon,
         phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
-        pheomenonParams: Optional[WeatherPhenomenonTobacParams] = None,
 ):
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
     """
-    if phenomenon_params is None and pheomenonParams is not None:
-        phenomenon_params = pheomenonParams
-
     logger.info(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
@@ -182,10 +178,7 @@ def run_tobac_single_day(
 
             # Background smoothed image
             original_img = frames[itime]
-            if original_img.ndim == 3:
-                smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
-            else:
-                smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
+            smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
             axs.imshow(smoothed_bg, origin="upper")
             xlim = (0, frame_width)
             ylim = (0, frame_height)

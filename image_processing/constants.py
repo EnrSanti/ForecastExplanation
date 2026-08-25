@@ -32,5 +32,3 @@ class WeatherPhenomenonTobacParams(Enum):
     CLOUDS = {"min_blob_size": 100, "target": "maximum", "smooth": 8, "threshold": 0.7}
     WIND = {"min_blob_size": 100, "target": "maximum", "smooth": 8, "threshold": 0.6}
 
-
-WeatherPhenomenonTobacPrams = WeatherPhenomenonTobacParams

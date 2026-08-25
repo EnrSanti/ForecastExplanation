@@ -36,7 +36,6 @@ from image_processing.utils import (
 )
 
 logger = logging.getLogger(__name__)
-logging.getLogger("trackpy").setLevel(logging.WARNING)
 
 DEBUG = False  # Set to True to display search radius circles
 
@@ -504,11 +503,8 @@ def run_tobac_merge_split(
         type_: str,
         n_min_threshold: int = 0,
         smooth: float = DEFAULT_SMOOTH,
-        inpu_folder: Optional[str] = None,
 ):
     """Runs feature locate, tracking, segmentation and split/merge detection."""
-    if inpu_folder is not None:
-        input_folder = inpu_folder
     locate_track_merge(
         input_folder=input_folder,
         output_folder=output_folder,
@@ -540,11 +536,8 @@ def run_tobac_fronts(
         type_: str,
         n_min_threshold: int = 0,
         smooth: float = DEFAULT_SMOOTH,
-        inpu_folder: Optional[str] = None,
 ):
     """Runs feature locate and tracking without split/merge detection for fronts."""
-    if inpu_folder is not None:
-        input_folder = inpu_folder
     locate_track_merge(
         input_folder=input_folder,
         output_folder=output_folder,
