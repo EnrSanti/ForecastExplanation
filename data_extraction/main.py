@@ -56,7 +56,7 @@ def extract_day_worker(date, region, clean_level: int = 0, clustering: bool = Tr
 
     if (starting_step == 3 or force_redo >= 1) and clustering:
         os.makedirs(clustered_dir, exist_ok=True)
-        cluster(output_dir=clustered_dir, label_dir=CLUSTERED_DATA_DIR, input_dir=discrete_data_dir)
+        cluster(output_dir=clustered_dir, label_dir=DISCRETE_DATA_DIR, input_dir=discrete_data_dir)
 
     if starting_step == 4:
         logger.info(f"Feature maps already exist for {date.strftime('%Y-%m-%d')}, skipping.")
@@ -89,7 +89,7 @@ def extract_day_worker_in_memory(
     save_wind_vectors(ds, region, clustered_dir)
     ds.close()
     if clustering:
-        cluster(output_dir=clustered_dir, label_dir=CLUSTERED_DATA_DIR, images_dict=images)
+        cluster(output_dir=clustered_dir, label_dir=DISCRETE_DATA_DIR, images_dict=images)
 
     if clean_level >= 1:
         shutil.rmtree(raw_data_dir, ignore_errors=True)
@@ -138,5 +138,5 @@ def extract(
         os.makedirs(CUT_DATA_DIR, exist_ok=True)
         os.makedirs(DISCRETE_DATA_DIR, exist_ok=True)
 
-    create_one_time_images(region, CLUSTERED_DATA_DIR)
+    create_one_time_images(region, DISCRETE_DATA_DIR)
     extract_day(dates, region, clean_level, in_memory, clustering, force_redo)

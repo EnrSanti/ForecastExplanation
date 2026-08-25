@@ -91,6 +91,7 @@ def _run_tobac_single_day_single_phenomenon(
         phenomenon: WeatherPhenomenon,
         phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
 ):
+
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
     """
@@ -126,6 +127,7 @@ def _run_tobac_single_day_single_phenomenon(
         referenced_data = build_referenced_data(data, datetimes, region_bounds=region.value)
         dxy, dt = get_grid_spacings(referenced_data)
         referenced_data_norm = normalize_referenced_data(referenced_data)
+
 
         if phenomenon_params is not None:
             detection_params = phenomenon_params.value
