@@ -2,12 +2,15 @@ import logging
 import os
 from datetime import datetime
 from typing import List, Optional
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import cv2
 import scipy.ndimage as ndimage
+
+logger = logging.getLogger(__name__)
 
 from image_processing.constants import (
     DEFAULT_GAP_FRAMES,
@@ -45,16 +48,42 @@ def run_tobac(dates: List[datetime], input_dir: str, output_dir: str, region: Re
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    for date in dates:
-        day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
-        day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
-        os.makedirs(day_output_dir, exist_ok=True)
-        run_tobac_single_day(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.TEMPERATURE, WeatherPhenomenonTobacParams.TEMPERATURE)
-        run_tobac_single_day(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.HUMIDITY, WeatherPhenomenonTobacParams.HUMIDITY)
-        run_tobac_single_day(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.CLOUDS, WeatherPhenomenonTobacParams.CLOUDS)
+    with ProcessPoolExecutor(max_workers=12) as executor:
+
+        futures = {
+            executor.submit(_run_tobac_single_day, date, input_dir, output_dir, region): date
+            for date in dates
+        }
+
+        for future in as_completed(futures):
+            date = futures[future]
+            try:
+                future.result()
+            except Exception as e:
+                logger.error(f"TOBAC failed for {date}", exc_info=True)
+    
+    logger.info("TOBAC runs completed.")
 
 
-def run_tobac_single_day(
+
+def _run_tobac_single_day(
+        date: datetime,
+        input_dir: str,
+        output_dir: str,
+        region: Region
+):
+
+    day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
+    day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
+    os.makedirs(day_output_dir, exist_ok=True)
+    _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.TEMPERATURE, WeatherPhenomenonTobacParams.TEMPERATURE)
+    _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.HUMIDITY, WeatherPhenomenonTobacParams.HUMIDITY)
+    _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.CLOUDS, WeatherPhenomenonTobacParams.CLOUDS)
+
+
+
+
+def _run_tobac_single_day_single_phenomenon(
         date: datetime,
         day_input_dir: str,
         day_output_dir: str,

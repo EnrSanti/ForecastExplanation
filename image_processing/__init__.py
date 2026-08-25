@@ -14,7 +14,7 @@ from .constants import (
     WeatherPhenomenonTobacPrams,
     WeatherPhenomenonTobacParams,
 )
-from .main import run_tobac, run_tobac_single_day
+from .main import run_tobac
 
 __all__: list[str] = [
     "TOBAC_OUTPUT",

@@ -40,7 +40,7 @@ def main():
     start_time = time.time()
 
     data_extraction.extract(dates, data_extraction.Region.FVG, clean_level=args.clean, in_memory=args.in_memory, clustering=True, force_redo=args.force)
-    #image_processing.run_tobac(dates, input_dir=data_extraction.DISCRETE_DATA_DIR, output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG)
+    image_processing.run_tobac(dates, input_dir=data_extraction.DISCRETE_DATA_DIR, output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
