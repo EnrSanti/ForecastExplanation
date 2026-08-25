@@ -9,7 +9,7 @@ import data_extraction
 import image_processing
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.ERROR,
     format='%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger("ForecastExplanation")
@@ -24,8 +24,14 @@ def main():
     parser.add_argument("-m", "--in-memory", dest="in_memory", action="store_true",
                         help="Pass intermediate data in memory instead of writing to disk")
     parser.add_argument("--clustering", action="store_true", help="Toggle clustering in data extraction")
+    parser.add_argument("-d", "--debug", action="store_true", help="Enable debug logging for the application")
 
     args, unknown = parser.parse_known_args()
+
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
 
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)

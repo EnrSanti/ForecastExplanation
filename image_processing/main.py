@@ -3,6 +3,8 @@ import os
 from datetime import datetime
 from typing import List, Optional
 
+from tqdm import tqdm
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -45,7 +47,7 @@ def run_tobac(dates: List[datetime], input_dir: str, output_dir: str, region: Re
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    for date in dates:
+    for date in tqdm(dates, desc="Image Processing"):
         day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
         day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
         os.makedirs(day_output_dir, exist_ok=True)

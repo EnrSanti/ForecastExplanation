@@ -5,6 +5,8 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from typing import List
 
+from tqdm import tqdm
+
 from . import Region, RAW_DATA_DIR, CUT_DATA_DIR, DISCRETE_DATA_DIR, CLUSTERED_DATA_DIR
 from .extract_features_nc import create_one_time_images, save_feature_maps, render_feature_maps, save_wind_vectors
 from .get_raw_data import extract_nc, extract_nc_in_memory
@@ -110,7 +112,7 @@ def extract_day(
             for date in dates
         }
 
-        for future in as_completed(futures):
+        for future in tqdm(as_completed(futures), total=len(dates), desc="Data Extraction"):
             date = futures[future]
             try:
                 future.result()
