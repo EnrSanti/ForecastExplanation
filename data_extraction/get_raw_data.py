@@ -20,13 +20,13 @@ def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> Optional[xr.Dat
         return ds_sub
 
 
-def extract_nc(date: datetime, region: Region, input_dir: str, output_dir: str) -> str:
+def extract_nc(date: datetime, region: Region, input_dir: str, output_dir: str, force_redo: int) -> str:
     base_name = date.strftime("%Y-%m-%d")
     grib_file = f"{base_name}.grib"
     grib_path = os.path.join(input_dir, grib_file)
     output_path = os.path.join(output_dir, base_name + "_" + region.name + "_cut.nc")
 
-    if not os.path.exists(output_path):
+    if not os.path.exists(output_path) or force_redo >= 3:
         download_grib_if_needed(date, grib_path)
 
         logger.debug(f"CUTTING GRIB: {grib_path} -> {output_path}")
