@@ -8,8 +8,16 @@ import xarray as xr
 
 from . import Region
 
-logger = logging.getLogger(__name__)
+import logging
 
+logging.basicConfig(level=logging.INFO)  # your existing setup, presumably
+
+logger = logging.getLogger(__name__)  # your own logger — stays at INFO
+
+# silence the noisy third-party library specifically
+logging.getLogger("legacy_client").setLevel(logging.WARNING)
+logging.getLogger("ecmwf.datastores").setLevel(logging.WARNING)
+logging.getLogger("cdsapi").setLevel(logging.WARNING)
 
 def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> Optional[xr.Dataset]:
     with xr.open_dataset(grib_path, engine="cfgrib", decode_cf=True, decode_times=True, decode_timedelta=False) as ds:
@@ -49,7 +57,6 @@ def extract_nc_in_memory(date: datetime, region: Region, raw_data_dir: str) -> x
 
     logger.debug(f"CUTTING GRIB (in-memory): {grib_path}")
     return cut_grib_long_lat(grib_path, region.value).load()
-
 
 def download_grib_if_needed(date: datetime, grib_path: str) -> None:
     if os.path.exists(grib_path):

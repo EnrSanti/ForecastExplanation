@@ -210,7 +210,7 @@ def _run_clustering_cuvs(items, numClusters, output_dir, n_init=8, max_iter=200,
     os.makedirs(output_dir, exist_ok=True)
 
     #if gpu is available, use cuVS for clustering
-    if(torch.cuda.is_available() and False):
+    if(torch.cuda.is_available()):
             #cuvs
         params = KMeansParams(n_clusters=numClusters, max_iter=max_iter, tol=tol, n_init=n_init)
         

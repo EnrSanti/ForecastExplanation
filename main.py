@@ -1,6 +1,7 @@
 import argparse
 import logging
 import sys
+import time
 
 import yaml
 
@@ -34,9 +35,16 @@ def main():
         logger.error("No dates provided. ")
         sys.exit(1)
 
-    data_extraction.extract(dates, data_extraction.Region.FVG, clean_level=args.clean, in_memory=args.in_memory, clustering=False, force_redo=args.force)
-    image_processing.run_tobac(dates, input_dir=data_extraction.DISCRETE_DATA_DIR, output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG)
+    #start timer
 
+    start_time = time.time()
+
+    data_extraction.extract(dates, data_extraction.Region.FVG, clean_level=args.clean, in_memory=args.in_memory, clustering=True, force_redo=args.force)
+    #image_processing.run_tobac(dates, input_dir=data_extraction.DISCRETE_DATA_DIR, output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG)
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    logger.info(f"Total execution time: {elapsed_time:.2f} seconds")
 
 if __name__ == "__main__":
     main()
