@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
+from zmq import device
 import torch
 
 logger = logging.getLogger(__name__)
@@ -236,6 +237,7 @@ def _run_clustering_cuvs(items, numClusters, output_dir, n_init=8, max_iter=200,
     """
     One-image-at-a-time cuVS KMeans clustering + brightness-ordered save.
     items : list of (filename, np.ndarray) pairs, e.g. images_dict.items().
+    or fallback on cpu
     """
     import cupy as cp
     from cuvs.cluster.kmeans import KMeansParams, fit, predict
