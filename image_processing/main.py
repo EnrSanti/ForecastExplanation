@@ -3,13 +3,11 @@ import os
 from datetime import datetime
 from typing import List, Optional
 
-from tqdm import tqdm
-
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import cv2
-import scipy.ndimage as ndimage
+from tqdm import tqdm
 
 from image_processing.constants import (
     DEFAULT_GAP_FRAMES,

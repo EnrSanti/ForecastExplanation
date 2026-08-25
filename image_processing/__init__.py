@@ -11,7 +11,6 @@ from .constants import (
     DEFAULT_TIME_OFFSET_HOURS,
     Region,
     WeatherPhenomenon,
-    WeatherPhenomenonTobacPrams,
     WeatherPhenomenonTobacParams,
 )
 from .main import run_tobac, run_tobac_single_day
@@ -29,7 +28,6 @@ __all__: list[str] = [
     "DEFAULT_TIME_OFFSET_HOURS",
     "Region",
     "WeatherPhenomenon",
-    "WeatherPhenomenonTobacPrams",
     "WeatherPhenomenonTobacParams",
     "run_tobac",
     "run_tobac_single_day",

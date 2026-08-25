@@ -8,7 +8,6 @@ import cv2
 import numpy as np
 import torch
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -302,7 +301,7 @@ def cluster(
         else:
             logger.warning(f"Unknown folder type '{folder}'. Skipping clustering for this folder.")
             continue
-            
+
         folder_input_dir = os.path.join(input_dir, folder) if input_dir else None
         folder_images_dict = images_dict[folder] if images_dict else None
 

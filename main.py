@@ -30,8 +30,12 @@ def main():
 
     if args.debug:
         logger.setLevel(logging.DEBUG)
+        logging.getLogger("data_extraction").setLevel(logging.DEBUG)
+        logging.getLogger("image_processing").setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
+        logging.getLogger("data_extraction").setLevel(logging.INFO)
+        logging.getLogger("image_processing").setLevel(logging.INFO)
 
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)

@@ -36,6 +36,7 @@ from image_processing.utils import (
 )
 
 logger = logging.getLogger(__name__)
+logging.getLogger("trackpy").setLevel(logging.WARNING)
 
 DEBUG = False  # Set to True to display search radius circles
 
@@ -123,7 +124,7 @@ def track_features(
         )
         return trajectories
     except Exception as e:
-        logger.warning(f"No trajectories found: {e}")
+        logger.debug(f"No trajectories found: {e}")
         return pd.DataFrame()
 
 
