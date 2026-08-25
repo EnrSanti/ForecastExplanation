@@ -10,7 +10,8 @@ import image_processing
 
 logging.basicConfig(
     level=logging.ERROR,
-    format='%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s',
+    force=True
 )
 logger = logging.getLogger("ForecastExplanation")
 
