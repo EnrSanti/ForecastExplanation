@@ -9,4 +9,3 @@ __pycache__/
 # Ignore VS Code settings
 .vscode/
 .python-version
-curl
