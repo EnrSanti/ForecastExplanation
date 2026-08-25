@@ -23,6 +23,7 @@ def main():
                         help="Force the extraction even if the data is already present, more f for more redone steps")
     parser.add_argument("-m", "--in-memory", dest="in_memory", action="store_true",
                         help="Pass intermediate data in memory instead of writing to disk")
+    parser.add_argument("--clustering", action="store_true", help="Toggle clustering in data extraction")
 
     args, unknown = parser.parse_known_args()
 
@@ -34,8 +35,9 @@ def main():
         logger.error("No dates provided. ")
         sys.exit(1)
 
-    data_extraction.extract(dates, data_extraction.Region.FVG, clean_level=args.clean, in_memory=args.in_memory, clustering=False, force_redo=args.force)
-    image_processing.run_tobac(dates, input_dir=data_extraction.DISCRETE_DATA_DIR, output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG)
+    data_extraction.extract(dates, data_extraction.Region.FVG, clean_level=args.clean, in_memory=args.in_memory, clustering=args.clustering, force_redo=args.force)
+    input_dir = data_extraction.CLUSTERED_DATA_DIR if args.clustering else data_extraction.DISCRETE_DATA_DIR
+    image_processing.run_tobac(dates, input_dir=input_dir, output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG)
 
 
 if __name__ == "__main__":
