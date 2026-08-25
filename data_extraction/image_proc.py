@@ -8,6 +8,14 @@ import cv2
 import numpy as np
 import torch
 
+
+#clustering
+import cupy as cp
+from cuvs.cluster.kmeans import KMeansParams, fit, predict
+
+
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -213,20 +221,59 @@ def generate_clustered_images(
     _run_clustering(items, numClusters, output_dir, batch_size, n_init, max_iter)
 
 
-def generate_clustered_images_in_memory(
-        numClusters: int,
-        images_dict: Dict[str, np.ndarray],
-        output_dir: str,
-        legend_dir: Optional[str] = None,
-        feature_key: Optional[str] = None,
-        batch_size: int = 8,
-        n_init: int = 8,
-        max_iter: int = 200,
-) -> None:
-    """Like generate_clustered_images but reads from an in-memory dict {filename: np.ndarray}."""
-    items = list(images_dict.items())
-    _run_clustering(items, numClusters, output_dir, batch_size, n_init, max_iter)
 
+def generate_clustered_images_in_memory(
+    numClusters: int,
+    images_dict: Dict[str, np.ndarray],
+    output_dir: str,
+    legend_dir: str,
+    feature_key: str,
+    n_init: int = 8,
+    max_iter: int = 200,
+) -> None:
+    """Like generate_clustered_images but reads from an in-memory dict
+    {filename: np.ndarray}, and clusters via cuVS one image at a time
+    (see _run_clustering_cuvs — cuVS's fit/predict operate on a single
+    dataset, so this loops per image rather than batching across images
+    the way the torch path does)."""
+    vmin, vmax, unit = _parse_legend_range(legend_dir, feature_key)
+    if vmin is None or vmax is None or unit is None:
+        logger.error(f"Legend range not found for feature '{feature_key}'.")
+        return
+
+    items = list(images_dict.items())
+    _run_clustering_cuvs(items, numClusters, output_dir, n_init=n_init, max_iter=max_iter)
+
+
+def _run_clustering_cuvs(items, numClusters, output_dir, n_init=8, max_iter=200,
+                          tol=1e-4):
+    """
+    One-image-at-a-time cuVS KMeans clustering + brightness-ordered save.
+    items : list of (filename, np.ndarray) pairs, e.g. images_dict.items().
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    params = KMeansParams(n_clusters=numClusters, max_iter=max_iter, tol=tol, n_init=n_init)
+
+    for f, img in items:
+        if img is None:
+            logger.warning(f"Skipping '{f}': image is None.")
+            continue
+
+        H, W, C = img.shape
+        X = cp.asarray(img.reshape(-1, C), dtype=cp.float32)  # (P, C) on GPU
+
+        centroids, inertia, n_iter = fit(params, X)
+        labels, inertia = predict(params, X, centroids)
+
+        clustering = cp.asnumpy(labels).reshape(H, W).astype(np.int64)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        swapped = _order_labels_by_brightness(clustering, gray, numClusters)
+
+        out_path = os.path.join(output_dir, f)
+        cv2.imwrite(out_path, swapped, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+
+        del X, centroids, labels
+        cp.get_default_memory_pool().free_all_blocks()
 
 def cluster(input_dir: str, output_dir: str, label_dir: str) -> None:
     """
