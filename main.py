@@ -50,17 +50,6 @@ def main():
     input_dir = data_extraction.CLUSTERED_DATA_DIR if args.clustering else data_extraction.DISCRETE_DATA_DIR
     image_processing.run_tobac(dates, input_dir=input_dir, output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG)
 
-<<<<<<< HEAD
-    start_time = time.time()
-
-    data_extraction.extract(dates, data_extraction.Region.FVG, clean_level=args.clean, in_memory=args.in_memory, clustering=True, force_redo=args.force)
-    image_processing.run_tobac(dates, input_dir=data_extraction.DISCRETE_DATA_DIR, output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG)
-
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    logger.info(f"Total execution time: {elapsed_time:.2f} seconds")
-=======
->>>>>>> 52f1f2df8a6b7b89ed0096a79947c29cb2a722ba
 
 if __name__ == "__main__":
     main()

@@ -48,7 +48,6 @@ def run_tobac(dates: List[datetime], input_dir: str, output_dir: str, region: Re
     """
     os.makedirs(output_dir, exist_ok=True)
 
-<<<<<<< HEAD
     with ProcessPoolExecutor(max_workers=12) as executor:
 
         futures = {
@@ -64,15 +63,6 @@ def run_tobac(dates: List[datetime], input_dir: str, output_dir: str, region: Re
                 logger.error(f"TOBAC failed for {date}", exc_info=True)
     
     logger.info("TOBAC runs completed.")
-=======
-    for date in tqdm(dates, desc="Image Processing"):
-        day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
-        day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
-        os.makedirs(day_output_dir, exist_ok=True)
-        run_tobac_single_day(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.TEMPERATURE, WeatherPhenomenonTobacParams.TEMPERATURE)
-        run_tobac_single_day(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.HUMIDITY, WeatherPhenomenonTobacParams.HUMIDITY)
-        run_tobac_single_day(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.CLOUDS, WeatherPhenomenonTobacParams.CLOUDS)
->>>>>>> 52f1f2df8a6b7b89ed0096a79947c29cb2a722ba
 
 
 
