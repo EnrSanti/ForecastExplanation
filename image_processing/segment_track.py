@@ -1,525 +1,212 @@
-import tobac
-import imageio
+import gc
+import logging
 import os
-import tobac.testing
+from typing import Dict, List, Optional, Set, Tuple
+
+import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
-import xarray as xr
-import re
-import seaborn as sns
 import pandas as pd
 import scipy.ndimage as ndimage
-import matplotlib.patches as patches
-import imageio as images
-import cv2
-from collections import defaultdict
-from image_processing.split_merge import plot_feature_borders, find_extended_overlap_blobs_inferred,get_splits_merges
-import logging
-import traceback
-import warnings
-import gc
-import math
+import tobac
+import xarray as xr
 
+from image_processing.constants import (
+    DEFAULT_BORDER_THICKNESS,
+    DEFAULT_DT,
+    DEFAULT_DXY,
+    DEFAULT_GAP_FRAMES,
+    DEFAULT_MIN_DISTANCE,
+    DEFAULT_SMOOTH,
+    DEFAULT_V_MAX,
+)
+from image_processing.split_merge import (
+    find_extended_overlap_blobs_inferred,
+    get_splits_merges,
+)
+from image_processing.utils import (
+    build_referenced_data,
+    convert_frames_to_grayscale,
+    extract_keys,
+    extract_times,
+    get_grid_spacings,
+    load_image_frames,
+    normalize_referenced_data,
+    overlay_image,
+)
 
+logger = logging.getLogger(__name__)
 logging.getLogger("trackpy").setLevel(logging.WARNING)
 
-DEBUG = False #True would print the circles and search radius
+DEBUG = False  # Set to True to display search radius circles
 
-def overlay_image(path_borders, axs, temp_da):
-    img = plt.imread(path_borders)
-    axs.imshow(img, extent=(0, temp_da.sizes["x"], temp_da.sizes["y"], 0), alpha=0.6)
 
-def get_blob_positions(trajectories, itime):
-    
-    cells_prev_step = []
+def get_blob_positions(trajectories: pd.DataFrame, itime: int) -> str:
+    """Returns a string describing movement vectors for cells between itime - 1 and itime."""
     itime_prev = itime - 1
-    prev_frames_data = trajectories[trajectories["frame"].between(itime_prev, itime_prev)]
-    cells_prev_step = list(prev_frames_data["cell"].unique())
-    
+    prev_frames_data = trajectories[trajectories["frame"] == itime_prev]
+    curr_frames_data = trajectories[trajectories["frame"] == itime]
+    if prev_frames_data.empty or curr_frames_data.empty:
+        return ""
 
-    cells_prev_step = list(cells_prev_step)
-    cell_ids_in_frame = trajectories[trajectories["frame"] == itime]["cell"].unique()
-    # Create necessary mappings and lists
-    
-    all_moved_cells=""
-    for cell_id in cells_prev_step:
-        if(cell_id in cell_ids_in_frame):
-            #previous positions
-            prev_x=trajectories[((trajectories["frame"] == itime_prev) & (trajectories["cell"]==cell_id))]["x"].iloc[0]
-            prev_y=trajectories[((trajectories["frame"] == itime_prev) & (trajectories["cell"]==cell_id))]["y"].iloc[0]
-            #current positions
-            curr_x=trajectories[((trajectories["frame"] == itime) & (trajectories["cell"]==cell_id))]["x"].iloc[0]
-            curr_y=trajectories[((trajectories["frame"] == itime) & (trajectories["cell"]==cell_id))]["y"].iloc[0]
-            all_moved_cells+=f"Frame {itime}, cell {cell_id} moved from (x: {prev_x}, y:{prev_y} ) to (x: {curr_x}, y:{curr_y} )\n"
-    
+    prev_by_cell = prev_frames_data.set_index("cell")
+    curr_by_cell = curr_frames_data.set_index("cell")
+    common_cells = set(prev_by_cell.index.dropna()).intersection(curr_by_cell.index.dropna())
+
+    all_moved_cells = ""
+    for cell_id in sorted(common_cells):
+        prev_row = prev_by_cell.loc[cell_id]
+        curr_row = curr_by_cell.loc[cell_id]
+        prev_x = prev_row["x"].iloc[0] if isinstance(prev_row, pd.DataFrame) else prev_row["x"]
+        prev_y = prev_row["y"].iloc[0] if isinstance(prev_row, pd.DataFrame) else prev_row["y"]
+        curr_x = curr_row["x"].iloc[0] if isinstance(curr_row, pd.DataFrame) else curr_row["x"]
+        curr_y = curr_row["y"].iloc[0] if isinstance(curr_row, pd.DataFrame) else curr_row["y"]
+        all_moved_cells += f"Frame {itime}, cell {cell_id} moved from (x: {prev_x}, y:{prev_y} ) to (x: {curr_x}, y:{curr_y} )\n"
+
     return all_moved_cells
 
 
-#target minimum -> upper
-#target maximum -> lower
-def locate_track_merge(input_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max, threshold, target,type_, save_split_merges=True,smooth = 8):
-    
+def detect_features(
+        data_norm: xr.DataArray,
+        threshold: float,
+        target: str,
+        smooth: float = DEFAULT_SMOOTH,
+        min_blob_size: int = 100,
+        min_distance: float = DEFAULT_MIN_DISTANCE,
+        dxy: float = DEFAULT_DXY,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Runs the locate and tracking of the objects
-    
-    Parameters
-    ----------
-    inpu_folder: folder path containing the input images (equal size & regional area)
-    output_folder: folder path to save the output images (if not existing it will be created)
-    lat_min: the minimum latitude of the area in the images
-    lat_max: the maximum latitude of the area in the images
-    lon_min: the minimum longitude of the area in the images
-    lon_max: the maximum longitude of the area in the images
-    n_min_threshold: minimum number of pixels for object detection (default 0)
-    smooth: smoothing factor for gaussian filter (default 8)
-
+    Performs multithreshold feature detection on normalized DataArray.
+    Returns (features for segmentation, features_weighted_points for tracking).
     """
-
-    #create folder if it doesn't exist
-    os.makedirs(output_folder, exist_ok=True) 
-
-    #Load images from input folder
-    image_files = ([os.path.join(input_folder, f) for f in os.listdir(input_folder)
-                        if f.lower().endswith((".png", ".jpg", ".jpeg"))])
-    images_no=len(image_files)
-    image_files = sorted(image_files, key=extract_keys)
-    frames = [imageio.v2.imread(f) for f in image_files]
-
-    #Extract datetimes from filenames (will be put in the dataframe)
-    datetimes = []
-    for f in image_files:
-        basename = os.path.basename(f)
-        #eg "cloud_123_20251008_1200.png", split by underscore and take the last two parts
-        parts = basename.split("_")
-        date_str = parts[-2]      #YYYYMMDD
-        hour_str = parts[-1].split(".")[0]  #HHHH
-        dt_str = date_str + hour_str        #"YYYYMMDDHHHH"
-        
-        #convert to pandas datetime
-        dt = pd.to_datetime(dt_str, format="%Y%m%d%H%M")  # assuming HHHH is HHMM
-        datetimes.append(dt)
-
-    #convert to array
-    datetimes = pd.to_datetime(datetimes)
-
-    #convert frames to grayscale
-    frames_gray = []
-    if type_ in ["temp"]:
-        frames_gray = [1-np.mean(f[:, :, :3], axis=2) if f.ndim==3 else f for f in frames]
-    else:
-        frames_gray = [np.mean(f[:, :, :3], axis=2) if f.ndim==3 else f for f in frames]
-        
-    
-    
-    #stack into 3D array (time, y, x)
-    data = np.stack(frames_gray)
-    _, n_y, n_x = data.shape
-    
-    #spatial coordinates (example: 1 pixel = 1000 m) 
-    x = np.arange(n_x)
-    y = np.arange(n_y)
-
-    #create xarray.DataArray with the time info
-    test_data = xr.DataArray(
-        data,
-        dims=("time", "y", "x"),
-        coords={
-            "time": datetimes,
-            "y": y,
-            "x": x
-        },
-        name="w",
-        attrs={"units": "m s-1"}
-    )
-
-    #works on fvg coordinates (for now), i set the lat/lon based on the image size
-    lat = np.linspace(lat_min, lat_max, n_y)
-    lon = np.linspace(lon_min, lon_max, n_x)
-    latitude = np.tile(lat[:, np.newaxis], (1, n_x))
-    longitude = np.tile(lon[np.newaxis, :], (n_y, 1))
-    test_data = test_data.assign_coords(latitude=(("y","x"), latitude),
-                                        longitude=(("y","x"), longitude))
-    
-
-    #run tobac to get the spacings
-    dxy, dt = tobac.get_spacings(test_data,grid_spacing=(1, 1))
-
-    #normalize all data in the different plots so we can use a single scale/legend and threshold
-    vmin = float(test_data.min())
-    vmax = float(test_data.max())
-    test_data_norm = (test_data - vmin) / (vmax - vmin)
-
-
-
-
-    # === FEATURE DETECTION ===
-    #Locate twice just to get the segmentation right (i.e. with "extreme" i know the center will be inside the object)
     features = tobac.feature_detection_multithreshold(
-        test_data_norm,
-        threshold=[threshold],  #single threshold in normalized space
-        dxy=3000,  #1 px 3km
+        data_norm,
+        threshold=[threshold],
+        dxy=dxy,
         target=target,
         position_threshold="extreme",
         sigma_threshold=smooth,
-        n_min_threshold=n_min_threshold,
-        min_distance=1000 #at least 500m between 2 objects
+        n_min_threshold=min_blob_size,
+        min_distance=min_distance,
     )
-    #this will be used for getting the center of the objects, the one above for segmentation
     features_weighted_points = tobac.feature_detection_multithreshold(
-        test_data_norm,
-        threshold=[threshold], 
-        dxy=3000,
+        data_norm,
+        threshold=[threshold],
+        dxy=dxy,
         target=target,
         position_threshold="weighted_abs",
         sigma_threshold=smooth,
-        n_min_threshold=n_min_threshold,
-        min_distance=1000 #at least 1000m between 2 objects
+        n_min_threshold=min_blob_size,
+        min_distance=min_distance,
     )
+    return features, features_weighted_points
 
 
-    dt=3600
-    dxy=2500
-    v_max=70
-    gap_features_frames=1    #for how many frames a feature can disappear and still be linked (2 full frames in this case, it reappers in the 3)
-    radius=v_max*dt/dxy
+import warnings
 
-    #======== FEATURE TRACKING ========
-    #using predict, i may be a little bit out of the "search raius" but ok
-    
+def track_features(
+        features_weighted_points: pd.DataFrame,
+        referenced_data: xr.DataArray,
+        dt: float = DEFAULT_DT,
+        dxy: float = DEFAULT_DXY,
+        v_max: float = DEFAULT_V_MAX,
+        memory: int = DEFAULT_GAP_FRAMES,
+        method_linking: str = "predict",
+) -> pd.DataFrame:
+    """Links detected features into trajectories across time frames."""
     try:
-        trajectories = tobac.linking_trackpy(features_weighted_points, test_data, dt=dt, dxy=dxy, v_max=v_max, memory=gap_features_frames,method_linking="predict")
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                category=UserWarning,
+                message="Could not generate velocity field for prediction: no tracks"
+            )
+            trajectories = tobac.linking_trackpy(
+                features_weighted_points,
+                referenced_data,
+                dt=dt,
+                dxy=dxy,
+                v_max=v_max,
+                memory=memory,
+                method_linking=method_linking,
+            )
+        return trajectories
     except Exception as e:
-        print("No trajectories found: ")
-        trajectories = None
+        logger.debug(f"No trajectories found: {e}")
+        return pd.DataFrame()
 
-   
-    #======== SEGMENTING ========
 
+def segment_features(
+        features: pd.DataFrame,
+        data_norm: xr.DataArray,
+        threshold: float,
+        target: str,
+        smooth: float = DEFAULT_SMOOTH,
+        dxy: float = DEFAULT_DXY,
+) -> Tuple[List[Tuple[int, Optional[xr.DataArray], Optional[xr.DataArray]]], List[Optional[xr.DataArray]]]:
+    """Performs 2D segmentation for each frame in data_norm."""
     segments_all = []
-    all_segment_labels=[]
-    new_born_at_curr={}
-    disappeared_at_curr={}
-    all_frames_for_cell = {}
+    all_segment_labels = []
+    images_no = len(data_norm.time)
 
+    for itime in range(images_no):
+        smoothed_frame = ndimage.gaussian_filter(data_norm.isel(time=itime).values, sigma=smooth)
+        temp_da = data_norm.isel(time=[itime]).copy()
+        temp_da.data = smoothed_frame[np.newaxis, ...]
 
-    plot_frames = range(0, images_no)
-
-    #getting how to color the images
-    cmap="viridis"
-    if type_ == "cloud":
-        cmap = "viridis"
-    elif type_ == "humidity":
-        cmap = "YlGnBu"
-    elif type_ == "temp":
-        cmap = "OrRd"
-
-    #particular case: no trajectories found, just plot the smoothed images
-    if(trajectories is None):
-        for i, itime in enumerate(plot_frames):
-            original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
-            fig_width_in = n_x / 100
-            fig_height_in = n_y / 100
-            fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in),dpi=100)
-            fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-
-
-            #print("Figure size in pixels:", int(fig_width_px), int(fig_height_px))
-            smoothed_frame = ndimage.gaussian_filter(test_data_norm.isel(time=itime).values, sigma=smooth)
-
-            temp_da = test_data_norm.isel(time=itime).copy()
-            temp_da.data = smoothed_frame
-
-            #consistent color range across all frames
-            axs.imshow(temp_da.values, origin="upper",cmap=cmap)  # pixels are axes
-            xlim = (0, temp_da.sizes['x'])
-            ylim = (0, temp_da.sizes['y'])
-            axs.set_title("")
-            axs.set_xticks([])       #remove x-axis ticks
-            axs.set_yticks([])       #remove y-axis ticks
-            axs.set_xticklabels([])  #remove x-axis labels
-            axs.set_yticklabels([])  #remove y-axis labels
-            axs.axis('off')    
-            out_path = os.path.join(output_folder, f"{original_img_name}.png")
-            axs.set_xlim(0, temp_da.sizes["x"])
-            axs.set_ylim(temp_da.sizes["y"], 0)  #since origin="upper"
-            
-            #add the fvg borders
-            overlay_image(border_path, axs, temp_da)
-
-
-            plt.savefig(out_path, dpi=100, bbox_inches=None,pad_inches=0)
-            plt.close(fig) 
-        return
-    
-
-
-    #for all images i smooth the frame and collect the segments
-    for i, itime in enumerate(range(0, images_no)):
-        original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
-        #Smooth the frame
-        smoothed_frame =ndimage.gaussian_filter(
-            test_data_norm.isel(time=itime).values, sigma=smooth
-        )
-
-        temp_da = test_data_norm.isel(time=[itime]).copy()
-        temp_da.data = smoothed_frame[np.newaxis, ...]  #keep time dim
-
-        #features in this frame
-        f = features[features["frame"] == itime]  
-        
+        f = features[features["frame"] == itime] if features is not None else pd.DataFrame()
         if f.empty:
-            #print(f"No features found for frame {itime}, skipping segmentation.")
             segments_all.append((itime, None, None))
             all_segment_labels.append(None)
             continue
 
-        #perform segmentation
         segment_labels, segments = tobac.segmentation_2D(
             f,
             temp_da,
             dxy=dxy,
             threshold=threshold,
-            target=target
+            target=target,
         )
-
-        #store results
         segments_all.append((itime, segment_labels, segments))
         all_segment_labels.append(segment_labels)
-        
+
+    return segments_all, all_segment_labels
 
 
+def print_clouds_center_line(
+        printing_symbol: str,
+        color: str,
+        f_weighted: pd.DataFrame,
+        itime: int,
+        track: pd.DataFrame,
+        axs: plt.Axes,
+        cell_id: int,
+        persisted_cells: Set[int],
+        all_frames_for_cell: Dict[int, List[int]],
+):
+    """Plots cloud center markers and fading trajectory path on axes."""
+    cell_in_this_frame = not (track[track["frame"] == itime].empty)
 
+    if cell_id in persisted_cells and cell_in_this_frame:
+        frames_list = all_frames_for_cell.get(int(cell_id), [])
+        if frames_list:
+            last_frame = frames_list[-1]
+            line = track[(track["frame"] == last_frame) | (track["frame"] == itime)]
+            axs.plot(line["x"], line["y"], color="blue", linewidth=1.5, alpha=0.5)
 
-
-    #===== PLOTTING =====
-
-    #keep track of cells in previous frames for "gap_features_frames" frames
-    cells_frames_before=[]
-    #what cells are in the current frame
-    cell_ids=set() 
-    for i, itime in enumerate(plot_frames):
-
-        #remove the oldest frame and add the current one
-        #cells_frames_before.pop(0)
-        
-
-        #get the cells in this frame
-        cell_ids = set(trajectories[(trajectories["frame"] == itime)]["cell"].dropna().unique())
-
-        #all_cells_in_gap collects all the cells in the previous gap_features_frames frames (a cell may have disappeared and reappeared)
-        all_cells_in_gap=set()
-        #map containing a list, for each cell in the current frame: all the frames it appeared in the previous gap_features_frames frames
-        all_frames_for_cell = {}
-
-        for j in range(gap_features_frames+1):
-            #set sum
-            if(i-j-1>=0):
-                all_cells_in_gap = all_cells_in_gap | cells_frames_before[i-j-1]
-                print("frame ", i, " cell ids: ",cell_ids," cells in gap (frame ", i-j-1, " )" ,cells_frames_before[i-j-1])
-                
-                for el in cells_frames_before[i-j-1]:
-                    if el not in all_frames_for_cell:
-                        all_frames_for_cell[el] = []  #create a list for new cells
-                    #add the frame number where the cell appeared
-                    all_frames_for_cell[el].append(i-j-1)
-
-
-
-        persisted = cell_ids & all_cells_in_gap   #intersection -> clouds present now and previously
-        new_cells = cell_ids - all_cells_in_gap   #new this frame (may have reappeared after too long (> gap_features_frames))
-        disappeared = all_cells_in_gap - cell_ids  #disappeared clouds in this frame
-
-        new_born_at_curr[itime] = new_cells
-        disappeared_at_curr[itime]=disappeared
-
-        original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
-        
-        #Get the field for this frame
-
-        fig_width_in = n_x / 100
-        fig_height_in = n_y / 100
-        fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in),dpi=100)
-        fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-
-
-        #print("Figure size in pixels:", int(fig_width_px), int(fig_height_px))
-        smoothed_frame = ndimage.gaussian_filter(test_data_norm.isel(time=itime).values, sigma=smooth)
-
-        temp_da = test_data_norm.isel(time=itime).copy()
-        temp_da.data = smoothed_frame
-
-        #consistent color range across all frames
-        axs.imshow(temp_da.values, origin="upper",cmap=cmap)  # pixels are axes
-        xlim = (0, temp_da.sizes['x'])
-        ylim = (0, temp_da.sizes['y'])
-    
-        #forall cells in this frame plot the trajectory, center, segmentation and radius
-        for cell_id in cell_ids:
-            #get if the cell id is in the current frame
-            track = trajectories[trajectories["cell"] == cell_id]
-            f_weighted = track[(track["frame"] == itime)]
-            
-            printing_symbol=''
-            color=''
-
-            if(cell_id in new_cells):
-                printing_symbol='^'
-                color='white'
-            else:
-                printing_symbol='x'
-                color='red'
-
-            #print trajectory and center (if new or persisted the symbol changes)
-            print_clouds_center_line(printing_symbol,color,f_weighted, itime, track, axs,cell_id, persisted,all_frames_for_cell)      
-            
-            if(len(f_weighted["x"])==0):
-                continue
-
-            #print cell id numbers on the plot for clarity
-            print_cloud_labels(f_weighted, cell_id,xlim, ylim, axs)
-            #print the radius
-            if(DEBUG):
-                add_circle_slice_filled(axs, f_weighted, radius=radius, xlim=xlim, ylim=ylim,color='red', alpha=0.05)
-
-
-        #Extract segmentation for this frame from segments_all and print it            
-        entry = next((s for s in segments_all if s[0] == itime), None)
-        
-        if entry is not None:
-            _, seg_labels, segment_labels_ = entry
-            if seg_labels is not None:
-                # seg_labels may have a single-element time dimension
-                seg_labels2d = seg_labels.isel(time=0)  # drop the time dim for contour
-                # Only plot contour if there are actual segmented pixels
-                seg_labels2d.plot.contour(levels=[0.5], ax=axs, colors="k")
-                
-
-
-        #finalize the figure
-        
-        axs.set_title("")
-        axs.set_xticks([])       #remove x-axis ticks
-        axs.set_yticks([])       #remove y-axis ticks
-        axs.set_xticklabels([])  #remove x-axis labels
-        axs.set_yticklabels([])  #remove y-axis labels
-        axs.axis('off')    
-        out_path = os.path.join(output_folder, f"{original_img_name}.png")
-        axs.set_xlim(0, temp_da.sizes["x"])
-        axs.set_ylim(temp_da.sizes["y"], 0)  #since origin="upper"
-        
-        overlay_image(border_path, axs, temp_da)
-        
-        plt.savefig(out_path, dpi=100, bbox_inches=None,pad_inches=0)
-        plt.close(fig) 
-        cells_frames_before.append(cell_ids)
-    print("all frames for: ", all_frames_for_cell)
-
-    #======= SPLITTING AND MERGING ======== #for tthe clouds
-    if(save_split_merges):
-        blob_positions=""
-        all_splits_merges=""
-        for i, itime in enumerate(range(1, images_no)):
-            if(all_segment_labels[itime-1] is None or all_segment_labels[itime] is None):
-                continue
-            
-            #unused if not for debugging
-            plot_feature_borders(
-                segment_labels=all_segment_labels[i].isel(time=0).values,
-                ax=axs,
-                border_thickness_px=8,  # Example: 3 pixels thick border
-                border_color="red"
-            )
-            
-            extended_overlap_map = find_extended_overlap_blobs_inferred(
-                segment_labels=all_segment_labels[i].isel(time=0).values,
-                trajectories=trajectories,
-                border_thickness_px=8  # Use the same thickness as your plot border
-            )
-        
-            splits,merges=get_splits_merges(extended_overlap_map, trajectories, itime,images_no,gap_features_frames,all_segment_labels[itime],all_segment_labels[itime-1],new_born_at_curr[itime],disappeared_at_curr[itime])
-            
-            blob_positions+=get_blob_positions(trajectories, itime)
-            
-            if splits != "" or merges !="":
-                all_splits_merges+=splits+merges
-                all_splits_merges+="-------------------\n"
-       
-          
-            #print("Consideering frame ---------------------------- ", itime+1)
-        gc.collect()
-        #save the merge and splits found:
-        with open(output_folder+f"/split_merge.txt", "w") as f:
-            f.write(str(all_splits_merges))
-        with open(output_folder+f"/movements.txt", "w") as f:
-            f.write(str(blob_positions))
-    
-    #save the trajectories
-    trajectories.to_csv(output_folder+f"/trajectories.csv", index=False)
-
-    #save the segments_all:
-    np.savez_compressed(output_folder+f"/segment_labels_all.npz", *all_segment_labels)
-
-
-
-
-
-
-def print_clouds_center_line(printing_symbol,color,f_weighted, itime, track, axs, cell_id,persisted_cells,all_frames_for_cell):
-    """
-    Prints on the plot (axs) the trace and center of the cloud specified by cell_id at frame itime. 
-    
-    Parameters
-    ----------
-    printing_symbol: symbol marking the center of the cloud (it's different if the cloud just appeared or was already present in previous frames)
-    color: different color if the cloud just appeared or was already present in previous frames
-    f_weighted: cloud data for this specific frame
-    itime: current frame index
-    track: full trajectory data for the single cloud (in all time steps)
-    axs: matplotlib axes where to plot
-    cell_id: the id of the cloud to plot
-    persisted_cells: set of cell ids that were already present in previous frames
-    all_frames_for_cell: map of cell id to list of frames where the cell appeared in the previous gap_features_frames frames
-
-    """
-    cell_in_this_frame = not(track[track["frame"] == itime].empty)
- 
-    #if the cloud persisted from previous frames, print the last segment of the trajectory
-    if(cell_id in persisted_cells and cell_in_this_frame):
-        last_frame=(all_frames_for_cell[cell_id])[-1]
-        line = track[(track["frame"] == last_frame) | (track["frame"] == itime)]  # last two frames
-
-        #plot main trajectory (last step)
-        axs.plot(
-            line["x"],
-            line["y"],
-            color="blue",
-            linewidth=1.5,
-            alpha=0.5,
-        )
-
-
-    #plot trajectory with gradient (fading older traces)
     try:
-        frames = all_frames_for_cell[int(cell_id)]
-        #for all pair of frames
+        frames = all_frames_for_cell.get(int(cell_id), [])
         for t0, t1 in zip(frames[:-1], frames[1:]):
             line = track[(track["frame"] == t0) | (track["frame"] == t1)]
-            alpha = 0.1 + 0.3 * (t0 - track.iloc[0].frame) / (itime - track.iloc[0].frame)
-            
-            axs.plot(
-                line["x"],
-                line["y"],
-                color="blue",
-                linewidth=1.5,
-                alpha=alpha,
-            )
-
-    except KeyError:
+            time_diff = itime - track.iloc[0].frame
+            alpha = 0.1 + 0.3 * (t0 - track.iloc[0].frame) / (time_diff if time_diff != 0 else 1)
+            alpha = max(0.05, min(1.0, alpha))
+            axs.plot(line["x"], line["y"], color="blue", linewidth=1.5, alpha=alpha)
+    except Exception:
         pass
-        #print("no frames for cell ", cell_id)
 
-    #The cloud exists at this frame, mark the center 
-    f_weighted.plot.scatter(
+    if not f_weighted.empty:
+        f_weighted.plot.scatter(
             x="x",
             y="y",
             s=40,
@@ -528,78 +215,53 @@ def print_clouds_center_line(printing_symbol,color,f_weighted, itime, track, axs
             marker=printing_symbol,
         )
 
-def print_cloud_labels(f_weighted, cell_id,xlim, ylim, axs):
-    """
-    Prints on the plot (axs) the label (cell_id) associated to each blob, just for clarity. 
-    
-    Parameters
-    ----------
-    f_weighted: cloud data for this specific frame
-    cell_id: the id of the cloud label to plot
-    xlim: x limits of the plot (to keep all output images the same size and avoid cutting labels)
-    ylim: y limits of the plot (to keep all output images the same size and avoid cutting labels)
-    axs: matplotlib axes where to plot
-    
-    """
-    #get the position and adjust if too close to the edges
+
+def print_cloud_labels(f_weighted: pd.DataFrame, cell_id: int, xlim: Tuple[float, float], ylim: Tuple[
+    float, float], axs: plt.Axes):
+    """Renders cell ID text annotation on axes."""
+    if f_weighted.empty or "x" not in f_weighted or len(f_weighted["x"]) == 0:
+        return
+
     x_pos = f_weighted["x"].values[0]
     y_pos = f_weighted["y"].values[0]
 
-    if x_pos < xlim[0]+30:
-        x_pos = x_pos+20
-    if x_pos > xlim[1]-30:
-        x_pos = x_pos-20
-    
-    if y_pos < ylim[0]+30:
-        y_pos = y_pos+20
-    if y_pos > ylim[1]-30:
-        y_pos = y_pos-20
+    if x_pos < xlim[0] + 30:
+        x_pos = x_pos + 20
+    if x_pos > xlim[1] - 30:
+        x_pos = x_pos - 20
+
+    if y_pos < ylim[0] + 30:
+        y_pos = y_pos + 20
+    if y_pos > ylim[1] - 30:
+        y_pos = y_pos - 20
 
     axs.text(
-        x_pos -3,  #offset a bit to the right
-        y_pos -3,  #offset upward slightly
-        f"{int(cell_id)}",  #text = cloud id
+        x_pos - 3,
+        y_pos - 3,
+        f"{int(cell_id)}",
         color="white",
         fontsize=8,
         weight="bold",
-        bbox=dict(facecolor='black', alpha=0.3, edgecolor='none', pad=1)
+        bbox=dict(facecolor="black", alpha=0.3, edgecolor="none", pad=1),
     )
 
-def add_circle_slice_filled(ax, f_weighted, radius, xlim, ylim, color="red", alpha=0.5, **kwargs):
-    """
-    Prints on the plot (axs) the circle associated to the linking of each blob (i.e. where in the next frame the cloud will be looked for), just for clarity. 
-    
-    Parameters
-    ----------
-    ax: matplotlib axes where to plot
-    cx: x center of the circle
-    cy: y center of the circle
-    radius: radius of the circle
-    xlim: x limits of the plot (to keep all output images the same size and avoid cutting labels)
-    ylim: y limits of the plot (to keep all output images the same size and avoid cutting labels)
-    color: color of the circle
-    alpha: transparency of the circle
-    kwards: additional arguments for matplotlib.patches.Polygon
 
-    """
-
-    #get the position (center for the circle)
+def add_circle_slice_filled(ax: plt.Axes, f_weighted: pd.DataFrame, radius: float, xlim: Tuple[float, float], ylim:
+Tuple[float, float], color: str = "red", alpha: float = 0.5, **kwargs):
+    """Draws search radius polygon around feature."""
+    if f_weighted.empty:
+        return
     cx = f_weighted["x"].iloc[0]
     cy = f_weighted["y"].iloc[0]
 
-    #sample circle points
-    theta = np.linspace(0, 2*np.pi, 300)
+    theta = np.linspace(0, 2 * np.pi, 300)
     x = cx + radius * np.cos(theta)
     y = cy + radius * np.sin(theta)
 
-    #clip points to the plot
     x_clipped = np.clip(x, xlim[0], xlim[1])
     y_clipped = np.clip(y, ylim[0], ylim[1])
-
-    #polygon from clipped points
     polygon_points = np.column_stack([x_clipped, y_clipped])
 
-    #add corners if any clipped point is at box edge
     corners = []
     if np.any(x < xlim[0]) and np.any(y < ylim[0]):
         corners.append([xlim[0], ylim[0]])
@@ -610,77 +272,294 @@ def add_circle_slice_filled(ax, f_weighted, radius, xlim, ylim, color="red", alp
     if np.any(x > xlim[1]) and np.any(y > ylim[1]):
         corners.append([xlim[1], ylim[1]])
 
-    #just plotting
     if corners:
         polygon_points = np.vstack([polygon_points, corners])
 
-    polygon = patches.Polygon(polygon_points, closed=True,
-                              facecolor=color, alpha=alpha,**kwargs)
-    
+    polygon = patches.Polygon(polygon_points, closed=True, facecolor=color, alpha=alpha, **kwargs)
     ax.add_patch(polygon)
 
-    polygon_border = patches.Polygon(polygon_points, closed=True,
-                              facecolor="none", alpha=0.3,edgecolor="red",linestyle="--",linewidth=1,**kwargs)
+    polygon_border = patches.Polygon(polygon_points, closed=True, facecolor="none", alpha=0.3, edgecolor="red", linestyle="--", linewidth=1, **kwargs)
     ax.add_patch(polygon_border)
 
-def extract_keys(filename):
-    """
-    extracts date and number from filename for sorting purposes. 
-    
-    Parameters
-    ----------
-    filename: file name string
 
-    Returns
-    ----------
-    tuple (date as int YYYYMMDD, number as int)
-    """
-    
-    #match pattern like cloud_200_YYYYMMDD_HHMM.png
-    m = re.search(r'_(\d{8})_(\d+)\.png$', filename)
-    if m:
-        date = int(m.group(1))
-        num = int(m.group(2))
-        return (date, num)
+def locate_track_merge(
+        input_folder: str,
+        output_folder: str,
+        border_path: Optional[str],
+        n_min_threshold: int,
+        lat_min: float,
+        lat_max: float,
+        lon_min: float,
+        lon_max: float,
+        threshold: float,
+        target: str,
+        type_: str,
+        save_split_merges: bool = True,
+        smooth: float = DEFAULT_SMOOTH,
+        dxy: float = DEFAULT_DXY,
+        dt: float = DEFAULT_DT,
+        min_distance: float = DEFAULT_MIN_DISTANCE,
+        v_max: float = DEFAULT_V_MAX,
+        gap_features_frames: int = DEFAULT_GAP_FRAMES,
+):
+    """Runs feature detection, tracking, segmentation and split/merge detection."""
+    os.makedirs(output_folder, exist_ok=True)
+
+    image_files = [os.path.join(input_folder, f) for f in os.listdir(input_folder) if
+                   f.lower().endswith((".png", ".jpg", ".jpeg"))]
+    if not image_files:
+        logger.warning(f"No images found in {input_folder}")
+        return
+
+    images_no = len(image_files)
+    image_files = sorted(image_files, key=extract_keys)
+    frames = load_image_frames(image_files)
+    datetimes = extract_times(image_files)
+
+    is_temp = type_ in ["temp", "TEMPERATURE"]
+    frames_gray = convert_frames_to_grayscale(frames, is_temperature=is_temp)
+
+    data = np.stack(frames_gray)
+    _, n_y, n_x = data.shape
+
+    region_bounds = (lon_min, lon_max, lat_min, lat_max)
+    referenced_data = build_referenced_data(data, datetimes, region_bounds=region_bounds)
+    calc_dxy, calc_dt = get_grid_spacings(referenced_data, default_dxy=dxy, default_dt=dt)
+
+    test_data_norm = normalize_referenced_data(referenced_data)
+
+    features, features_weighted_points = detect_features(
+        test_data_norm,
+        threshold=threshold,
+        target=target,
+        smooth=smooth,
+        min_blob_size=n_min_threshold,
+        min_distance=min_distance,
+        dxy=calc_dxy,
+    )
+
+    trajectories = track_features(
+        features_weighted_points,
+        referenced_data,
+        dt=calc_dt,
+        dxy=calc_dxy,
+        v_max=v_max,
+        memory=gap_features_frames,
+    )
+
+    segments_all, all_segment_labels = segment_features(
+        features,
+        test_data_norm,
+        threshold=threshold,
+        target=target,
+        smooth=smooth,
+        dxy=calc_dxy,
+    )
+
+    cmap = "viridis"
+    if type_ in ["cloud", "CLOUDS"]:
+        cmap = "viridis"
+    elif type_ in ["humidity", "HUMIDITY"]:
+        cmap = "YlGnBu"
+    elif type_ in ["temp", "TEMPERATURE"]:
+        cmap = "OrRd"
+
+    fig_width_in = n_x / 100
+    fig_height_in = n_y / 100
+
+    if trajectories is not None and not trajectories.empty:
+        trajectories_by_frame = {frame: df for frame, df in trajectories.groupby("frame")}
+        trajectories_by_cell = {cell: df for cell, df in trajectories.groupby("cell")}
     else:
-        return (0, 0)
+        trajectories_by_frame = {}
+        trajectories_by_cell = {}
 
-def run_tobac_merge_split(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,threshold, target,type_,n_min_threshold=0,smooth = 8):
-    """
-    The main function called from outside (main).
-    Runs the locate and tracking of the objects, moreover it does the splitting and merging detection.
-    
-    Parameters
-    ----------
-    inpu_folder: folder path containing the input images (equal size & regional area)
-    output_folder: folder path to save the output images (if not existing it will be created)
-    lat_min: the minimum latitude of the area in the images
-    lat_max: the maximum latitude of the area in the images
-    lon_min: the minimum longitude of the area in the images
-    lon_max: the maximum longitude of the area in the images
-    n_min_threshold: minimum number of pixels for object detection (default 0)
-    smooth: smoothing factor for gaussian filter (default 8)
+    new_born_at_curr = {}
+    disappeared_at_curr = {}
+    cells_frames_before: List[Set[int]] = []
 
-    """
-    locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold, target,type_,True,smooth)
+    for itime in range(images_no):
+        frame_traj = trajectories_by_frame.get(itime, pd.DataFrame())
+        cell_ids = set(frame_traj["cell"].dropna().unique()) if not frame_traj.empty else set()
+
+        all_cells_in_gap = set()
+        all_frames_for_cell: Dict[int, List[int]] = {}
+
+        for j in range(gap_features_frames + 1):
+            if itime - j - 1 >= 0:
+                prev_cells = cells_frames_before[itime - j - 1]
+                all_cells_in_gap = all_cells_in_gap | prev_cells
+                for el in prev_cells:
+                    if el not in all_frames_for_cell:
+                        all_frames_for_cell[el] = []
+                    all_frames_for_cell[el].append(itime - j - 1)
+
+        persisted = cell_ids & all_cells_in_gap
+        new_cells = cell_ids - all_cells_in_gap
+        disappeared = all_cells_in_gap - cell_ids
+
+        new_born_at_curr[itime] = new_cells
+        disappeared_at_curr[itime] = disappeared
+
+        original_img_name = os.path.splitext(os.path.basename(image_files[itime]))[0]
+
+        fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in), dpi=100)
+        fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+
+        smoothed_frame = ndimage.gaussian_filter(test_data_norm.isel(time=itime).values, sigma=smooth)
+        temp_da = test_data_norm.isel(time=itime).copy()
+        temp_da.data = smoothed_frame
+
+        axs.imshow(temp_da.values, origin="upper", cmap=cmap)
+        xlim = (0, temp_da.sizes["x"])
+        ylim = (0, temp_da.sizes["y"])
+
+        radius = v_max * calc_dt / calc_dxy
+
+        for cell_id in cell_ids:
+            track = trajectories_by_cell.get(cell_id, pd.DataFrame())
+            f_weighted = track[(track["frame"] == itime)]
+
+            if cell_id in new_cells:
+                printing_symbol = "^"
+                color = "white"
+            else:
+                printing_symbol = "x"
+                color = "red"
+
+            print_clouds_center_line(printing_symbol, color, f_weighted, itime, track, axs, cell_id, persisted, all_frames_for_cell)
+
+            if len(f_weighted["x"]) > 0:
+                print_cloud_labels(f_weighted, cell_id, xlim, ylim, axs)
+            if DEBUG:
+                add_circle_slice_filled(axs, f_weighted, radius=radius, xlim=xlim, ylim=ylim, color="red", alpha=0.05)
+
+        entry = next((s for s in segments_all if s[0] == itime), None)
+        if entry is not None:
+            _, seg_labels, _ = entry
+            if seg_labels is not None:
+                seg_labels2d = seg_labels.isel(time=0)
+                seg_labels2d.plot.contour(levels=[0.5], ax=axs, colors="k")
+
+        axs.set_title("")
+        axs.set_xticks([])
+        axs.set_yticks([])
+        axs.set_xlim(0, temp_da.sizes["x"])
+        axs.set_ylim(temp_da.sizes["y"], 0)
+        axs.axis("off")
+
+        overlay_image(border_path, axs, temp_da)
+
+        out_path = os.path.join(output_folder, f"{original_img_name}.png")
+        plt.savefig(out_path, dpi=100, bbox_inches=None, pad_inches=0)
+        plt.close(fig)
+
+        cells_frames_before.append(cell_ids)
+
+    if save_split_merges:
+        blob_positions = ""
+        all_splits_merges = ""
+        if trajectories is not None and not trajectories.empty:
+            for itime in range(1, images_no):
+                if all_segment_labels[itime - 1] is None or all_segment_labels[itime] is None:
+                    continue
+
+                extended_overlap_map = find_extended_overlap_blobs_inferred(
+                    segment_labels=all_segment_labels[itime].isel(time=0).values,
+                    trajectories=trajectories,
+                    border_thickness_px=DEFAULT_BORDER_THICKNESS,
+                )
+
+                splits, merges = get_splits_merges(
+                    extended_overlap_map,
+                    trajectories,
+                    itime,
+                    images_no,
+                    gap_features_frames,
+                    all_segment_labels[itime],
+                    all_segment_labels[itime - 1],
+                    new_born_at_curr.get(itime, set()),
+                    disappeared_at_curr.get(itime, set()),
+                )
+
+                blob_positions += get_blob_positions(trajectories, itime)
+
+                if splits != "" or merges != "":
+                    all_splits_merges += splits + merges
+                    all_splits_merges += "-------------------\n"
+
+            gc.collect()
+        with open(os.path.join(output_folder, "split_merge.txt"), "w") as f:
+            f.write(str(all_splits_merges))
+        with open(os.path.join(output_folder, "movements.txt"), "w") as f:
+            f.write(str(blob_positions))
+
+    if trajectories is not None and not trajectories.empty:
+        trajectories.to_csv(os.path.join(output_folder, "trajectories.csv"), index=False)
+    np.savez_compressed(os.path.join(output_folder, "segment_labels_all.npz"), *all_segment_labels)
+
+
+def run_tobac_merge_split(
+        input_folder: str,
+        output_folder: str,
+        border_path: Optional[str],
+        lat_min: float,
+        lat_max: float,
+        lon_min: float,
+        lon_max: float,
+        threshold: float,
+        target: str,
+        type_: str,
+        n_min_threshold: int = 0,
+        smooth: float = DEFAULT_SMOOTH,
+):
+    """Runs feature locate, tracking, segmentation and split/merge detection."""
+    locate_track_merge(
+        input_folder=input_folder,
+        output_folder=output_folder,
+        border_path=border_path,
+        n_min_threshold=n_min_threshold,
+        lat_min=lat_min,
+        lat_max=lat_max,
+        lon_min=lon_min,
+        lon_max=lon_max,
+        threshold=threshold,
+        target=target,
+        type_=type_,
+        save_split_merges=True,
+        smooth=smooth,
+    )
     print("Locating & tracking procedure completed")
 
-def run_tobac_fronts(inpu_folder, output_folder,border_path,lat_min,lat_max,lon_min,lon_max,threshold, target,type_,n_min_threshold=0,smooth = 8):
-    """
-    The main function called from outside (main).
-    Runs the locate and tracking of the objects, it doens't do the splitting and merging detection, but tracks fronts.
-    
-    Parameters
-    ----------
-    inpu_folder: folder path containing the input images (equal size & regional area)
-    output_folder: folder path to save the output images (if not existing it will be created)
-    lat_min: the minimum latitude of the area in the images
-    lat_max: the maximum latitude of the area in the images
-    lon_min: the minimum longitude of the area in the images
-    lon_max: the maximum longitude of the area in the images
-    n_min_threshold: minimum number of pixels for object detection (default 0)
-    smooth: smoothing factor for gaussian filter (default 8)
 
-    """
-    locate_track_merge(inpu_folder, output_folder,border_path,n_min_threshold,lat_min,lat_max,lon_min,lon_max,threshold,  target,type_,False,smooth)
+def run_tobac_fronts(
+        input_folder: str,
+        output_folder: str,
+        border_path: Optional[str],
+        lat_min: float,
+        lat_max: float,
+        lon_min: float,
+        lon_max: float,
+        threshold: float,
+        target: str,
+        type_: str,
+        n_min_threshold: int = 0,
+        smooth: float = DEFAULT_SMOOTH,
+):
+    """Runs feature locate and tracking without split/merge detection for fronts."""
+    locate_track_merge(
+        input_folder=input_folder,
+        output_folder=output_folder,
+        border_path=border_path,
+        n_min_threshold=n_min_threshold,
+        lat_min=lat_min,
+        lat_max=lat_max,
+        lon_min=lon_min,
+        lon_max=lon_max,
+        threshold=threshold,
+        target=target,
+        type_=type_,
+        save_split_merges=False,
+        smooth=smooth,
+    )
     print("Locating & tracking (fronts) procedure completed")

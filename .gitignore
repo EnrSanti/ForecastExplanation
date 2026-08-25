@@ -1,6 +1,6 @@
 # Ignore GRIBS directory
-raw_data/data/*
-image_processing/fvg/*
+tmp_data/*
+data/*
 
 # Ignore all Python bytecode cache directories recursively
 __pycache__/
@@ -8,3 +8,4 @@ __pycache__/
 
 # Ignore VS Code settings
 .vscode/
+.python-version
