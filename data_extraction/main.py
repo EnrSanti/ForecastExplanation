@@ -8,7 +8,7 @@ from typing import List
 from . import Region, RAW_DATA_DIR, CUT_DATA_DIR, DISCRETE_DATA_DIR, CLUSTERED_DATA_DIR
 from .extract_features_nc import create_one_time_images, save_feature_maps, render_feature_maps, save_wind_vectors
 from .get_raw_data import extract_nc, extract_nc_in_memory
-from .image_proc import cluster, cluster_in_memory
+from .image_proc import cluster
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,7 @@ def find_starting_step(date: datetime, region: Region) -> int:
 
 
 def extract_day_worker(date, region, clean_level: int = 0, clustering: bool = True, force_redo: int = 0):
+    logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
     clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
     raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
     cut_data_dir = os.path.join(CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
@@ -53,7 +54,7 @@ def extract_day_worker(date, region, clean_level: int = 0, clustering: bool = Tr
 
     if (starting_step == 3 or force_redo >= 1) and clustering:
         os.makedirs(clustered_dir, exist_ok=True)
-        cluster(discrete_data_dir, clustered_dir, CLUSTERED_DATA_DIR)
+        cluster(output_dir=clustered_dir, label_dir=CLUSTERED_DATA_DIR, input_dir=discrete_data_dir)
 
     if starting_step == 4:
         logger.info(f"Feature maps already exist for {date.strftime('%Y-%m-%d')}, skipping.")
@@ -72,6 +73,7 @@ def extract_day_worker_in_memory(
         clustering: bool = True,
         force_redo: int = 0,
 ) -> None:
+    logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
     """In-memory pipeline: GRIB -> xr.Dataset -> Dict[images] -> cluster -> disk output."""
     clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
     raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
@@ -84,7 +86,7 @@ def extract_day_worker_in_memory(
     save_wind_vectors(ds, region, clustered_dir)
     ds.close()
     if clustering:
-        cluster_in_memory(images, clustered_dir, CLUSTERED_DATA_DIR)
+        cluster(output_dir=clustered_dir, label_dir=CLUSTERED_DATA_DIR, images_dict=images)
 
     if clean_level >= 1:
         shutil.rmtree(raw_data_dir, ignore_errors=True)

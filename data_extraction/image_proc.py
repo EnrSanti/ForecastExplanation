@@ -9,13 +9,6 @@ import numpy as np
 import torch
 
 
-#clustering
-import cupy as cp
-from cuvs.cluster.kmeans import KMeansParams, fit, predict
-
-
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -199,58 +192,54 @@ def _run_clustering(
 
 def generate_clustered_images(
         numClusters: int,
-        input_dir: str,
         output_dir: str,
+        input_dir: Optional[str] = None,
+        images_dict: Optional[Dict[str, np.ndarray]] = None,
         legend_dir: Optional[str] = None,
         feature_key: Optional[str] = None,
         batch_size: int = 8,
         n_init: int = 8,
         max_iter: int = 200,
 ) -> None:
-    items = []
-    for f in os.listdir(input_dir):
-        if not f.endswith(".png"):
-            continue
-        img_path = os.path.join(input_dir, f)
-        img = cv2.imread(img_path)
-        if img is None:
-            logger.warning(f"Failed to read image '{img_path}'. Skipping.")
-            continue
-        items.append((f, img))
+    """
+    Generates clustered images either from an input directory or an in-memory dictionary.
+    """
+    if legend_dir and feature_key:
+        vmin, vmax, unit = _parse_legend_range(legend_dir, feature_key)
+        if vmin is None or vmax is None or unit is None:
+            logger.error(f"Legend range not found for feature '{feature_key}'.")
+            return
 
-    _run_clustering(items, numClusters, output_dir, batch_size, n_init, max_iter)
+    if images_dict is not None:
+        items = list(images_dict.items())
+    elif input_dir is not None:
+        items = []
+        for f in os.listdir(input_dir):
+            if not f.endswith(".png"):
+                continue
+            img_path = os.path.join(input_dir, f)
+            img = cv2.imread(img_path)
+            if img is None:
+                logger.warning(f"Failed to read image '{img_path}'. Skipping.")
+                continue
+            items.append((f, img))
+    else:
+        raise ValueError("Must provide either input_dir or images_dict")
 
-
-
-def generate_clustered_images_in_memory(
-    numClusters: int,
-    images_dict: Dict[str, np.ndarray],
-    output_dir: str,
-    legend_dir: str,
-    feature_key: str,
-    n_init: int = 8,
-    max_iter: int = 200,
-) -> None:
-    """Like generate_clustered_images but reads from an in-memory dict
-    {filename: np.ndarray}, and clusters via cuVS one image at a time
-    (see _run_clustering_cuvs — cuVS's fit/predict operate on a single
-    dataset, so this loops per image rather than batching across images
-    the way the torch path does)."""
-    vmin, vmax, unit = _parse_legend_range(legend_dir, feature_key)
-    if vmin is None or vmax is None or unit is None:
-        logger.error(f"Legend range not found for feature '{feature_key}'.")
-        return
-
-    items = list(images_dict.items())
-    _run_clustering_cuvs(items, numClusters, output_dir, n_init=n_init, max_iter=max_iter)
+    if torch.cuda.is_available():
+        _run_clustering_cuvs(items, numClusters, output_dir, n_init=n_init, max_iter=max_iter)
+    else:
+        _run_clustering(items, numClusters, output_dir, batch_size, n_init, max_iter)
 
 
 def _run_clustering_cuvs(items, numClusters, output_dir, n_init=8, max_iter=200,
-                          tol=1e-4):
+                         tol=1e-4):
     """
     One-image-at-a-time cuVS KMeans clustering + brightness-ordered save.
     items : list of (filename, np.ndarray) pairs, e.g. images_dict.items().
     """
+    import cupy as cp
+    from cuvs.cluster.kmeans import KMeansParams, fit, predict
     os.makedirs(output_dir, exist_ok=True)
     params = KMeansParams(n_clusters=numClusters, max_iter=max_iter, tol=tol, n_init=n_init)
 
@@ -275,56 +264,53 @@ def _run_clustering_cuvs(items, numClusters, output_dir, n_init=8, max_iter=200,
         del X, centroids, labels
         cp.get_default_memory_pool().free_all_blocks()
 
-def cluster(input_dir: str, output_dir: str, label_dir: str) -> None:
-    """
-    Iterates variable-type subfolders and clusters each with its own K.
-    Safe to call from multiple threads on different (input_dir, output_dir,
-    label_dir) triples — each call only touches its own folders, and the
-    output-folder "already done" check is lock-protected per output_dir.
-    """
 
-    for folder in os.listdir(input_dir):
-        folder_path = os.path.join(input_dir, folder)
-        if not os.path.isdir(folder_path):
-            continue
-
-        output_folder_path = os.path.join(output_dir, folder)
-        os.makedirs(output_folder_path, exist_ok=True)
-
-        name = folder.lower()
-        if "wind" in name:
-            generate_clustered_images(3, folder_path, output_folder_path, label_dir, feature_key="wind")
-        elif "temp" in name:
-            generate_clustered_images(5, folder_path, output_folder_path, label_dir, feature_key="temp")
-        elif "cloud" in name:
-            generate_clustered_images(3, folder_path, output_folder_path, label_dir, feature_key="cloud")
-        elif "hum" in name:
-            generate_clustered_images(5, folder_path, output_folder_path, label_dir, feature_key="humidity")
-        else:
-            logger.warning(f"Unknown folder type '{folder}'. Skipping clustering for this folder.")
-
-
-def cluster_in_memory(
-        images_dict: Dict[str, Dict[str, np.ndarray]],
+def cluster(
         output_dir: str,
         label_dir: str,
+        input_dir: Optional[str] = None,
+        images_dict: Optional[Dict[str, Dict[str, np.ndarray]]] = None,
 ) -> None:
     """
-    Like cluster but reads from an in-memory dict {subfolder: {filename: np.ndarray}}
-    instead of iterating filesystem directories.
+    Iterates variable-type subfolders and clusters each with its own K.
+    Safe to call from multiple threads on different inputs.
     """
-    for folder, folder_images in images_dict.items():
+    if images_dict is not None:
+        folders = list(images_dict.keys())
+    elif input_dir is not None:
+        folders = [f for f in os.listdir(input_dir) if os.path.isdir(os.path.join(input_dir, f))]
+    else:
+        raise ValueError("Must provide either input_dir or images_dict")
+
+    for folder in folders:
         output_folder_path = os.path.join(output_dir, folder)
         os.makedirs(output_folder_path, exist_ok=True)
 
         name = folder.lower()
         if "wind" in name:
-            generate_clustered_images_in_memory(3, folder_images, output_folder_path, label_dir, feature_key="wind")
+            num_clusters = 3
+            feature_key = "wind"
         elif "temp" in name:
-            generate_clustered_images_in_memory(5, folder_images, output_folder_path, label_dir, feature_key="temp")
+            num_clusters = 5
+            feature_key = "temp"
         elif "cloud" in name:
-            generate_clustered_images_in_memory(3, folder_images, output_folder_path, label_dir, feature_key="cloud")
+            num_clusters = 3
+            feature_key = "cloud"
         elif "hum" in name:
-            generate_clustered_images_in_memory(5, folder_images, output_folder_path, label_dir, feature_key="humidity")
+            num_clusters = 5
+            feature_key = "humidity"
         else:
             logger.warning(f"Unknown folder type '{folder}'. Skipping clustering for this folder.")
+            continue
+            
+        folder_input_dir = os.path.join(input_dir, folder) if input_dir else None
+        folder_images_dict = images_dict[folder] if images_dict else None
+
+        generate_clustered_images(
+            numClusters=num_clusters,
+            output_dir=output_folder_path,
+            input_dir=folder_input_dir,
+            images_dict=folder_images_dict,
+            legend_dir=label_dir,
+            feature_key=feature_key
+        )
