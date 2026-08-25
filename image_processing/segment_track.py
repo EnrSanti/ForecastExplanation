@@ -102,6 +102,8 @@ def detect_features(
     return features, features_weighted_points
 
 
+import warnings
+
 def track_features(
         features_weighted_points: pd.DataFrame,
         referenced_data: xr.DataArray,
@@ -113,18 +115,24 @@ def track_features(
 ) -> pd.DataFrame:
     """Links detected features into trajectories across time frames."""
     try:
-        trajectories = tobac.linking_trackpy(
-            features_weighted_points,
-            referenced_data,
-            dt=dt,
-            dxy=dxy,
-            v_max=v_max,
-            memory=memory,
-            method_linking=method_linking,
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                category=UserWarning,
+                message="Could not generate velocity field for prediction: no tracks"
+            )
+            trajectories = tobac.linking_trackpy(
+                features_weighted_points,
+                referenced_data,
+                dt=dt,
+                dxy=dxy,
+                v_max=v_max,
+                memory=memory,
+                method_linking=method_linking,
+            )
         return trajectories
     except Exception as e:
-        logger.warning(f"No trajectories found: {e}")
+        logger.debug(f"No trajectories found: {e}")
         return pd.DataFrame()
 
 
@@ -504,11 +512,8 @@ def run_tobac_merge_split(
         type_: str,
         n_min_threshold: int = 0,
         smooth: float = DEFAULT_SMOOTH,
-        inpu_folder: Optional[str] = None,
 ):
     """Runs feature locate, tracking, segmentation and split/merge detection."""
-    if inpu_folder is not None:
-        input_folder = inpu_folder
     locate_track_merge(
         input_folder=input_folder,
         output_folder=output_folder,
@@ -540,11 +545,8 @@ def run_tobac_fronts(
         type_: str,
         n_min_threshold: int = 0,
         smooth: float = DEFAULT_SMOOTH,
-        inpu_folder: Optional[str] = None,
 ):
     """Runs feature locate and tracking without split/merge detection for fronts."""
-    if inpu_folder is not None:
-        input_folder = inpu_folder
     locate_track_merge(
         input_folder=input_folder,
         output_folder=output_folder,

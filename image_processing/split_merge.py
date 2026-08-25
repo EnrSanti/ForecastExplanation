@@ -1,11 +1,9 @@
 from itertools import combinations
 from typing import Dict, List, Set, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.ndimage as ndimage
-from skimage.segmentation import mark_boundaries
 
 from image_processing.constants import DEFAULT_BORDER_THICKNESS
 
@@ -157,111 +155,6 @@ def find_extended_overlap_blobs_inferred(
     }
 
     return final_overlap_map
-
-
-def plot_feature_borders(segment_labels: np.ndarray, ax: plt.Axes, border_thickness_px: int = DEFAULT_BORDER_THICKNESS,
-                         border_color: str = "red", segments_to_plot: set = None):
-    """
-    Adds a border around the segmented features to a plot.
-
-    Parameters
-    ----------
-        segment_labels (np.ndarray): The integer-labeled segmentation field
-                                     (output of tobac.segmentation_2D).
-        ax (plt.Axes): The Matplotlib axes object to plot the border onto.
-        border_thickness_px (int): The thickness of the border in pixels.
-                                   (Approximated by dilation/erosion).
-        border_color (str): The color for the border.
-        segments_to_plot (set, optional): A set of segment labels (integers)
-                                          to include. If None, all are plotted.
-    """
-    # 1. Create a binary mask of the features to be plotted
-    if segments_to_plot is not None:
-        # Create a mask only for the specified segment IDs
-        mask = np.isin(segment_labels, list(segments_to_plot))
-        # Zero out the other segment labels
-        temp_labels = np.where(mask, segment_labels, 0)
-    else:
-        temp_labels = segment_labels
-
-    # 2. Use a boundary marking function to get the border mask
-    # The mark_boundaries function returns an RGB image where boundaries are colored.
-    # We only need the mask of the boundary pixels.
-    # Note: mark_boundaries will plot white boundaries on a black background
-    # if the input image is also all black.
-
-    # Create a small identity image for mark_boundaries to work with
-    # The boundaries will be colored red on this output, based on temp_labels.
-    identity_image = np.zeros_like(temp_labels, dtype=np.uint8)
-
-    # Mark boundaries on the identity image
-    boundary_image = mark_boundaries(
-        identity_image,
-        temp_labels,
-        color=(1, 1, 1)  # Use white (1, 1, 1) for the border color in the mask
-    )
-
-    # Convert the boundary-marked image to a simple binary mask
-    # A pixel is part of the border if any of the RGB channels are 1 (white)
-    border_mask = np.any(boundary_image == 1, axis=-1)
-
-    # 3. Dilate the border to achieve the desired thickness (m pixels)
-    # The border_mask currently has a thickness of 1 pixel.
-    # We use dilation to make it thicker.
-    # The structure/kernel size should be (2*m + 1) to get thickness m.
-    # For m=1, this is 3x3. For m=2, this is 5x5, etc.
-    dilation_kernel_size = 2 * border_thickness_px + 1
-    dilation_kernel = np.ones(
-        (dilation_kernel_size, dilation_kernel_size), dtype=bool
-    )
-
-    # Dilate the mask
-    thick_border_mask = ndimage.binary_dilation(border_mask, structure=dilation_kernel)
-
-    # 4. Plot the thick border mask as a contour on the axes
-    # We create a simple Xarray DataArray for easy plotting with xarray's .plot()
-    # Assuming segment_labels has the same spatial dimensions as the original data
-
-    # Find coordinates from the data already on the axes (if available)
-    # A simpler approach is to use standard Matplotlib's contourf
-
-    # Create a mask for plotting only the border, not the feature itself
-    # Subtract the original feature area from the dilated border area
-    feature_area_mask = temp_labels > 0
-    final_border_mask = np.logical_and(thick_border_mask, ~feature_area_mask)
-
-    # Use Matplotlib's contour to plot the boundary of the final_border_mask
-    # We plot the '0.5' level of the binary mask.
-    # You might need to interpolate this mask onto the original grid for
-    # a smooth plot if using xarray's plot method, but contour works well.
-
-    # We can plot the mask itself with pcolormesh or contourf for a filled border
-    # Get the extent/coordinates from the original plot if possible, or use indices
-
-    # Use imshow/pcolormesh with an alpha channel to overlay the colored border
-    # Create an RGBA array for overlay
-    ny, nx = final_border_mask.shape
-    rgba_border = np.zeros((ny, nx, 4))
-
-    # Set the color and full opacity for the border pixels
-    # We use a color conversion here if the color is a string (e.g., 'red')
-    # Using red for simplicity (R=1, G=0, B=0)
-    # The alpha channel is 1 for border pixels, 0 otherwise
-    if border_color == "red":
-        rgba_border[final_border_mask] = [1.0, 0.0, 0.0, 1.0]
-    # Add other colors as needed, or use matplotlib.colors.to_rgba
-
-    # Overlay the image onto the existing plot.
-    # Since your x-axis/y-axis are likely coordinates, you may need to
-    # adjust the extent, but using Matplotlib's default index plotting
-    # on top of xarray's plot should generally align.
-    ax.imshow(
-        rgba_border,
-        origin="upper",  # Adjust based on how your original data was plotted
-        extent=ax.get_xlim() + ax.get_ylim(),  # Match existing plot's extent
-        alpha=0.4,  # Alpha for the whole layer
-        zorder=5  # Ensure border is on top
-    )
 
 
 def get_splits_merges(overlap_map, trajectories, time_step, frames_no, gap_frames, segment_labels_current,

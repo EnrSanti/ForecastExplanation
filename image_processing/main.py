@@ -4,11 +4,11 @@ from datetime import datetime
 from typing import List, Optional
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import cv2
-import scipy.ndimage as ndimage
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,7 @@ def run_tobac(dates: List[datetime], input_dir: str, output_dir: str, region: Re
     """
     os.makedirs(output_dir, exist_ok=True)
 
+<<<<<<< HEAD
     with ProcessPoolExecutor(max_workers=12) as executor:
 
         futures = {
@@ -63,6 +64,15 @@ def run_tobac(dates: List[datetime], input_dir: str, output_dir: str, region: Re
                 logger.error(f"TOBAC failed for {date}", exc_info=True)
     
     logger.info("TOBAC runs completed.")
+=======
+    for date in tqdm(dates, desc="Image Processing"):
+        day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
+        day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
+        os.makedirs(day_output_dir, exist_ok=True)
+        run_tobac_single_day(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.TEMPERATURE, WeatherPhenomenonTobacParams.TEMPERATURE)
+        run_tobac_single_day(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.HUMIDITY, WeatherPhenomenonTobacParams.HUMIDITY)
+        run_tobac_single_day(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.CLOUDS, WeatherPhenomenonTobacParams.CLOUDS)
+>>>>>>> 52f1f2df8a6b7b89ed0096a79947c29cb2a722ba
 
 
 
@@ -90,14 +100,10 @@ def _run_tobac_single_day_single_phenomenon(
         region: Region,
         phenomenon: WeatherPhenomenon,
         phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
-        pheomenonParams: Optional[WeatherPhenomenonTobacParams] = None,
 ):
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
     """
-    if phenomenon_params is None and pheomenonParams is not None:
-        phenomenon_params = pheomenonParams
-
     logger.info(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
@@ -209,10 +215,7 @@ def _run_tobac_single_day_single_phenomenon(
 
             # Background smoothed image
             original_img = frames[itime]
-            if original_img.ndim == 3:
-                smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
-            else:
-                smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
+            smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
             axs.imshow(smoothed_bg, origin="upper")
             xlim = (0, frame_width)
             ylim = (0, frame_height)

@@ -54,9 +54,9 @@ FEATURE_SPECS: Dict[str, FeatureSpec] = {
     "cloud": FeatureSpec("ccl", "viridis", LimitValues.MINIMUM_CLOUD_VALUE, LimitValues.MAXIMUM_CLOUD_VALUE, "cloud"),
     "temp": FeatureSpec("t", "OrRd", LimitValues.MINIMUM_TEMP_VALUE, LimitValues.MAXIMUM_TEMP_VALUE, "temp"),
     "humidity": FeatureSpec(("r", "rhum"), "YlGnBu", LimitValues.MINIMUM_HUMIDITY_VALUE,
-                             LimitValues.MAXIMUM_HUMIDITY_VALUE, "humidity"),
+                            LimitValues.MAXIMUM_HUMIDITY_VALUE, "humidity"),
     "wind": FeatureSpec("wind_speed", "viridis", LimitValues.MINIMUM_WIND_SPEED_VALUE,
-                         LimitValues.MAXIMUM_WIND_SPEED_VALUE, "wind", folder_prefix="winds", axis_off=True),
+                        LimitValues.MAXIMUM_WIND_SPEED_VALUE, "wind", folder_prefix="winds", axis_off=True),
 }
 
 LEGEND_SPECS = {
