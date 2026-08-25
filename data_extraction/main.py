@@ -43,7 +43,7 @@ def extract_day_worker(date, region, clean_level: int = 0, clustering: bool = Tr
     if starting_step in [0, 1, 2] or force_redo >= 2:
         os.makedirs(raw_data_dir, exist_ok=True)
         os.makedirs(cut_data_dir, exist_ok=True)
-        nc_file = extract_nc(date, region, raw_data_dir, cut_data_dir)  # this skips 0 1 automatically if already done
+        nc_file = extract_nc(date, region, raw_data_dir, cut_data_dir, force_redo)  # this skips 0 1 automatically if already done
         starting_step = 2
 
     if starting_step == 2 or force_redo >= 2:

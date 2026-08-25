@@ -6,6 +6,7 @@ from typing import List, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import cv2
 import scipy.ndimage as ndimage
 
 from image_processing.constants import (
@@ -180,9 +181,9 @@ def run_tobac_single_day(
             # Background smoothed image
             original_img = frames[itime]
             if original_img.ndim == 3:
-                smoothed_bg = ndimage.gaussian_filter(original_img, sigma=(smooth, smooth, 0))
+                smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
             else:
-                smoothed_bg = ndimage.gaussian_filter(original_img, sigma=smooth)
+                smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
             axs.imshow(smoothed_bg, origin="upper")
             xlim = (0, frame_width)
             ylim = (0, frame_height)
