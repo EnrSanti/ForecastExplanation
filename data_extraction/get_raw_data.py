@@ -19,10 +19,11 @@ logging.getLogger("legacy_client").setLevel(logging.WARNING)
 logging.getLogger("ecmwf.datastores").setLevel(logging.WARNING)
 logging.getLogger("cdsapi").setLevel(logging.WARNING)
 
+
 def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> Optional[xr.Dataset]:
     with xr.open_dataset(grib_path, engine="cfgrib", decode_cf=True, decode_times=True, decode_timedelta=False) as ds:
-        mask = (ds.longitude >= coordinates[0]) & (ds.longitude <= coordinates[1]) & \
-               (ds.latitude >= coordinates[2]) & (ds.latitude <= coordinates[3])
+        mask = (ds.longitude >= coordinates[0] - 0.5) & (ds.longitude <= coordinates[1] + 0.5) & \
+               (ds.latitude >= coordinates[2] - 0.5) & (ds.latitude <= coordinates[3] + 0.5)
 
         ds_sub = ds.where(mask, drop=True)
         return ds_sub
@@ -57,6 +58,7 @@ def extract_nc_in_memory(date: datetime, region: Region, raw_data_dir: str) -> x
 
     logger.debug(f"CUTTING GRIB (in-memory): {grib_path}")
     return cut_grib_long_lat(grib_path, region.value).load()
+
 
 def download_grib_if_needed(date: datetime, grib_path: str) -> None:
     if os.path.exists(grib_path):
