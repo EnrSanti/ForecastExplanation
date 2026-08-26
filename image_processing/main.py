@@ -37,21 +37,22 @@ from image_processing.utils import (
     get_grid_spacings,
     load_image_frames,
     normalize_referenced_data,
+    overlay_cities
 )
 
 logger = logging.getLogger(__name__)
 
 
-def run_tobac(dates: List[datetime], input_dir: str, output_dir: str, region: Region):
+def run_tobac(dates: List[datetime], input_dir: str, output_dir: str, region: Region, border_img_path:str):
     """
     Executes TOBAC tracking across the specified list of dates and weather phenomena.
     """
     os.makedirs(output_dir, exist_ok=True)
-
+    border_img = cv2.imread(border_img_path, cv2.IMREAD_UNCHANGED)
     with ProcessPoolExecutor(max_workers=12) as executor:
 
         futures = {
-            executor.submit(_run_tobac_single_day, date, input_dir, output_dir, region): date
+            executor.submit(_run_tobac_single_day, date, input_dir, output_dir, region,border_img): date
             for date in dates
         }
 
@@ -70,15 +71,16 @@ def _run_tobac_single_day(
         date: datetime,
         input_dir: str,
         output_dir: str,
-        region: Region
+        region: Region,
+        border_img
 ):
 
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
     os.makedirs(day_output_dir, exist_ok=True)
-    _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.TEMPERATURE, WeatherPhenomenonTobacParams.TEMPERATURE)
-    _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.HUMIDITY, WeatherPhenomenonTobacParams.HUMIDITY)
-    _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.CLOUDS, WeatherPhenomenonTobacParams.CLOUDS)
+    _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.TEMPERATURE,border_img, WeatherPhenomenonTobacParams.TEMPERATURE)
+    _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.HUMIDITY, border_img,WeatherPhenomenonTobacParams.HUMIDITY)
+    _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.CLOUDS, border_img,WeatherPhenomenonTobacParams.CLOUDS)
 
 
 
@@ -89,6 +91,7 @@ def _run_tobac_single_day_single_phenomenon(
         day_output_dir: str,
         region: Region,
         phenomenon: WeatherPhenomenon,
+        border_img,
         phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
 ):
 
@@ -207,8 +210,15 @@ def _run_tobac_single_day_single_phenomenon(
 
             # Background smoothed image
             original_img = frames[itime]
+
+            
+
             smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
-            axs.imshow(smoothed_bg, origin="upper")
+
+            axs.imshow(smoothed_bg, origin="upper",cmap=phenomenon_params.value.get("cmap", "viridis"))
+            axs.imshow(border_img, origin="upper")
+            overlay_cities(axs,region,800,915)
+
             xlim = (0, frame_width)
             ylim = (0, frame_height)
 

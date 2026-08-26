@@ -32,3 +32,5 @@ __all__: list[str] = [
     "run_tobac",
     "run_tobac_single_day",
 ]
+#duplicato
+DISCRETE_DATA_DIR: str = "./tmp_data/imgs_discrete"
