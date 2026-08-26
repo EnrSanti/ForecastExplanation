@@ -154,6 +154,7 @@ def _run_clustering(
     for f, img in items:
         groups[img.shape].append((f, img))
 
+    #si può hardcodare cpu
     device = "cuda" if torch.cuda.is_available() else "cpu"
     stream = torch.cuda.Stream(device=0) if device == "cuda" else None
 

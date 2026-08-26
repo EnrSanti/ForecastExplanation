@@ -13,7 +13,10 @@ from image_processing.constants import (
     DEFAULT_DT,
     DEFAULT_DXY,
     DEFAULT_TIME_OFFSET_HOURS,
+    CITIES,
+    Region
 )
+
 
 
 def extract_keys(filename: str) -> Tuple[int, int]:
@@ -162,3 +165,51 @@ def overlay_image(path_borders: Optional[str], axs: plt.Axes, temp_da: xr.DataAr
     if path_borders and os.path.exists(path_borders):
         img = plt.imread(path_borders)
         axs.imshow(img, extent=(0, temp_da.sizes["x"], temp_da.sizes["y"], 0), alpha=0.6)
+
+def _latlon_to_px(lat: float, lon: float, lat_min: float, lat_max: float,
+                   lon_min: float, lon_max: float, frame_height: int, frame_width: int):
+    """
+    Convert a lat/lon into pixel (x, y) using the same linear mapping used
+    to build the frame's coordinate grid elsewhere in the pipeline (row 0 /
+    top of image = lat_min, matching the existing np.linspace(lat_min,
+    lat_max, frame_height) convention — not the usual north-up mapping).
+    """
+    px_x = (lon - lon_min) / (lon_max - lon_min) * (frame_width - 1)
+    px_y = (lat_max - lat) / (lat_max - lat_min) * (frame_height - 1)
+    return px_x, px_y
+
+
+def overlay_cities(axs: plt.Axes, region: Region,
+                    frame_height: int, frame_width: int):
+    """
+    Overlay city markers + labels on top of whatever's already drawn on axs.
+    Call this after imshow() (and after overlay_image(), if used), since
+    later draw calls layer on top.
+
+    cities : {city_name: {"lat": float, "lon": float}}
+    lat_min/lat_max/lon_min/lon_max, frame_height/frame_width : the same
+        region bounds and frame shape used to build this plot's data grid,
+        so city positions line up with the underlying image.
+    text_offset : (dx, dy) in points, offsetting the label from its dot so
+        text doesn't sit directly on top of the marker.
+    """
+    lon_min, lon_max,lat_min, lat_max = region.value
+    for name, coords in CITIES.items():
+        px_x, px_y = _latlon_to_px(
+            coords["lat"], coords["lon"],
+            lat_min, lat_max, lon_min, lon_max,
+            frame_height, frame_width,
+        )
+        axs.plot(px_x, px_y, marker="o", markersize=3,
+                  color="red", markeredgecolor="white", markeredgewidth=0.5,
+                  zorder=10)
+        print(name+"at: "+str(px_x)+" "+ str(px_y))
+        axs.annotate(
+            name,
+            xy=(px_x, px_y),
+            xytext=(4, -4),
+            textcoords="offset points",
+            color="red",
+            fontsize=6,
+            zorder=11,
+        )

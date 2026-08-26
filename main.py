@@ -1,7 +1,7 @@
 import argparse
 import logging
 import sys
-
+import os
 import yaml
 
 import data_extraction
@@ -48,7 +48,8 @@ def main():
 
     data_extraction.extract(dates, data_extraction.Region.FVG, clean_level=args.clean, in_memory=args.in_memory, clustering=args.clustering, force_redo=args.force)
     input_dir = data_extraction.CLUSTERED_DATA_DIR if args.clustering else data_extraction.DISCRETE_DATA_DIR
-    image_processing.run_tobac(dates, input_dir=input_dir, output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG)
+    border_img_path=os.path.join(data_extraction.DISCRETE_DATA_DIR, "borders.png")
+    image_processing.run_tobac(dates, input_dir=input_dir, output_dir=image_processing.TOBAC_OUTPUT, region=image_processing.Region.FVG,border_img_path=border_img_path)
 
 
 if __name__ == "__main__":
