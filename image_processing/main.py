@@ -207,8 +207,11 @@ def _run_tobac_single_day_single_phenomenon(
 
             # Background smoothed image
             original_img = frames[itime]
+
+            
+
             smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
-            axs.imshow(smoothed_bg, origin="upper")
+            axs.imshow(smoothed_bg, origin="upper",cmap=phenomenon_params.value.get("cmap", "viridis"))
             xlim = (0, frame_width)
             ylim = (0, frame_height)
 

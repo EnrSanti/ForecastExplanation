@@ -27,8 +27,8 @@ class WeatherPhenomenon(Enum):
 
 
 class WeatherPhenomenonTobacParams(Enum):
-    TEMPERATURE = {"min_blob_size": 100, "target": "maximum", "smooth": 8, "threshold": 0.6}
-    HUMIDITY = {"min_blob_size": 100, "target": "minimum", "smooth": 8, "threshold": 0.55}
-    CLOUDS = {"min_blob_size": 100, "target": "maximum", "smooth": 8, "threshold": 0.7}
-    WIND = {"min_blob_size": 100, "target": "maximum", "smooth": 8, "threshold": 0.6}
+    TEMPERATURE = {"min_blob_size": 100, "target": "maximum", "smooth": 8, "threshold": 0.6 , "cmap": "OrRd"}
+    HUMIDITY = {"min_blob_size": 100, "target": "minimum", "smooth": 8, "threshold": 0.55, "cmap": "YlGnBu"}
+    CLOUDS = {"min_blob_size": 100, "target": "maximum", "smooth": 8, "threshold": 0.7, "cmap": "viridis"}
+    WIND = {"min_blob_size": 100, "target": "maximum", "smooth": 8, "threshold": 0.6, "cmap": "viridis"}
 
