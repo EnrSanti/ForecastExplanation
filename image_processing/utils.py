@@ -203,7 +203,6 @@ def overlay_cities(axs: plt.Axes, region: Region,
         axs.plot(px_x, px_y, marker="o", markersize=3,
                   color="red", markeredgecolor="white", markeredgewidth=0.5,
                   zorder=10)
-        print(name+"at: "+str(px_x)+" "+ str(px_y))
         axs.annotate(
             name,
             xy=(px_x, px_y),
@@ -213,3 +212,4 @@ def overlay_cities(axs: plt.Axes, region: Region,
             fontsize=6,
             zorder=11,
         )
+

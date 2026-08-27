@@ -18,7 +18,7 @@ from image_processing.constants import (
     DEFAULT_GAP_FRAMES,
     DEFAULT_MIN_DISTANCE,
     DEFAULT_SMOOTH,
-    DEFAULT_V_MAX,
+    DEFAULT_V_MAX_AT_HEIGHT,
 )
 from image_processing.split_merge import (
     find_extended_overlap_blobs_inferred,
@@ -107,9 +107,9 @@ import warnings
 def track_features(
         features_weighted_points: pd.DataFrame,
         referenced_data: xr.DataArray,
+        v_max: float,
         dt: float = DEFAULT_DT,
         dxy: float = DEFAULT_DXY,
-        v_max: float = DEFAULT_V_MAX,
         memory: int = DEFAULT_GAP_FRAMES,
         method_linking: str = "predict",
 ) -> pd.DataFrame:
@@ -294,12 +294,12 @@ def locate_track_merge(
         threshold: float,
         target: str,
         type_: str,
+        v_max: float,
         save_split_merges: bool = True,
         smooth: float = DEFAULT_SMOOTH,
         dxy: float = DEFAULT_DXY,
         dt: float = DEFAULT_DT,
         min_distance: float = DEFAULT_MIN_DISTANCE,
-        v_max: float = DEFAULT_V_MAX,
         gap_features_frames: int = DEFAULT_GAP_FRAMES,
 ):
     """Runs feature detection, tracking, segmentation and split/merge detection."""
@@ -341,9 +341,9 @@ def locate_track_merge(
     trajectories = track_features(
         features_weighted_points,
         referenced_data,
+        v_max,
         dt=calc_dt,
         dxy=calc_dxy,
-        v_max=v_max,
         memory=gap_features_frames,
     )
 
@@ -525,7 +525,7 @@ def run_tobac_merge_split(
         lon_max=lon_max,
         threshold=threshold,
         target=target,
-        type_=type_,
+        type_=type,
         save_split_merges=True,
         smooth=smooth,
     )
