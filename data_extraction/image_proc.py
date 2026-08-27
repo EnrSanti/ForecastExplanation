@@ -24,10 +24,6 @@ def batched_kmeans_torch(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Vectorized-over-B KMeans for a batch of same-shaped images.
-
-    Intended for GPU use — on CPU, sklearn KMeans with Elkan's algorithm
-    (used by ``_run_clustering``) is ~14× faster.
-
     Parameters
     ----------
     X : np.ndarray or torch.Tensor, shape (B, P, C)
