@@ -11,7 +11,6 @@ import pandas as pd
 from tqdm import tqdm
 import json
 
-logger = logging.getLogger(__name__)
 
 from image_processing.constants import (
     DEFAULT_GAP_FRAMES,
@@ -38,13 +37,19 @@ from image_processing.utils import (
     get_grid_spacings,
     load_image_frames,
     normalize_referenced_data,
-    overlay_cities
+    overlay_cities,
 )
 
 logger = logging.getLogger(__name__)
 
 
-def run_tobac(dates: List[datetime], input_dir: str, output_dir: str, region: Region, border_img_path:str):
+def run_tobac(
+    dates: List[datetime],
+    input_dir: str,
+    output_dir: str,
+    region: Region,
+    border_img_path: str,
+):
     """
     Executes TOBAC tracking across the specified list of dates and weather phenomena.
     """
@@ -53,7 +58,9 @@ def run_tobac(dates: List[datetime], input_dir: str, output_dir: str, region: Re
     with ProcessPoolExecutor(max_workers=12) as executor:
 
         futures = {
-            executor.submit(_run_tobac_single_day, date, input_dir, output_dir, region,border_img): date
+            executor.submit(
+                _run_tobac_single_day, date, input_dir, output_dir, region, border_img
+            ): date
             for date in dates
         }
 
@@ -63,43 +70,62 @@ def run_tobac(dates: List[datetime], input_dir: str, output_dir: str, region: Re
                 future.result()
             except Exception as e:
                 logger.error(f"TOBAC failed for {date}", exc_info=True)
-    
+
     logger.info("TOBAC runs completed.")
 
 
-
 def _run_tobac_single_day(
-        date: datetime,
-        input_dir: str,
-        output_dir: str,
-        region: Region,
-        border_img
+    date: datetime, input_dir: str, output_dir: str, region: Region, border_img: str
 ):
 
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
     os.makedirs(day_output_dir, exist_ok=True)
 
-    JSON_temp = _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.TEMPERATURE,border_img, WeatherPhenomenonTobacParams.TEMPERATURE)
-    JSON_hum =_run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.HUMIDITY, border_img,WeatherPhenomenonTobacParams.HUMIDITY)
-    JSON_clouds =_run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.CLOUDS, border_img,WeatherPhenomenonTobacParams.CLOUDS)
+    JSON_temp = _run_tobac_single_day_single_phenomenon(
+        date,
+        day_input_dir,
+        day_output_dir,
+        region,
+        WeatherPhenomenon.TEMPERATURE,
+        border_img,
+        WeatherPhenomenonTobacParams.TEMPERATURE,
+    )
+    JSON_hum = _run_tobac_single_day_single_phenomenon(
+        date,
+        day_input_dir,
+        day_output_dir,
+        region,
+        WeatherPhenomenon.HUMIDITY,
+        border_img,
+        WeatherPhenomenonTobacParams.HUMIDITY,
+    )
+    JSON_clouds = _run_tobac_single_day_single_phenomenon(
+        date,
+        day_input_dir,
+        day_output_dir,
+        region,
+        WeatherPhenomenon.CLOUDS,
+        border_img,
+        WeatherPhenomenonTobacParams.CLOUDS,
+    )
 
-    write_JSON(date,day_output_dir,JSON_clouds,JSON_hum,JSON_temp)
+    write_JSON(date, day_output_dir, JSON_clouds, JSON_hum, JSON_temp)
+
 
 def _run_tobac_single_day_single_phenomenon(
-        date: datetime,
-        day_input_dir: str,
-        day_output_dir: str,
-        region: Region,
-        phenomenon: WeatherPhenomenon,
-        border_img,
-        phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
+    date: datetime,
+    day_input_dir: str,
+    day_output_dir: str,
+    region: Region,
+    phenomenon: WeatherPhenomenon,
+    border_img: str,
+    phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
 ):
-
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
     """
-    partial_JSON=[]
+    partial_JSON = []
     logger.info(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
@@ -129,10 +155,11 @@ def _run_tobac_single_day_single_phenomenon(
         data = np.stack(frames_gray)
         _, frame_height, frame_width = data.shape
 
-        referenced_data = build_referenced_data(data, datetimes, region_bounds=region.value)
+        referenced_data = build_referenced_data(
+            data, datetimes, region_bounds=region.value
+        )
         dxy, dt = get_grid_spacings(referenced_data)
         referenced_data_norm = normalize_referenced_data(referenced_data)
-
 
         if phenomenon_params is None:
             phenomenon_params = WeatherPhenomenonTobacParams[phenomenon.name]
@@ -154,7 +181,7 @@ def _run_tobac_single_day_single_phenomenon(
             min_distance=DEFAULT_MIN_DISTANCE,
             dxy=dxy,
         )
-        v_max_at_height=DEFAULT_V_MAX_AT_HEIGHT.get(suffix,60)
+        v_max_at_height = DEFAULT_V_MAX_AT_HEIGHT.get(suffix, 60)
         trajectories = track_features(
             features_weighted_points,
             referenced_data,
@@ -177,28 +204,44 @@ def _run_tobac_single_day_single_phenomenon(
         # Plotting on original images
         images_no = len(image_files)
 
-
-
         if trajectories is not None and not trajectories.empty:
-            trajectories_by_frame = {frame: df for frame, df in trajectories.groupby("frame")} # da vedere se serve
-            trajectories_by_cell = {cell: df for cell, df in trajectories.groupby("cell")}
+            trajectories_by_frame = {
+                frame: df for frame, df in trajectories.groupby("frame")
+            }  # da vedere se serve
+            trajectories_by_cell = {
+                cell: df for cell, df in trajectories.groupby("cell")
+            }
         else:
             trajectories_by_frame = {}
             trajectories_by_cell = {}
 
         cell_info_by_frame = classify_cells_per_frame(trajectories, DEFAULT_GAP_FRAMES)
 
-        
-        
         for i in range(images_no):
             original_img_name = os.path.splitext(os.path.basename(image_files[i]))[0]
-            out_path = os.path.join(height_output_dir, f"{original_img_name}_tracked.png")
+            out_path = os.path.join(
+                height_output_dir, f"{original_img_name}_tracked.png"
+            )
             original_img = frames[i]
-            cmap=phenomenon_params.value.get("cmap", "viridis")
+            cmap = phenomenon_params.value.get("cmap", "viridis")
 
-            append_to_JSON(partial_JSON, date,phenomenon,trajectories_by_cell)
-            generate_plots(original_img,out_path,smooth,region,segments_all,  trajectories_by_cell, frame_width,frame_height, cmap,cell_info_by_frame,border_img,i )
+            append_to_JSON(partial_JSON, date, phenomenon, trajectories_by_cell)
+            generate_plots(
+                original_img,
+                out_path,
+                smooth,
+                region,
+                segments_all,
+                trajectories_by_cell,
+                frame_width,
+                frame_height,
+                cmap,
+                cell_info_by_frame,
+                border_img,
+                i,
+            )
     return partial_JSON
+
 
 def classify_cells_per_frame(trajectories: pd.DataFrame, gap_frames: int) -> dict:
     """
@@ -218,7 +261,9 @@ def classify_cells_per_frame(trajectories: pd.DataFrame, gap_frames: int) -> dic
     if trajectories is None or trajectories.empty:
         return {}
 
-    frames_by_cell = trajectories.groupby("cell")["frame"].apply(lambda s: sorted(s.unique()))
+    frames_by_cell = trajectories.groupby("cell")["frame"].apply(
+        lambda s: sorted(s.unique())
+    )
 
     result = {}
     for i, frame_traj in trajectories.groupby("frame"):
@@ -242,7 +287,21 @@ def classify_cells_per_frame(trajectories: pd.DataFrame, gap_frames: int) -> dic
         }
     return result
 
-def generate_plots(original_img, out_path: str, smooth: float, region,segments_all, trajectories_by_cell,frame_width, frame_height, cmap, cell_info_by_frame, border_img,i):
+
+def generate_plots(
+    original_img,
+    out_path: str,
+    smooth: float,
+    region,
+    segments_all,
+    trajectories_by_cell,
+    frame_width,
+    frame_height,
+    cmap,
+    cell_info_by_frame,
+    border_img,
+    i,
+):
     fig_width_in = frame_width / 100
     fig_height_in = frame_height / 100
 
@@ -250,15 +309,22 @@ def generate_plots(original_img, out_path: str, smooth: float, region,segments_a
     ylim = (0, frame_height)
 
     fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in), dpi=100)
-    fig.subplots_adjust(left=0, right=1, top=1, bottom=0) 
+    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
     smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
 
-    axs.imshow(smoothed_bg, origin="upper",cmap=cmap)
+    axs.imshow(smoothed_bg, origin="upper", cmap=cmap)
     axs.imshow(border_img, origin="upper")
-    overlay_cities(axs,region,800,915) #TODO: da non hardcodare
-    info = cell_info_by_frame.get(i, {"cell_ids": set(), "persisted": set(),
-                                    "new_cells": set(), "all_frames_for_cell": {}})
+    overlay_cities(axs, region, 800, 915)  # TODO: da non hardcodare
+    info = cell_info_by_frame.get(
+        i,
+        {
+            "cell_ids": set(),
+            "persisted": set(),
+            "new_cells": set(),
+            "all_frames_for_cell": {},
+        },
+    )
     cell_ids = info["cell_ids"]
     persisted = info["persisted"]
     new_cells = info["new_cells"]
@@ -270,9 +336,20 @@ def generate_plots(original_img, out_path: str, smooth: float, region,segments_a
         track = trajectories_by_cell.get(cell_id, pd.DataFrame())
         f_weighted = track[track["frame"] == i]
 
-        printing_symbol, color = ("^", "white") if cell_id in new_cells else ("x", "red")
-        print_clouds_center_line(printing_symbol, color, f_weighted, i, track, axs, cell_id,
-                                persisted, all_frames_for_cell)
+        printing_symbol, color = (
+            ("^", "white") if cell_id in new_cells else ("x", "red")
+        )
+        print_clouds_center_line(
+            printing_symbol,
+            color,
+            f_weighted,
+            i,
+            track,
+            axs,
+            cell_id,
+            persisted,
+            all_frames_for_cell,
+        )
 
         if len(f_weighted["x"]) > 0:
             print_cloud_labels(f_weighted, cell_id, xlim, ylim, axs)
@@ -291,20 +368,25 @@ def generate_plots(original_img, out_path: str, smooth: float, region,segments_a
     axs.set_ylim(frame_height, 0)
     axs.axis("off")
 
-    
     plt.savefig(out_path, dpi=100, bbox_inches=None, pad_inches=0)
     plt.close(fig)
 
-def append_to_JSON(partial_JSON, date: datetime, phenomenon: WeatherPhenomenon, trajectories_by_cell):
+
+def append_to_JSON(
+    partial_JSON, date: datetime, phenomenon: WeatherPhenomenon, trajectories_by_cell
+):
     pass
 
-def write_JSON(date,day_output_dir,JSON_clouds,JSON_hum,JSON_temp):
+
+def write_JSON(date, day_output_dir, JSON_clouds, JSON_hum, JSON_temp):
     JSON_of_the_day = {
-        "date" : date.strftime("%Y-%m-%d"),
-        "clouds" : JSON_clouds,
-        "humidity" : JSON_hum,
-        "temperature" : JSON_temp
+        "date": date.strftime("%Y-%m-%d"),
+        "clouds": JSON_clouds,
+        "humidity": JSON_hum,
+        "temperature": JSON_temp,
     }
-    json_path = os.path.join(day_output_dir, date.strftime("%Y-%m-%d")+"_extracted.JSON")
+    json_path = os.path.join(
+        day_output_dir, date.strftime("%Y-%m-%d") + "_extracted.JSON"
+    )
     with open(json_path, "w") as f:
         json.dump(JSON_of_the_day, f, indent=2)

@@ -16,7 +16,9 @@ locations_pos_px = {}
 city_map = {}
 
 
-def plot_city_connections_on_image(image_path, city_locs, adjacency, save_path=None, linewidth=2):
+def plot_city_connections_on_image(
+    image_path, city_locs, adjacency, save_path=None, linewidth=2
+):
     # used once for debugging
 
     img = Image.open(image_path)
@@ -30,7 +32,7 @@ def plot_city_connections_on_image(image_path, city_locs, adjacency, save_path=N
 
     ax.set_xlim(0, W)
     ax.set_ylim(H, 0)  # IMPORTANT
-    ax.set_aspect('equal')  # IMPORTANT
+    ax.set_aspect("equal")  # IMPORTANT
     ax.set_axis_off()
 
     # plot edges
@@ -38,10 +40,10 @@ def plot_city_connections_on_image(image_path, city_locs, adjacency, save_path=N
         x1, y1 = city_locs[city]
         for nb in neighbors:
             x2, y2 = city_locs[nb]
-            ax.plot([x1, x2], [y1, y2], '-', color='white', linewidth=linewidth)
+            ax.plot([x1, x2], [y1, y2], "-", color="white", linewidth=linewidth)
 
     if save_path:
-        plt.savefig(save_path, dpi=100, bbox_inches='tight', pad_inches=0)
+        plt.savefig(save_path, dpi=100, bbox_inches="tight", pad_inches=0)
         plt.close(fig)
     else:
         plt.show()
@@ -91,10 +93,7 @@ def build_delaunay_adjacency_filtered(city_locs, length_factor=1.8):
     # -------------------------------------------------------
     # 3. Compute lengths for filtering
     # -------------------------------------------------------
-    lengths = np.array([
-        np.linalg.norm(coords[a] - coords[b])
-        for a, b in edges
-    ])
+    lengths = np.array([np.linalg.norm(coords[a] - coords[b]) for a, b in edges])
 
     median_len = np.median(lengths)
     max_len = median_len * length_factor
@@ -115,37 +114,41 @@ def build_delaunay_adjacency_filtered(city_locs, length_factor=1.8):
 
 
 def build_city_adjacency_graph_for_fronts(base_path, coordinates):
-    '''
-        Build the city adjacency graph using Delaunay triangulation
-    '''
+    """
+    Build the city adjacency graph using Delaunay triangulation
+    """
     # Get the neighborhoods for each location
     locations_name_px_pos = load_locations(coordinates, base_path)
-    adj = build_delaunay_adjacency_filtered(locations_name_px_pos)  # a = your DataFrame/dict
+    adj = build_delaunay_adjacency_filtered(
+        locations_name_px_pos
+    )  # a = your DataFrame/dict
 
     for city, neighbors in adj.items():
         print(f"{city} → {sorted(neighbors)}")
-    '''
+    """
     plot_city_connections_on_image(
         image_path="./reasoning/screen.png",
         city_locs=locations_name_px_pos,
         adjacency=adj,
         save_path="triangulation_overlay.png"
-    )'''
+    )"""
     return adj, locations_name_px_pos
 
 
 def init_fronts_generation(path, _coordinates):
-    '''
+    """
     Initialize global variables for front generation
     Moreover it caluculates the city adjacency graph once
-    '''
+    """
     global coordinates
     global base_path
     global city_map
     global locations_pos_px
     base_path = path
     coordinates = _coordinates
-    city_map, locations_pos_px = build_city_adjacency_graph_for_fronts(path, coordinates)
+    city_map, locations_pos_px = build_city_adjacency_graph_for_fronts(
+        path, coordinates
+    )
 
 
 def get_pixel_line(p1_px, p1_py, p2_px, p2_py):
@@ -159,7 +162,7 @@ def get_pixel_line(p1_px, p1_py, p2_px, p2_py):
     points = []
     dx = p2_px - p1_px
     dy = p2_py - p1_py
-    distance = math.sqrt(dx ** 2 + dy ** 2)
+    distance = math.sqrt(dx**2 + dy**2)
 
     if distance == 0:
         return []
@@ -180,12 +183,12 @@ def get_pixel_line(p1_px, p1_py, p2_px, p2_py):
 
 def is_line_clear(p1_name, p2_name, seg_labels, locations_name_px_pos):
     """
-    Checks if there are any segmented features (seg_labels > 0) 
+    Checks if there are any segmented features (seg_labels > 0)
     on the straight line between the two cities.
-    
+
     Returns True if the line is clear (no seg_labels > 0), False otherwise.
     """
-    '''
+    """
     (p1_px, p1_py) = locations_name_px_pos[p1_name]
     (p2_px, p2_py) = locations_name_px_pos[p2_name]
     
@@ -200,7 +203,7 @@ def is_line_clear(p1_name, p2_name, seg_labels, locations_name_px_pos):
         if 0 <= px < width and 0 <= py < height:
             if seg_labels[py, px] > 0:
                 return False # Found a segment feature on the line
-    '''
+    """
     return True  # Line is clear
 
 
@@ -244,7 +247,7 @@ def get_location_segment_id(loc_name, seg_labels, locations_name_px_pos):
     if seg_labels.size == 0:
         return 0
 
-    (px, py) = locations_name_px_pos[loc_name]
+    px, py = locations_name_px_pos[loc_name]
     px_i = int(round(px))
     py_i = int(round(py))
     height, width = seg_labels.shape
@@ -256,7 +259,7 @@ def get_location_segment_id(loc_name, seg_labels, locations_name_px_pos):
 
 def generate_fronts_hum(starting_date):
     """
-    Generates facts about humidity fronts between adjacent cities 
+    Generates facts about humidity fronts between adjacent cities
     based on segmentation data.
     """
     global base_path
@@ -283,7 +286,7 @@ def generate_fronts_hum(starting_date):
             segment_labels_path = os.path.join(full_path, "segment_labels_all.npz")
             segment_labels_list = process_segmentation_data(segment_labels_path)
 
-            # Trajectories are not needed for *front* detection, only for *ID* tracking, 
+            # Trajectories are not needed for *front* detection, only for *ID* tracking,
             # but since we only check *presence* (ID > 0), we can skip loading trajectories.
 
             altitude_facts = []
@@ -303,15 +306,21 @@ def generate_fronts_hum(starting_date):
                             continue
 
                             # 1. Check feature coverage for both cities
-                        city1_seg_id = get_location_segment_id(city1, seg_labels, locations_pos_px)
-                        city2_seg_id = get_location_segment_id(city2, seg_labels, locations_pos_px)
+                        city1_seg_id = get_location_segment_id(
+                            city1, seg_labels, locations_pos_px
+                        )
+                        city2_seg_id = get_location_segment_id(
+                            city2, seg_labels, locations_pos_px
+                        )
 
                         # Front condition: one covered (seg_id > 0), one not (seg_id == 0)
-                        is_front_candidate = (city1_seg_id != city2_seg_id)
+                        is_front_candidate = city1_seg_id != city2_seg_id
 
                         if is_front_candidate:
                             # 2. Check for clear line segment
-                            if is_line_clear(city1, city2, seg_labels, locations_pos_px):
+                            if is_line_clear(
+                                city1, city2, seg_labels, locations_pos_px
+                            ):
                                 city1 = city1.lower()
                                 city2 = city2.lower()
                                 front_pred = f"hum_front_{level}_hPa({city1},{city2},{yyyy},{mm},{dd},{h})."
@@ -331,14 +340,16 @@ def generate_fronts_hum(starting_date):
                 f.write("\n")
 
             all_fronts_facts.extend(altitude_facts)
-            print(f"Finished processing {folder_name}. Saved {len(altitude_facts)} facts.")
+            print(
+                f"Finished processing {folder_name}. Saved {len(altitude_facts)} facts."
+            )
 
     return all_fronts_facts
 
 
 def generate_fronts_temp(starting_date):
     """
-    Generates facts about humidity fronts between adjacent cities 
+    Generates facts about humidity fronts between adjacent cities
     based on segmentation data.
     """
     global base_path
@@ -365,7 +376,7 @@ def generate_fronts_temp(starting_date):
             segment_labels_path = os.path.join(full_path, "segment_labels_all.npz")
             segment_labels_list = process_segmentation_data(segment_labels_path)
 
-            # Trajectories are not needed for *front* detection, only for *ID* tracking, 
+            # Trajectories are not needed for *front* detection, only for *ID* tracking,
             # but since we only check *presence* (ID > 0), we can skip loading trajectories.
 
             altitude_facts = []
@@ -385,15 +396,21 @@ def generate_fronts_temp(starting_date):
                             continue
 
                             # 1. Check feature coverage for both cities
-                        city1_seg_id = get_location_segment_id(city1, seg_labels, locations_pos_px)
-                        city2_seg_id = get_location_segment_id(city2, seg_labels, locations_pos_px)
+                        city1_seg_id = get_location_segment_id(
+                            city1, seg_labels, locations_pos_px
+                        )
+                        city2_seg_id = get_location_segment_id(
+                            city2, seg_labels, locations_pos_px
+                        )
 
                         # Front condition: one covered (seg_id > 0), one not (seg_id == 0)
-                        is_front_candidate = (city1_seg_id != city2_seg_id)
+                        is_front_candidate = city1_seg_id != city2_seg_id
 
                         if is_front_candidate:
                             # 2. Check for clear line segment
-                            if is_line_clear(city1, city2, seg_labels, locations_pos_px):
+                            if is_line_clear(
+                                city1, city2, seg_labels, locations_pos_px
+                            ):
                                 city1 = city1.lower()
                                 city2 = city2.lower()
                                 front_pred = f"temp_front_{level}_hPa({city1},{city2},{yyyy},{mm},{dd},{h})."
@@ -413,6 +430,8 @@ def generate_fronts_temp(starting_date):
                 f.write("\n")
 
             all_fronts_facts.extend(altitude_facts)
-            print(f"Finished processing {folder_name}. Saved {len(altitude_facts)} facts.")
+            print(
+                f"Finished processing {folder_name}. Saved {len(altitude_facts)} facts."
+            )
 
     return all_fronts_facts

@@ -105,7 +105,7 @@ def build_referenced_data(
     data: np.ndarray,
     times: List[pd.Timestamp],
     region_bounds: Optional[
-        Union[Tuple[float, float, float, float], List[float]]
+        Union[Tuple[float, float, float, float], List[float], List[int]]
     ] = None,
 ) -> xr.DataArray:
     """

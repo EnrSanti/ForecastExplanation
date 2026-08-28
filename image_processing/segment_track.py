@@ -602,6 +602,7 @@ def run_tobac_merge_split(
     threshold: float,
     target: str,
     type_: str,
+    v_max: int,
     n_min_threshold: int = 0,
     smooth: float = DEFAULT_SMOOTH,
 ):
@@ -617,7 +618,8 @@ def run_tobac_merge_split(
         lon_max=lon_max,
         threshold=threshold,
         target=target,
-        type_=type,
+        type_=type_,
+        v_max=v_max,
         save_split_merges=True,
         smooth=smooth,
     )
@@ -635,6 +637,7 @@ def run_tobac_fronts(
     threshold: float,
     target: str,
     type_: str,
+    v_max: int,
     n_min_threshold: int = 0,
     smooth: float = DEFAULT_SMOOTH,
 ):
@@ -651,6 +654,7 @@ def run_tobac_fronts(
         threshold=threshold,
         target=target,
         type_=type_,
+        v_max=v_max,
         save_split_merges=False,
         smooth=smooth,
     )
