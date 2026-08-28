@@ -51,25 +51,71 @@ class FeatureSpec:
 
 
 FEATURE_SPECS: Dict[str, FeatureSpec] = {
-    "cloud": FeatureSpec("ccl", "viridis", LimitValues.MINIMUM_CLOUD_VALUE, LimitValues.MAXIMUM_CLOUD_VALUE, "cloud"),
-    "temp": FeatureSpec("t", "OrRd", LimitValues.MINIMUM_TEMP_VALUE, LimitValues.MAXIMUM_TEMP_VALUE, "temp"),
-    "humidity": FeatureSpec(("r", "rhum"), "YlGnBu", LimitValues.MINIMUM_HUMIDITY_VALUE,
-                            LimitValues.MAXIMUM_HUMIDITY_VALUE, "humidity"),
-    "wind": FeatureSpec("wind_speed", "viridis", LimitValues.MINIMUM_WIND_SPEED_VALUE,
-                        LimitValues.MAXIMUM_WIND_SPEED_VALUE, "wind", folder_prefix="winds", axis_off=True),
+    "cloud": FeatureSpec(
+        "ccl",
+        "viridis",
+        LimitValues.MINIMUM_CLOUD_VALUE,
+        LimitValues.MAXIMUM_CLOUD_VALUE,
+        "cloud",
+    ),
+    "temp": FeatureSpec(
+        "t",
+        "OrRd",
+        LimitValues.MINIMUM_TEMP_VALUE,
+        LimitValues.MAXIMUM_TEMP_VALUE,
+        "temp",
+    ),
+    "humidity": FeatureSpec(
+        ("r", "rhum"),
+        "YlGnBu",
+        LimitValues.MINIMUM_HUMIDITY_VALUE,
+        LimitValues.MAXIMUM_HUMIDITY_VALUE,
+        "humidity",
+    ),
+    "wind": FeatureSpec(
+        "wind_speed",
+        "viridis",
+        LimitValues.MINIMUM_WIND_SPEED_VALUE,
+        LimitValues.MAXIMUM_WIND_SPEED_VALUE,
+        "wind",
+        folder_prefix="winds",
+        axis_off=True,
+    ),
 }
 
 LEGEND_SPECS = {
-    "cloud": {"cmap": "viridis", "vmin": LimitValues.MINIMUM_CLOUD_VALUE, "vmax": LimitValues.MAXIMUM_CLOUD_VALUE,
-              "label": "Cloud cover [%]", "txt_prefix": "Cloud cover", "txt_unit": "%"},
-    "temp": {"cmap": "OrRd", "vmin": LimitValues.MINIMUM_TEMP_VALUE, "vmax": LimitValues.MAXIMUM_TEMP_VALUE,
-             "label": "Temperature [K]", "txt_prefix": "Temperature", "txt_unit": "K"},
-    "wind": {"cmap": "viridis", "vmin": LimitValues.MINIMUM_WIND_SPEED_VALUE,
-             "vmax": LimitValues.MAXIMUM_WIND_SPEED_VALUE, "label": "Wind speed [m/s]",
-             "txt_prefix": "Wind Speed", "txt_unit": "m/s"},
-    "humidity": {"cmap": "YlGnBu", "vmin": LimitValues.MINIMUM_HUMIDITY_VALUE,
-                 "vmax": LimitValues.MAXIMUM_HUMIDITY_VALUE, "label": "Relative humidity [%]",
-                 "txt_prefix": "Humidity", "txt_unit": "%"},
+    "cloud": {
+        "cmap": "viridis",
+        "vmin": LimitValues.MINIMUM_CLOUD_VALUE,
+        "vmax": LimitValues.MAXIMUM_CLOUD_VALUE,
+        "label": "Cloud cover [%]",
+        "txt_prefix": "Cloud cover",
+        "txt_unit": "%",
+    },
+    "temp": {
+        "cmap": "OrRd",
+        "vmin": LimitValues.MINIMUM_TEMP_VALUE,
+        "vmax": LimitValues.MAXIMUM_TEMP_VALUE,
+        "label": "Temperature [K]",
+        "txt_prefix": "Temperature",
+        "txt_unit": "K",
+    },
+    "wind": {
+        "cmap": "viridis",
+        "vmin": LimitValues.MINIMUM_WIND_SPEED_VALUE,
+        "vmax": LimitValues.MAXIMUM_WIND_SPEED_VALUE,
+        "label": "Wind speed [m/s]",
+        "txt_prefix": "Wind Speed",
+        "txt_unit": "m/s",
+    },
+    "humidity": {
+        "cmap": "YlGnBu",
+        "vmin": LimitValues.MINIMUM_HUMIDITY_VALUE,
+        "vmax": LimitValues.MAXIMUM_HUMIDITY_VALUE,
+        "label": "Relative humidity [%]",
+        "txt_prefix": "Humidity",
+        "txt_unit": "%",
+    },
 }
 
 
@@ -110,7 +156,9 @@ def _valid_times(coord_var: xr.DataArray) -> Iterator[Tuple[int, int, pd.Timesta
         for j in range(coord_var.sizes["step"]):
             step_val = int(coord_var["step"].isel(step=j).values)
             valid_time = base_time + pd.Timedelta(hours=step_val)
-            logger.debug(f"Checking valid_time: {valid_time}, day_start: {day_start}, day_end: {day_end}, step_val: {step_val}")
+            logger.debug(
+                f"Checking valid_time: {valid_time}, day_start: {day_start}, day_end: {day_end}, step_val: {step_val}"
+            )
 
             if day_start <= valid_time <= day_end:
                 yield i, j, valid_time
@@ -120,7 +168,9 @@ def _file_frame_writer(output_base: str) -> FrameCallback:
     def on_frame(fig: Any, folder: str, fname: str) -> None:
         out_dir = os.path.join(output_base, folder)
         os.makedirs(out_dir, exist_ok=True)
-        fig.savefig(os.path.join(out_dir, fname), dpi=130, bbox_inches="tight", pad_inches=0)
+        fig.savefig(
+            os.path.join(out_dir, fname), dpi=130, bbox_inches="tight", pad_inches=0
+        )
 
     return on_frame
 
@@ -136,14 +186,16 @@ def _file_csv_writer(output_base: str) -> CsvCallback:
 
 
 def _render_scalar_frames(
-        ds: xr.Dataset,
-        coordinates: Region,
-        spec: FeatureSpec,
+    ds: xr.Dataset,
+    coordinates: Region,
+    spec: FeatureSpec,
 ) -> Iterator[Tuple[str, str, Any]]:
     field = _resolve_var(ds, spec.var)
     folders = {k: spec.folder_key + v for k, v in FOLDERS.items()}
 
-    fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={"projection": ccrs.PlateCarree()})
+    fig, ax = plt.subplots(
+        figsize=(10, 8), subplot_kw={"projection": ccrs.PlateCarree()}
+    )
     ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
     if spec.axis_off:
         ax.axis("off")
@@ -176,9 +228,11 @@ def _render_scalar_frames(
 
 
 def _wind_pixel_transform(
-        coordinates: Region,
+    coordinates: Region,
 ) -> Tuple[Callable[[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]], Any]:
-    fig, ax = plt.subplots(figsize=(10, 8), dpi=130, subplot_kw={"projection": ccrs.PlateCarree()})
+    fig, ax = plt.subplots(
+        figsize=(10, 8), dpi=130, subplot_kw={"projection": ccrs.PlateCarree()}
+    )
     ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
     ax.axis("off")
     fig.canvas.draw()
@@ -189,13 +243,17 @@ def _wind_pixel_transform(
     def to_pixel(lon: np.ndarray, lat: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         disp = ax.transData.transform(np.column_stack((lon, lat)))
         px = np.round(disp[:, 0] - x0 * fig.dpi).astype(int)
-        py = np.round(int(height_in * fig.dpi) - (disp[:, 1] - y0 * fig.dpi)).astype(int)
+        py = np.round(int(height_in * fig.dpi) - (disp[:, 1] - y0 * fig.dpi)).astype(
+            int
+        )
         return px, py
 
     return to_pixel, fig
 
 
-def _render_wind_vectors(ds: xr.Dataset, coordinates: Region) -> Iterator[Tuple[str, str, str]]:
+def _render_wind_vectors(
+    ds: xr.Dataset, coordinates: Region
+) -> Iterator[Tuple[str, str, str]]:
     wind_folders = {k: "winds" + v for k, v in FOLDERS.items()}
     u_var = ds["u"]
     v_var = ds["v"]
@@ -212,7 +270,7 @@ def _render_wind_vectors(ds: xr.Dataset, coordinates: Region) -> Iterator[Tuple[
                 u_slice = u_lvl.isel(time=i, step=j)
                 v_slice = v_lvl.isel(time=i, step=j)
 
-                if not np.isfinite(np.sqrt(u_slice ** 2 + v_slice ** 2)).any():
+                if not np.isfinite(np.sqrt(u_slice**2 + v_slice**2)).any():
                     continue
 
                 lon2d = u_slice["longitude"].broadcast_like(u_slice).values
@@ -223,10 +281,10 @@ def _render_wind_vectors(ds: xr.Dataset, coordinates: Region) -> Iterator[Tuple[
                 v_subset = v_slice.values[::vector_step, ::vector_step]
 
                 mask = (
-                        (lon_subset >= lon_min)
-                        & (lon_subset <= lon_max)
-                        & (lat_subset >= lat_min)
-                        & (lat_subset <= lat_max)
+                    (lon_subset >= lon_min)
+                    & (lon_subset <= lon_max)
+                    & (lat_subset >= lat_min)
+                    & (lat_subset <= lat_max)
                 )
 
                 lon_visible = lon_subset[mask]
@@ -235,7 +293,7 @@ def _render_wind_vectors(ds: xr.Dataset, coordinates: Region) -> Iterator[Tuple[
                 v_visible = v_subset[mask]
 
                 px, py = to_pixel(lon_visible, lat_visible)
-                mags = np.sqrt(u_visible ** 2 + v_visible ** 2)
+                mags = np.sqrt(u_visible**2 + v_visible**2)
                 alphas = np.degrees(np.arctan2(v_visible, u_visible))
                 alphas[~np.isfinite(alphas)] = 0
                 mags[~np.isfinite(mags)] = 0
@@ -245,14 +303,20 @@ def _render_wind_vectors(ds: xr.Dataset, coordinates: Region) -> Iterator[Tuple[
                     f"{mags[idx]:.6f},{alphas[idx]:.2f}"
                     for idx in range(len(lon_visible))
                 )
-                csv_content = "vector_id,pixel_x,pixel_y,latitude,longitude,magnitude,alpha_deg\n" + rows + "\n"
+                csv_content = (
+                    "vector_id,pixel_x,pixel_y,latitude,longitude,magnitude,alpha_deg\n"
+                    + rows
+                    + "\n"
+                )
                 csv_fname = f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.csv"
                 yield wind_folders[lvl], csv_fname, csv_content
     finally:
         plt.close(fig)
 
 
-def _save_scalar_maps(ds: xr.Dataset, coordinates: Region, spec: FeatureSpec, output_base: str) -> None:
+def _save_scalar_maps(
+    ds: xr.Dataset, coordinates: Region, spec: FeatureSpec, output_base: str
+) -> None:
     frame_writer = _file_frame_writer(output_base)
     for folder, fname, fig in _render_scalar_frames(ds, coordinates, spec):
         frame_writer(fig, folder, fname)
@@ -283,7 +347,9 @@ def save_feature_maps(input_path: str, coordinates: Region, output_base: str) ->
     logger.debug(f"Feature maps saved for {input_path} in {output_base}")
 
 
-def render_feature_maps(ds: xr.Dataset, coordinates: Region) -> Dict[str, Dict[str, np.ndarray]]:
+def render_feature_maps(
+    ds: xr.Dataset, coordinates: Region
+) -> Dict[str, Dict[str, np.ndarray]]:
     if not _has_required_variables(ds):
         return {}
 
@@ -293,14 +359,19 @@ def render_feature_maps(ds: xr.Dataset, coordinates: Region) -> Dict[str, Dict[s
     for spec in FEATURE_SPECS.values():
         for folder, fname, fig in _render_scalar_frames(ds, coordinates, spec):
             images.setdefault(folder, {})[fname] = _fig_to_bgr_array(
-                fig, dpi=130, bbox_inches="tight", pad_inches=0)
+                fig, dpi=130, bbox_inches="tight", pad_inches=0
+            )
 
-    logger.debug(f"Feature maps rendered in memory: {sum(len(v) for v in images.values())} images")
+    logger.debug(
+        f"Feature maps rendered in memory: {sum(len(v) for v in images.values())} images"
+    )
     return images
 
 
 def save_borders_png(output_base: str, coordinates: Region) -> None:
-    fig, ax = plt.subplots(figsize=(10, 8), subplot_kw={"projection": ccrs.PlateCarree()})
+    fig, ax = plt.subplots(
+        figsize=(10, 8), subplot_kw={"projection": ccrs.PlateCarree()}
+    )
     ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
 
     ax.coastlines(resolution="10m", linewidth=1)
@@ -366,7 +437,9 @@ def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> No
     _save_scalar_maps(ds, coordinates, FEATURE_SPECS["cloud"], output_base)
 
 
-def save_temperature_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
+def save_temperature_maps(
+    ds: xr.Dataset, coordinates: Region, output_base: str
+) -> None:
     _save_scalar_maps(ds, coordinates, FEATURE_SPECS["temp"], output_base)
 
 

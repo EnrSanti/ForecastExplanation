@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -78,10 +79,12 @@ def _run_tobac_single_day(
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
     os.makedirs(day_output_dir, exist_ok=True)
-    _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.TEMPERATURE,border_img, WeatherPhenomenonTobacParams.TEMPERATURE)
-    _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.HUMIDITY, border_img,WeatherPhenomenonTobacParams.HUMIDITY)
-    _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.CLOUDS, border_img,WeatherPhenomenonTobacParams.CLOUDS)
 
+    JSON_temp = _run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.TEMPERATURE,border_img, WeatherPhenomenonTobacParams.TEMPERATURE)
+    JSON_hum =_run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.HUMIDITY, border_img,WeatherPhenomenonTobacParams.HUMIDITY)
+    JSON_clouds =_run_tobac_single_day_single_phenomenon(date, day_input_dir, day_output_dir, region, WeatherPhenomenon.CLOUDS, border_img,WeatherPhenomenonTobacParams.CLOUDS)
+
+    write_JSON(date,day_output_dir,JSON_clouds,JSON_hum,JSON_temp)
 
 def _run_tobac_single_day_single_phenomenon(
         date: datetime,
@@ -96,6 +99,7 @@ def _run_tobac_single_day_single_phenomenon(
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
     """
+    partial_JSON=[]
     logger.info(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
@@ -130,10 +134,10 @@ def _run_tobac_single_day_single_phenomenon(
         referenced_data_norm = normalize_referenced_data(referenced_data)
 
 
-        if phenomenon_params is not None:
-            detection_params = phenomenon_params.value
-        else:
-            detection_params = WeatherPhenomenonTobacParams[phenomenon.name].value
+        if phenomenon_params is None:
+            phenomenon_params = WeatherPhenomenonTobacParams[phenomenon.name]
+
+        detection_params = phenomenon_params.value
 
         min_blob_size = detection_params.get("min_blob_size", 100)
         target = detection_params.get("target", "maximum")
@@ -176,7 +180,7 @@ def _run_tobac_single_day_single_phenomenon(
 
 
         if trajectories is not None and not trajectories.empty:
-            trajectories_by_frame = {frame: df for frame, df in trajectories.groupby("frame")}
+            trajectories_by_frame = {frame: df for frame, df in trajectories.groupby("frame")} # da vedere se serve
             trajectories_by_cell = {cell: df for cell, df in trajectories.groupby("cell")}
         else:
             trajectories_by_frame = {}
@@ -191,7 +195,10 @@ def _run_tobac_single_day_single_phenomenon(
             out_path = os.path.join(height_output_dir, f"{original_img_name}_tracked.png")
             original_img = frames[i]
             cmap=phenomenon_params.value.get("cmap", "viridis")
+
+            append_to_JSON(partial_JSON, date,phenomenon,trajectories_by_cell)
             generate_plots(original_img,out_path,smooth,region,segments_all,  trajectories_by_cell, frame_width,frame_height, cmap,cell_info_by_frame,border_img,i )
+    return partial_JSON
 
 def classify_cells_per_frame(trajectories: pd.DataFrame, gap_frames: int) -> dict:
     """
@@ -288,4 +295,16 @@ def generate_plots(original_img, out_path: str, smooth: float, region,segments_a
     plt.savefig(out_path, dpi=100, bbox_inches=None, pad_inches=0)
     plt.close(fig)
 
-    
+def append_to_JSON(partial_JSON, date: datetime, phenomenon: WeatherPhenomenon, trajectories_by_cell):
+    pass
+
+def write_JSON(date,day_output_dir,JSON_clouds,JSON_hum,JSON_temp):
+    JSON_of_the_day = {
+        "date" : date.strftime("%Y-%m-%d"),
+        "clouds" : JSON_clouds,
+        "humidity" : JSON_hum,
+        "temperature" : JSON_temp
+    }
+    json_path = os.path.join(day_output_dir, date.strftime("%Y-%m-%d")+"_extracted.JSON")
+    with open(json_path, "w") as f:
+        json.dump(JSON_of_the_day, f, indent=2)

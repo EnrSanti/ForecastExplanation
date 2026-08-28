@@ -51,29 +51,47 @@ def get_blob_positions(trajectories: pd.DataFrame, itime: int) -> str:
 
     prev_by_cell = prev_frames_data.set_index("cell")
     curr_by_cell = curr_frames_data.set_index("cell")
-    common_cells = set(prev_by_cell.index.dropna()).intersection(curr_by_cell.index.dropna())
+    common_cells = set(prev_by_cell.index.dropna()).intersection(
+        curr_by_cell.index.dropna()
+    )
 
     all_moved_cells = ""
     for cell_id in sorted(common_cells):
         prev_row = prev_by_cell.loc[cell_id]
         curr_row = curr_by_cell.loc[cell_id]
-        prev_x = prev_row["x"].iloc[0] if isinstance(prev_row, pd.DataFrame) else prev_row["x"]
-        prev_y = prev_row["y"].iloc[0] if isinstance(prev_row, pd.DataFrame) else prev_row["y"]
-        curr_x = curr_row["x"].iloc[0] if isinstance(curr_row, pd.DataFrame) else curr_row["x"]
-        curr_y = curr_row["y"].iloc[0] if isinstance(curr_row, pd.DataFrame) else curr_row["y"]
+        prev_x = (
+            prev_row["x"].iloc[0]
+            if isinstance(prev_row, pd.DataFrame)
+            else prev_row["x"]
+        )
+        prev_y = (
+            prev_row["y"].iloc[0]
+            if isinstance(prev_row, pd.DataFrame)
+            else prev_row["y"]
+        )
+        curr_x = (
+            curr_row["x"].iloc[0]
+            if isinstance(curr_row, pd.DataFrame)
+            else curr_row["x"]
+        )
+        curr_y = (
+            curr_row["y"].iloc[0]
+            if isinstance(curr_row, pd.DataFrame)
+            else curr_row["y"]
+        )
         all_moved_cells += f"Frame {itime}, cell {cell_id} moved from (x: {prev_x}, y:{prev_y} ) to (x: {curr_x}, y:{curr_y} )\n"
 
     return all_moved_cells
 
 
 def detect_features(
-        data_norm: xr.DataArray,
-        threshold: float,
-        target: str,
-        smooth: float = DEFAULT_SMOOTH,
-        min_blob_size: int = 100,
-        min_distance: float = DEFAULT_MIN_DISTANCE,
-        dxy: float = DEFAULT_DXY,
+    data_norm: xr.DataArray,
+    threshold: float,
+    target: str,
+    smooth: float = DEFAULT_SMOOTH,
+    min_blob_size: int = 100,
+    min_distance: float = DEFAULT_MIN_DISTANCE,
+    dxy: float = DEFAULT_DXY,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Performs multithreshold feature detection on normalized DataArray.
@@ -104,14 +122,15 @@ def detect_features(
 
 import warnings
 
+
 def track_features(
-        features_weighted_points: pd.DataFrame,
-        referenced_data: xr.DataArray,
-        v_max: float,
-        dt: float = DEFAULT_DT,
-        dxy: float = DEFAULT_DXY,
-        memory: int = DEFAULT_GAP_FRAMES,
-        method_linking: str = "predict",
+    features_weighted_points: pd.DataFrame,
+    referenced_data: xr.DataArray,
+    v_max: float,
+    dt: float = DEFAULT_DT,
+    dxy: float = DEFAULT_DXY,
+    memory: int = DEFAULT_GAP_FRAMES,
+    method_linking: str = "predict",
 ) -> pd.DataFrame:
     """Links detected features into trajectories across time frames."""
     try:
@@ -119,7 +138,7 @@ def track_features(
             warnings.filterwarnings(
                 "ignore",
                 category=UserWarning,
-                message="Could not generate velocity field for prediction: no tracks"
+                message="Could not generate velocity field for prediction: no tracks",
             )
             trajectories = tobac.linking_trackpy(
                 features_weighted_points,
@@ -137,24 +156,33 @@ def track_features(
 
 
 def segment_features(
-        features: pd.DataFrame,
-        data_norm: xr.DataArray,
-        threshold: float,
-        target: str,
-        smooth: float = DEFAULT_SMOOTH,
-        dxy: float = DEFAULT_DXY,
-) -> Tuple[List[Tuple[int, Optional[xr.DataArray], Optional[xr.DataArray]]], List[Optional[xr.DataArray]]]:
+    features: pd.DataFrame,
+    data_norm: xr.DataArray,
+    threshold: float,
+    target: str,
+    smooth: float = DEFAULT_SMOOTH,
+    dxy: float = DEFAULT_DXY,
+) -> Tuple[
+    List[Tuple[int, Optional[xr.DataArray], Optional[xr.DataArray]]],
+    List[Optional[xr.DataArray]],
+]:
     """Performs 2D segmentation for each frame in data_norm."""
     segments_all = []
     all_segment_labels = []
     images_no = len(data_norm.time)
 
     for itime in range(images_no):
-        smoothed_frame = ndimage.gaussian_filter(data_norm.isel(time=itime).values, sigma=smooth)
+        smoothed_frame = ndimage.gaussian_filter(
+            data_norm.isel(time=itime).values, sigma=smooth
+        )
         temp_da = data_norm.isel(time=[itime]).copy()
         temp_da.data = smoothed_frame[np.newaxis, ...]
 
-        f = features[features["frame"] == itime] if features is not None else pd.DataFrame()
+        f = (
+            features[features["frame"] == itime]
+            if features is not None
+            else pd.DataFrame()
+        )
         if f.empty:
             segments_all.append((itime, None, None))
             all_segment_labels.append(None)
@@ -174,15 +202,15 @@ def segment_features(
 
 
 def print_clouds_center_line(
-        printing_symbol: str,
-        color: str,
-        f_weighted: pd.DataFrame,
-        itime: int,
-        track: pd.DataFrame,
-        axs: plt.Axes,
-        cell_id: int,
-        persisted_cells: Set[int],
-        all_frames_for_cell: Dict[int, List[int]],
+    printing_symbol: str,
+    color: str,
+    f_weighted: pd.DataFrame,
+    itime: int,
+    track: pd.DataFrame,
+    axs: plt.Axes,
+    cell_id: int,
+    persisted_cells: Set[int],
+    all_frames_for_cell: Dict[int, List[int]],
 ):
     """Plots cloud center markers and fading trajectory path on axes."""
     cell_in_this_frame = not (track[track["frame"] == itime].empty)
@@ -199,7 +227,9 @@ def print_clouds_center_line(
         for t0, t1 in zip(frames[:-1], frames[1:]):
             line = track[(track["frame"] == t0) | (track["frame"] == t1)]
             time_diff = itime - track.iloc[0].frame
-            alpha = 0.1 + 0.3 * (t0 - track.iloc[0].frame) / (time_diff if time_diff != 0 else 1)
+            alpha = 0.1 + 0.3 * (t0 - track.iloc[0].frame) / (
+                time_diff if time_diff != 0 else 1
+            )
             alpha = max(0.05, min(1.0, alpha))
             axs.plot(line["x"], line["y"], color="blue", linewidth=1.5, alpha=alpha)
     except Exception:
@@ -216,8 +246,13 @@ def print_clouds_center_line(
         )
 
 
-def print_cloud_labels(f_weighted: pd.DataFrame, cell_id: int, xlim: Tuple[float, float], ylim: Tuple[
-    float, float], axs: plt.Axes):
+def print_cloud_labels(
+    f_weighted: pd.DataFrame,
+    cell_id: int,
+    xlim: Tuple[float, float],
+    ylim: Tuple[float, float],
+    axs: plt.Axes,
+):
     """Renders cell ID text annotation on axes."""
     if f_weighted.empty or "x" not in f_weighted or len(f_weighted["x"]) == 0:
         return
@@ -246,8 +281,16 @@ def print_cloud_labels(f_weighted: pd.DataFrame, cell_id: int, xlim: Tuple[float
     )
 
 
-def add_circle_slice_filled(ax: plt.Axes, f_weighted: pd.DataFrame, radius: float, xlim: Tuple[float, float], ylim:
-Tuple[float, float], color: str = "red", alpha: float = 0.5, **kwargs):
+def add_circle_slice_filled(
+    ax: plt.Axes,
+    f_weighted: pd.DataFrame,
+    radius: float,
+    xlim: Tuple[float, float],
+    ylim: Tuple[float, float],
+    color: str = "red",
+    alpha: float = 0.5,
+    **kwargs,
+):
     """Draws search radius polygon around feature."""
     if f_weighted.empty:
         return
@@ -275,38 +318,52 @@ Tuple[float, float], color: str = "red", alpha: float = 0.5, **kwargs):
     if corners:
         polygon_points = np.vstack([polygon_points, corners])
 
-    polygon = patches.Polygon(polygon_points, closed=True, facecolor=color, alpha=alpha, **kwargs)
+    polygon = patches.Polygon(
+        polygon_points, closed=True, facecolor=color, alpha=alpha, **kwargs
+    )
     ax.add_patch(polygon)
 
-    polygon_border = patches.Polygon(polygon_points, closed=True, facecolor="none", alpha=0.3, edgecolor="red", linestyle="--", linewidth=1, **kwargs)
+    polygon_border = patches.Polygon(
+        polygon_points,
+        closed=True,
+        facecolor="none",
+        alpha=0.3,
+        edgecolor="red",
+        linestyle="--",
+        linewidth=1,
+        **kwargs,
+    )
     ax.add_patch(polygon_border)
 
 
 def locate_track_merge(
-        input_folder: str,
-        output_folder: str,
-        border_path: Optional[str],
-        n_min_threshold: int,
-        lat_min: float,
-        lat_max: float,
-        lon_min: float,
-        lon_max: float,
-        threshold: float,
-        target: str,
-        type_: str,
-        v_max: float,
-        save_split_merges: bool = True,
-        smooth: float = DEFAULT_SMOOTH,
-        dxy: float = DEFAULT_DXY,
-        dt: float = DEFAULT_DT,
-        min_distance: float = DEFAULT_MIN_DISTANCE,
-        gap_features_frames: int = DEFAULT_GAP_FRAMES,
+    input_folder: str,
+    output_folder: str,
+    border_path: Optional[str],
+    n_min_threshold: int,
+    lat_min: float,
+    lat_max: float,
+    lon_min: float,
+    lon_max: float,
+    threshold: float,
+    target: str,
+    type_: str,
+    v_max: float,
+    save_split_merges: bool = True,
+    smooth: float = DEFAULT_SMOOTH,
+    dxy: float = DEFAULT_DXY,
+    dt: float = DEFAULT_DT,
+    min_distance: float = DEFAULT_MIN_DISTANCE,
+    gap_features_frames: int = DEFAULT_GAP_FRAMES,
 ):
     """Runs feature detection, tracking, segmentation and split/merge detection."""
     os.makedirs(output_folder, exist_ok=True)
 
-    image_files = [os.path.join(input_folder, f) for f in os.listdir(input_folder) if
-                   f.lower().endswith((".png", ".jpg", ".jpeg"))]
+    image_files = [
+        os.path.join(input_folder, f)
+        for f in os.listdir(input_folder)
+        if f.lower().endswith((".png", ".jpg", ".jpeg"))
+    ]
     if not image_files:
         logger.warning(f"No images found in {input_folder}")
         return
@@ -323,8 +380,12 @@ def locate_track_merge(
     _, n_y, n_x = data.shape
 
     region_bounds = (lon_min, lon_max, lat_min, lat_max)
-    referenced_data = build_referenced_data(data, datetimes, region_bounds=region_bounds)
-    calc_dxy, calc_dt = get_grid_spacings(referenced_data, default_dxy=dxy, default_dt=dt)
+    referenced_data = build_referenced_data(
+        data, datetimes, region_bounds=region_bounds
+    )
+    calc_dxy, calc_dt = get_grid_spacings(
+        referenced_data, default_dxy=dxy, default_dt=dt
+    )
 
     test_data_norm = normalize_referenced_data(referenced_data)
 
@@ -368,7 +429,9 @@ def locate_track_merge(
     fig_height_in = n_y / 100
 
     if trajectories is not None and not trajectories.empty:
-        trajectories_by_frame = {frame: df for frame, df in trajectories.groupby("frame")}
+        trajectories_by_frame = {
+            frame: df for frame, df in trajectories.groupby("frame")
+        }
         trajectories_by_cell = {cell: df for cell, df in trajectories.groupby("cell")}
     else:
         trajectories_by_frame = {}
@@ -380,7 +443,9 @@ def locate_track_merge(
 
     for itime in range(images_no):
         frame_traj = trajectories_by_frame.get(itime, pd.DataFrame())
-        cell_ids = set(frame_traj["cell"].dropna().unique()) if not frame_traj.empty else set()
+        cell_ids = (
+            set(frame_traj["cell"].dropna().unique()) if not frame_traj.empty else set()
+        )
 
         all_cells_in_gap = set()
         all_frames_for_cell: Dict[int, List[int]] = {}
@@ -406,7 +471,9 @@ def locate_track_merge(
         fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in), dpi=100)
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
-        smoothed_frame = ndimage.gaussian_filter(test_data_norm.isel(time=itime).values, sigma=smooth)
+        smoothed_frame = ndimage.gaussian_filter(
+            test_data_norm.isel(time=itime).values, sigma=smooth
+        )
         temp_da = test_data_norm.isel(time=itime).copy()
         temp_da.data = smoothed_frame
 
@@ -427,12 +494,30 @@ def locate_track_merge(
                 printing_symbol = "x"
                 color = "red"
 
-            print_clouds_center_line(printing_symbol, color, f_weighted, itime, track, axs, cell_id, persisted, all_frames_for_cell)
+            print_clouds_center_line(
+                printing_symbol,
+                color,
+                f_weighted,
+                itime,
+                track,
+                axs,
+                cell_id,
+                persisted,
+                all_frames_for_cell,
+            )
 
             if len(f_weighted["x"]) > 0:
                 print_cloud_labels(f_weighted, cell_id, xlim, ylim, axs)
             if DEBUG:
-                add_circle_slice_filled(axs, f_weighted, radius=radius, xlim=xlim, ylim=ylim, color="red", alpha=0.05)
+                add_circle_slice_filled(
+                    axs,
+                    f_weighted,
+                    radius=radius,
+                    xlim=xlim,
+                    ylim=ylim,
+                    color="red",
+                    alpha=0.05,
+                )
 
         entry = next((s for s in segments_all if s[0] == itime), None)
         if entry is not None:
@@ -461,7 +546,10 @@ def locate_track_merge(
         all_splits_merges = ""
         if trajectories is not None and not trajectories.empty:
             for itime in range(1, images_no):
-                if all_segment_labels[itime - 1] is None or all_segment_labels[itime] is None:
+                if (
+                    all_segment_labels[itime - 1] is None
+                    or all_segment_labels[itime] is None
+                ):
                     continue
 
                 extended_overlap_map = find_extended_overlap_blobs_inferred(
@@ -495,23 +583,27 @@ def locate_track_merge(
             f.write(str(blob_positions))
 
     if trajectories is not None and not trajectories.empty:
-        trajectories.to_csv(os.path.join(output_folder, "trajectories.csv"), index=False)
-    np.savez_compressed(os.path.join(output_folder, "segment_labels_all.npz"), *all_segment_labels)
+        trajectories.to_csv(
+            os.path.join(output_folder, "trajectories.csv"), index=False
+        )
+    np.savez_compressed(
+        os.path.join(output_folder, "segment_labels_all.npz"), *all_segment_labels
+    )
 
 
 def run_tobac_merge_split(
-        input_folder: str,
-        output_folder: str,
-        border_path: Optional[str],
-        lat_min: float,
-        lat_max: float,
-        lon_min: float,
-        lon_max: float,
-        threshold: float,
-        target: str,
-        type_: str,
-        n_min_threshold: int = 0,
-        smooth: float = DEFAULT_SMOOTH,
+    input_folder: str,
+    output_folder: str,
+    border_path: Optional[str],
+    lat_min: float,
+    lat_max: float,
+    lon_min: float,
+    lon_max: float,
+    threshold: float,
+    target: str,
+    type_: str,
+    n_min_threshold: int = 0,
+    smooth: float = DEFAULT_SMOOTH,
 ):
     """Runs feature locate, tracking, segmentation and split/merge detection."""
     locate_track_merge(
@@ -533,18 +625,18 @@ def run_tobac_merge_split(
 
 
 def run_tobac_fronts(
-        input_folder: str,
-        output_folder: str,
-        border_path: Optional[str],
-        lat_min: float,
-        lat_max: float,
-        lon_min: float,
-        lon_max: float,
-        threshold: float,
-        target: str,
-        type_: str,
-        n_min_threshold: int = 0,
-        smooth: float = DEFAULT_SMOOTH,
+    input_folder: str,
+    output_folder: str,
+    border_path: Optional[str],
+    lat_min: float,
+    lat_max: float,
+    lon_min: float,
+    lon_max: float,
+    threshold: float,
+    target: str,
+    type_: str,
+    n_min_threshold: int = 0,
+    smooth: float = DEFAULT_SMOOTH,
 ):
     """Runs feature locate and tracking without split/merge detection for fronts."""
     locate_track_merge(

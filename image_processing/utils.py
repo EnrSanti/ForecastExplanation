@@ -14,9 +14,8 @@ from image_processing.constants import (
     DEFAULT_DXY,
     DEFAULT_TIME_OFFSET_HOURS,
     CITIES,
-    Region
+    Region,
 )
-
 
 
 def extract_keys(filename: str) -> Tuple[int, int]:
@@ -40,8 +39,8 @@ def extract_keys(filename: str) -> Tuple[int, int]:
 
 
 def extract_times(
-        image_files: List[str],
-        time_offset_hours: int = DEFAULT_TIME_OFFSET_HOURS,
+    image_files: List[str],
+    time_offset_hours: int = DEFAULT_TIME_OFFSET_HOURS,
 ) -> List[pd.Timestamp]:
     """
     Extracts datetimes from a list of image filenames.
@@ -58,7 +57,9 @@ def extract_times(
     times = []
     for filename in image_files:
         basename = os.path.basename(filename)
-        match = re.search(r"_(\d{8})_(\d{4})\.(?:png|jpg|jpeg)$", basename, re.IGNORECASE)
+        match = re.search(
+            r"_(\d{8})_(\d{4})\.(?:png|jpg|jpeg)$", basename, re.IGNORECASE
+        )
         if match:
             date_str, time_str = match.groups()
             dt = pd.to_datetime(date_str + time_str, format="%Y%m%d%H%M")
@@ -67,7 +68,9 @@ def extract_times(
             if len(parts) >= 2 and parts[-2].isdigit() and parts[-1].isdigit():
                 dt = pd.to_datetime(parts[-2] + parts[-1], format="%Y%m%d%H%M")
             else:
-                raise ValueError(f"Could not extract date/time from filename: {filename}")
+                raise ValueError(
+                    f"Could not extract date/time from filename: {filename}"
+                )
 
         if time_offset_hours:
             dt = dt + pd.Timedelta(hours=time_offset_hours)
@@ -81,22 +84,29 @@ def load_image_frames(image_files: List[str]) -> List[np.ndarray]:
 
 
 def convert_frames_to_grayscale(
-        frames: List[np.ndarray],
-        is_temperature: bool = False,
+    frames: List[np.ndarray],
+    is_temperature: bool = False,
 ) -> List[np.ndarray]:
     """
     Converts list of image frames to 2D grayscale arrays.
     For temperature data, inverts pixel intensity values.
     """
     if is_temperature:
-        return [255.0 - (np.mean(f[:, :, :3], axis=2) if f.ndim >= 3 else f.astype(float)) for f in frames]
-    return [np.mean(f[:, :, :3], axis=2) if f.ndim >= 3 else f.astype(float) for f in frames]
+        return [
+            255.0 - (np.mean(f[:, :, :3], axis=2) if f.ndim >= 3 else f.astype(float))
+            for f in frames
+        ]
+    return [
+        np.mean(f[:, :, :3], axis=2) if f.ndim >= 3 else f.astype(float) for f in frames
+    ]
 
 
 def build_referenced_data(
-        data: np.ndarray,
-        times: List[pd.Timestamp],
-        region_bounds: Optional[Union[Tuple[float, float, float, float], List[float]]] = None,
+    data: np.ndarray,
+    times: List[pd.Timestamp],
+    region_bounds: Optional[
+        Union[Tuple[float, float, float, float], List[float]]
+    ] = None,
 ) -> xr.DataArray:
     """
     Constructs an xarray.DataArray with spatial (y, x) and time coordinates,
@@ -132,9 +142,9 @@ def build_referenced_data(
 
 
 def get_grid_spacings(
-        referenced_data: xr.DataArray,
-        default_dxy: float = DEFAULT_DXY,
-        default_dt: float = DEFAULT_DT,
+    referenced_data: xr.DataArray,
+    default_dxy: float = DEFAULT_DXY,
+    default_dt: float = DEFAULT_DT,
 ) -> Tuple[float, float]:
     """
     Determines grid spacing dxy and dt dynamically from DataArray,
@@ -164,10 +174,21 @@ def overlay_image(path_borders: Optional[str], axs: plt.Axes, temp_da: xr.DataAr
     """Overlays border image onto matplotlib axes if file exists."""
     if path_borders and os.path.exists(path_borders):
         img = plt.imread(path_borders)
-        axs.imshow(img, extent=(0, temp_da.sizes["x"], temp_da.sizes["y"], 0), alpha=0.6)
+        axs.imshow(
+            img, extent=(0, temp_da.sizes["x"], temp_da.sizes["y"], 0), alpha=0.6
+        )
 
-def _latlon_to_px(lat: float, lon: float, lat_min: float, lat_max: float,
-                   lon_min: float, lon_max: float, frame_height: int, frame_width: int):
+
+def _latlon_to_px(
+    lat: float,
+    lon: float,
+    lat_min: float,
+    lat_max: float,
+    lon_min: float,
+    lon_max: float,
+    frame_height: int,
+    frame_width: int,
+):
     """
     Convert a lat/lon into pixel (x, y) using the same linear mapping used
     to build the frame's coordinate grid elsewhere in the pipeline (row 0 /
@@ -179,8 +200,7 @@ def _latlon_to_px(lat: float, lon: float, lat_min: float, lat_max: float,
     return px_x, px_y
 
 
-def overlay_cities(axs: plt.Axes, region: Region,
-                    frame_height: int, frame_width: int):
+def overlay_cities(axs: plt.Axes, region: Region, frame_height: int, frame_width: int):
     """
     Overlay city markers + labels on top of whatever's already drawn on axs.
     Call this after imshow() (and after overlay_image(), if used), since
@@ -193,16 +213,28 @@ def overlay_cities(axs: plt.Axes, region: Region,
     text_offset : (dx, dy) in points, offsetting the label from its dot so
         text doesn't sit directly on top of the marker.
     """
-    lon_min, lon_max,lat_min, lat_max = region.value
+    lon_min, lon_max, lat_min, lat_max = region.value
     for name, coords in CITIES.items():
         px_x, px_y = _latlon_to_px(
-            coords["lat"], coords["lon"],
-            lat_min, lat_max, lon_min, lon_max,
-            frame_height, frame_width,
+            coords["lat"],
+            coords["lon"],
+            lat_min,
+            lat_max,
+            lon_min,
+            lon_max,
+            frame_height,
+            frame_width,
         )
-        axs.plot(px_x, px_y, marker="o", markersize=3,
-                  color="red", markeredgecolor="white", markeredgewidth=0.5,
-                  zorder=10)
+        axs.plot(
+            px_x,
+            px_y,
+            marker="o",
+            markersize=3,
+            color="red",
+            markeredgecolor="white",
+            markeredgewidth=0.5,
+            zorder=10,
+        )
         axs.annotate(
             name,
             xy=(px_x, px_y),
@@ -212,4 +244,3 @@ def overlay_cities(axs: plt.Axes, region: Region,
             fontsize=6,
             zorder=11,
         )
-
