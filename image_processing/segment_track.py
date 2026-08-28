@@ -10,6 +10,7 @@ import pandas as pd
 import scipy.ndimage as ndimage
 import tobac
 import xarray as xr
+import warnings
 
 from image_processing.constants import (
     DEFAULT_BORDER_THICKNESS,
@@ -118,9 +119,6 @@ def detect_features(
         min_distance=min_distance,
     )
     return features, features_weighted_points
-
-
-import warnings
 
 
 def track_features(

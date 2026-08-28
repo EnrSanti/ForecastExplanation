@@ -11,16 +11,27 @@ from image_processing.image_proc import resize_1_4_and_simplify
 from image_processing.segment_track import run_tobac_merge_split, run_tobac_fronts
 from data_extraction.cut_long_lat import cut_grib_long_lat
 from data_extraction.extract_features_nc import save_feature_maps
-from reasoning.generate_examples import generate_cloud_facts_over_cities, generate_cloud_movements, \
-    generate_humidity_facts_over_cities, generate_temp_facts_over_cities, merge_into_examples
+from reasoning.generate_examples import (
+    generate_cloud_facts_over_cities,
+    generate_cloud_movements,
+    generate_humidity_facts_over_cities,
+    generate_temp_facts_over_cities,
+    merge_into_examples,
+)
 from reasoning.generate_examples import init_starting_date
-from reasoning.get_fronts import init_fronts_generation, generate_fronts_hum, generate_fronts_temp
-from reasoning.pictogram_extraction.pictograms_to_ground_truth import generate_ground_truth
+from reasoning.get_fronts import (
+    init_fronts_generation,
+    generate_fronts_hum,
+    generate_fronts_temp,
+)
+from reasoning.pictogram_extraction.pictograms_to_ground_truth import (
+    generate_ground_truth,
+)
 
 warnings.filterwarnings(
     "ignore",
     message="As of v1.6.0, segmentation with time length 1",
-    category=UserWarning
+    category=UserWarning,
 )
 
 # for clustering the number of clusters to consider
@@ -84,7 +95,7 @@ def extract(grib_file, coordinates_fvg, coordinates_italy, is_fvg):
     print(f"EXTRACTING FEATURES: {output_path}")
 
     # proper image extraction
-    if (is_fvg):
+    if is_fvg:
         save_feature_maps(output_path, coordinates_fvg, True, True)
     else:
         save_feature_maps(output_path, coordinates_italy, False, True)
@@ -100,7 +111,7 @@ def extract_no_cut(grib_file, coordinates_fvg, coordinates_italy, is_fvg):
     output_path = os.path.join(output_dir_extraction, base_name + ".nc")
 
     # proper image extraction
-    if (is_fvg):
+    if is_fvg:
         save_feature_maps(output_path, coordinates_fvg, True, True)
     else:
         save_feature_maps(output_path, coordinates_italy, False, True)
@@ -112,14 +123,20 @@ def resize_wrapper(args):
     """Unpack tuple and call the function"""
     f, threshold, upper_lower, num_clusters = args
     resize_1_4_and_simplify(
-        f"raw_data/extracted_fvg_cleaned/{f}",
-        f"image_processing/fvg/resized/{f}"
+        f"raw_data/extracted_fvg_cleaned/{f}", f"image_processing/fvg/resized/{f}"
     )
     return f  # optional, just to know which finished
 
 
-def run_non_clustered(folders_pref, folder_params, folders_suff, folder_list, folder_list_clouds, folder_list_humidity,
-                      folder_list_temp):
+def run_non_clustered(
+    folders_pref,
+    folder_params,
+    folders_suff,
+    folder_list,
+    folder_list_clouds,
+    folder_list_humidity,
+    folder_list_temp,
+):
     # resize iamges once to work on smaller images and run TOBAC (FVG)
     print("run TOBAC on FVG data (clouds & humidity for now)")
 
@@ -138,10 +155,22 @@ def run_non_clustered(folders_pref, folder_params, folders_suff, folder_list, fo
 
     with ProcessPoolExecutor(max_workers=3) as executor:
         futures = {
-            executor.submit(run_tobac_fronts, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}",
-                            "raw_data/extracted_fvg_cleaned/borders.png", coordinates[2], coordinates[3],
-                            coordinates[0], coordinates[1], threshold, upper_lower, type_, n_min_threshold_fronts
-                            ): (f, type_) for (f, type_) in folder_list_temp}
+            executor.submit(
+                run_tobac_fronts,
+                f"image_processing/fvg/resized/{f}",
+                f"image_processing/fvg/output/{f}",
+                "raw_data/extracted_fvg_cleaned/borders.png",
+                coordinates[2],
+                coordinates[3],
+                coordinates[0],
+                coordinates[1],
+                threshold,
+                upper_lower,
+                type_,
+                n_min_threshold_fronts,
+            ): (f, type_)
+            for (f, type_) in folder_list_temp
+        }
 
         for future in as_completed(futures):
 
@@ -156,11 +185,22 @@ def run_non_clustered(folders_pref, folder_params, folders_suff, folder_list, fo
 
     with ProcessPoolExecutor(max_workers=3) as executor:
         futures = {
-            executor.submit(run_tobac_merge_split, f"image_processing/fvg/resized/{f}",
-                            f"image_processing/fvg/output/{f}", "raw_data/extracted_fvg_cleaned/borders.png",
-                            coordinates[2], coordinates[3], coordinates[0], coordinates[1], threshold, upper_lower,
-                            type_, n_min_threshold_fronts
-                            ): (f, type_) for (f, type_) in folder_list_clouds}
+            executor.submit(
+                run_tobac_merge_split,
+                f"image_processing/fvg/resized/{f}",
+                f"image_processing/fvg/output/{f}",
+                "raw_data/extracted_fvg_cleaned/borders.png",
+                coordinates[2],
+                coordinates[3],
+                coordinates[0],
+                coordinates[1],
+                threshold,
+                upper_lower,
+                type_,
+                n_min_threshold_fronts,
+            ): (f, type_)
+            for (f, type_) in folder_list_clouds
+        }
 
         for future in as_completed(futures):
 
@@ -173,15 +213,26 @@ def run_non_clustered(folders_pref, folder_params, folders_suff, folder_list, fo
 
     # for the humidity
     folder_list_humidity = [
-        (folders_pref[1] + suff, folders_pref[1])
-        for suff in folders_suff.values()
+        (folders_pref[1] + suff, folders_pref[1]) for suff in folders_suff.values()
     ]
     with ProcessPoolExecutor(max_workers=3) as executor:
         futures = {
-            executor.submit(run_tobac_fronts, f"image_processing/fvg/resized/{f}", f"image_processing/fvg/output/{f}",
-                            "raw_data/extracted_fvg_cleaned/borders.png", coordinates[2], coordinates[3],
-                            coordinates[0], coordinates[1], threshold, upper_lower, type_, n_min_threshold_fronts
-                            ): (f, type_) for (f, type_) in folder_list_humidity}
+            executor.submit(
+                run_tobac_fronts,
+                f"image_processing/fvg/resized/{f}",
+                f"image_processing/fvg/output/{f}",
+                "raw_data/extracted_fvg_cleaned/borders.png",
+                coordinates[2],
+                coordinates[3],
+                coordinates[0],
+                coordinates[1],
+                threshold,
+                upper_lower,
+                type_,
+                n_min_threshold_fronts,
+            ): (f, type_)
+            for (f, type_) in folder_list_humidity
+        }
 
         for future in as_completed(futures):
 
@@ -203,8 +254,15 @@ def run_non_clustered(folders_pref, folder_params, folders_suff, folder_list, fo
     generate_fronts_temp(starting_date)
 
 
-def run_clustered(folders_pref, folder_params, folders_suff, folder_list, folder_list_clouds, folder_list_humidity,
-                  folder_list_temp):
+def run_clustered(
+    folders_pref,
+    folder_params,
+    folders_suff,
+    folder_list,
+    folder_list_clouds,
+    folder_list_humidity,
+    folder_list_temp,
+):
     base_path = "./image_processing/fvg/output_clustered/"
 
     # resize iamges once to work on smaller images, generate clustered images and run TOBAC (FVG)
@@ -224,19 +282,33 @@ def run_clustered(folders_pref, folder_params, folders_suff, folder_list, folder
     # Calculate the start time
     # resize and cluster the images
     for f, threshold, upper_lower, num_clusters in folder_list:
-        generate_clustered_images(num_clusters, f"image_processing/fvg/resized/{f}",
-                                  f"image_processing/fvg/clustered/{f}_clustered")
+        generate_clustered_images(
+            num_clusters,
+            f"image_processing/fvg/resized/{f}",
+            f"image_processing/fvg/clustered/{f}_clustered",
+        )
 
     # Show the results : this can be altered however you like
 
     # for the clouds run tobac
     with ProcessPoolExecutor(max_workers=3) as executor:
         futures = {
-            executor.submit(run_tobac_merge_split, f"image_processing/fvg/clustered/{f}_clustered",
-                            f"image_processing/fvg/output_clustered/{f}", "raw_data/extracted_fvg_cleaned/borders.png",
-                            coordinates[2], coordinates[3], coordinates[0], coordinates[1], threshold, upper_lower,
-                            type_, n_min_threshold_clouds
-                            ): (f, type_) for (f, type_) in folder_list_clouds}
+            executor.submit(
+                run_tobac_merge_split,
+                f"image_processing/fvg/clustered/{f}_clustered",
+                f"image_processing/fvg/output_clustered/{f}",
+                "raw_data/extracted_fvg_cleaned/borders.png",
+                coordinates[2],
+                coordinates[3],
+                coordinates[0],
+                coordinates[1],
+                threshold,
+                upper_lower,
+                type_,
+                n_min_threshold_clouds,
+            ): (f, type_)
+            for (f, type_) in folder_list_clouds
+        }
 
         for future in as_completed(futures):
 
@@ -250,11 +322,22 @@ def run_clustered(folders_pref, folder_params, folders_suff, folder_list, folder
     # for the humidity run tobac
     with ProcessPoolExecutor(max_workers=3) as executor:
         futures = {
-            executor.submit(run_tobac_fronts, f"image_processing/fvg/clustered/{f}_clustered",
-                            f"image_processing/fvg/output_clustered/{f}", "raw_data/extracted_fvg_cleaned/borders.png",
-                            coordinates[2], coordinates[3], coordinates[0], coordinates[1], threshold, upper_lower,
-                            type_, n_min_threshold_fronts
-                            ): (f, type_) for (f, type_) in folder_list_humidity}
+            executor.submit(
+                run_tobac_fronts,
+                f"image_processing/fvg/clustered/{f}_clustered",
+                f"image_processing/fvg/output_clustered/{f}",
+                "raw_data/extracted_fvg_cleaned/borders.png",
+                coordinates[2],
+                coordinates[3],
+                coordinates[0],
+                coordinates[1],
+                threshold,
+                upper_lower,
+                type_,
+                n_min_threshold_fronts,
+            ): (f, type_)
+            for (f, type_) in folder_list_humidity
+        }
 
         for future in as_completed(futures):
 
@@ -268,11 +351,22 @@ def run_clustered(folders_pref, folder_params, folders_suff, folder_list, folder
     # for the tmeperature run tobac
     with ProcessPoolExecutor(max_workers=3) as executor:
         futures = {
-            executor.submit(run_tobac_fronts, f"image_processing/fvg/clustered/{f}_clustered",
-                            f"image_processing/fvg/output_clustered/{f}", "raw_data/extracted_fvg_cleaned/borders.png",
-                            coordinates[2], coordinates[3], coordinates[0], coordinates[1], threshold, upper_lower,
-                            type_, n_min_threshold_fronts
-                            ): (f, type_) for (f, type_) in folder_list_temp}
+            executor.submit(
+                run_tobac_fronts,
+                f"image_processing/fvg/clustered/{f}_clustered",
+                f"image_processing/fvg/output_clustered/{f}",
+                "raw_data/extracted_fvg_cleaned/borders.png",
+                coordinates[2],
+                coordinates[3],
+                coordinates[0],
+                coordinates[1],
+                threshold,
+                upper_lower,
+                type_,
+                n_min_threshold_fronts,
+            ): (f, type_)
+            for (f, type_) in folder_list_temp
+        }
 
         for future in as_completed(futures):
 
@@ -306,8 +400,12 @@ def extract_data():
 
     # no threads, processes HDF5 has some thread issues #each worker extacts one grib
     with ProcessPoolExecutor(max_workers=12) as executor:
-        futures = {executor.submit(extract, grib_file, coordinates, coordinates_italy, True): grib_file for grib_file in
-                   grib_files}
+        futures = {
+            executor.submit(
+                extract, grib_file, coordinates, coordinates_italy, True
+            ): grib_file
+            for grib_file in grib_files
+        }
 
         for future in as_completed(futures):
             grib_file = futures[future]
@@ -329,8 +427,12 @@ def extract_data_no_cut():
 
     # no threads, processes HDF5 has some thread issues #each worker extacts one grib
     with ProcessPoolExecutor(max_workers=12) as executor:
-        futures = {executor.submit(extract_no_cut, grib_file, coordinates, coordinates_italy, True): grib_file for
-                   grib_file in grib_files}
+        futures = {
+            executor.submit(
+                extract_no_cut, grib_file, coordinates, coordinates_italy, True
+            ): grib_file
+            for grib_file in grib_files
+        }
 
         for future in as_completed(futures):
             grib_file = futures[future]
@@ -352,8 +454,12 @@ def just_cut_data():
 
     # no threads, processes HDF5 has some thread issues #each worker extacts one grib
     with ProcessPoolExecutor(max_workers=18) as executor:
-        futures = {executor.submit(just_cut, grib_file, coordinates, coordinates_italy, True): grib_file for grib_file
-                   in grib_files}
+        futures = {
+            executor.submit(
+                just_cut, grib_file, coordinates, coordinates_italy, True
+            ): grib_file
+            for grib_file in grib_files
+        }
 
         for future in as_completed(futures):
             grib_file = futures[future]
@@ -382,14 +488,18 @@ if __name__ == "__main__":
     print("[6]: CLEAR EXISTING DATA and do the whole pipeline")
     print("[7]: CLEAR EXISTING DATA and do the whole pipeline FROM NC DATA")
 
-    print("\nselect: ", end='')
+    print("\nselect: ", end="")
 
     mode = int(input())
 
     folders_pref = ["cloud", "humidity", "temp", "winds"]
 
     folder_params = {
-        "cloud": (0.7, "maximum", numClusters_clouds),  # e.g. (threshold, go lower or upper, clusters)
+        "cloud": (
+            0.7,
+            "maximum",
+            numClusters_clouds,
+        ),  # e.g. (threshold, go lower or upper, clusters)
         "humidity": (0.55, "minimum", num_clusters_fronts),
         "temp": (0.6, "maximum", num_clusters_fronts),  # temp fronts
         "winds": (0.6, "maximum", numClusters_clouds),  #
@@ -401,7 +511,7 @@ if __name__ == "__main__":
         850: "_at_1_4km",
         700: "_at_3km",
         500: "_at_5_5km",
-        300: "_at_9km"
+        300: "_at_9km",
     }
 
     folder_list = [
@@ -410,21 +520,17 @@ if __name__ == "__main__":
         for suff in folders_suff.values()
     ]
     folder_list_humidity = [
-        (folders_pref[1] + suff, folders_pref[1])
-        for suff in folders_suff.values()
+        (folders_pref[1] + suff, folders_pref[1]) for suff in folders_suff.values()
     ]
     folder_list_clouds = [
-        (folders_pref[0] + suff, folders_pref[0])
-        for suff in folders_suff.values()
+        (folders_pref[0] + suff, folders_pref[0]) for suff in folders_suff.values()
     ]
     # for the temp
     folder_list_temp = [
-        (folders_pref[2] + suff, folders_pref[2])
-        for suff in folders_suff.values()
+        (folders_pref[2] + suff, folders_pref[2]) for suff in folders_suff.values()
     ]
     folder_list_wind = [
-        (folders_pref[3] + suff, folders_pref[3])
-        for suff in folders_suff.values()
+        (folders_pref[3] + suff, folders_pref[3]) for suff in folders_suff.values()
     ]
 
     # print info
@@ -438,14 +544,27 @@ if __name__ == "__main__":
 
     elif mode == 2:
 
-        run_clustered(folders_pref, folder_params, folders_suff, folder_list, folder_list_clouds, folder_list_humidity,
-                      folder_list_temp)
-
+        run_clustered(
+            folders_pref,
+            folder_params,
+            folders_suff,
+            folder_list,
+            folder_list_clouds,
+            folder_list_humidity,
+            folder_list_temp,
+        )
 
     elif mode == 3:
 
-        run_non_clustered(folders_pref, folder_params, folders_suff, folder_list, folder_list_clouds,
-                          folder_list_humidity, folder_list_temp)
+        run_non_clustered(
+            folders_pref,
+            folder_params,
+            folders_suff,
+            folder_list,
+            folder_list_clouds,
+            folder_list_humidity,
+            folder_list_temp,
+        )
 
     elif mode == 4:
 
@@ -455,7 +574,13 @@ if __name__ == "__main__":
 
         init_starting_date()
 
-        merge_into_examples(folder_list_clouds, folder_list_humidity, folder_list_temp, folder_list_wind, folders_suff)
+        merge_into_examples(
+            folder_list_clouds,
+            folder_list_humidity,
+            folder_list_temp,
+            folder_list_wind,
+            folders_suff,
+        )
 
     elif mode == 6:
 
@@ -474,7 +599,9 @@ if __name__ == "__main__":
         os.makedirs("./raw_data/extracted_fvg_cleaned", exist_ok=True)
 
         # 3. Copy the borders
-        shutil.copy("./raw_data/borders.png", "./raw_data/extracted_fvg_cleaned/borders.png")
+        shutil.copy(
+            "./raw_data/borders.png", "./raw_data/extracted_fvg_cleaned/borders.png"
+        )
         shutil.rmtree("./reasoning/clouds", ignore_errors=True)
         shutil.rmtree("./reasoning/humidity", ignore_errors=True)
         shutil.rmtree("./reasoning/temp", ignore_errors=True)
@@ -492,18 +619,33 @@ if __name__ == "__main__":
         print("-------------------------------------------------")
         print(f"------------------ DATA in {t1 - t0:.2f}s -------------------")
 
-        run_clustered(folders_pref, folder_params, folders_suff,
-                      folder_list, folder_list_clouds, folder_list_humidity, folder_list_temp)
+        run_clustered(
+            folders_pref,
+            folder_params,
+            folders_suff,
+            folder_list,
+            folder_list_clouds,
+            folder_list_humidity,
+            folder_list_temp,
+        )
         t1 = time.time()
         print("-------------------------------------------------")
         print(f"------------------ CLUSTERED in {t1 - t0:.2f}s -------------------")
         generate_ground_truth()
 
         init_starting_date()
-        merge_into_examples(folder_list_clouds, folder_list_humidity, folder_list_temp, folder_list_wind, folders_suff)
+        merge_into_examples(
+            folder_list_clouds,
+            folder_list_humidity,
+            folder_list_temp,
+            folder_list_wind,
+            folders_suff,
+        )
         t1 = time.time()
         print("-------------------------------------------------")
-        print(f"------------------ Process completed in {t1 - t0:.2f}s -------------------")
+        print(
+            f"------------------ Process completed in {t1 - t0:.2f}s -------------------"
+        )
 
     elif mode == 7:
 
@@ -519,7 +661,9 @@ if __name__ == "__main__":
         os.makedirs("./raw_data/extracted_fvg_cleaned", exist_ok=True)
 
         # 3. Copy the borders
-        shutil.copy("./raw_data/borders.png", "./raw_data/extracted_fvg_cleaned/borders.png")
+        shutil.copy(
+            "./raw_data/borders.png", "./raw_data/extracted_fvg_cleaned/borders.png"
+        )
         shutil.rmtree("./reasoning/clouds", ignore_errors=True)
         shutil.rmtree("./reasoning/humidity", ignore_errors=True)
         shutil.rmtree("./reasoning/temp", ignore_errors=True)
@@ -537,15 +681,30 @@ if __name__ == "__main__":
         print("-------------------------------------------------")
         print(f"------------------ DATA in {t1 - t0:.2f}s -------------------")
 
-        run_clustered(folders_pref, folder_params, folders_suff,
-                      folder_list, folder_list_clouds, folder_list_humidity, folder_list_temp)
+        run_clustered(
+            folders_pref,
+            folder_params,
+            folders_suff,
+            folder_list,
+            folder_list_clouds,
+            folder_list_humidity,
+            folder_list_temp,
+        )
         t1 = time.time()
         print("-------------------------------------------------")
         print(f"------------------ CLUSTERED in {t1 - t0:.2f}s -------------------")
         generate_ground_truth()
 
         init_starting_date()
-        merge_into_examples(folder_list_clouds, folder_list_humidity, folder_list_temp, folder_list_wind, folders_suff)
+        merge_into_examples(
+            folder_list_clouds,
+            folder_list_humidity,
+            folder_list_temp,
+            folder_list_wind,
+            folders_suff,
+        )
         t1 = time.time()
         print("-------------------------------------------------")
-        print(f"------------------ Process completed in {t1 - t0:.2f}s -------------------")
+        print(
+            f"------------------ Process completed in {t1 - t0:.2f}s -------------------"
+        )
