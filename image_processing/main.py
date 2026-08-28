@@ -75,14 +75,14 @@ def run_tobac(
 
 
 def _run_tobac_single_day(
-    date: datetime, input_dir: str, output_dir: str, region: Region, border_img: str
+    date: datetime, input_dir: str, output_dir: str, region: Region, border_img
 ):
 
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
     os.makedirs(day_output_dir, exist_ok=True)
 
-    JSON_temp = _run_tobac_single_day_single_phenomenon(
+    temp_tra_df, temp_seg_df = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
         day_output_dir,
@@ -91,7 +91,7 @@ def _run_tobac_single_day(
         border_img,
         WeatherPhenomenonTobacParams.TEMPERATURE,
     )
-    JSON_hum = _run_tobac_single_day_single_phenomenon(
+    hum_tra_df, hum_seg_df = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
         day_output_dir,
@@ -100,7 +100,7 @@ def _run_tobac_single_day(
         border_img,
         WeatherPhenomenonTobacParams.HUMIDITY,
     )
-    JSON_clouds = _run_tobac_single_day_single_phenomenon(
+    cld_tra_df, cld_seg_df = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
         day_output_dir,
@@ -110,7 +110,15 @@ def _run_tobac_single_day(
         WeatherPhenomenonTobacParams.CLOUDS,
     )
 
-    write_JSON(date, day_output_dir, JSON_clouds, JSON_hum, JSON_temp)
+    results_tra = pd.concat([temp_tra_df, hum_tra_df, cld_tra_df])
+    results_seg = pd.concat([temp_seg_df, hum_seg_df, cld_seg_df])
+
+    results_tra.to_parquet(
+        os.path.join(day_output_dir, "trajectories.parquet"), index=False
+    )
+    results_seg.to_parquet(
+        os.path.join(day_output_dir, "segmentation.parquet"), index=False
+    )
 
 
 def _run_tobac_single_day_single_phenomenon(
@@ -119,13 +127,14 @@ def _run_tobac_single_day_single_phenomenon(
     day_output_dir: str,
     region: Region,
     phenomenon: WeatherPhenomenon,
-    border_img: str,
+    border_img,
     phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
 ):
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
     """
-    partial_JSON = []
+    trajectories_df = pd.DataFrame()
+    segmentation_df = pd.DataFrame()
     logger.info(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
@@ -192,7 +201,7 @@ def _run_tobac_single_day_single_phenomenon(
         )
 
         # Segmentation
-        segments_all, all_segment_labels = segment_features(
+        segments_all = segment_features(
             features,
             referenced_data_norm,
             threshold=threshold,
@@ -201,6 +210,20 @@ def _run_tobac_single_day_single_phenomenon(
             dxy=dxy,
         )
 
+        print(trajectories)
+        print("--------------------------------------------")
+        print(segments_all[0][1], type(segments_all[0][1]))
+        print("--------------------------------------------")
+
+        if (x := [s[1].to_dataframe() for s in segments_all if s[1] is not None]) != []:
+            segmentations = pd.concat(x)
+        else:
+            segmentations = pd.DataFrame()
+
+        trajectories_df = adapt_and_merge(trajectories, trajectories_df, suffix)
+        segmentation_df = adapt_and_merge(segmentations, segmentation_df, suffix)
+        print(trajectories_df.memory_usage())
+        print(segmentation_df.memory_usage())
         # Plotting on original images
         images_no = len(image_files)
 
@@ -225,7 +248,6 @@ def _run_tobac_single_day_single_phenomenon(
             original_img = frames[i]
             cmap = phenomenon_params.value.get("cmap", "viridis")
 
-            append_to_JSON(partial_JSON, date, phenomenon, trajectories_by_cell)
             generate_plots(
                 original_img,
                 out_path,
@@ -240,7 +262,9 @@ def _run_tobac_single_day_single_phenomenon(
                 border_img,
                 i,
             )
-    return partial_JSON
+        del trajectories
+        del segments_all
+    return trajectories_df, segmentation_df
 
 
 def classify_cells_per_frame(trajectories: pd.DataFrame, gap_frames: int) -> dict:
@@ -372,10 +396,10 @@ def generate_plots(
     plt.close(fig)
 
 
-def append_to_JSON(
-    partial_JSON, date: datetime, phenomenon: WeatherPhenomenon, trajectories_by_cell
-):
-    pass
+def adapt_and_merge(input_df, output_df, height: str):
+    input_df["height"] = height
+
+    return pd.concat([output_df, input_df], ignore_index=True)
 
 
 def write_JSON(date, day_output_dir, JSON_clouds, JSON_hum, JSON_temp):

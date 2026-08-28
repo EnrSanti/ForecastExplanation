@@ -160,13 +160,9 @@ def segment_features(
     target: str,
     smooth: float = DEFAULT_SMOOTH,
     dxy: float = DEFAULT_DXY,
-) -> Tuple[
-    List[Tuple[int, Optional[xr.DataArray], Optional[xr.DataArray]]],
-    List[Optional[xr.DataArray]],
-]:
+) -> Tuple[List[Tuple[int, Optional[xr.DataArray], Optional[xr.DataArray]]]]:
     """Performs 2D segmentation for each frame in data_norm."""
     segments_all = []
-    all_segment_labels = []
     images_no = len(data_norm.time)
 
     for itime in range(images_no):
@@ -183,7 +179,6 @@ def segment_features(
         )
         if f.empty:
             segments_all.append((itime, None, None))
-            all_segment_labels.append(None)
             continue
 
         segment_labels, segments = tobac.segmentation_2D(
@@ -194,9 +189,8 @@ def segment_features(
             target=target,
         )
         segments_all.append((itime, segment_labels, segments))
-        all_segment_labels.append(segment_labels)
 
-    return segments_all, all_segment_labels
+    return segments_all
 
 
 def print_clouds_center_line(
@@ -406,7 +400,7 @@ def locate_track_merge(
         memory=gap_features_frames,
     )
 
-    segments_all, all_segment_labels = segment_features(
+    segments_all = segment_features(
         features,
         test_data_norm,
         threshold=threshold,
