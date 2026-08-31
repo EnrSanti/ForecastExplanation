@@ -9,10 +9,12 @@ import pandas as pd
 from scipy.ndimage import maximum_filter
 
 # --- Configuration ---
-ICON_FOLDER_PATH = './reasoning/pictogram_extraction/base_symbols/'
-INPUT_FOLDER = './reasoning/pictogram_extraction/pictograms/sky/'  # folder containing all input images
-OUTPUT_FOLDER = './reasoning/pictogram_extraction/extracted'  # folder where results will be saved
-CSV_PATH = './reasoning/locations.csv'  # path to your location CSV
+ICON_FOLDER_PATH = "./reasoning/pictogram_extraction/base_symbols/"
+INPUT_FOLDER = "./reasoning/pictogram_extraction/pictograms/sky/"  # folder containing all input images
+OUTPUT_FOLDER = (
+    "./reasoning/pictogram_extraction/extracted"  # folder where results will be saved
+)
+CSV_PATH = "./reasoning/locations.csv"  # path to your location CSV
 
 # Matching Parameters
 RELAXED_THRESHOLD = 0.90
@@ -26,9 +28,11 @@ LOCATION_TOLERANCE = 30  # pixels tolerance to match detected icon to CSV locati
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 
-def resolve_perfect_matches(all_detections_raw, map_img_color, icon_templates, locations_df):
+def resolve_perfect_matches(
+    all_detections_raw, map_img_color, icon_templates, locations_df
+):
     """
-    Resolves near-perfect matches (score >= 0.99) at the same location/size 
+    Resolves near-perfect matches (score >= 0.99) at the same location/size
     grouped by CATEGORY.
     """
     print("Resolving perfect matches using template complexity (per category)...")
@@ -80,7 +84,6 @@ def resolve_perfect_matches(all_detections_raw, map_img_color, icon_templates, l
 
             if best_match is not None:
                 filtered_detections.append(best_match)
-
 
         else:
             # No tie within this category/location, keep it
@@ -143,7 +146,7 @@ def visualize_detections(image_path, detections, output_path, color=(0, 0, 255))
         "sky": (0, 0, 255),  # Red
         "rain": (255, 0, 0),  # Blue
         "snow": (255, 255, 0),  # Cyan
-        "thunder": (0, 255, 255)  # Yellow
+        "thunder": (0, 255, 255),  # Yellow
     }
 
     # detections is: { location_name: { category: {type, score, bbox}, ... }, ... }
@@ -236,19 +239,19 @@ def visualize_detections_temp(image_path, detections, color=(0, 0, 255)):
 
 def build_bottom_weight_mask(h, w, power=2.5):
     y = np.linspace(0, 1, h).reshape(-1, 1)
-    weights = y ** power
+    weights = y**power
     mask = (weights * 255).astype(np.uint8)
     return np.repeat(mask, w, axis=1)
 
 
 def match_to_location(x, y, locations_df):
     """Find the closest location within LOCATION_TOLERANCE pixels."""
-    dx = locations_df['pictogram_px_x'] - x
-    dy = locations_df['pictogram_px_y'] - y
-    dist = np.sqrt(dx ** 2 + dy ** 2)
+    dx = locations_df["pictogram_px_x"] - x
+    dy = locations_df["pictogram_px_y"] - y
+    dist = np.sqrt(dx**2 + dy**2)
     min_idx = dist.idxmin()
     if dist[min_idx] <= LOCATION_TOLERANCE:
-        return locations_df.loc[min_idx, 'Location']
+        return locations_df.loc[min_idx, "Location"]
     return None
 
 
@@ -278,15 +281,16 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
                     continue
 
                 resized_icon = cv2.resize(icon, (rw, rh))
-                resized_mask = cv2.resize(match_mask, (rw, rh)) if match_mask is not None else None
+                resized_mask = (
+                    cv2.resize(match_mask, (rw, rh)) if match_mask is not None else None
+                )
 
-                method = cv2.TM_CCORR_NORMED if category == "snow" else cv2.TM_CCOEFF_NORMED
+                method = (
+                    cv2.TM_CCORR_NORMED if category == "snow" else cv2.TM_CCOEFF_NORMED
+                )
 
                 res = cv2.matchTemplate(
-                    gray_map,
-                    resized_icon,
-                    method,
-                    mask=resized_mask
+                    gray_map, resized_icon, method, mask=resized_mask
                 )
 
                 res_max = maximum_filter(res, size=3)
@@ -302,20 +306,19 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
     # remove -inf detections
     all_detections_raw = [det for det in all_detections_raw if np.isfinite(det[5])]
 
-    all_detections_raw = resolve_perfect_matches(all_detections_raw, map_img_color, icon_templates, locations_df)
+    all_detections_raw = resolve_perfect_matches(
+        all_detections_raw, map_img_color, icon_templates, locations_df
+    )
 
     print_detections = {"-": []}
 
-    for (x, y, name, w, h, score, cat) in all_detections_raw:
-        if ((x > 350 and x < 370) and (y > 205 and y < 225) or not np.isfinite(score)):
+    for x, y, name, w, h, score, cat in all_detections_raw:
+        if (x > 350 and x < 370) and (y > 205 and y < 225) or not np.isfinite(score):
             continue
 
-        print_detections["-"].append({
-            "type": name,
-            "bbox": (x, y, w, h),
-            "icon": name,
-            "score": score
-        })
+        print_detections["-"].append(
+            {"type": name, "bbox": (x, y, w, h), "icon": name, "score": score}
+        )
 
     print(f"visualizing {len(print_detections)}  detections... ")
     # get the filename from image_path
@@ -325,7 +328,7 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
     # Instead of simple NMS, we group by location and pick the best icon for EACH category
     detections_with_locations = {}
 
-    for (x, y, name, w, h, score, cat) in all_detections_raw:
+    for x, y, name, w, h, score, cat in all_detections_raw:
         loc_name = match_to_location(x, y, locations_df)
         if loc_name is None:
             continue
@@ -334,11 +337,14 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
             detections_with_locations[loc_name] = {}
 
         # Keep the best match for this specific category at this location
-        if cat not in detections_with_locations[loc_name] or score > detections_with_locations[loc_name][cat]['score']:
+        if (
+            cat not in detections_with_locations[loc_name]
+            or score > detections_with_locations[loc_name][cat]["score"]
+        ):
             detections_with_locations[loc_name][cat] = {
                 "type": name,
                 "score": score,
-                "bbox": (x, y, w, h)
+                "bbox": (x, y, w, h),
             }
 
     # Note: This returns a dict of dicts: results[location][category]
@@ -346,7 +352,7 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
 
 
 def icon_name_to_rain_level(icon_name):
-    match = re.search(r'rain_([1-4]|6)', icon_name)
+    match = re.search(r"rain_([1-4]|6)", icon_name)
     if match:
         return int(match.group(1))
     return 0
@@ -385,7 +391,7 @@ def extract_date_from_filename(filename):
     If no date is found, returns None.
     """
 
-    match = re.search(r'(\d{4})_(\d{1,2})_(\d{1,2})', filename)
+    match = re.search(r"(\d{4})_(\d{1,2})_(\d{1,2})", filename)
     if match:
         year, month, day = map(int, match.groups())
         return year, month, day
@@ -397,12 +403,16 @@ def generate_ground_truth():
 
     # Load CSV
     locations_df = pd.read_csv(CSV_PATH)
-    if not {'Location', 'pictogram_px_x', 'pictogram_px_y'}.issubset(locations_df.columns):
-        raise ValueError("CSV must contain columns: Location, pictogram_px_x, pictogram_px_y")
+    if not {"Location", "pictogram_px_x", "pictogram_px_y"}.issubset(
+        locations_df.columns
+    ):
+        raise ValueError(
+            "CSV must contain columns: Location, pictogram_px_x, pictogram_px_y"
+        )
 
     # Load icon templates
     icon_templates = {"sky": {}, "rain": {}, "snow": {}, "thunder": {}}
-    template_paths = glob.glob(os.path.join(ICON_FOLDER_PATH, '*.[pPjJgG][nNpP][gG]'))
+    template_paths = glob.glob(os.path.join(ICON_FOLDER_PATH, "*.[pPjJgG][nNpP][gG]"))
     if not template_paths:
         print(f"Error: No icon images found in {ICON_FOLDER_PATH}")
         exit(1)
@@ -411,41 +421,43 @@ def generate_ground_truth():
     for path in template_paths:
         try:
             name = os.path.basename(path)
-            gray, match_mask, cutout_mask, template_complexity_area = load_icon_with_mask(path)
+            gray, match_mask, cutout_mask, template_complexity_area = (
+                load_icon_with_mask(path)
+            )
 
-            if ("rain" in name):
+            if "rain" in name:
                 icon_templates["rain"][name] = {
                     "icon": gray,
                     "match_mask": match_mask,
                     "cutout_mask": cutout_mask,
-                    "template_area": template_complexity_area
+                    "template_area": template_complexity_area,
                 }
-            elif ("snow" in name):
+            elif "snow" in name:
                 icon_templates["snow"][name] = {
                     "icon": gray,
                     "match_mask": match_mask,
                     "cutout_mask": cutout_mask,
-                    "template_area": template_complexity_area
+                    "template_area": template_complexity_area,
                 }
-            elif ("lightning" in name):
+            elif "lightning" in name:
                 icon_templates["thunder"][name] = {
                     "icon": gray,
                     "match_mask": match_mask,
                     "cutout_mask": cutout_mask,
-                    "template_area": template_complexity_area
+                    "template_area": template_complexity_area,
                 }
             else:
                 icon_templates["sky"][name] = {
                     "icon": gray,
                     "match_mask": match_mask,
                     "cutout_mask": cutout_mask,
-                    "template_area": template_complexity_area
+                    "template_area": template_complexity_area,
                 }
 
         except Exception as e:
             print(f"Error loading {os.path.basename(path)}: {e}")
     # Process all images
-    image_paths = sorted(glob.glob(os.path.join(INPUT_FOLDER, '*.[pPjJgG][nNpP][gG]')))
+    image_paths = sorted(glob.glob(os.path.join(INPUT_FOLDER, "*.[pPjJgG][nNpP][gG]")))
     if not image_paths:
         print(f"No input images found in {INPUT_FOLDER}")
         exit(1)
@@ -457,7 +469,9 @@ def generate_ground_truth():
         base_name = os.path.splitext(os.path.basename(img_path))[0]
         print(f"Processing: {base_name}...")
 
-        detections, _ = perform_multi_scale_matching(img_path, icon_templates, locations_df)
+        detections, _ = perform_multi_scale_matching(
+            img_path, icon_templates, locations_df
+        )
 
         out_prefix = os.path.join(OUTPUT_FOLDER, base_name)
         txt_path = f"{out_prefix}_locations.txt"
@@ -466,10 +480,10 @@ def generate_ground_truth():
         # Save text results with location names (no .png)
 
         yyyy, mm, dd = extract_date_from_filename(img_path)
-        with open(txt_path, 'w') as f:
+        with open(txt_path, "w") as f:
             # f.write(f"%% Format: forecasted_rain(location, drops_in_pictogram).\n")
             # f.write(f"%% Format: forecasted_sky(location, description).\n")
-            f.write(f'% date({yyyy},{mm},{dd}),\n\n')
+            f.write(f"% date({yyyy},{mm},{dd}),\n\n")
 
             lines = []
 
@@ -504,12 +518,12 @@ def generate_ground_truth():
                         components.append(s_name)
 
                     # Lightning
-                    '''SKIP FOR NOW
+                    """SKIP FOR NOW
                     thunder_det = loc_data.get("thunder")
                     if thunder_det:
                         # Just add the word 'lightning' if detected
                         components.append("lightning")
-                    '''
+                    """
                     # Join them with underscores: e.g., "big_cloud_rain_1_snow_3_lightning"
                     full_icon_name = "_".join(components)
 
@@ -517,13 +531,11 @@ def generate_ground_truth():
                     # You might want to pass the joined name or just the sky component
                     sky_description = icon_name_to_sky_level(full_icon_name)
 
-                    lines.append(
-                        f'forecasted_sky({loc_lower}, "{sky_description}")'
-                    )
+                    lines.append(f'forecasted_sky({loc_lower}, "{sky_description}")')
 
                     # Optional: If you want to keep the rain level logic available
                     rain_lvl = icon_name_to_rain_level(full_icon_name)
-                    lines.append(f'forecasted_rain({loc_lower}, {rain_lvl})')
+                    lines.append(f"forecasted_rain({loc_lower}, {rain_lvl})")
 
                 else:
                     lines.append(f'forecasted_sky({loc_lower}, "ND")')

@@ -7,20 +7,19 @@ from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
-from zmq import device
 import torch
 
 logger = logging.getLogger(__name__)
 
 
 def batched_kmeans_torch(
-        X: np.ndarray,
-        num_clusters: int,
-        max_iter: int = 200,
-        n_init: int = 8,
-        tol: float = 1e-4,
-        device: str = "cpu",
-        stream: Optional[torch.cuda.Stream] = None,
+    X: np.ndarray,
+    num_clusters: int,
+    max_iter: int = 200,
+    n_init: int = 8,
+    tol: float = 1e-4,
+    device: str = "cpu",
+    stream: Optional[torch.cuda.Stream] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Vectorized-over-B KMeans for a batch of same-shaped images.
@@ -89,20 +88,22 @@ def batched_kmeans_torch(
 
             dist_final = torch.cdist(X_t, centers)
             min_dist, labels = dist_final.min(dim=-1)
-            inertia = (min_dist ** 2).sum(dim=1)  # (B,)
+            inertia = (min_dist**2).sum(dim=1)  # (B,)
 
             improved = inertia < best_inertia
             best_inertia = torch.where(improved, inertia, best_inertia)
             best_labels = torch.where(improved.unsqueeze(-1), labels, best_labels)
-            best_centers = torch.where(improved.unsqueeze(-1).unsqueeze(-1), centers, best_centers)
+            best_centers = torch.where(
+                improved.unsqueeze(-1).unsqueeze(-1), centers, best_centers
+            )
 
         return best_labels.cpu().numpy(), best_centers.cpu().numpy()
 
 
 def _order_labels_by_brightness(
-        clustering: np.ndarray,
-        gray: np.ndarray,
-        num_clusters: int,
+    clustering: np.ndarray,
+    gray: np.ndarray,
+    num_clusters: int,
 ) -> np.ndarray:
     """Remap arbitrary cluster ids to brightness rank (0=darkest .. K-1=brightest)."""
     means = []
@@ -118,12 +119,12 @@ def _order_labels_by_brightness(
     return remapped
 
 
-_LEGEND_RANGE_RE = re.compile(r'range:\s*([-\d.]+)\s*(\S+)\s*to\s*([-\d.]+)\s*\S+')
+_LEGEND_RANGE_RE = re.compile(r"range:\s*([-\d.]+)\s*(\S+)\s*to\s*([-\d.]+)\s*\S+")
 
 
 def _parse_legend_range(
-        legend_dir: str,
-        feature_key: str,
+    legend_dir: str,
+    feature_key: str,
 ) -> Tuple[Optional[float], Optional[float], Optional[str]]:
     """
     Read legend_{feature_key}.txt (written by create_legends) and return
@@ -152,12 +153,12 @@ def _parse_legend_range(
 
 
 def _run_clustering(
-        items: List[Tuple[str, np.ndarray]],
-        numClusters: int,
-        output_dir: str,
-        batch_size: int = 8,
-        n_init: int = 8,
-        max_iter: int = 200,
+    items: List[Tuple[str, np.ndarray]],
+    numClusters: int,
+    output_dir: str,
+    batch_size: int = 8,
+    n_init: int = 8,
+    max_iter: int = 200,
 ) -> None:
     """CPU clustering using sklearn KMeans with Elkan's algorithm.
 
@@ -193,15 +194,15 @@ def _run_clustering(
 
 
 def generate_clustered_images(
-        numClusters: int,
-        output_dir: str,
-        input_dir: Optional[str] = None,
-        images_dict: Optional[Dict[str, np.ndarray]] = None,
-        legend_dir: Optional[str] = None,
-        feature_key: Optional[str] = None,
-        batch_size: int = 8,
-        n_init: int = 8,
-        max_iter: int = 50,
+    numClusters: int,
+    output_dir: str,
+    input_dir: Optional[str] = None,
+    images_dict: Optional[Dict[str, np.ndarray]] = None,
+    legend_dir: Optional[str] = None,
+    feature_key: Optional[str] = None,
+    batch_size: int = 8,
+    n_init: int = 8,
+    max_iter: int = 50,
 ) -> None:
     """
     Generates clustered images either from an input directory or an in-memory dictionary.
@@ -229,13 +230,16 @@ def generate_clustered_images(
         raise ValueError("Must provide either input_dir or images_dict")
 
     if torch.cuda.is_available():
-        _run_clustering_cuvs(items, numClusters, output_dir, n_init=n_init, max_iter=max_iter)
+        _run_clustering_cuvs(
+            items, numClusters, output_dir, n_init=n_init, max_iter=max_iter
+        )
     else:
         _run_clustering(items, numClusters, output_dir, batch_size, n_init, max_iter)
 
 
-def _run_clustering_cuvs(items, numClusters, output_dir, n_init=8, max_iter=200,
-                         tol=1e-4):
+def _run_clustering_cuvs(
+    items, numClusters, output_dir, n_init=8, max_iter=200, tol=1e-4
+):
     """
     One-image-at-a-time cuVS KMeans clustering + brightness-ordered save.
     items : list of (filename, np.ndarray) pairs, e.g. images_dict.items().
@@ -243,8 +247,11 @@ def _run_clustering_cuvs(items, numClusters, output_dir, n_init=8, max_iter=200,
     """
     import cupy as cp
     from cuvs.cluster.kmeans import KMeansParams, fit, predict
+
     os.makedirs(output_dir, exist_ok=True)
-    params = KMeansParams(n_clusters=numClusters, max_iter=max_iter, tol=tol, n_init=n_init)
+    params = KMeansParams(
+        n_clusters=numClusters, max_iter=max_iter, tol=tol, n_init=n_init
+    )
 
     for f, img in items:
         if img is None:
@@ -269,10 +276,10 @@ def _run_clustering_cuvs(items, numClusters, output_dir, n_init=8, max_iter=200,
 
 
 def cluster(
-        output_dir: str,
-        label_dir: str,
-        input_dir: Optional[str] = None,
-        images_dict: Optional[Dict[str, Dict[str, np.ndarray]]] = None,
+    output_dir: str,
+    label_dir: str,
+    input_dir: Optional[str] = None,
+    images_dict: Optional[Dict[str, Dict[str, np.ndarray]]] = None,
 ) -> None:
     """
     Iterates variable-type subfolders and clusters each with its own K.
@@ -281,7 +288,11 @@ def cluster(
     if images_dict is not None:
         folders = list(images_dict.keys())
     elif input_dir is not None:
-        folders = [f for f in os.listdir(input_dir) if os.path.isdir(os.path.join(input_dir, f))]
+        folders = [
+            f
+            for f in os.listdir(input_dir)
+            if os.path.isdir(os.path.join(input_dir, f))
+        ]
     else:
         raise ValueError("Must provide either input_dir or images_dict")
 
@@ -303,7 +314,9 @@ def cluster(
             num_clusters = 5
             feature_key = "humidity"
         else:
-            logger.warning(f"Unknown folder type '{folder}'. Skipping clustering for this folder.")
+            logger.warning(
+                f"Unknown folder type '{folder}'. Skipping clustering for this folder."
+            )
             continue
 
         folder_input_dir = os.path.join(input_dir, folder) if input_dir else None
@@ -316,6 +329,6 @@ def cluster(
             input_dir=folder_input_dir,
             images_dict=folder_images_dict,
             legend_dir=label_dir,
-            feature_key=feature_key
+            feature_key=feature_key,
         )
         logger.debug(f"Finished clustering '{folder}' in {time.perf_counter() - start:.2f} seconds.")

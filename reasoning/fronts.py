@@ -27,9 +27,9 @@ print(df.head())
 
 
 def create_magnitude_image(df, red_channel, tag):
-    label = 'magnitude'
-    if tag == 'x' or tag == 'y':
-        label = 'alpha_deg'
+    label = "magnitude"
+    if tag == "x" or tag == "y":
+        label = "alpha_deg"
 
     # Create 2D image with magnitude at correct pixel positions
     height, width = red_channel.shape
@@ -37,14 +37,14 @@ def create_magnitude_image(df, red_channel, tag):
 
     # Place magnitude values at pixel coordinates
     for idx, row in df.iterrows():
-        x = int(row['pixel_x'])
-        y = int(row['pixel_y'])
+        x = int(row["pixel_x"])
+        y = int(row["pixel_y"])
         if 0 <= x < width and 0 <= y < height:
             val = row[label]
-            if tag == 'x':
-                val = np.cos(np.deg2rad(row['alpha_deg']))
-            elif tag == 'y':
-                val = np.sin(np.deg2rad(row['alpha_deg']))
+            if tag == "x":
+                val = np.cos(np.deg2rad(row["alpha_deg"]))
+            elif tag == "y":
+                val = np.sin(np.deg2rad(row["alpha_deg"]))
             magnitude_image[y, x] = val
 
     # Inpainting for missing values using griddata
@@ -58,10 +58,10 @@ def create_magnitude_image(df, red_channel, tag):
             (xx[~mask], yy[~mask]),
             magnitude_image[~mask],
             (xx[mask], yy[mask]),
-            method='linear'
+            method="linear",
         )
 
-    if tag == 'magnitude':
+    if tag == "magnitude":
         # Normalize magnitude image 0..1 (vento max 50 m/s)
         magnitude_image = (magnitude_image / 50.0).clip(0, 1)
 
@@ -79,8 +79,12 @@ def create_magnitude_image(df, red_channel, tag):
     # plt.show()
 
     remaining_mask_uint8 = remaining_mask.astype(np.uint8)
-    magnitude_image_upsampled = cv2.inpaint(magnitude_image_uint8, remaining_mask_uint8, 3, cv2.INPAINT_NS).astype(
-        np.float32) / 255.0
+    magnitude_image_upsampled = (
+        cv2.inpaint(
+            magnitude_image_uint8, remaining_mask_uint8, 3, cv2.INPAINT_NS
+        ).astype(np.float32)
+        / 255.0
+    )
 
     magnitude_image_upsampled = gaussian_filter(magnitude_image_upsampled, sigma=100)
 
@@ -88,9 +92,9 @@ def create_magnitude_image(df, red_channel, tag):
 
 
 # Call the function with appropriate parameters
-magnitude_wind = create_magnitude_image(df, red_channel, 'magnitude')
-degx_wind = create_magnitude_image(df, red_channel, 'x')
-degy_wind = create_magnitude_image(df, red_channel, 'y')
+magnitude_wind = create_magnitude_image(df, red_channel, "magnitude")
+degx_wind = create_magnitude_image(df, red_channel, "x")
+degy_wind = create_magnitude_image(df, red_channel, "y")
 
 # Apply Gaussian filter
 red_channel = gaussian_filter(red_channel, sigma=100)
@@ -100,25 +104,25 @@ sobel_x = ndimage.sobel(red_channel, axis=1)
 sobel_y = ndimage.sobel(red_channel, axis=0)
 
 # Calculate magnitude
-magnitude = np.sqrt(sobel_x ** 2 + sobel_y ** 2)
+magnitude = np.sqrt(sobel_x**2 + sobel_y**2)
 
 # Normalize direction images
-sobel_x_normalized = (sobel_x / magnitude)
-sobel_y_normalized = (sobel_y / magnitude)
+sobel_x_normalized = sobel_x / magnitude
+sobel_y_normalized = sobel_y / magnitude
 
 # Calculate dot product between Sobel gradients and wind gradients
 dot_product = (sobel_x_normalized * degx_wind) + (sobel_y_normalized * degy_wind)
 
 w = dot_product
 thr_w = 0.1
-w = ((w - thr_w) / (1 - thr_w))
+w = (w - thr_w) / (1 - thr_w)
 w[w < thr_w] = 0
 w[~np.isfinite(w)] = 0
 front = w * magnitude
 
 thr_front = 0.005
 front[front < thr_front] = 0
-front[front >= thr_front] = (front[front >= thr_front] - thr_front)
+front[front >= thr_front] = front[front >= thr_front] - thr_front
 
 # Label connected components
 labeled_array, num_features = ndimage.label(front > 0)
@@ -159,31 +163,38 @@ for region_id in range(1, num_features + 1):
                 # Draw line on the region
                 y1, x1 = np.clip(p1, 0, np.array(front.shape) - 1)
                 y2, x2 = np.clip(p2, 0, np.array(front.shape) - 1)
-                rr, cc = np.linspace(y1, y2, 50).astype(int), np.linspace(x1, x2, 50).astype(int)
-                valid = (rr >= 0) & (rr < front.shape[0]) & (cc >= 0) & (cc < front.shape[1])
+                rr, cc = np.linspace(y1, y2, 50).astype(int), np.linspace(
+                    x1, x2, 50
+                ).astype(int)
+                valid = (
+                    (rr >= 0)
+                    & (rr < front.shape[0])
+                    & (cc >= 0)
+                    & (cc < front.shape[1])
+                )
                 pca_filtered_regions[rr[valid], cc[valid]] = 1
 
 front = pca_filtered_regions
 
 # Display results
 fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-axes[0, 0].imshow(magnitude, cmap='gray')
-axes[0, 0].set_title('Magnitude (Sobel)')
-axes[0, 0].axis('off')
-axes[0, 1].imshow(sobel_x_normalized, cmap='gray', vmin=-1, vmax=1)
-axes[0, 1].set_title('Gradient X (Sobel)')
-axes[0, 1].axis('off')
-axes[0, 2].imshow(sobel_y_normalized, cmap='gray', vmin=-1, vmax=1)
-axes[0, 2].set_title('Gradient Y (Sobel)')
-axes[0, 2].axis('off')
-axes[1, 0].imshow(front, cmap='gray')
-axes[1, 0].set_title('Dot Product (Sobel x Wind)')
-axes[1, 0].axis('off')
-axes[1, 1].imshow(red_channel, cmap='gray')
-axes[1, 1].set_title('cloud')
-axes[1, 1].axis('off')
-axes[1, 2].imshow(degy_wind, cmap='gray', vmin=-1, vmax=1)
-axes[1, 2].set_title('Gradient Y (Wind)')
-axes[1, 2].axis('off')
+axes[0, 0].imshow(magnitude, cmap="gray")
+axes[0, 0].set_title("Magnitude (Sobel)")
+axes[0, 0].axis("off")
+axes[0, 1].imshow(sobel_x_normalized, cmap="gray", vmin=-1, vmax=1)
+axes[0, 1].set_title("Gradient X (Sobel)")
+axes[0, 1].axis("off")
+axes[0, 2].imshow(sobel_y_normalized, cmap="gray", vmin=-1, vmax=1)
+axes[0, 2].set_title("Gradient Y (Sobel)")
+axes[0, 2].axis("off")
+axes[1, 0].imshow(front, cmap="gray")
+axes[1, 0].set_title("Dot Product (Sobel x Wind)")
+axes[1, 0].axis("off")
+axes[1, 1].imshow(red_channel, cmap="gray")
+axes[1, 1].set_title("cloud")
+axes[1, 1].axis("off")
+axes[1, 2].imshow(degy_wind, cmap="gray", vmin=-1, vmax=1)
+axes[1, 2].set_title("Gradient Y (Wind)")
+axes[1, 2].axis("off")
 plt.tight_layout()
 plt.show()

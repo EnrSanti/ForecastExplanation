@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta
 from glob import glob
 
+
 def get_next_date_string(date_str: str):
     """
     Takes a date string in "YYYY_MM_DD" format and returns the next date
@@ -31,12 +32,12 @@ def extract_third_image_from_folder(pdf_folder: str):
     for pdf_path in pdf_files:
         base_name = os.path.basename(pdf_path)
         date_str = os.path.splitext(base_name)[0]  # "YYYY_MM_DD"
-        
+
         # Extract year and month
 
         yyyy, mm, dd = date_str.split("_")
         print(f"Processing {base_name}: Year={yyyy}, Month={mm}")
-        
+
         next_date_str = get_next_date_string(date_str)
         if not next_date_str:
             continue
@@ -54,7 +55,7 @@ def extract_third_image_from_folder(pdf_folder: str):
 
             if not os.path.exists(f"../extracted_pictograms/{yyyy}/{mm}/"):
                 os.makedirs(f"../extracted_pictograms/{yyyy}/{mm}/")
-            
+
             filename = f"../extracted_pictograms/{yyyy}/{mm}/{next_date_str}.{ext}"
             with open(filename, "wb") as f:
                 f.write(image_bytes)
@@ -62,9 +63,10 @@ def extract_third_image_from_folder(pdf_folder: str):
         else:
             print(f"  Less than 3 images on page 1 of {base_name}")
 
+
 # Example usage
 def extract_year():
-    for mm in ["01","02","03","04","05","06","07","08","09", "10", "11", "12"]:
+    for mm in ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]:
         extract_third_image_from_folder(pdf_folder=f"../pdfs/2019/{mm}")
 
 

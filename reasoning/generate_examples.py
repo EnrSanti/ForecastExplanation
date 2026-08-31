@@ -20,15 +20,15 @@ folders_suff = {
     850: "_at_1_4km",
     700: "_at_3km",
     500: "_at_5_5km",
-    300: "_at_9km"
+    300: "_at_9km",
 }
 locations_name_px_pos = {}
 location_names = []
 
 fact_pattern = re.compile(
-    r'(?P<pred>forecasted_rain|forecasted_sky)\('
-    r'\s*(?P<city>[a-zA-Z_]+)\s*,\s*'
-    r'(?P<value>[^)]+)\)'
+    r"(?P<pred>forecasted_rain|forecasted_sky)\("
+    r"\s*(?P<city>[a-zA-Z_]+)\s*,\s*"
+    r"(?P<value>[^)]+)\)"
 )
 
 starting_date = None
@@ -48,7 +48,9 @@ def geo_to_pixel(lon, lat, lon_min, lon_max, lat_min, lat_max, img_width, img_he
 
 def load_locations(coordinates, image_input_folder):
     global locations_name_px_pos
-    locations_data = pd.read_csv("reasoning/locations.csv")  # same folder or specify full path
+    locations_data = pd.read_csv(
+        "reasoning/locations.csv"
+    )  # same folder or specify full path
     # print(f"Loaded {len(locations_data)} locations.")
 
     lon_min, lon_max = coordinates[0], coordinates[1]
@@ -57,9 +59,14 @@ def load_locations(coordinates, image_input_folder):
     # read a file just to get the image shape (they are all =)
     first_dir = sorted(os.listdir(image_input_folder))[0]
     first_dir = image_input_folder + first_dir
-    first_file = sorted([f for f in os.listdir(first_dir) if
-                         os.path.isfile(os.path.join(first_dir, f)) and f.lower().endswith(
-                             (".png", ".jpg", ".jpeg", ".tif", ".tiff"))])[0]
+    first_file = sorted(
+        [
+            f
+            for f in os.listdir(first_dir)
+            if os.path.isfile(os.path.join(first_dir, f))
+            and f.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff"))
+        ]
+    )[0]
 
     input_path = os.path.join(first_dir, first_file)
 
@@ -69,10 +76,7 @@ def load_locations(coordinates, image_input_folder):
 
     for _, row in locations_data.iterrows():
         px, py = geo_to_pixel(
-            row["Long"], row["Lat"],
-            lon_min, lon_max,
-            lat_min, lat_max,
-            width, height
+            row["Long"], row["Lat"], lon_min, lon_max, lat_min, lat_max, width, height
         )
         locations_name_px_pos[row["Location"]] = (px, py)
     return locations_name_px_pos
@@ -80,7 +84,9 @@ def load_locations(coordinates, image_input_folder):
 
 def load_location_names():
     global location_names
-    locations_data = pd.read_csv("reasoning/locations.csv")  # same folder or specify full path
+    locations_data = pd.read_csv(
+        "reasoning/locations.csv"
+    )  # same folder or specify full path
     print(f"Loaded {len(locations_data)} locations.")
 
     for _, row in locations_data.iterrows():
@@ -96,7 +102,7 @@ def plot_vectors_and_locations(df, locations_name_px_pos):
         df["pixel_y_scaled"],
         s=10,
         alpha=0.6,
-        label="Wind vectors"
+        label="Wind vectors",
     )
 
     # Label each vector with its ID (can be noisy!)
@@ -106,7 +112,7 @@ def plot_vectors_and_locations(df, locations_name_px_pos):
             row["pixel_y_scaled"],
             str(int(row["vector_id"])),
             fontsize=6,
-            alpha=0.6
+            alpha=0.6,
         )
 
     # --- Plot city locations ---
@@ -128,7 +134,7 @@ def plot_vectors_and_locations(df, locations_name_px_pos):
 
 def get_starting_date(filename):
     global starting_date
-    if (starting_date is None):
+    if starting_date is None:
         parts = filename.split("_")
         date_str = parts[-2]  # '20191101'
         hour_str = parts[-1][:2]  # '05' → 5
@@ -185,10 +191,7 @@ def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
         fig_width_in = TARGET_WIDTH / 100
         fig_height_in = TARGET_HEIGHT / 100
 
-        fig, ax = plt.subplots(
-            figsize=(fig_width_in, fig_height_in),
-            dpi=100
-        )
+        fig, ax = plt.subplots(figsize=(fig_width_in, fig_height_in), dpi=100)
 
         # Remove all margins
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
@@ -221,14 +224,16 @@ def plot_locations_to_map(image_input_folder, image_output_folder, coordinates):
             output_path,
             dpi=100,
             bbox_inches=None,  # <-- IMPORTANT (avoid shrinking)
-            pad_inches=0  # <-- IMPORTANT
+            pad_inches=0,  # <-- IMPORTANT
         )
         plt.close(fig)
 
         print(f"Saved {output_path}")
 
 
-def get_clouds_covering_locations(locations_name_px_pos, segment_labels_path, trajectories):
+def get_clouds_covering_locations(
+    locations_name_px_pos, segment_labels_path, trajectories
+):
     """
     Returns a mapping: frame_index -> { cell_id -> [locations] }.
     """
@@ -250,7 +255,9 @@ def get_clouds_covering_locations(locations_name_px_pos, segment_labels_path, tr
                 elif seg_labels.shape[0] == 1:
                     seg_labels = seg_labels[0]
                 else:
-                    raise ValueError(f"Unexpected shape {seg_labels.shape} for frame {frame_idx}")
+                    raise ValueError(
+                        f"Unexpected shape {seg_labels.shape} for frame {frame_idx}"
+                    )
             elif seg_labels.ndim != 2:
                 raise ValueError(f"Unsupported number of dimensions: {seg_labels.ndim}")
 
@@ -263,12 +270,14 @@ def get_clouds_covering_locations(locations_name_px_pos, segment_labels_path, tr
                 py_i = int(round(py))
                 if 0 <= px_i < width and 0 <= py_i < height:
                     feature_id = seg_labels[py_i, px_i]
-                    if (feature_id > 0):
+                    if feature_id > 0:
                         cell_id = feature_to_cell_id(int(feature_id), trajectories)
 
                         clouds_to_locations[int(cell_id)].append(loc_name)
                 else:
-                    print(f"Location {loc_name} outside frame {frame_idx} bounds (px={px_i}, py={py_i})")
+                    print(
+                        f"Location {loc_name} outside frame {frame_idx} bounds (px={px_i}, py={py_i})"
+                    )
 
             frame_cloud_map[frame_idx] = dict(clouds_to_locations)
         except:
@@ -279,10 +288,7 @@ def get_clouds_covering_locations(locations_name_px_pos, segment_labels_path, tr
 
 def get_sorted_png_files(folder_path):
     print("Getting PNG files from:", folder_path)
-    return sorted(
-        f for f in os.listdir(folder_path)
-        if f.lower().endswith(".png")
-    )
+    return sorted(f for f in os.listdir(folder_path) if f.lower().endswith(".png"))
 
 
 def extract_timestamp_from_filename(filename):
@@ -290,7 +296,7 @@ def extract_timestamp_from_filename(filename):
     Extract (yyyy, mm, dd, hh) from filenames like:
     cloud_1000_20190401_0300.png
     """
-    match = re.search(r'(\d{8})_(\d{4})', filename)
+    match = re.search(r"(\d{8})_(\d{4})", filename)
     if not match:
         raise ValueError(f"Cannot extract timestamp from {filename}")
 
@@ -323,7 +329,7 @@ def segment_direction(x1, y1, x2, y2):
         "w",  # 180°
         "sw",  # 225°
         "s",  # 270°
-        "se"  # 315°
+        "se",  # 315°
     ]
 
     index = int((angle + 22.5) // 45) % 8
@@ -341,7 +347,7 @@ def generate_cloud_movements(base_path):
             for line in f:
                 line = line.strip()
                 if not line:
-                    continue  # no empty ones 
+                    continue  # no empty ones
                 match = re.search(pattern, line)
                 if match:
                     # Estrazione dei dati
@@ -358,7 +364,7 @@ def generate_cloud_movements(base_path):
                     yyyy, mm, dd, h = extract_timestamp_from_filename(filename)
                     full_str += f"{full_path.rsplit('/', 1)[-1]}_moves({cell_id},{direction},{yyyy},{mm},{dd},{h}).\n"
 
-        path = "reasoning/clouds/" + full_path.rsplit('/', 1)[-1] + "/moving.txt"
+        path = "reasoning/clouds/" + full_path.rsplit("/", 1)[-1] + "/moving.txt"
         with open(path, "w") as f:
             f.write(full_str)
 
@@ -377,8 +383,11 @@ def generate_cloud_facts_over_cities(base_path):
             #########################################################################
             # compute the map that for each cloud tells me which locations I am covering
             trajectories = pd.read_csv(full_path + "/trajectories.csv")
-            frame_cloud_map = get_clouds_covering_locations(locations_name_px_pos,
-                                                            full_path + "/segment_labels_all.npz", trajectories)
+            frame_cloud_map = get_clouds_covering_locations(
+                locations_name_px_pos,
+                full_path + "/segment_labels_all.npz",
+                trajectories,
+            )
 
             #########################################################################
 
@@ -396,7 +405,11 @@ def generate_cloud_facts_over_cities(base_path):
 
                         full_str += f"{cloud_at_string}_covers({loc_lower},{cell_id},{yyyy},{mm},{dd},{h}).\n"
 
-            path = "reasoning/clouds/" + full_path.rsplit('/', 1)[-1] + "/clouds_covering.txt"
+            path = (
+                "reasoning/clouds/"
+                + full_path.rsplit("/", 1)[-1]
+                + "/clouds_covering.txt"
+            )
             with open(path, "w") as f:
                 f.write(full_str)
             frame_cloud_map = {}
@@ -495,7 +508,7 @@ def sum_up_morning_afternoon(temp_data, location_names, hum_or_tmp):
 
     for line in temp_data:
         line = line.strip()
-        if not line or line.startswith('%'):
+        if not line or line.startswith("%"):
             continue
 
         # Remove trailing ")." safely
@@ -533,7 +546,7 @@ def sum_up_morning_afternoon(temp_data, location_names, hum_or_tmp):
         period = "morning" if hour < 12 else "afternoon"
 
         # Rebuild predicate with period as last argument
-        time_label = f"\"{period}\""
+        time_label = f'"{period}"'
         new_pred = f"{pred_name}(" + ",".join(arg_parts + [time_label]) + ")."
         stripped_facts.append(new_pred)
 
@@ -602,14 +615,13 @@ def sum_up_morning_afternoon_winds(wind_data, location_names):
     print("Summing up winds for morning and afternoon...")
     print(wind_data)
     # Store u,v components per location and period
-    winds = defaultdict(lambda: {
-        "morning": {"u": [], "v": []},
-        "afternoon": {"u": [], "v": []}
-    })
+    winds = defaultdict(
+        lambda: {"morning": {"u": [], "v": []}, "afternoon": {"u": [], "v": []}}
+    )
 
     for line in wind_data:
         line = line.strip()
-        if not line or line.startswith('%'):
+        if not line or line.startswith("%"):
             continue
 
         # Strip ")."
@@ -665,7 +677,7 @@ def sum_up_morning_afternoon_winds(wind_data, location_names):
             u_avg = sum(u_list) / len(u_list)
             v_avg = sum(v_list) / len(v_list)
 
-            speed_avg = math.sqrt(u_avg ** 2 + v_avg ** 2)
+            speed_avg = math.sqrt(u_avg**2 + v_avg**2)
 
             if speed_avg < 1e-6:  # calm wind
                 direction_avg = "calm"
@@ -694,7 +706,7 @@ def rewrite_facts_no_dates(lines):
 
     for line in lines:
         line = line.strip()
-        if not line or line.startswith('%'):
+        if not line or line.startswith("%"):
             continue
 
         # Remove trailing ")." safely
@@ -755,8 +767,7 @@ def calculate_winds(date, file_str, suffix, hh):
 
     for city, (cx, cy) in locations_name_px_pos.items():
         distances = np.sqrt(
-            (df["pixel_x_scaled"] - cx) ** 2 +
-            (df["pixel_y_scaled"] - cy) ** 2
+            (df["pixel_x_scaled"] - cx) ** 2 + (df["pixel_y_scaled"] - cy) ** 2
         )
 
         idx = distances.idxmin()
@@ -794,7 +805,13 @@ def angle_to_compass(alpha_deg):
     return directions[idx]
 
 
-def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, folder_list_wind, folders_suff):
+def merge_into_examples(
+    folder_list_clouds,
+    folder_list_hum,
+    folder_list_temp,
+    folder_list_wind,
+    folders_suff,
+):
     global starting_date
     global location_names
 
@@ -806,7 +823,9 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
     folder_hum = "./reasoning/humidity"  # ha le subfolder per ogni livello
     folder_temp = "./reasoning/temp"  # ha le subfolder per ogni livello
     folder_pictograms = "./reasoning/pictogram_extraction/extracted"
-    folder_winds = "./raw_data/extracted_fvg_cleaned"  # ha le subfolder per ogni livello
+    folder_winds = (
+        "./raw_data/extracted_fvg_cleaned"  # ha le subfolder per ogni livello
+    )
     output_folder = "./reasoning/generated_examples"
 
     date_list = get_all_dates()
@@ -824,13 +843,15 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
             print(f"Skipping missing folder: {full_cloud_folder}")
             continue
 
-        if (num_frames is None):  # once
-            png_files = [f for f in os.listdir(full_cloud_folder) if f.lower().endswith('.png')]
+        if num_frames is None:  # once
+            png_files = [
+                f for f in os.listdir(full_cloud_folder) if f.lower().endswith(".png")
+            ]
             num_frames = len(png_files)
             cloud_covering_data = {date: [] for date in date_list}
             cloud_moving_data = {date: [] for date in date_list}
 
-            for (y, m, d) in date_list:
+            for y, m, d in date_list:
                 # Format like in your file: yyyy,mm,dd
                 ts_str = f"{int(y)},{int(m)},{int(d)}"
                 frame_strings[(int(y), int(m), int(d))] = ts_str
@@ -844,7 +865,7 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
 
         print("date_days ", date_list)
         # Scan line by line
-        with open(cloud_covering_file, 'r') as f:
+        with open(cloud_covering_file, "r") as f:
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
@@ -852,7 +873,7 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
                         cloud_covering_data[date_day].append(line)
                         break  # if a line can only belong to one frame
 
-        with open(cloud_moving_file, 'r') as f:
+        with open(cloud_moving_file, "r") as f:
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
@@ -875,14 +896,14 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
         hum_front_file = os.path.join(full_hum_folder, "humidity_fronts.txt")
         hum_file = os.path.join(full_hum_folder, "humidity.txt")
 
-        with open(hum_front_file, 'r') as f:
+        with open(hum_front_file, "r") as f:
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
                     if ts_str in line:
                         hum_front_data[date_day].append(line)
                         break  # if a line can only belong to one frame
-        with open(hum_file, 'r') as f:
+        with open(hum_file, "r") as f:
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
@@ -903,7 +924,7 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
         temp_front_file = os.path.join(full_temp_folder, "temp_fronts.txt")
         temp_file = os.path.join(full_temp_folder, "temp.txt")
 
-        with open(temp_file, 'r') as f:
+        with open(temp_file, "r") as f:
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
@@ -911,7 +932,7 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
                         temp_data[date_day].append(line)
                         break  # if a line can only belong to one frame
 
-        with open(temp_front_file, 'r') as f:
+        with open(temp_front_file, "r") as f:
             for line in f:
                 line = line.strip()
                 for date_day, ts_str in frame_strings.items():
@@ -930,10 +951,15 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
 
         for date in date_list:
             y, m, d = date
-            hPa = next((k for k, v in folders_suff.items() if v in win_folder_name), None)
+            hPa = next(
+                (k for k, v in folders_suff.items() if v in win_folder_name), None
+            )
             suffix = folders_suff[hPa]
             for hour in range(1, 24):
-                wind_file = os.path.join(full_wind_folder, f"wind_{hPa}_{y:04d}{m:02d}{d:02d}_{hour:02d}00.csv")
+                wind_file = os.path.join(
+                    full_wind_folder,
+                    f"wind_{hPa}_{y:04d}{m:02d}{d:02d}_{hour:02d}00.csv",
+                )
                 wind_data[date].extend(calculate_winds(date, wind_file, suffix, hour))
                 # print("Processing wind file:", wind_file)
 
@@ -944,16 +970,26 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
         for date in date_list:
 
             y, m, d = date
-            output_path = os.path.join(output_folder, f"example_day_{y}_{m}_{d}_{city}.las")
+            output_path = os.path.join(
+                output_folder, f"example_day_{y}_{m}_{d}_{city}.las"
+            )
             os.makedirs(output_folder, exist_ok=True)
             print("Generating example for date:", date)
             cloud_stripped = rewrite_facts_no_dates(cloud_covering_data[date])
-            temp_morning_afternoon = sum_up_morning_afternoon(temp_data[date], location_names, "temperature")
-            hum_morning_afternoon = sum_up_morning_afternoon(hum_data[date], location_names, "humidity")
-            temp_fronts = get_fronts(temp_front_data[date], location_names, "temp_front")
+            temp_morning_afternoon = sum_up_morning_afternoon(
+                temp_data[date], location_names, "temperature"
+            )
+            hum_morning_afternoon = sum_up_morning_afternoon(
+                hum_data[date], location_names, "humidity"
+            )
+            temp_fronts = get_fronts(
+                temp_front_data[date], location_names, "temp_front"
+            )
             hum_fronts = get_fronts(hum_front_data[date], location_names, "hum_front")
             wind_facts = wind_data[date]
-            winds_morning_afternoon = sum_up_morning_afternoon_winds(wind_data[date], location_names)
+            winds_morning_afternoon = sum_up_morning_afternoon_winds(
+                wind_data[date], location_names
+            )
             # wind_facts_morning=sum_up_morning_afternoon(wind_facts[date], location_names,"wind_blowing")
             # wind_facts_morning=sum_up_morning_afternoon(wind_facts[date], location_names,"wind_blowing")
 
@@ -988,26 +1024,28 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
             positive_facts = "% Example generated data for day {}\n\n".format(date)
             positive_facts += "#pos(e" + str(i) + "@1000,{ \n\n"
             # open the pictogram file for that date
-            pictogram_file = os.path.join(folder_pictograms, f"{date_str}_locations.txt")
+            pictogram_file = os.path.join(
+                folder_pictograms, f"{date_str}_locations.txt"
+            )
 
             negative_facts = []
 
             if os.path.isfile(pictogram_file):
-                with open(pictogram_file, 'r') as f_picto:
+                with open(pictogram_file, "r") as f_picto:
                     pictogram_lines = f_picto.readlines()
                     modified_lines = []
 
                     for line in pictogram_lines:
                         raw = line.rstrip("\n")  # keep original line
                         stripped = raw.strip()  # remove ALL surrounding whitespace
-                        if (city in stripped):
+                        if city in stripped:
                             # Skip comments
                             if stripped.startswith("%") or stripped == "":
                                 modified_lines.append(raw + "\n")
                                 continue
 
                             # Match predicate(args) optionally followed by comma
-                            m = re.match(r'^(\w+)\(([^)]*)\)(,?)$', stripped)
+                            m = re.match(r"^(\w+)\(([^)]*)\)(,?)$", stripped)
                             if not m:
                                 # Structural line → keep unchanged
                                 modified_lines.append(raw + "\n")
@@ -1020,7 +1058,7 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
                     positive_facts += "".join(modified_lines).rstrip(", \n")
 
                     for line in pictogram_lines:
-                        if (city in line):
+                        if city in line:
                             line = line.strip()
                             negative_facts.append(compute_negative_facts(line, season))
             else:
@@ -1037,7 +1075,11 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
 
             context_facts = "{\n"
             context_facts += f"location_considered({city}). \n"
-            context_facts += "%to drive the season (winter, spring, summer, autumn)\n" + timestamp + "\n"
+            context_facts += (
+                "%to drive the season (winter, spring, summer, autumn)\n"
+                + timestamp
+                + "\n"
+            )
             context_facts += "% Cloud coverage data:\n"
             context_facts += "% Cloud_covers(location,cloud_id,hh)\n"
 
@@ -1065,7 +1107,7 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
             for fact in hum_fronts:
                 context_facts += fact + "\n"
             context_facts += "\n"
-            '''
+            """
             context_facts+="% hum(location_1,humidity_percentage,hh): the percentage is discretized in 0, 20, 40 ... \n"
             for fact in hum_stripped:
                 context_facts+=fact + "\n"
@@ -1076,10 +1118,10 @@ def merge_into_examples(folder_list_clouds, folder_list_hum, folder_list_temp, f
             for fact in temp_front_stripped:
                 context_facts+=fact + "\n"
             context_facts+="\n"
-            '''
+            """
             context_facts += "}). \n"
 
-            with open(output_path, 'w') as f_out:
+            with open(output_path, "w") as f_out:
                 f_out.write(positive_facts)
                 f_out.write(excluded_facts)
                 f_out.write(context_facts)
@@ -1100,7 +1142,7 @@ def compute_negative_facts(line, season):
     pred = match.group("pred")
     city = match.group("city")
     raw_value = match.group("value").strip()
-    if (line.startswith('%')):
+    if line.startswith("%"):
         return ""  # skip comments
     # Case 1: forecasted_rain(..., number)
     if pred == "forecasted_rain":
@@ -1110,9 +1152,7 @@ def compute_negative_facts(line, season):
             return "unkown_rain_at(" + city + "," + str(season) + "), \n"
 
         negatives = [
-            f"rains_at({city},{v},{season})"
-            for v in RAIN_VALUES
-            if v != value
+            f"rains_at({city},{v},{season})" for v in RAIN_VALUES if v != value
         ]
 
         return ", \n".join(negatives) + ", \n"
@@ -1126,13 +1166,44 @@ def compute_negative_facts(line, season):
             value = raw_value
 
         if value == "sunny" or value == "mostly_clear":
-            return "partially_sunny_at(" + city + "," + str(season) + "), \n" + "covered_at(" + city + "," + str(
-                season) + "), \n"
+            return (
+                "partially_sunny_at("
+                + city
+                + ","
+                + str(season)
+                + "), \n"
+                + "covered_at("
+                + city
+                + ","
+                + str(season)
+                + "), \n"
+            )
         elif value == "partly_cloudy":
-            return "sunny_at(" + city + "," + str(season) + "), \n" + "covered_at(" + city + "," + str(season) + "), \n"
+            return (
+                "sunny_at("
+                + city
+                + ","
+                + str(season)
+                + "), \n"
+                + "covered_at("
+                + city
+                + ","
+                + str(season)
+                + "), \n"
+            )
         elif value == "mostly_cloudy" or value == "cloudy":
-            return "sunny_at(" + city + "," + str(season) + "), \n" + "partially_sunny_at(" + city + "," + str(
-                season) + "), \n"
+            return (
+                "sunny_at("
+                + city
+                + ","
+                + str(season)
+                + "), \n"
+                + "partially_sunny_at("
+                + city
+                + ","
+                + str(season)
+                + "), \n"
+            )
         else:
             return "unkown_sky_at(" + city + "," + str(season) + "), \n"
 
@@ -1161,11 +1232,12 @@ def generate_humidity_facts_over_cities(base_path):
 
         print("starting date humidity: ", entry)
         # from height to hpa
-        match = re.search(r'(\d+(?:[_\.]\d+)?(?:m|km))', entry)
+        match = re.search(r"(\d+(?:[_\.]\d+)?(?:m|km))", entry)
         hpa = str(match.group(1))
 
         legend_colors, legend_values = load_legend_mapping(
-            f"./raw_data/extracted_fvg_cleaned/legend_at_{hpa}_humidity.png")
+            f"./raw_data/extracted_fvg_cleaned/legend_at_{hpa}_humidity.png"
+        )
 
         if os.path.isdir(full_path):
 
@@ -1173,32 +1245,50 @@ def generate_humidity_facts_over_cities(base_path):
             print("plotting locations to map")
             plot_locations_to_map(full_path, "reasoning/humidity/" + entry, coordinates)
 
-            hum_values = get_humidity_over_locations_color(locations_name_px_pos, full_path, legend_colors,
-                                                           legend_values)
+            hum_values = get_humidity_over_locations_color(
+                locations_name_px_pos, full_path, legend_colors, legend_values
+            )
 
-            path = "reasoning/humidity/" + full_path.rsplit('/', 1)[-1] + "/humidity.txt"
+            path = (
+                "reasoning/humidity/" + full_path.rsplit("/", 1)[-1] + "/humidity.txt"
+            )
 
             png_files = get_sorted_png_files(full_path)
             with open(path, "w") as f:
-                f.write("% format humidity_percentage_at(location, humidity_percentage, yyyy, mm, dd, h).\n\n")
+                f.write(
+                    "% format humidity_percentage_at(location, humidity_percentage, yyyy, mm, dd, h).\n\n"
+                )
                 for frame, values in hum_values.items():
                     filename = png_files[frame]
                     yyyy, mm, dd, h = extract_timestamp_from_filename(filename)
                     for location_name, _ in locations_name_px_pos.items():
                         loc_lower = location_name.lower().replace(" ", "_")
                         # witout appproximation use: int(values[location_name])
-                        approximated_hum = int(round(values[location_name] / 20) * 20)  # approx to the nearest 10
-                        f.write(f"humidity_percentage{suff}({loc_lower}, {approximated_hum}, {yyyy},{mm},{dd},{h}).\n")
+                        approximated_hum = int(
+                            round(values[location_name] / 20) * 20
+                        )  # approx to the nearest 10
+                        f.write(
+                            f"humidity_percentage{suff}({loc_lower}, {approximated_hum}, {yyyy},{mm},{dd},{h}).\n"
+                        )
 
 
-def get_humidity_over_locations_color(locations, frames_path, legend_colors, legend_values, radius=5):
+def get_humidity_over_locations_color(
+    locations, frames_path, legend_colors, legend_values, radius=5
+):
     """
     Given city positions and a folder of humidity frames,
     computes average humidity percentage around each location.
     """
     import os
+
     frame_humidity_map = {}
-    frames = sorted([f for f in os.listdir(frames_path) if f.lower().endswith((".png", ".jpg", ".tif"))])
+    frames = sorted(
+        [
+            f
+            for f in os.listdir(frames_path)
+            if f.lower().endswith((".png", ".jpg", ".tif"))
+        ]
+    )
 
     for frame_idx, frame_file in enumerate(frames):
         img = np.array(Image.open(os.path.join(frames_path, frame_file)).convert("RGB"))
@@ -1250,15 +1340,20 @@ def generate_temp_facts_over_cities(base_path):
         full_path = os.path.join(base_path, entry)
 
         # from height to hpa
-        match = re.search(r'(\d+(?:[_\.]\d+)?(?:m|km))', entry)
+        match = re.search(r"(\d+(?:[_\.]\d+)?(?:m|km))", entry)
         hpa = str(match.group(1))
 
         # open the file with min and max temp
-        with open(f"./raw_data/extracted_fvg_cleaned/temp{folders_suff[level]}/legend{folders_suff[level]}_temp.txt",
-                  'r') as ftxt:
+        with open(
+            f"./raw_data/extracted_fvg_cleaned/temp{folders_suff[level]}/legend{folders_suff[level]}_temp.txt",
+            "r",
+        ) as ftxt:
             content = ftxt.read()
 
-        match = re.search(r"Temperature range at \d+\s* hPa:\s*([\d.]+)\s*K\s*to\s*([\d.]+)\s*K", content)
+        match = re.search(
+            r"Temperature range at \d+\s* hPa:\s*([\d.]+)\s*K\s*to\s*([\d.]+)\s*K",
+            content,
+        )
         min_temp = None
         max_temp = None
         if match:
@@ -1269,9 +1364,12 @@ def generate_temp_facts_over_cities(base_path):
             raise ValueError("No temperature range found in legend file.")
 
         sample_points = max_temp - min_temp + 1  # 1 step each degree
-        legend_colors, legend_values = load_legend_mapping(f"./raw_data/extracted_fvg_cleaned/legend_at_{hpa}_temp.png",
-                                                           n_samples=sample_points, min_value=min_temp,
-                                                           max_value=max_temp)
+        legend_colors, legend_values = load_legend_mapping(
+            f"./raw_data/extracted_fvg_cleaned/legend_at_{hpa}_temp.png",
+            n_samples=sample_points,
+            min_value=min_temp,
+            max_value=max_temp,
+        )
 
         if os.path.isdir(full_path):
 
@@ -1279,19 +1377,26 @@ def generate_temp_facts_over_cities(base_path):
             plot_locations_to_map(full_path, "reasoning/temp/" + entry, coordinates)
             print("getting humidity over locations color FULL PATH", full_path)
 
-            hum_values = get_humidity_over_locations_color(locations_name_px_pos, full_path, legend_colors,
-                                                           legend_values)
-            path = "reasoning/temp/" + full_path.rsplit('/', 1)[-1] + "/temp.txt"
+            hum_values = get_humidity_over_locations_color(
+                locations_name_px_pos, full_path, legend_colors, legend_values
+            )
+            path = "reasoning/temp/" + full_path.rsplit("/", 1)[-1] + "/temp.txt"
 
             png_files = get_sorted_png_files(full_path)
             with open(path, "w") as f:
-                f.write("% format temperature_at(location, temperature, yyyy, mm, dd, h).\n\n")
+                f.write(
+                    "% format temperature_at(location, temperature, yyyy, mm, dd, h).\n\n"
+                )
                 for frame, values in hum_values.items():
                     filename = png_files[frame]
                     yyyy, mm, dd, h = extract_timestamp_from_filename(filename)
                     for location_name, _ in locations_name_px_pos.items():
                         loc_lower = location_name.lower().replace(" ", "_")
                         # witout appproximation use: int(values[location_name])
-                        approximated_temp = round(values[location_name])  # approx (should already be int)
-                        f.write(f"temperature_at{suff}({loc_lower}, {approximated_temp}, {yyyy},{mm},{dd},{h}).\n")
+                        approximated_temp = round(
+                            values[location_name]
+                        )  # approx (should already be int)
+                        f.write(
+                            f"temperature_at{suff}({loc_lower}, {approximated_temp}, {yyyy},{mm},{dd},{h}).\n"
+                        )
     return starting_date

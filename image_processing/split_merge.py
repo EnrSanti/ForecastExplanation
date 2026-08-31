@@ -32,7 +32,7 @@ def select_indices_best_match(overlap_percentages, masses, threshold, X):
 
     valid_masses = [masses[i] for i in valid_indices]
 
-    best_diff = float('inf')
+    best_diff = float("inf")
     best_subset = []
 
     n = len(valid_indices)
@@ -50,14 +50,14 @@ def select_indices_best_match(overlap_percentages, masses, threshold, X):
 
 
 def find_extended_overlap_blobs_inferred(
-        segment_labels: np.ndarray,
-        trajectories: pd.DataFrame,
-        border_thickness_px: int = DEFAULT_BORDER_THICKNESS
+    segment_labels: np.ndarray,
+    trajectories: pd.DataFrame,
+    border_thickness_px: int = DEFAULT_BORDER_THICKNESS,
 ) -> Dict[Union[int, str], List[Union[int, str]]]:
     """
-    Checks for intersection between the EXTENDED (dilated) areas of all segmentations 
+    Checks for intersection between the EXTENDED (dilated) areas of all segmentations
     by inferring the frame index from the segment_labels data.
-    
+
     Parameters
     ----------
         segment_labels: the segments extracted by Tobac.
@@ -66,7 +66,7 @@ def find_extended_overlap_blobs_inferred(
 
     Returns:
     ----------
-        Dict[Union[int, str], List[Union[int, str]]]: a map containing the id of the cells with the list of other blobs which intersect  
+        Dict[Union[int, str], List[Union[int, str]]]: a map containing the id of the cells with the list of other blobs which intersect
     """
     if segment_labels.ndim != 2:
         raise ValueError("segment_labels must be 2D (y, x).")
@@ -84,7 +84,9 @@ def find_extended_overlap_blobs_inferred(
 
     # Infer the frame index from the trajectories using the sample feature ID
     try:
-        frame_index = trajectories[trajectories['feature'] == sample_feature_id]['frame'].iloc[0]
+        frame_index = trajectories[trajectories["feature"] == sample_feature_id][
+            "frame"
+        ].iloc[0]
     except IndexError:
         raise ValueError(
             f"Feature ID {sample_feature_id} from segment_labels not found in trajectories. "
@@ -107,8 +109,7 @@ def find_extended_overlap_blobs_inferred(
 
     all_features_mask = segment_labels == 0
     distances, indices = ndimage.distance_transform_edt(
-        all_features_mask,
-        return_indices=True
+        all_features_mask, return_indices=True
     )
 
     L_nearest_id = segment_labels[tuple(indices)]
@@ -127,10 +128,9 @@ def find_extended_overlap_blobs_inferred(
         current_cell_id = int(current_cell_id)
 
         # 1. Create A_ext
-        current_feature_mask = (segment_labels == current_id)
+        current_feature_mask = segment_labels == current_id
         extended_area_mask = ndimage.binary_dilation(
-            current_feature_mask,
-            structure=dilation_kernel
+            current_feature_mask, structure=dilation_kernel
         )
 
         # 2. Find all IDs present in the intersection of A_ext and L_ext
@@ -157,8 +157,17 @@ def find_extended_overlap_blobs_inferred(
     return final_overlap_map
 
 
-def get_splits_merges(overlap_map, trajectories, time_step, frames_no, gap_frames, segment_labels_current,
-                      segment_labels_prev, new_born_curr, disappeared):
+def get_splits_merges(
+    overlap_map,
+    trajectories,
+    time_step,
+    frames_no,
+    gap_frames,
+    segment_labels_current,
+    segment_labels_prev,
+    new_born_curr,
+    disappeared,
+):
     # get the cells for the next time step
     # print("get_splits called")
 
@@ -168,20 +177,26 @@ def get_splits_merges(overlap_map, trajectories, time_step, frames_no, gap_frame
     for time in range(prev_time_step, time_step):
         # print("considering frames from ",time," to ",time_step)
         frames_considered += 1
-        cells_prev_step.append(trajectories[trajectories["frame"] == time]["cell"].unique())
+        cells_prev_step.append(
+            trajectories[trajectories["frame"] == time]["cell"].unique()
+        )
 
     current_frame_features = trajectories[trajectories["frame"] == time_step]
     # Create necessary mappings and lists
     cell_ids_in_frame = current_frame_features["cell"].unique()
 
-    if (frames_considered == 0):
+    if frames_considered == 0:
         return "", ""
 
         # for frame in range(frames_considered):
     # map_areas_current=get_segment_areas_px(segment_labels.isel(time=time_step).values,trajectories)
 
-    map_areas_curr = get_segment_areas_px(segment_labels_current.isel(time=0).values, trajectories)
-    map_areas_prev = get_segment_areas_px(segment_labels_prev.isel(time=0).values, trajectories)
+    map_areas_curr = get_segment_areas_px(
+        segment_labels_current.isel(time=0).values, trajectories
+    )
+    map_areas_prev = get_segment_areas_px(
+        segment_labels_prev.isel(time=0).values, trajectories
+    )
 
     prev_frame_features = trajectories[trajectories["frame"] == prev_time_step]
     # Create necessary mappings and lists
@@ -191,26 +206,47 @@ def get_splits_merges(overlap_map, trajectories, time_step, frames_no, gap_frame
     cell_ids_in_frame = [int(cid) for cid in cell_ids_in_frame]
 
     return (
-        detect_splits_by_area(overlap_map, map_areas_curr, map_areas_prev, cell_ids_in_frame, cell_ids_in_prev_frame,
-                              0.6, new_born_curr, time_step, segment_labels_current.isel(time=0).values,
-                              segment_labels_prev.isel(time=0).values, trajectories),
-        detect_merge_by_area(overlap_map, map_areas_curr, map_areas_prev, cell_ids_in_frame, cell_ids_in_prev_frame,
-                             0.6, disappeared, time_step, segment_labels_current.isel(time=0).values,
-                             segment_labels_prev.isel(time=0).values, trajectories))
+        detect_splits_by_area(
+            overlap_map,
+            map_areas_curr,
+            map_areas_prev,
+            cell_ids_in_frame,
+            cell_ids_in_prev_frame,
+            0.6,
+            new_born_curr,
+            time_step,
+            segment_labels_current.isel(time=0).values,
+            segment_labels_prev.isel(time=0).values,
+            trajectories,
+        ),
+        detect_merge_by_area(
+            overlap_map,
+            map_areas_curr,
+            map_areas_prev,
+            cell_ids_in_frame,
+            cell_ids_in_prev_frame,
+            0.6,
+            disappeared,
+            time_step,
+            segment_labels_current.isel(time=0).values,
+            segment_labels_prev.isel(time=0).values,
+            trajectories,
+        ),
+    )
 
 
 def detect_splits_by_area(
-        overlap_map,
-        map_areas_curr,
-        map_areas_prev,
-        cell_ids_curr,
-        cell_ids_prev,
-        area_ratio_threshold,
-        new_born_curr,
-        frame_no,
-        segment_labels_current,
-        segment_labels_prev,
-        trajectories,
+    overlap_map,
+    map_areas_curr,
+    map_areas_prev,
+    cell_ids_curr,
+    cell_ids_prev,
+    area_ratio_threshold,
+    new_born_curr,
+    frame_no,
+    segment_labels_current,
+    segment_labels_prev,
+    trajectories,
 ):
     """
     Detects 1 -> N cloud splits events between two consecutive frames.
@@ -242,16 +278,14 @@ def detect_splits_by_area(
         alive_after = False
         mass_previous_split = map_areas_prev.get(cell_id, 0)
 
-        if (cell_id in map_areas_curr):
+        if cell_id in map_areas_curr:
             mass_previous_split -= map_areas_curr.get(cell_id, 0)
 
         # Other candidates must be newborn and adjacent
-        candidates = [
-            int(c) for c in new_born_curr if c not in already_split
-        ]
+        candidates = [int(c) for c in new_born_curr if c not in already_split]
         # If the cell also exists now we look for the remaining mass
-        if (cell_id in map_areas_curr):
-            if (cell_id in candidates):
+        if cell_id in map_areas_curr:
+            if cell_id in candidates:
                 candidates.remove(cell_id)
             alive_after = True
 
@@ -262,40 +296,51 @@ def detect_splits_by_area(
         mass = []
 
         for c in candidates:
-            if (c not in map_areas_curr):
+            if c not in map_areas_curr:
                 continue
             overlap_percentage.append(
-                intersection_next_frame(c, cell_id, segment_labels_current, segment_labels_prev, trajectories,
-                                        frame_no))
+                intersection_next_frame(
+                    c,
+                    cell_id,
+                    segment_labels_current,
+                    segment_labels_prev,
+                    trajectories,
+                    frame_no,
+                )
+            )
             mass.append(int(map_areas_curr[c]))
 
-        indexes = select_indices_best_match(overlap_percentage, mass, area_ratio_threshold, mass_previous_split)
+        indexes = select_indices_best_match(
+            overlap_percentage, mass, area_ratio_threshold, mass_previous_split
+        )
 
         for index in indexes:
             already_split.add(candidates[index])
-            if (len(indexes) == 1):
+            if len(indexes) == 1:
                 splits_at_frame += f"Cell {cell_id} changed (SPLIT) into 'new' cell {candidates[index]} at frame {frame_no} (according to tobac)\n"
             else:
                 splits_at_frame += f"Cell {cell_id} split into {candidates[index]} at frame {frame_no}\n"
 
-        if (alive_after and len(indexes) >= 1):
-            splits_at_frame += f"Cell {cell_id} split but also remained at frame {frame_no}\n"
+        if alive_after and len(indexes) >= 1:
+            splits_at_frame += (
+                f"Cell {cell_id} split but also remained at frame {frame_no}\n"
+            )
 
     return splits_at_frame
 
 
 def detect_merge_by_area(
-        overlap_map,
-        map_areas_curr,
-        map_areas_prev,
-        cell_ids_curr,
-        cell_ids_prev,
-        area_ratio_threshold,
-        disappeared_curr,
-        frame_no,
-        segment_labels_current,
-        segment_labels_prev,
-        trajectories,
+    overlap_map,
+    map_areas_curr,
+    map_areas_prev,
+    cell_ids_curr,
+    cell_ids_prev,
+    area_ratio_threshold,
+    disappeared_curr,
+    frame_no,
+    segment_labels_current,
+    segment_labels_prev,
+    trajectories,
 ):
     """
     Detects N -> 1 cloud merge events between two consecutive frames.
@@ -327,13 +372,11 @@ def detect_merge_by_area(
         alive_before = False
 
         # Other candidates must be disappeared cells
-        candidates = [
-            int(c) for c in disappeared_curr if c not in already_merged
-        ]
+        candidates = [int(c) for c in disappeared_curr if c not in already_merged]
 
-        if (cell_id in map_areas_prev):
+        if cell_id in map_areas_prev:
             mass_after_merge -= map_areas_prev.get(cell_id, 0)
-            if (cell_id in disappeared_curr):
+            if cell_id in disappeared_curr:
                 disappeared_curr.remove(cell_id)
             alive_before = True
 
@@ -344,26 +387,37 @@ def detect_merge_by_area(
         mass = []
 
         for c in candidates:
-            if (c not in map_areas_prev):
+            if c not in map_areas_prev:
                 continue
             overlap_percentage.append(
-                intersection_next_frame(cell_id, c, segment_labels_current, segment_labels_prev, trajectories,
-                                        frame_no))
+                intersection_next_frame(
+                    cell_id,
+                    c,
+                    segment_labels_current,
+                    segment_labels_prev,
+                    trajectories,
+                    frame_no,
+                )
+            )
             mass.append(int(map_areas_prev[c]))
 
-        indexes = select_indices_best_match(overlap_percentage, mass, area_ratio_threshold, mass_after_merge)
+        indexes = select_indices_best_match(
+            overlap_percentage, mass, area_ratio_threshold, mass_after_merge
+        )
 
         for index in indexes:
             already_merged.add(candidates[index])
 
-            if (candidates[index] != cell_id):
-                if (len(indexes) == 1):
+            if candidates[index] != cell_id:
+                if len(indexes) == 1:
                     merged_at_frame += f"Cell {candidates[index]} changed (MERGE) into cell {cell_id} at frame {frame_no} (according to tobac)\n"
                 else:
                     merged_at_frame += f"Cell {candidates[index]} merged into {cell_id} at frame {frame_no}\n"
 
-            elif (len(indexes) >= 1 and alive_before):
-                merged_at_frame += f"Cell {cell_id} merged but also remained at frame {frame_no}\n"
+            elif len(indexes) >= 1 and alive_before:
+                merged_at_frame += (
+                    f"Cell {cell_id} merged but also remained at frame {frame_no}\n"
+                )
 
     return merged_at_frame
 
@@ -376,7 +430,7 @@ def features_to_cell_ids(unique_labels_ids, trajectories):
         if cell_id is not None:
             cell_ids.append(int(cell_id))
         else:
-            print('cell_id not found for feature ', fid, ' in trajectories.')
+            print("cell_id not found for feature ", fid, " in trajectories.")
     return cell_ids
 
 
@@ -391,9 +445,8 @@ def feature_from_cell_id(cell_id, trajectories, frame):
     If no feature is found, returns None.
     """
     subset = trajectories[
-        (trajectories["cell"] == cell_id) &
-        (trajectories["frame"] == frame)
-        ]
+        (trajectories["cell"] == cell_id) & (trajectories["frame"] == frame)
+    ]
 
     if subset.empty:
         print(f"No feature found for cell {cell_id} at frame {frame}.")
@@ -406,7 +459,14 @@ def feature_from_cell_id(cell_id, trajectories, frame):
     # nuova     #old      #dove cerco 1           #dove cerco 2
 
 
-def intersection_next_frame(cell_id_1, cell_id_2, segment_labels_current, segment_labels_prev, trajectories, curr_time):
+def intersection_next_frame(
+    cell_id_1,
+    cell_id_2,
+    segment_labels_current,
+    segment_labels_prev,
+    trajectories,
+    curr_time,
+):
     # print("checking intersection between cell ",cell_id_1, "frame ",curr_time," and cell",cell_id_2," at frame ",curr_time-1)
     # --- Apply label transformations if provided ---
     seg_curr = np.copy(segment_labels_current)
@@ -419,8 +479,8 @@ def intersection_next_frame(cell_id_1, cell_id_2, segment_labels_current, segmen
     seg_curr[seg_curr != cell_1_feature] = 0
     seg_prev[seg_prev != cell_2_feature] = 0
 
-    mask_1 = (seg_curr == cell_1_feature)
-    mask_2 = (seg_prev == cell_2_feature)
+    mask_1 = seg_curr == cell_1_feature
+    mask_2 = seg_prev == cell_2_feature
 
     # Areas of each cloud
     area_1 = np.sum(mask_1)
@@ -449,7 +509,7 @@ def get_segment_areas_px(segment_labels_2d, trajectories):
     Calculates the area (in pixels) for each unique segment in a 2D segment label array.
 
     Args:
-        segment_labels_2d (np.ndarray): The 2D segmentation label array 
+        segment_labels_2d (np.ndarray): The 2D segmentation label array
                                         (e.g., segment_labels.isel(time=0).values).
 
     Returns:
@@ -459,7 +519,7 @@ def get_segment_areas_px(segment_labels_2d, trajectories):
     unique_labels, counts = np.unique(segment_labels_2d, return_counts=True)
 
     # remove 0 (bg value):
-    non_zero_mask = (unique_labels != 0)
+    non_zero_mask = unique_labels != 0
 
     # 2. Apply the mask to both arrays
     unique_labels = unique_labels[non_zero_mask]

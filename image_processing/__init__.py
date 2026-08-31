@@ -3,7 +3,7 @@ from .constants import (
     FOLDERS_HEIGHT_SUFF,
     DEFAULT_DXY,
     DEFAULT_DT,
-    DEFAULT_V_MAX,
+    DEFAULT_V_MAX_AT_HEIGHT,
     DEFAULT_GAP_FRAMES,
     DEFAULT_MIN_DISTANCE,
     DEFAULT_SMOOTH,
@@ -20,7 +20,7 @@ __all__: list[str] = [
     "FOLDERS_HEIGHT_SUFF",
     "DEFAULT_DXY",
     "DEFAULT_DT",
-    "DEFAULT_V_MAX",
+    "DEFAULT_V_MAX_AT_HEIGHT",
     "DEFAULT_GAP_FRAMES",
     "DEFAULT_MIN_DISTANCE",
     "DEFAULT_SMOOTH",
@@ -32,5 +32,5 @@ __all__: list[str] = [
     "run_tobac",
     "run_tobac_single_day",
 ]
-#duplicato
+# duplicato
 DISCRETE_DATA_DIR: str = "./tmp_data/imgs_discrete"
