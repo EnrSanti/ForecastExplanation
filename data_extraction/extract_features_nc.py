@@ -83,29 +83,21 @@ LEGEND_SPECS = {
         "cmap": "viridis",
         "limits": LimitValues.CLOUD,
         "label": "Cloud cover [%]",
-        "txt_prefix": "Cloud cover",
-        "txt_unit": "%",
     },
     "temp": {
         "cmap": "OrRd",
         "limits": LimitValues.TEMP,
         "label": "Temperature [K]",
-        "txt_prefix": "Temperature",
-        "txt_unit": "K",
     },
     "wind": {
         "cmap": "viridis",
         "limits": LimitValues.WIND_SPEED,
         "label": "Wind speed [m/s]",
-        "txt_prefix": "Wind Speed",
-        "txt_unit": "m/s",
     },
     "humidity": {
         "cmap": "YlGnBu",
         "limits": LimitValues.HUMIDITY,
         "label": "Relative humidity [%]",
-        "txt_prefix": "Humidity",
-        "txt_unit": "%",
     },
 }
 

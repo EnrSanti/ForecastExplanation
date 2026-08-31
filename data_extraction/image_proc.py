@@ -11,94 +11,6 @@ import torch
 logger = logging.getLogger(__name__)
 
 
-def batched_kmeans_torch(
-    X: np.ndarray,
-    num_clusters: int,
-    max_iter: int = 200,
-    n_init: int = 8,
-    tol: float = 1e-4,
-    device: str = "cpu",
-    stream: Optional[torch.cuda.Stream] = None,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Vectorized-over-B KMeans for a batch of same-shaped images.
-    Parameters
-    ----------
-    X : np.ndarray or torch.Tensor, shape (B, P, C)
-        B images, each with P pixels and C channels (already flattened per-image).
-    num_clusters : int
-    n_init : int
-        Random restarts per image. Looped (not vectorized as extra batch
-        elements) deliberately: vectorizing restarts requires duplicating the
-        full pixel data n_init times (via expand().reshape(), which forces a
-        real copy since the expanded tensor is non-contiguous), which blows
-        up VRAM by a factor of n_init for little real speed benefit — the
-        pixel data is identical across restarts, only the centres differ.
-        Looping keeps peak memory proportional to B, not B*n_init.
-    stream : torch.cuda.Stream or None
-        If given, all GPU work runs on this stream (caller's responsibility to
-        create one stream per thread — do not share a stream across threads).
-
-    Returns
-    -------
-    labels : np.ndarray, shape (B, P)
-    centers : np.ndarray, shape (B, num_clusters, C)
-    """
-    ctx = torch.cuda.stream(stream)
-    with ctx:
-        X_t = torch.as_tensor(X, dtype=torch.float32, device=device)
-        B, P, C = X_t.shape
-
-        best_inertia = torch.full((B,), float("inf"), device=device)
-        best_labels = torch.zeros(B, P, dtype=torch.long, device=device)
-        best_centers = torch.zeros(B, num_clusters, C, device=device)
-
-        # Pre-allocate to avoid repeated allocation in the inner loop
-        ones_bp = torch.ones(B, P, device=device)
-
-        for _init in range(n_init):
-            idx = torch.randint(0, P, (B, num_clusters), device=device)
-            centers = torch.gather(X_t, 1, idx.unsqueeze(-1).expand(-1, -1, C))
-            converged = torch.zeros(B, dtype=torch.bool, device=device)
-
-            for _ in range(max_iter):
-                dist = torch.cdist(X_t, centers)  # (B, P, K)
-                labels = torch.argmin(dist, dim=-1)  # (B, P)
-
-                new_centers = torch.zeros_like(centers)
-                new_centers.scatter_add_(1, labels.unsqueeze(-1).expand(-1, -1, C), X_t)
-                counts = torch.zeros(B, num_clusters, device=device)
-                counts.scatter_add_(1, labels, ones_bp)
-
-                empty = (counts == 0).unsqueeze(-1)
-                new_centers = new_centers / counts.clamp(min=1).unsqueeze(-1)
-                new_centers = torch.where(empty, centers, new_centers)
-
-                # Per-image convergence tracking
-                shift = torch.norm(new_centers - centers, dim=(1, 2))  # (B,)
-                newly_converged = shift < tol
-                # Freeze centers for already-converged images
-                centers = torch.where(
-                    converged.unsqueeze(-1).unsqueeze(-1), centers, new_centers
-                )
-                converged = converged | newly_converged
-                if converged.all():
-                    break
-
-            dist_final = torch.cdist(X_t, centers)
-            min_dist, labels = dist_final.min(dim=-1)
-            inertia = (min_dist**2).sum(dim=1)  # (B,)
-
-            improved = inertia < best_inertia
-            best_inertia = torch.where(improved, inertia, best_inertia)
-            best_labels = torch.where(improved.unsqueeze(-1), labels, best_labels)
-            best_centers = torch.where(
-                improved.unsqueeze(-1).unsqueeze(-1), centers, best_centers
-            )
-
-        return best_labels.cpu().numpy(), best_centers.cpu().numpy()
-
-
 def _order_labels_by_brightness(
     clustering: np.ndarray,
     gray: np.ndarray,
@@ -116,9 +28,6 @@ def _order_labels_by_brightness(
     for rank, lbl in enumerate(order):
         remapped[clustering == lbl] = step * rank
     return remapped
-
-
-_LEGEND_RANGE_RE = re.compile(r"range:\s*([-\d.]+)\s*(\S+)\s*to\s*([-\d.]+)\s*\S+")
 
 
 def _run_clustering(
