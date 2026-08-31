@@ -83,7 +83,7 @@ def _run_tobac_single_day(
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
     os.makedirs(day_output_dir, exist_ok=True)
 
-    temp_tra_df, temp_seg_df = _run_tobac_single_day_single_phenomenon(
+    temp_tra_df, temp_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
         day_output_dir,
@@ -92,7 +92,7 @@ def _run_tobac_single_day(
         border_img,
         WeatherPhenomenonTobacParams.TEMPERATURE,
     )
-    hum_tra_df, hum_seg_df = _run_tobac_single_day_single_phenomenon(
+    hum_tra_df, hum_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
         day_output_dir,
@@ -101,7 +101,7 @@ def _run_tobac_single_day(
         border_img,
         WeatherPhenomenonTobacParams.HUMIDITY,
     )
-    cld_tra_df, cld_seg_df = _run_tobac_single_day_single_phenomenon(
+    cld_tra_df, cld_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
         day_output_dir,
@@ -113,19 +113,16 @@ def _run_tobac_single_day(
 
     results_tra = pd.concat([temp_tra_df, hum_tra_df, cld_tra_df])
     del temp_tra_df, hum_tra_df, cld_tra_df
-    results_seg = pd.concat([temp_seg_df, hum_seg_df, cld_seg_df])
-    del temp_seg_df, hum_seg_df, cld_seg_df
+    results_seg_ds = xr.merge([temp_seg_ds, hum_seg_ds, cld_seg_ds])
+    del temp_seg_ds, hum_seg_ds, cld_seg_ds
 
     logger.debug(f"total space used for day {date.strftime('%Y-%m-%d')}:")
     logger.debug(results_tra.memory_usage())
-    logger.debug(results_seg.memory_usage())
 
-    results_tra.to_parquet(
-        os.path.join(day_output_dir, "trajectories.parquet"), index=False
+    xr.Dataset.from_dataframe(results_tra).to_netcdf(
+        os.path.join(day_output_dir, "trajectories.nc")
     )
-    results_seg.to_parquet(
-        os.path.join(day_output_dir, "segmentation.parquet"), index=False
-    )
+    results_seg_ds.to_netcdf(os.path.join(day_output_dir, "segmentation.nc"))
 
 
 def _run_tobac_single_day_single_phenomenon(
@@ -220,7 +217,7 @@ def _run_tobac_single_day_single_phenomenon(
 
         if x := [s[1] for s in segments_all if s[1] is not None]:
             da = xr.concat(x, dim="time")
-            da = da.rename(suffix)
+            da = da.rename(f"{phenomenon.value}{suffix}")
             segmentations_list.append(da)
             del x
 
@@ -237,7 +234,7 @@ def _run_tobac_single_day_single_phenomenon(
                 ],
                 errors="ignore",
             )
-            tmp["height"] = suffix
+            tmp["height"] = f"{phenomenon.value}{suffix}"
             tmp["height"] = tmp["height"].astype("category")
             trajectories_list.append(tmp)
 
@@ -245,14 +242,10 @@ def _run_tobac_single_day_single_phenomenon(
         images_no = len(image_files)
 
         if trajectories is not None and not trajectories.empty:
-            trajectories_by_frame = {
-                frame: df for frame, df in trajectories.groupby("frame")
-            }  # da vedere se serve
             trajectories_by_cell = {
                 cell: df for cell, df in trajectories.groupby("cell")
             }
         else:
-            trajectories_by_frame = {}
             trajectories_by_cell = {}
 
         cell_info_by_frame = classify_cells_per_frame(trajectories, DEFAULT_GAP_FRAMES)
@@ -283,12 +276,10 @@ def _run_tobac_single_day_single_phenomenon(
         del segments_all
 
     if segmentations_list:
-        ds = xr.merge(segmentations_list)
-        segmentation_df = ds.to_dataframe()
+        segmentation_ds = xr.merge(segmentations_list)
         del segmentations_list
-        del ds
     else:
-        segmentation_df = pd.DataFrame(columns=FOLDERS_HEIGHT_SUFF)
+        segmentation_ds = xr.Dataset()
 
     if trajectories_list:
         trajectories_df = pd.concat(trajectories_list, ignore_index=True)
@@ -309,7 +300,7 @@ def _run_tobac_single_day_single_phenomenon(
         )
 
     plt.close("all")
-    return trajectories_df, segmentation_df
+    return trajectories_df, segmentation_ds
 
 
 def classify_cells_per_frame(trajectories: pd.DataFrame, gap_frames: int) -> dict:
