@@ -6,9 +6,14 @@ from datetime import datetime
 from typing import List, Optional
 
 import cv2
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import xarray as xr
+
 
 from image_processing.constants import (
     DEFAULT_GAP_FRAMES,
@@ -54,7 +59,6 @@ def run_tobac(
     os.makedirs(output_dir, exist_ok=True)
     border_img = cv2.imread(border_img_path, cv2.IMREAD_UNCHANGED)
     with ProcessPoolExecutor(max_workers=12) as executor:
-
         futures = {
             executor.submit(
                 _run_tobac_single_day, date, input_dir, output_dir, region, border_img
@@ -108,7 +112,9 @@ def _run_tobac_single_day(
     )
 
     results_tra = pd.concat([temp_tra_df, hum_tra_df, cld_tra_df])
+    del temp_tra_df, hum_tra_df, cld_tra_df
     results_seg = pd.concat([temp_seg_df, hum_seg_df, cld_seg_df])
+    del temp_seg_df, hum_seg_df, cld_seg_df
 
     logger.debug(f"total space used for day {date.strftime('%Y-%m-%d')}:")
     logger.debug(results_tra.memory_usage())
@@ -134,26 +140,9 @@ def _run_tobac_single_day_single_phenomenon(
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
     """
-    trajectories_df = pd.DataFrame(
-        columns=[
-            "hdim_1",
-            "hdim_2",
-            "num",
-            "time",
-            "latitude",
-            "longitude",
-            "cell",
-            "time_cell",
-            "height",
-        ]
-    )
-    segmentation_df = pd.DataFrame(
-        columns=FOLDERS_HEIGHT_SUFF,
-        index=pd.MultiIndex.from_tuples(
-            [],
-            names=["time", "latitude", "longitude"],
-        ),
-    )
+    trajectories_list = []
+    segmentations_list = []
+
     logger.info(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
@@ -229,14 +218,29 @@ def _run_tobac_single_day_single_phenomenon(
             dxy=dxy,
         )
 
-        if x := [s[1].to_dataframe() for s in segments_all if s[1] is not None]:
-            segmentations = pd.concat(x)
-        else:
-            segmentations = pd.DataFrame()
+        if x := [s[1] for s in segments_all if s[1] is not None]:
+            da = xr.concat(x, dim="time")
+            da = da.rename(suffix)
+            segmentations_list.append(da)
+            del x
 
+        if trajectories is not None and not trajectories.empty:
+            tmp = trajectories.drop(
+                columns=[
+                    "frame",
+                    "idx",
+                    "threshold_value",
+                    "feature",
+                    "timestr",
+                    "y",
+                    "x",
+                ],
+                errors="ignore",
+            )
+            tmp["height"] = suffix
+            tmp["height"] = tmp["height"].astype("category")
+            trajectories_list.append(tmp)
 
-        trajectories_df = _merge_trajectories(trajectories, trajectories_df, suffix)
-        segmentation_df = _merge_segmentation(segmentations, segmentation_df, suffix)
         # Plotting on original images
         images_no = len(image_files)
 
@@ -277,6 +281,36 @@ def _run_tobac_single_day_single_phenomenon(
             )
         del trajectories
         del segments_all
+
+    if segmentations_list:
+        import xarray as xr
+
+        ds = xr.merge(segmentations_list)
+        segmentation_df = ds.to_dataframe()
+        del segmentations_list
+        del ds
+    else:
+        segmentation_df = pd.DataFrame(columns=FOLDERS_HEIGHT_SUFF)
+
+    if trajectories_list:
+        trajectories_df = pd.concat(trajectories_list, ignore_index=True)
+        del trajectories_list
+    else:
+        trajectories_df = pd.DataFrame(
+            columns=[
+                "hdim_1",
+                "hdim_2",
+                "num",
+                "time",
+                "latitude",
+                "longitude",
+                "cell",
+                "time_cell",
+                "height",
+            ]
+        )
+
+    plt.close("all")
     return trajectories_df, segmentation_df
 
 
@@ -406,42 +440,8 @@ def generate_plots(
     axs.axis("off")
 
     plt.savefig(out_path, dpi=100, bbox_inches=None, pad_inches=0)
+    fig.clf()
     plt.close(fig)
-
-
-def _merge_trajectories(input_df, output_df, height: str):
-    if input_df is None or input_df.empty:
-        return output_df
-
-    tmp = input_df.drop(
-        columns=["frame", "idx", "threshold_value", "feature", "timestr", "y", "x"],
-        inplace=False,
-    )
-
-    tmp["height"] = height
-    tmp["height"] = tmp["height"].astype("category")
-
-    if output_df.empty:
-        return tmp
-
-    return pd.concat([tmp, output_df], ignore_index=True)
-
-
-def _merge_segmentation(input_df, output_df, height):
-    if input_df is None or input_df.empty:
-        return output_df
-
-    df = input_df.reset_index()
-
-    mask = df.set_index(
-        ["time", "latitude", "longitude"]
-    )["segmentation_mask"].rename(height)
-
-    if output_df.empty:
-        return mask.to_frame()
-
-    output_df[height] = mask
-    return output_df
 
 
 def write_JSON(date, day_output_dir, JSON_clouds, JSON_hum, JSON_temp):

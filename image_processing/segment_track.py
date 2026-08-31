@@ -3,6 +3,9 @@ import logging
 import os
 from typing import Dict, List, Optional, Set, Tuple
 
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
@@ -529,6 +532,7 @@ def locate_track_merge(
 
         out_path = os.path.join(output_folder, f"{original_img_name}.png")
         plt.savefig(out_path, dpi=100, bbox_inches=None, pad_inches=0)
+        fig.clf()
         plt.close(fig)
 
         cells_frames_before.append(cell_ids)
