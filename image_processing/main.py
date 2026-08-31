@@ -216,7 +216,7 @@ def _run_tobac_single_day_single_phenomenon(
         print(segments_all[0][1], type(segments_all[0][1]))
         print("--------------------------------------------")
 
-        if (x := [s[1].to_dataframe() for s in segments_all if s[1] is not None]) != []:
+        if x := [s[1].to_dataframe() for s in segments_all if s[1] is not None]:
             segmentations = pd.concat(x)
         else:
             segmentations = pd.DataFrame()

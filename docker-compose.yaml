@@ -1,0 +1,12 @@
+services:
+  weather:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weather
+    restart: unless-stopped
+
+    volumes:
+      - ./tmp_data:/app/tmp_data
+      - ./data:/app/data
+      - ./config.yaml:/app/config.yaml
