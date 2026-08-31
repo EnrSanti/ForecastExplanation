@@ -111,9 +111,10 @@ def _run_tobac_single_day(
         WeatherPhenomenonTobacParams.CLOUDS,
     )
 
-    results_tra = pd.concat([temp_tra_df, hum_tra_df, cld_tra_df])
+    dfs = [df for df in [temp_tra_df, hum_tra_df, cld_tra_df] if not df.empty]
+    results_tra = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
     del temp_tra_df, hum_tra_df, cld_tra_df
-    results_seg_ds = xr.merge([temp_seg_ds, hum_seg_ds, cld_seg_ds])
+    results_seg_ds = xr.merge([temp_seg_ds, hum_seg_ds, cld_seg_ds], compat="override", join="outer")
     del temp_seg_ds, hum_seg_ds, cld_seg_ds
 
     logger.debug(f"total space used for day {date.strftime('%Y-%m-%d')}:")
@@ -276,15 +277,22 @@ def _run_tobac_single_day_single_phenomenon(
         del segments_all
 
     if segmentations_list:
-        segmentation_ds = xr.merge(segmentations_list)
+        segmentation_ds = xr.merge(segmentations_list, compat="override", join="outer")
         del segmentations_list
     else:
         segmentation_ds = xr.Dataset()
 
     if trajectories_list:
-        trajectories_df = pd.concat(trajectories_list, ignore_index=True)
+        valid_dfs = [df for df in trajectories_list if not df.empty]
+        if valid_dfs:
+            trajectories_df = pd.concat(valid_dfs, ignore_index=True)
+        else:
+            trajectories_df = None
         del trajectories_list
     else:
+        trajectories_df = None
+        
+    if trajectories_df is None:
         trajectories_df = pd.DataFrame(
             columns=[
                 "hdim_1",

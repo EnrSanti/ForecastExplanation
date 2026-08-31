@@ -169,13 +169,10 @@ def get_splits_merges(
     disappeared,
 ):
     # get the cells for the next time step
-    # print("get_splits called")
-
     frames_considered = 0
     cells_prev_step = []
     prev_time_step = time_step - 1
     for time in range(prev_time_step, time_step):
-        # print("considering frames from ",time," to ",time_step)
         frames_considered += 1
         cells_prev_step.append(
             trajectories[trajectories["frame"] == time]["cell"].unique()
@@ -187,9 +184,6 @@ def get_splits_merges(
 
     if frames_considered == 0:
         return "", ""
-
-        # for frame in range(frames_considered):
-    # map_areas_current=get_segment_areas_px(segment_labels.isel(time=time_step).values,trajectories)
 
     map_areas_curr = get_segment_areas_px(
         segment_labels_current.isel(time=0).values, trajectories
@@ -453,10 +447,7 @@ def feature_from_cell_id(cell_id, trajectories, frame):
         return None
 
     feature_id = int(subset["feature"].iloc[0])
-    # print(f"Cell {cell_id} at frame {frame} -> Feature {feature_id}")
     return feature_id
-
-    # nuova     #old      #dove cerco 1           #dove cerco 2
 
 
 def intersection_next_frame(
@@ -467,12 +458,9 @@ def intersection_next_frame(
     trajectories,
     curr_time,
 ):
-    # print("checking intersection between cell ",cell_id_1, "frame ",curr_time," and cell",cell_id_2," at frame ",curr_time-1)
     # --- Apply label transformations if provided ---
     seg_curr = np.copy(segment_labels_current)
     seg_prev = np.copy(segment_labels_prev)
-
-    # OLD DERIVA DAL CELL TO FEATURE AT A SPECIFIC FRAME
 
     cell_1_feature = feature_from_cell_id(cell_id_1, trajectories, curr_time)
     cell_2_feature = feature_from_cell_id(cell_id_2, trajectories, curr_time - 1)
