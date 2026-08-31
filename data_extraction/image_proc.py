@@ -331,4 +331,6 @@ def cluster(
             legend_dir=label_dir,
             feature_key=feature_key,
         )
-        logger.debug(f"Finished clustering '{folder}' in {time.perf_counter() - start:.2f} seconds.")
+        logger.debug(
+            f"Finished clustering '{folder}' in {time.perf_counter() - start:.2f} seconds."
+        )
