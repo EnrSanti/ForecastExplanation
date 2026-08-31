@@ -2,7 +2,6 @@ import logging
 import os
 import re
 import time
-from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
 import cv2
@@ -127,10 +126,10 @@ def _run_clustering(
     numClusters: int,
     output_dir: str,
     batch_size: int = 8,
-    n_init: int = 8,
+    n_init: int | str = "auto",
     max_iter: int = 200,
 ) -> None:
-    """CPU clustering using sklearn KMeans with Elkan's algorithm.
+    """Core clustering logic. items is a list of (filename, np.ndarray) tuples.
 
     Elkan's algorithm exploits the triangle inequality to skip most distance
     computations after the first few iterations, and KMeans++ initialization
@@ -171,8 +170,8 @@ def generate_clustered_images(
     legend_dir: Optional[str] = None,
     feature_key: Optional[str] = None,
     batch_size: int = 8,
-    n_init: int = 8,
-    max_iter: int = 50,
+    n_init: str = "auto",
+    max_iter: int = 200,
 ) -> None:
     """
     Generates clustered images either from an input directory or an in-memory dictionary.
@@ -213,8 +212,9 @@ def _run_clustering_cuvs(
     from cuvs.cluster.kmeans import KMeansParams, fit, predict
 
     os.makedirs(output_dir, exist_ok=True)
+    n_init_val = 1 if n_init == "auto" else n_init
     params = KMeansParams(
-        n_clusters=numClusters, max_iter=max_iter, tol=tol, n_init=n_init
+        n_clusters=numClusters, max_iter=max_iter, tol=tol, n_init=n_init_val
     )
 
     for f, img in items:
