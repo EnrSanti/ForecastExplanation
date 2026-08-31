@@ -68,7 +68,7 @@ def run_tobac(
             date = futures[future]
             try:
                 future.result()
-            except Exception:
+            except Exception as e:
                 logger.error(f"TOBAC failed for {date}", exc_info=True)
 
     logger.info("TOBAC runs completed.")
@@ -131,7 +131,7 @@ def _run_tobac_single_day_single_phenomenon(
     phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
 ):
     """
-    Runs the TOBAC tracking and visualisation pipeline for a single day and phenomenon.
+    Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
     """
     trajectories_df = pd.DataFrame()
     segmentation_df = pd.DataFrame()
@@ -216,7 +216,7 @@ def _run_tobac_single_day_single_phenomenon(
         print(segments_all[0][1], type(segments_all[0][1]))
         print("--------------------------------------------")
 
-        if x := [s[1].to_dataframe() for s in segments_all if s[1] is not None]:
+        if (x := [s[1].to_dataframe() for s in segments_all if s[1] is not None]) != []:
             segmentations = pd.concat(x)
         else:
             segmentations = pd.DataFrame()
@@ -270,7 +270,7 @@ def _run_tobac_single_day_single_phenomenon(
 
 def classify_cells_per_frame(trajectories: pd.DataFrame, gap_frames: int) -> dict:
     """
-    For each frame, classify which cells are present and split them into
+    For each frame, classify which cells are present, and split them into
     'persisted' (also seen in the gap_frames window immediately before this
     frame) vs 'new' (first appearance, or reappearing after a longer gap
     than trackpy's memory bridged).
@@ -279,7 +279,7 @@ def classify_cells_per_frame(trajectories: pd.DataFrame, gap_frames: int) -> dic
                       "all_frames_for_cell": {cell_id: [prior_frames_in_window]}}}
 
     Replaces the manual cells_frames_before + nested gap-window loop: since
-    trajectories already carry each cell's full frame history (trackpy's
+    trajectories already carries each cell's full frame history (trackpy's
     `memory` already did the gap-bridging when linking), this just reads
     that history directly per cell instead of replaying it frame-by-frame.
     """
@@ -397,7 +397,7 @@ def generate_plots(
     plt.close(fig)
 
 
-def adapt_and_merge(input_df, output_df, height: str) -> pd.DataFrame:
+def adapt_and_merge(input_df, output_df, height: str):
     input_df["height"] = height
 
     return pd.concat([output_df, input_df], ignore_index=True)
