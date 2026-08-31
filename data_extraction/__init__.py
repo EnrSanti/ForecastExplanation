@@ -6,7 +6,7 @@ class Region(Enum):
     ITALY = [10, 16, 42, 48]
 
 
-#split by level 
+# split by level
 class LimitValues:
 
     CLOUD = {
@@ -18,7 +18,7 @@ class LimitValues:
         300: (0, 100),
     }
 
-    #one temperature level per layer
+    # one temperature level per layer
     TEMP = {
         1000: (263.15, 311.15),
         925: (259.15, 306.15),
@@ -45,9 +45,6 @@ class LimitValues:
         500: (0, 100),
         300: (0, 100),
     }
-
-
-
 
 
 RAW_DATA_DIR: str = "./tmp_data/original_CERRA"
