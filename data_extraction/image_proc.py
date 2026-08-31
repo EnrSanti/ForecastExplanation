@@ -122,36 +122,6 @@ def _order_labels_by_brightness(
 _LEGEND_RANGE_RE = re.compile(r"range:\s*([-\d.]+)\s*(\S+)\s*to\s*([-\d.]+)\s*\S+")
 
 
-def _parse_legend_range(
-    legend_dir: str,
-    feature_key: str,
-) -> Tuple[Optional[float], Optional[float], Optional[str]]:
-    """
-    Read legend_{feature_key}.txt (written by create_legends) and return
-    (vmin, vmax, unit). Returns (None, None, None) if the file is missing or
-    doesn't match the expected 'X range: <vmin> <unit> to <vmax> <unit>' format,
-    so callers can fall back to plain gray-level labeling instead of crashing.
-    """
-    if not legend_dir or not feature_key:
-        return None, None, None
-
-    txt_path = os.path.join(legend_dir, f"legend_{feature_key}.txt")
-    if not os.path.exists(txt_path):
-        logger.warning(f"Legend file not found: '{txt_path}'.")
-        return None, None, None
-
-    with open(txt_path) as f:
-        first_line = f.readline()
-
-    m = _LEGEND_RANGE_RE.search(first_line)
-    if not m:
-        logger.warning(f"Could not parse range from '{txt_path}': {first_line!r}")
-        return None, None, None
-
-    vmin, unit, vmax = m.group(1), m.group(2), m.group(3)
-    return float(vmin), float(vmax), unit
-
-
 def _run_clustering(
     items: List[Tuple[str, np.ndarray]],
     numClusters: int,
@@ -207,12 +177,6 @@ def generate_clustered_images(
     """
     Generates clustered images either from an input directory or an in-memory dictionary.
     """
-    if legend_dir and feature_key:
-        vmin, vmax, unit = _parse_legend_range(legend_dir, feature_key)
-        if vmin is None or vmax is None or unit is None:
-            logger.error(f"Legend range not found for feature '{feature_key}'.")
-            return
-
     if images_dict is not None:
         items = list(images_dict.items())
     elif input_dir is not None:
