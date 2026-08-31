@@ -6,7 +6,6 @@ from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
-from zmq import device
 import torch
 
 logger = logging.getLogger(__name__)

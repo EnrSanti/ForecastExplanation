@@ -42,21 +42,21 @@ class WeatherPhenomenon(Enum):
 
 class WeatherPhenomenonTobacParams(Enum):
     TEMPERATURE = {
-        "min_blob_size": 800,
+        "min_blob_size": 1500,
         "target": "maximum",
         "smooth": 8,
         "threshold": 0.6,
         "cmap": "OrRd",
     }
     HUMIDITY = {
-        "min_blob_size": 800,
+        "min_blob_size": 2500,
         "target": "minimum",
         "smooth": 8,
-        "threshold": 0.65,
+        "threshold": 0.55,
         "cmap": "YlGnBu",
     }
     CLOUDS = {
-        "min_blob_size": 500,
+        "min_blob_size": 550,
         "target": "maximum",
         "smooth": 8,
         "threshold": 0.65,

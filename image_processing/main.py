@@ -176,6 +176,7 @@ def _run_tobac_single_day_single_phenomenon(
         detection_params = phenomenon_params.value
 
         min_blob_size = detection_params.get("min_blob_size", 100)
+        print("MIN_BLOB_SIZE: "+str(min_blob_size))
         target = detection_params.get("target", "maximum")
         smooth = detection_params.get("smooth", DEFAULT_SMOOTH)
         threshold = detection_params.get("threshold", 0.6)
