@@ -1,4 +1,3 @@
-
 import logging
 import os
 from typing import Dict, List, Optional, Set, Tuple
@@ -65,13 +64,17 @@ def get_blob_positions(trajectories: pd.DataFrame, itime: int) -> str:
         prev_y = prev_by_cell.loc[cell_id, "y"]
         curr_x = curr_by_cell.loc[cell_id, "x"]
         curr_y = curr_by_cell.loc[cell_id, "y"]
-        
+
         # Handle rare case where multiple rows exist for the same cell
-        if isinstance(prev_x, pd.Series): prev_x = prev_x.iloc[0]
-        if isinstance(prev_y, pd.Series): prev_y = prev_y.iloc[0]
-        if isinstance(curr_x, pd.Series): curr_x = curr_x.iloc[0]
-        if isinstance(curr_y, pd.Series): curr_y = curr_y.iloc[0]
-            
+        if isinstance(prev_x, pd.Series):
+            prev_x = prev_x.iloc[0]
+        if isinstance(prev_y, pd.Series):
+            prev_y = prev_y.iloc[0]
+        if isinstance(curr_x, pd.Series):
+            curr_x = curr_x.iloc[0]
+        if isinstance(curr_y, pd.Series):
+            curr_y = curr_y.iloc[0]
+
         all_moved_cells += f"Frame {itime}, cell {cell_id} moved from (x: {prev_x:.2f}, y: {prev_y:.2f}) to (x: {curr_x:.2f}, y: {curr_y:.2f})\n"
 
     return all_moved_cells
@@ -561,7 +564,6 @@ def locate_track_merge(
                 if splits != "" or merges != "":
                     all_splits_merges += splits + merges
                     all_splits_merges += "-------------------\n"
-
 
         with open(os.path.join(output_folder, "split_merge.txt"), "w") as f:
             f.write(str(all_splits_merges))

@@ -114,7 +114,9 @@ def _run_tobac_single_day(
     dfs = [df for df in [temp_tra_df, hum_tra_df, cld_tra_df] if not df.empty]
     results_tra = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
     del temp_tra_df, hum_tra_df, cld_tra_df
-    results_seg_ds = xr.merge([temp_seg_ds, hum_seg_ds, cld_seg_ds], compat="override", join="outer")
+    results_seg_ds = xr.merge(
+        [temp_seg_ds, hum_seg_ds, cld_seg_ds], compat="override", join="outer"
+    )
     del temp_seg_ds, hum_seg_ds, cld_seg_ds
 
     logger.debug(f"total space used for day {date.strftime('%Y-%m-%d')}:")
@@ -291,7 +293,7 @@ def _run_tobac_single_day_single_phenomenon(
         del trajectories_list
     else:
         trajectories_df = None
-        
+
     if trajectories_df is None:
         trajectories_df = pd.DataFrame(
             columns=[
