@@ -283,8 +283,6 @@ def _run_tobac_single_day_single_phenomenon(
         del segments_all
 
     if segmentations_list:
-        import xarray as xr
-
         ds = xr.merge(segmentations_list)
         segmentation_df = ds.to_dataframe()
         del segmentations_list
