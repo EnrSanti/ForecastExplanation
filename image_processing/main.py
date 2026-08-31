@@ -1,16 +1,14 @@
+import json
 import logging
 import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from typing import List, Optional
-from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-import json
-
 
 from image_processing.constants import (
     DEFAULT_GAP_FRAMES,
@@ -77,7 +75,6 @@ def run_tobac(
 def _run_tobac_single_day(
     date: datetime, input_dir: str, output_dir: str, region: Region, border_img
 ):
-
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
     os.makedirs(day_output_dir, exist_ok=True)
@@ -113,6 +110,10 @@ def _run_tobac_single_day(
     results_tra = pd.concat([temp_tra_df, hum_tra_df, cld_tra_df])
     results_seg = pd.concat([temp_seg_df, hum_seg_df, cld_seg_df])
 
+    logger.debug(f"total space used for day {date.strftime('%Y-%m-%d')}:")
+    logger.debug(results_tra.memory_usage())
+    logger.debug(results_seg.memory_usage())
+
     results_tra.to_parquet(
         os.path.join(day_output_dir, "trajectories.parquet"), index=False
     )
@@ -133,8 +134,26 @@ def _run_tobac_single_day_single_phenomenon(
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
     """
-    trajectories_df = pd.DataFrame()
-    segmentation_df = pd.DataFrame()
+    trajectories_df = pd.DataFrame(
+        columns=[
+            "hdim_1",
+            "hdim_2",
+            "num",
+            "time",
+            "latitude",
+            "longitude",
+            "cell",
+            "time_cell",
+            "height",
+        ]
+    )
+    segmentation_df = pd.DataFrame(
+        columns=FOLDERS_HEIGHT_SUFF,
+        index=pd.MultiIndex.from_tuples(
+            [],
+            names=["time", "latitude", "longitude"],
+        ),
+    )
     logger.info(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
@@ -176,7 +195,6 @@ def _run_tobac_single_day_single_phenomenon(
         detection_params = phenomenon_params.value
 
         min_blob_size = detection_params.get("min_blob_size", 100)
-        print("MIN_BLOB_SIZE: " + str(min_blob_size))
         target = detection_params.get("target", "maximum")
         smooth = detection_params.get("smooth", DEFAULT_SMOOTH)
         threshold = detection_params.get("threshold", 0.6)
@@ -211,20 +229,14 @@ def _run_tobac_single_day_single_phenomenon(
             dxy=dxy,
         )
 
-        print(trajectories)
-        print("--------------------------------------------")
-        print(segments_all[0][1], type(segments_all[0][1]))
-        print("--------------------------------------------")
-
-        if (x := [s[1].to_dataframe() for s in segments_all if s[1] is not None]) != []:
+        if x := [s[1].to_dataframe() for s in segments_all if s[1] is not None]:
             segmentations = pd.concat(x)
         else:
             segmentations = pd.DataFrame()
 
-        trajectories_df = adapt_and_merge(trajectories, trajectories_df, suffix)
-        segmentation_df = adapt_and_merge(segmentations, segmentation_df, suffix)
-        print(trajectories_df.memory_usage())
-        print(segmentation_df.memory_usage())
+
+        trajectories_df = _merge_trajectories(trajectories, trajectories_df, suffix)
+        segmentation_df = _merge_segmentation(segmentations, segmentation_df, suffix)
         # Plotting on original images
         images_no = len(image_files)
 
@@ -397,10 +409,39 @@ def generate_plots(
     plt.close(fig)
 
 
-def adapt_and_merge(input_df, output_df, height: str):
-    input_df["height"] = height
+def _merge_trajectories(input_df, output_df, height: str):
+    if input_df is None or input_df.empty:
+        return output_df
 
-    return pd.concat([output_df, input_df], ignore_index=True)
+    tmp = input_df.drop(
+        columns=["frame", "idx", "threshold_value", "feature", "timestr", "y", "x"],
+        inplace=False,
+    )
+
+    tmp["height"] = height
+    tmp["height"] = tmp["height"].astype("category")
+
+    if output_df.empty:
+        return tmp
+
+    return pd.concat([tmp, output_df], ignore_index=True)
+
+
+def _merge_segmentation(input_df, output_df, height):
+    if input_df is None or input_df.empty:
+        return output_df
+
+    df = input_df.reset_index()
+
+    mask = df.set_index(
+        ["time", "latitude", "longitude"]
+    )["segmentation_mask"].rename(height)
+
+    if output_df.empty:
+        return mask.to_frame()
+
+    output_df[height] = mask
+    return output_df
 
 
 def write_JSON(date, day_output_dir, JSON_clouds, JSON_hum, JSON_temp):
