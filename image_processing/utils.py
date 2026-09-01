@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import tobac
 import xarray as xr
+import logging
 
 from image_processing.constants import (
     DEFAULT_DT,
@@ -19,6 +20,8 @@ from image_processing.constants import (
     CITIES,
     Region,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def extract_keys(filename: str) -> Tuple[int, int]:
@@ -81,31 +84,46 @@ def extract_times(
     return times
 
 
-def load_image_frames(image_files: List[str]) -> List[np.ndarray]:
-    """Reads raw image files into numpy arrays."""
-    return [imageio.v2.imread(f) for f in image_files]
+def load_image_frames(image_files: List[str]) -> xr.DataArray:
+    """Reads raw image files into an xarray DataArray."""
+    if not image_files:
+        return xr.DataArray()
+    imgs = [imageio.v2.imread(f) for f in image_files]
+    arr = np.stack(imgs)
+    if arr.ndim == 4:  # colors
+        dims = ("frame", "y", "x", "channel")
+    elif arr.ndim == 3:  # binanco nero
+        dims = ("frame", "y", "x")
+    else:
+        logger.error(f"Unsupported image shape: {arr.shape}")
+    return xr.DataArray(arr, dims=dims)
 
 
 def convert_frames_to_grayscale(
-    frames: List[np.ndarray],
+    frames: xr.DataArray,
     is_temperature: bool = False,
-) -> List[np.ndarray]:
+) -> Union[xr.DataArray, List[np.ndarray]]:
     """
-    Converts list of image frames to 2D grayscale arrays.
+    Converts image frames to grayscale.
     For temperature data, inverts pixel intensity values.
     """
+    if "channel" in frames.dims:
+        if frames.sizes["channel"] >= 3:
+            gray = frames.isel(channel=slice(0, 3)).mean(dim="channel").astype(float)
+        else:
+            gray = frames.mean(dim="channel").astype(float)
+    elif frames.ndim >= 4:
+        gray = frames[..., :3].mean(dim=frames.dims[-1]).astype(float)
+    else:
+        gray = frames.astype(float)
+
     if is_temperature:
-        return [
-            255.0 - (np.mean(f[:, :, :3], axis=2) if f.ndim >= 3 else f.astype(float))
-            for f in frames
-        ]
-    return [
-        np.mean(f[:, :, :3], axis=2) if f.ndim >= 3 else f.astype(float) for f in frames
-    ]
+        gray = 255.0 - gray
+    return gray
 
 
 def build_referenced_data(
-    data: np.ndarray,
+    data: xr.DataArray,
     times: List[pd.Timestamp],
     region_bounds: Optional[
         Union[Tuple[float, float, float, float], List[float], List[int]]
@@ -115,12 +133,14 @@ def build_referenced_data(
     Constructs an xarray.DataArray with spatial (y, x) and time coordinates,
     optionally setting latitude and longitude coordinates.
     """
-    _, frame_height, frame_width = data.shape
+    frame_height = data.sizes.get("y", data.shape[-2])
+    frame_width = data.sizes.get("x", data.shape[-1])
+
     x_coords = np.arange(frame_width)
     y_coords = np.arange(frame_height)
 
     referenced_data = xr.DataArray(
-        data,
+        data.values,
         dims=("time", "y", "x"),
         coords={
             "time": pd.to_datetime(times),

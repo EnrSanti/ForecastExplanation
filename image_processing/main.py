@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -169,11 +168,11 @@ def _run_tobac_single_day_single_phenomenon(
         is_temp = phenomenon == WeatherPhenomenon.TEMPERATURE
         frames_gray = convert_frames_to_grayscale(frames, is_temperature=is_temp)
 
-        data = np.stack(frames_gray)
-        _, frame_height, frame_width = data.shape
+        frame_height = frames.sizes["y"]
+        frame_width = frames.sizes["x"]
 
         referenced_data = build_referenced_data(
-            data, datetimes, region_bounds=region.value
+            frames_gray, datetimes, region_bounds=region.value
         )
         dxy, dt = get_grid_spacings(referenced_data)
         referenced_data_norm = normalize_referenced_data(referenced_data)
@@ -258,7 +257,7 @@ def _run_tobac_single_day_single_phenomenon(
             out_path = os.path.join(
                 height_output_dir, f"{original_img_name}_tracked.png"
             )
-            original_img = frames[i]
+            original_img = frames.isel(frame=i)
             cmap = phenomenon_params.value.get("cmap", "viridis")
 
             generate_plots(
@@ -381,7 +380,9 @@ def generate_plots(
     fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in), dpi=100)
     fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
-    smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
+    smoothed_bg = cv2.GaussianBlur(
+        np.asarray(original_img), (0, 0), sigmaX=smooth, sigmaY=smooth
+    )
 
     axs.imshow(smoothed_bg, origin="upper", cmap=cmap)
     axs.imshow(border_img, origin="upper")
@@ -441,17 +442,3 @@ def generate_plots(
     plt.savefig(out_path, dpi=100, bbox_inches=None, pad_inches=0)
     fig.clf()
     plt.close(fig)
-
-
-def write_JSON(date, day_output_dir, JSON_clouds, JSON_hum, JSON_temp):
-    JSON_of_the_day = {
-        "date": date.strftime("%Y-%m-%d"),
-        "clouds": JSON_clouds,
-        "humidity": JSON_hum,
-        "temperature": JSON_temp,
-    }
-    json_path = os.path.join(
-        day_output_dir, date.strftime("%Y-%m-%d") + "_extracted.JSON"
-    )
-    with open(json_path, "w") as f:
-        json.dump(JSON_of_the_day, f, indent=2)
