@@ -13,6 +13,7 @@ import scipy.ndimage as ndimage
 import tobac
 import xarray as xr
 import warnings
+import cv2
 
 from image_processing.constants import (
     DEFAULT_BORDER_THICKNESS,
@@ -161,8 +162,8 @@ def segment_features(
     images_no = len(data_norm.time)
 
     for itime in range(images_no):
-        smoothed_frame = ndimage.gaussian_filter(
-            data_norm.isel(time=itime).values, sigma=smooth
+        smoothed_frame = cv2.GaussianBlur(
+            data_norm.isel(time=itime).values, (0, 0), sigmaX=smooth, sigmaY=smooth
         )
         temp_da = data_norm.isel(time=[itime]).copy()
         temp_da.data = smoothed_frame[np.newaxis, ...]
@@ -219,17 +220,17 @@ def print_clouds_center_line(
             )
             alpha = max(0.05, min(1.0, alpha))
             axs.plot(line["x"], line["y"], color="blue", linewidth=1.5, alpha=alpha)
-    except Exception:
-        pass
+    except (KeyError, IndexError) as e:
+        logger.debug(f"Failed to draw trail for cell {cell_id}: {e}")
 
     if not f_weighted.empty:
-        f_weighted.plot.scatter(
-            x="x",
-            y="y",
+        axs.scatter(
+            f_weighted["x"],
+            f_weighted["y"],
             s=40,
-            ax=axs,
             color=color,
             marker=printing_symbol,
+            zorder=5,
         )
 
 
@@ -459,12 +460,11 @@ def locate_track_merge(
         fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in), dpi=100)
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
-        smoothed_frame = ndimage.gaussian_filter(
-            test_data_norm.isel(time=itime).values, sigma=smooth
+        smoothed_frame = cv2.GaussianBlur(
+            test_data_norm.isel(time=itime).values, (0, 0), sigmaX=smooth, sigmaY=smooth
         )
         temp_da = test_data_norm.isel(time=itime).copy()
         temp_da.data = smoothed_frame
-
         axs.imshow(temp_da.values, origin="upper", cmap=cmap)
         xlim = (0, temp_da.sizes["x"])
         ylim = (0, temp_da.sizes["y"])
