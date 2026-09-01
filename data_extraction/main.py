@@ -39,7 +39,12 @@ def find_starting_step(date: datetime, region: Region) -> int:
 
 
 def extract_day_worker(
-    date, region, clean_level: int = 0, clustering: bool = True, force_redo: int = 0
+    date,
+    region,
+    clean_level: int = 0,
+    clustering: bool = True,
+    force_redo: int = 0,
+    stopping_step: int = 4,
 ):
     logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
     clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
@@ -58,12 +63,12 @@ def extract_day_worker(
         )  # this skips 0 1 automatically if already done
         starting_step = 2
 
-    if starting_step == 2 or force_redo >= 2:
+    if (starting_step == 2 or force_redo >= 2) and stopping_step >= 3:
         os.makedirs(discrete_data_dir, exist_ok=True)
         save_feature_maps(nc_file, region, discrete_data_dir)
         starting_step = 3
 
-    if (starting_step == 3 or force_redo >= 1) and clustering:
+    if ((starting_step == 3 or force_redo >= 1) and clustering) and stopping_step >= 4:
         os.makedirs(clustered_dir, exist_ok=True)
         cluster(
             output_dir=clustered_dir,
@@ -90,6 +95,7 @@ def extract_day_worker_in_memory(
     clean_level: int = 0,
     clustering: bool = True,
     force_redo: int = 0,
+    stopping_step: int = 4,
 ) -> None:
     logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
     """In-memory pipeline: GRIB -> xr.Dataset -> Dict[images] -> cluster -> disk output."""
@@ -119,6 +125,7 @@ def extract_day(
     in_memory: bool = False,
     clustering: bool = True,
     force_redo: int = 0,
+    stopping_step: int = 4,
 ) -> None:
     logger.info("Starting data extraction...")
 
@@ -127,7 +134,7 @@ def extract_day(
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
             executor.submit(
-                worker, date, region, clean_level, clustering, force_redo
+                worker, date, region, clean_level, clustering, force_redo, stopping_step
             ): date
             for date in dates
         }
@@ -151,6 +158,7 @@ def extract(
     in_memory: bool = False,
     clustering: bool = True,
     force_redo: int = 0,
+    just_cut: bool = False,
 ) -> None:
     os.makedirs(CLUSTERED_DATA_DIR, exist_ok=True)
     os.makedirs(RAW_DATA_DIR, exist_ok=True)
@@ -160,4 +168,18 @@ def extract(
         os.makedirs(DISCRETE_DATA_DIR, exist_ok=True)
 
     create_one_time_images(region, DISCRETE_DATA_DIR)
-    extract_day(dates, region, clean_level, in_memory, clustering, force_redo)
+    stopping_step = 4
+    if just_cut:
+        stopping_step = 1
+    print(
+        f"Starting data extraction for {len(dates)} dates with stopping step {stopping_step}..."
+    )
+    extract_day(
+        dates,
+        region,
+        clean_level,
+        in_memory,
+        clustering,
+        force_redo,
+        stopping_step=stopping_step,
+    )
