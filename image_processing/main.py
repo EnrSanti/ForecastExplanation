@@ -6,12 +6,13 @@ from typing import List, Optional
 
 import cv2
 import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
 
 
 from image_processing.constants import (
@@ -69,7 +70,7 @@ def run_tobac(
             date = futures[future]
             try:
                 future.result()
-            except Exception as e:
+            except Exception:
                 logger.error(f"TOBAC failed for {date}", exc_info=True)
 
     logger.info("TOBAC runs completed.")

@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 import time
 from typing import Dict, List, Optional, Tuple
 
@@ -34,7 +33,6 @@ def _run_clustering(
     items: List[Tuple[str, np.ndarray]],
     numClusters: int,
     output_dir: str,
-    batch_size: int = 8,
     n_init: int | str = "auto",
     max_iter: int = 200,
 ) -> None:
@@ -49,9 +47,6 @@ def _run_clustering(
     from sklearn.cluster import KMeans
 
     for f, img in items:
-        if img is None:
-            logger.warning(f"Skipping '{f}': image is None.")
-            continue
 
         H, W, C = img.shape
         X = img.reshape(-1, C).astype(np.float32)
@@ -76,9 +71,6 @@ def generate_clustered_images(
     output_dir: str,
     input_dir: Optional[str] = None,
     images_dict: Optional[Dict[str, np.ndarray]] = None,
-    legend_dir: Optional[str] = None,
-    feature_key: Optional[str] = None,
-    batch_size: int = 8,
     n_init: str = "auto",
     max_iter: int = 200,
 ) -> None:
@@ -106,7 +98,7 @@ def generate_clustered_images(
             items, numClusters, output_dir, n_init=n_init, max_iter=max_iter
         )
     else:
-        _run_clustering(items, numClusters, output_dir, batch_size, n_init, max_iter)
+        _run_clustering(items, numClusters, output_dir, n_init, max_iter)
 
 
 def _run_clustering_cuvs(
@@ -150,7 +142,6 @@ def _run_clustering_cuvs(
 
 def cluster(
     output_dir: str,
-    label_dir: str,
     input_dir: Optional[str] = None,
     images_dict: Optional[Dict[str, Dict[str, np.ndarray]]] = None,
 ) -> None:
@@ -176,16 +167,12 @@ def cluster(
         name = folder.lower()
         if "wind" in name:
             num_clusters = 3
-            feature_key = "wind"
         elif "temp" in name:
             num_clusters = 5
-            feature_key = "temp"
         elif "cloud" in name:
             num_clusters = 3
-            feature_key = "cloud"
         elif "hum" in name:
             num_clusters = 5
-            feature_key = "humidity"
         else:
             logger.warning(
                 f"Unknown folder type '{folder}'. Skipping clustering for this folder."
@@ -200,9 +187,7 @@ def cluster(
             numClusters=num_clusters,
             output_dir=output_folder_path,
             input_dir=folder_input_dir,
-            images_dict=folder_images_dict,
-            legend_dir=label_dir,
-            feature_key=feature_key,
+            images_dict=folder_images_dict
         )
         logger.debug(
             f"Finished clustering '{folder}' in {time.perf_counter() - start:.2f} seconds."

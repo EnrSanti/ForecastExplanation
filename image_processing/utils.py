@@ -3,15 +3,16 @@ import re
 from typing import List, Optional, Tuple, Union
 
 import imageio
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tobac
 import xarray as xr
 import logging
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
 
 from image_processing.constants import (
     DEFAULT_DT,
@@ -96,6 +97,7 @@ def load_image_frames(image_files: List[str]) -> xr.DataArray:
         dims = ("frame", "y", "x")
     else:
         logger.error(f"Unsupported image shape: {arr.shape}")
+        raise ValueError(f"Unsupported image shape: {arr.shape}")
     return xr.DataArray(arr, dims=dims)
 
 

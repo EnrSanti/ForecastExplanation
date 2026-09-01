@@ -20,7 +20,7 @@ from .image_proc import cluster
 logger = logging.getLogger(__name__)
 
 
-def find_starting_step(date: datetime, region: Region) -> int:
+def find_starting_step(date: datetime) -> int:
     clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
     raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
     cut_data_dir = os.path.join(CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
@@ -52,7 +52,7 @@ def extract_day_worker(
     cut_data_dir = os.path.join(CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
     discrete_data_dir = os.path.join(DISCRETE_DATA_DIR, date.strftime("%Y-%m-%d"))
 
-    starting_step = find_starting_step(date, region)
+    starting_step = find_starting_step(date)
     nc_file = ""
 
     if starting_step in [0, 1, 2] or force_redo >= 2:
@@ -72,7 +72,6 @@ def extract_day_worker(
         os.makedirs(clustered_dir, exist_ok=True)
         cluster(
             output_dir=clustered_dir,
-            label_dir=DISCRETE_DATA_DIR,
             input_dir=discrete_data_dir,
         )
 
@@ -111,7 +110,7 @@ def extract_day_worker_in_memory(
     ds.close()
     if clustering:
         cluster(
-            output_dir=clustered_dir, label_dir=DISCRETE_DATA_DIR, images_dict=images
+            output_dir=clustered_dir, images_dict=images
         )
 
     if clean_level >= 1:
@@ -145,7 +144,7 @@ def extract_day(
             date = futures[future]
             try:
                 future.result()
-            except Exception as e:
+            except Exception:
                 logger.error(f"Extract failed for {date}", exc_info=True)
 
     logger.info("Data extraction completed.")

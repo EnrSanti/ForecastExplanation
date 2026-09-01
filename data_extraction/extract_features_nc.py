@@ -6,14 +6,16 @@ from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from cartopy.io import shapereader
+import numpy as np
+import pandas as pd
+import xarray as xr
+
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import xarray as xr
-from cartopy.io import shapereader
+
 
 from . import Region, LimitValues
 

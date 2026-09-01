@@ -8,19 +8,14 @@ import xarray as xr
 
 from . import Region
 
-import logging
+logger = logging.getLogger(__name__)
 
-logging.basicConfig(level=logging.INFO)  # your existing setup, presumably
-
-logger = logging.getLogger(__name__)  # your own logger — stays at INFO
-
-# silence the noisy third-party library specifically
 logging.getLogger("legacy_client").setLevel(logging.WARNING)
 logging.getLogger("ecmwf.datastores").setLevel(logging.WARNING)
 logging.getLogger("cdsapi").setLevel(logging.WARNING)
 
 
-def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> Optional[xr.Dataset]:
+def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> xr.Dataset:
     with xr.open_dataset(
         grib_path,
         engine="cfgrib",
