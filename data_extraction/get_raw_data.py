@@ -26,12 +26,15 @@ def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> Optional[xr.Dat
         engine="cfgrib",
         decode_cf=True,
         decode_times=True,
-        decode_timedelta=False,
     ) as ds:
-        ds_sub = ds.sel(
-            longitude=slice(coordinates[0] - 0.5, coordinates[1] + 0.5),
-            latitude=slice(coordinates[3] + 0.5, coordinates[2] - 0.5)
+        mask = (
+            (ds.longitude >= coordinates[0] - 0.5)
+            & (ds.longitude <= coordinates[1] + 0.5)
+            & (ds.latitude >= coordinates[2] - 0.5)
+            & (ds.latitude <= coordinates[3] + 0.5)
         )
+
+        ds_sub = ds.where(mask, drop=True)
         return ds_sub
 
 
