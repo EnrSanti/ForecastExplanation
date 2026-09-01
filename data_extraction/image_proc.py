@@ -142,7 +142,7 @@ def _run_clustering_cuvs(
         swapped = _order_labels_by_brightness(clustering, gray, numClusters)
 
         out_path = os.path.join(output_dir, f)
-        cv2.imwrite(out_path, swapped, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+        cv2.imwrite(out_path, swapped, [int(cv2.IMWRITE_PNG_COMPRESSION), 3])
 
         del X, centroids, labels
         cp.get_default_memory_pool().free_all_blocks()
