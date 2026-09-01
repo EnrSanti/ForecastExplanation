@@ -54,6 +54,12 @@ def main():
         action="store_true",
         help="Enable debug logging for the application",
     )
+    parser.add_argument(
+        "-jc",
+        "--just-cut",
+        action="store_true",
+        help="Just download and cut the GRIB files, skipping feature extraction and clustering, no images generated",
+    )
 
     args, unknown = parser.parse_known_args()
 
@@ -81,7 +87,11 @@ def main():
         in_memory=args.in_memory,
         clustering=args.clustering,
         force_redo=args.force,
+        just_cut=args.just_cut,
     )
+    if args.just_cut:
+        exit(0)
+
     input_dir = (
         data_extraction.CLUSTERED_DATA_DIR
         if args.clustering
