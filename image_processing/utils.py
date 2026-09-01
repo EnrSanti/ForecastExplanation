@@ -193,15 +193,6 @@ def normalize_referenced_data(referenced_data: xr.DataArray) -> xr.DataArray:
     return (referenced_data - vmin) / (vmax - vmin)
 
 
-def overlay_image(path_borders: Optional[str], axs: plt.Axes, temp_da: xr.DataArray):
-    """Overlays border image onto matplotlib axes if file exists."""
-    if path_borders and os.path.exists(path_borders):
-        img = plt.imread(path_borders)
-        axs.imshow(
-            img, extent=(0, temp_da.sizes["x"], temp_da.sizes["y"], 0), alpha=0.6
-        )
-
-
 def _latlon_to_px(
     lat: float,
     lon: float,
