@@ -23,7 +23,7 @@ DEFAULT_DT = 3600
 # DEFAULT_V_MAX = 70 #deprecated it changes with the levels
 DEFAULT_GAP_FRAMES = 1
 DEFAULT_MIN_DISTANCE = 1000
-DEFAULT_SMOOTH = 8
+DEFAULT_SMOOTH = 2
 DEFAULT_BORDER_THICKNESS = 8
 DEFAULT_TIME_OFFSET_HOURS = 0
 
@@ -40,34 +40,34 @@ class WeatherPhenomenon(Enum):
     WIND = "winds"
 
 
-# todo fix parameter for the new data type
+# Parameters scaled for native 95x76 grid (from old 800x915 pixel grid)
 class WeatherPhenomenonTobacParams(Enum):
     TEMPERATURE = {
-        "min_blob_size": 1500,
+        "min_blob_size": 1,
         "target": "maximum",
-        "smooth": 8,
-        "threshold": 0.6,
+        "smooth": 2,
+        "threshold": 0.5,
         "cmap": "OrRd",
     }
     HUMIDITY = {
-        "min_blob_size": 2500,
+        "min_blob_size": 1,
         "target": "minimum",
-        "smooth": 8,
-        "threshold": 0.6,
+        "smooth": 2,
+        "threshold": 0.5,
         "cmap": "YlGnBu",
     }
     CLOUDS = {
-        "min_blob_size": 550,
+        "min_blob_size": 1,
         "target": "maximum",
-        "smooth": 8,
-        "threshold": 0.65,
+        "smooth": 2,
+        "threshold": 0.5,
         "cmap": "viridis",
     }
     WIND = {
-        "min_blob_size": 500,
+        "min_blob_size": 1,
         "target": "maximum",
-        "smooth": 8,
-        "threshold": 0.6,
+        "smooth": 2,
+        "threshold": 0.5,
         "cmap": "viridis",
     }
 

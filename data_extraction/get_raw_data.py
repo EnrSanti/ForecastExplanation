@@ -35,7 +35,7 @@ def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> xr.Dataset:
         y_indices, x_indices = np.where(mask_np)
         ds_sub = ds.isel(
             y=slice(y_indices.min(), y_indices.max() + 1),
-            x=slice(x_indices.min(), x_indices.max() + 1)
+            x=slice(x_indices.min(), x_indices.max() + 1),
         )
         return ds_sub
 
