@@ -57,6 +57,7 @@ def extract_day_worker(
     starting_step = find_starting_step(date)
     nc_file = ""
 
+    # todo better stepping
     if starting_step in [0, 1, 2] or force_redo >= 2:
         os.makedirs(raw_data_dir, exist_ok=True)
         os.makedirs(cut_data_dir, exist_ok=True)
@@ -75,7 +76,7 @@ def extract_day_worker(
         with xr.open_dataset(features_nc_path) as features_ds:
             feature_data = {str(name): da for name, da in features_ds.data_vars.items()}
         clustered_data = cluster_xarray(feature_data)
-        clustered_data.to_netcdf(os.path.join(clustered_dir, "features_clustered.nc"))
+        clustered_data.to_netcdf(os.path.join(clustered_dir, "features.nc"))
 
     if starting_step == 4:
         logger.info(

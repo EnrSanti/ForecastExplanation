@@ -138,9 +138,7 @@ def _run_tobac_single_day_single_phenomenon(
     logger.info(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
-        features_nc = os.path.join(day_input_dir, "features_clustered.nc")
-        if not os.path.exists(features_nc):
-            features_nc = os.path.join(day_input_dir, "features.nc")
+        features_nc = os.path.join(day_input_dir, "features.nc")
             
         if not os.path.exists(features_nc):
             continue
