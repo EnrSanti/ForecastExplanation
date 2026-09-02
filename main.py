@@ -54,6 +54,12 @@ def main():
         help="Just download and cut the GRIB files, skipping feature extraction and clustering, no images generated",
     )
 
+    parser.add_argument(
+        "--save-images",
+        action="store_true",
+        help="Generate visualization images of the tracking results",
+    )
+
     args, unknown = parser.parse_known_args()
 
     if args.debug:
@@ -96,6 +102,7 @@ def main():
         output_dir=image_processing.TOBAC_OUTPUT,
         region=image_processing.Region.FVG,
         border_img_path=border_img_path,
+        save_images=args.save_images,
     )
 
 

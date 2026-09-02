@@ -261,6 +261,7 @@ def overlay_cities(axs: plt.Axes, region: Region, frame_height: int, frame_width
             zorder=11,
         )
 
+
 def build_referenced_data_from_xarray(
     da: xr.DataArray,
     times: list,
@@ -272,7 +273,7 @@ def build_referenced_data_from_xarray(
     """
     import numpy as np
     import pandas as pd
-    
+
     # da already has (time, y, x) dims and proper coordinates
     referenced_data = xr.DataArray(
         da.values,
@@ -284,7 +285,7 @@ def build_referenced_data_from_xarray(
         },
         attrs={"units": "m s-1"},
     )
-    
+
     if region_bounds is not None:
         lon_min, lon_max, lat_min, lat_max = region_bounds
         lat = np.linspace(lat_min, lat_max, da.sizes["y"])
@@ -295,5 +296,5 @@ def build_referenced_data_from_xarray(
             latitude=(("y", "x"), latitude),
             longitude=(("y", "x"), longitude),
         )
-    
+
     return referenced_data

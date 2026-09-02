@@ -52,6 +52,7 @@ def run_tobac(
     output_dir: str,
     region: Region,
     border_img_path: str,
+    save_images: bool = False,
 ):
     """
     Executes TOBAC tracking across the specified list of dates and weather phenomena.
@@ -61,7 +62,13 @@ def run_tobac(
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
             executor.submit(
-                _run_tobac_single_day, date, input_dir, output_dir, region, border_img
+                _run_tobac_single_day,
+                date,
+                input_dir,
+                output_dir,
+                region,
+                border_img,
+                save_images,
             ): date
             for date in dates
         }
@@ -77,7 +84,12 @@ def run_tobac(
 
 
 def _run_tobac_single_day(
-    date: datetime, input_dir: str, output_dir: str, region: Region, border_img
+    date: datetime,
+    input_dir: str,
+    output_dir: str,
+    region: Region,
+    border_img,
+    save_images: bool = False,
 ):
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
@@ -86,23 +98,29 @@ def _run_tobac_single_day(
     temp_tra_df, temp_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
+        day_output_dir,
         region,
         WeatherPhenomenon.TEMPERATURE,
         WeatherPhenomenonTobacParams.TEMPERATURE,
+        save_images,
     )
     hum_tra_df, hum_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
+        day_output_dir,
         region,
         WeatherPhenomenon.HUMIDITY,
         WeatherPhenomenonTobacParams.HUMIDITY,
+        save_images,
     )
     cld_tra_df, cld_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
+        day_output_dir,
         region,
         WeatherPhenomenon.CLOUDS,
         WeatherPhenomenonTobacParams.CLOUDS,
+        save_images,
     )
 
     dfs = [df for df in [temp_tra_df, hum_tra_df, cld_tra_df] if not df.empty]
@@ -125,9 +143,11 @@ def _run_tobac_single_day(
 def _run_tobac_single_day_single_phenomenon(
     date: datetime,
     day_input_dir: str,
+    day_output_dir: str,
     region: Region,
     phenomenon: WeatherPhenomenon,
     phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
+    save_images: bool = False,
 ):
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
@@ -139,7 +159,7 @@ def _run_tobac_single_day_single_phenomenon(
 
     for suffix in FOLDERS_HEIGHT_SUFF:
         features_nc = os.path.join(day_input_dir, "features.nc")
-            
+
         if not os.path.exists(features_nc):
             continue
 
@@ -147,22 +167,22 @@ def _run_tobac_single_day_single_phenomenon(
             folder_key = f"{phenomenon.value}{suffix}"
             if folder_key not in ds:
                 continue
-            
+
             da = ds[folder_key].load()
-            
+
         datetimes = [pd.Timestamp(t) for t in da.time.values]
-        
+
         referenced_data = build_referenced_data_from_xarray(
             da, datetimes, region_bounds=region.value
         )
         dxy, dt = get_grid_spacings(referenced_data)
         referenced_data_norm = normalize_referenced_data(referenced_data)
-        
+
         if phenomenon_params is None:
             phenomenon_params = WeatherPhenomenonTobacParams[phenomenon.name]
 
         detection_params = phenomenon_params.value
-        
+
         min_blob_size = detection_params.get("min_blob_size", 100)
         target = detection_params.get("target", "maximum")
         smooth = detection_params.get("smooth", DEFAULT_SMOOTH)
@@ -203,6 +223,19 @@ def _run_tobac_single_day_single_phenomenon(
             seg_da = seg_da.rename(f"{phenomenon.value}{suffix}")
             segmentations_list.append(seg_da)
             del x
+
+        if save_images:
+            from image_processing.plotting import generate_all_plots
+
+            height_output_dir = os.path.join(day_output_dir, folder_key)
+            generate_all_plots(
+                da=da,
+                output_dir=height_output_dir,
+                cmap=detection_params.get("cmap", "viridis"),
+                region=region,
+                segments_all=segments_all,
+                trajectories=trajectories,
+            )
 
         if trajectories is not None and not trajectories.empty:
             tmp = trajectories.drop(

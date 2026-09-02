@@ -318,7 +318,9 @@ def build_feature_dataarrays(
                 if not frames:
                     continue
 
-                stacked = xr.concat(frames, dim=pd.Index(times, name="time"), coords="different")
+                stacked = xr.concat(
+                    frames, dim=pd.Index(times, name="time"), coords="different"
+                )
                 stacked = stacked.sortby("time")
 
                 vmin, vmax = spec.limits[lvl]
@@ -327,8 +329,11 @@ def build_feature_dataarrays(
 
                 normalized = normalized.fillna(0.0)
                 # todo guardare quanti nan ci sono e se usare media
-                
-                normalized = normalized.drop_vars(["valid_time", "step", "isobaricInhPa", "number", "surface"], errors="ignore")
+
+                normalized = normalized.drop_vars(
+                    ["valid_time", "step", "isobaricInhPa", "number", "surface"],
+                    errors="ignore",
+                )
 
                 result[folders[lvl]] = normalized
 
