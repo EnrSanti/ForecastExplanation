@@ -86,6 +86,7 @@ def main():
         clustering=args.clustering,
         force_redo=args.force,
         just_cut=args.just_cut,
+        create_images=args.save_images,
     )
     if args.just_cut:
         exit(0)
@@ -95,13 +96,11 @@ def main():
         if args.clustering
         else data_extraction.DISCRETE_DATA_DIR
     )
-    border_img_path = os.path.join(data_extraction.DISCRETE_DATA_DIR, "borders.png")
     image_processing.run_tobac(
         dates,
         input_dir=input_dir,
         output_dir=image_processing.TOBAC_OUTPUT,
         region=image_processing.Region.FVG,
-        border_img_path=border_img_path,
         save_images=args.save_images,
     )
 

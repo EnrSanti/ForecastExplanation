@@ -204,7 +204,6 @@ def create_one_time_images(coordinates: Region, output_base: str) -> None:
 def save_feature_maps(input_path: str, coordinates: Region, output_base: str) -> None:
     # todo add flag to call this one
     with xr.open_dataset(input_path, decode_cf=False) as ds:
-        # todo Here xarray becomes png images after extracting the needed data
         if "dtype" in ds["step"].attrs:
             del ds["step"].attrs["dtype"]
 

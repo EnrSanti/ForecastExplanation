@@ -5,18 +5,16 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from typing import List
 
+import xarray as xr
 from tqdm import tqdm
 
 from . import Region, RAW_DATA_DIR, CUT_DATA_DIR, DISCRETE_DATA_DIR, CLUSTERED_DATA_DIR
 from .extract_features_nc import (
     create_one_time_images,
-    save_feature_maps,
     build_feature_dataarrays,
 )
 from .get_raw_data import extract_nc
-from .image_proc import cluster, cluster_xarray
-
-import xarray as xr
+from .image_proc import cluster_xarray
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +128,7 @@ def extract(
     clustering: bool = True,
     force_redo: int = 0,
     just_cut: bool = False,
+    create_images: bool = False,  # todo handle this
 ) -> None:
     os.makedirs(CLUSTERED_DATA_DIR, exist_ok=True)
     os.makedirs(RAW_DATA_DIR, exist_ok=True)
@@ -137,7 +136,8 @@ def extract(
     os.makedirs(CUT_DATA_DIR, exist_ok=True)
     os.makedirs(DISCRETE_DATA_DIR, exist_ok=True)
 
-    create_one_time_images(region, DISCRETE_DATA_DIR)
+    if create_images:
+        create_one_time_images(region, DISCRETE_DATA_DIR)
     stopping_step = 4
     if just_cut:
         stopping_step = 1
