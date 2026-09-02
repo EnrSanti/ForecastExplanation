@@ -14,7 +14,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-
 from image_processing.constants import (
     DEFAULT_GAP_FRAMES,
     DEFAULT_MIN_DISTANCE,

@@ -142,16 +142,6 @@ def _file_frame_writer(output_base: str) -> FrameCallback:
     return on_frame
 
 
-def _file_csv_writer(output_base: str) -> CsvCallback:
-    def on_csv(folder: str, fname: str, content: str) -> None:
-        out_dir = os.path.join(output_base, folder)
-        os.makedirs(out_dir, exist_ok=True)
-        with open(os.path.join(out_dir, fname), "w") as f:
-            f.write(content)
-
-    return on_csv
-
-
 def _render_scalar_frames(
     ds: xr.Dataset,
     coordinates: Region,
@@ -198,7 +188,6 @@ def _render_scalar_frames(
         plt.close(fig)
 
 
-
 def _save_scalar_maps(
     ds: xr.Dataset, coordinates: Region, spec: FeatureSpec, output_base: str
 ) -> None:
@@ -213,6 +202,7 @@ def create_one_time_images(coordinates: Region, output_base: str) -> None:
 
 
 def save_feature_maps(input_path: str, coordinates: Region, output_base: str) -> None:
+    # todo add flag to call this one
     with xr.open_dataset(input_path, decode_cf=False) as ds:
         # todo Here xarray becomes png images after extracting the needed data
         if "dtype" in ds["step"].attrs:
@@ -227,8 +217,6 @@ def save_feature_maps(input_path: str, coordinates: Region, output_base: str) ->
         ds = _with_wind_speed(ds)
         for spec in FEATURE_SPECS.values():
             _save_scalar_maps(ds, coordinates, spec, output_base)
-
-        save_wind_vectors(ds, coordinates, output_base)
 
         ds.close()
 
@@ -294,3 +282,52 @@ def create_legends(output_base: str) -> None:
             plt.close(fig)
 
 
+def build_feature_dataarrays(
+    input_path: str,
+) -> xr.Dataset:
+    """
+    Extract per-variable, per-level, time-series DataArrays from the NC file.
+
+    Returns a dict keyed by folder name (e.g. "cloud_at_100m") with values
+    being xr.DataArray of shape (time, y, x) with normalized [0, 1] values
+    ready for tobac consumption.
+    """
+    with xr.open_dataset(input_path, decode_cf=False) as ds:
+        if "dtype" in ds["step"].attrs:
+            del ds["step"].attrs["dtype"]
+        ds = xr.decode_cf(ds)
+        ds = _with_wind_speed(ds)
+
+        result = {}
+        for spec in FEATURE_SPECS.values():
+            field = _resolve_var(ds, spec.var)
+            folders = {k: spec.folder_key + v for k, v in FOLDERS.items()}
+
+            for lvl in LEVELS:
+                level_field = field.sel(isobaricInhPa=lvl)
+
+                frames = []
+                times = []
+                for i, j, valid_time in _valid_times(level_field):
+                    frame = level_field.isel(time=i, step=j)
+                    if not np.isfinite(frame).any():
+                        continue
+                    frames.append(frame)
+                    times.append(valid_time)
+
+                if not frames:
+                    continue
+
+                stacked = xr.concat(frames, dim=pd.Index(times, name="time"))
+                stacked = stacked.sortby("time")
+
+                vmin, vmax = spec.limits[lvl]
+                normalized = (stacked - vmin) / (vmax - vmin)
+                normalized = normalized.clip(0, 1)
+
+                normalized = normalized.fillna(0.0)
+                # todo guardare quanti nan ci sono e se usare media
+
+                result[folders[lvl]] = normalized
+
+    return xr.Dataset({name: da for name, da in result.items()})

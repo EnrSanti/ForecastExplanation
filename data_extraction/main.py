@@ -11,9 +11,12 @@ from . import Region, RAW_DATA_DIR, CUT_DATA_DIR, DISCRETE_DATA_DIR, CLUSTERED_D
 from .extract_features_nc import (
     create_one_time_images,
     save_feature_maps,
+    build_feature_dataarrays,
 )
 from .get_raw_data import extract_nc
-from .image_proc import cluster
+from .image_proc import cluster, cluster_xarray
+
+import xarray as xr
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +52,7 @@ def extract_day_worker(
     raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
     cut_data_dir = os.path.join(CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
     discrete_data_dir = os.path.join(DISCRETE_DATA_DIR, date.strftime("%Y-%m-%d"))
+    features_nc_path = os.path.join(discrete_data_dir, "features.nc")
 
     starting_step = find_starting_step(date)
     nc_file = ""
@@ -56,22 +60,22 @@ def extract_day_worker(
     if starting_step in [0, 1, 2] or force_redo >= 2:
         os.makedirs(raw_data_dir, exist_ok=True)
         os.makedirs(cut_data_dir, exist_ok=True)
-        nc_file = extract_nc(
-            date, region, raw_data_dir, cut_data_dir, force_redo
-        )  # this skips 0 1 automatically if already done
+        # this skips 0 1 automatically if already done
+        nc_file = extract_nc(date, region, raw_data_dir, cut_data_dir, force_redo)
         starting_step = 2
 
     if (starting_step == 2 or force_redo >= 2) and stopping_step >= 3:
         os.makedirs(discrete_data_dir, exist_ok=True)
-        save_feature_maps(nc_file, region, discrete_data_dir)
+        feature_data = build_feature_dataarrays(nc_file)
+        feature_data.to_netcdf(features_nc_path)
         starting_step = 3
 
     if ((starting_step == 3 or force_redo >= 1) and clustering) and stopping_step >= 4:
         os.makedirs(clustered_dir, exist_ok=True)
-        cluster(
-            output_dir=clustered_dir,
-            input_dir=discrete_data_dir,
-        )
+        with xr.open_dataset(features_nc_path) as features_ds:
+            feature_data = {str(name): da for name, da in features_ds.data_vars.items()}
+        clustered_data = cluster_xarray(feature_data)
+        clustered_data.to_netcdf(os.path.join(clustered_dir, "features_clustered.nc"))
 
     if starting_step == 4:
         logger.info(
