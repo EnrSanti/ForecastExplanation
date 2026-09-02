@@ -11,10 +11,8 @@ from . import Region, RAW_DATA_DIR, CUT_DATA_DIR, DISCRETE_DATA_DIR, CLUSTERED_D
 from .extract_features_nc import (
     create_one_time_images,
     save_feature_maps,
-    render_feature_maps,
-    save_wind_vectors,
 )
-from .get_raw_data import extract_nc, extract_nc_in_memory
+from .get_raw_data import extract_nc
 from .image_proc import cluster
 
 logger = logging.getLogger(__name__)
@@ -88,47 +86,17 @@ def extract_day_worker(
         shutil.rmtree(discrete_data_dir, ignore_errors=True)
 
 
-def extract_day_worker_in_memory(
-    date: datetime,
-    region: Region,
-    clean_level: int = 0,
-    clustering: bool = True,
-    force_redo: int = 0,
-    stopping_step: int = 4,
-) -> None:
-    logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
-    """In-memory pipeline: GRIB -> xr.Dataset -> Dict[images] -> cluster -> disk output."""
-    clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
-    raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
-
-    os.makedirs(clustered_dir, exist_ok=True)
-    os.makedirs(raw_data_dir, exist_ok=True)
-
-    ds = extract_nc_in_memory(date, region, raw_data_dir)
-    images = render_feature_maps(ds, region)
-    save_wind_vectors(ds, region, clustered_dir)
-    ds.close()
-    if clustering:
-        cluster(
-            output_dir=clustered_dir, images_dict=images
-        )
-
-    if clean_level >= 1:
-        shutil.rmtree(raw_data_dir, ignore_errors=True)
-
-
 def extract_day(
     dates: List[datetime],
     region: Region,
     clean_level: int = 0,
-    in_memory: bool = False,
     clustering: bool = True,
     force_redo: int = 0,
     stopping_step: int = 4,
 ) -> None:
     logger.info("Starting data extraction...")
 
-    worker = extract_day_worker_in_memory if in_memory else extract_day_worker
+    worker = extract_day_worker
 
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
@@ -154,7 +122,6 @@ def extract(
     dates: List[datetime],
     region: Region,
     clean_level: int = 0,
-    in_memory: bool = False,
     clustering: bool = True,
     force_redo: int = 0,
     just_cut: bool = False,
@@ -162,9 +129,8 @@ def extract(
     os.makedirs(CLUSTERED_DATA_DIR, exist_ok=True)
     os.makedirs(RAW_DATA_DIR, exist_ok=True)
 
-    if not in_memory:
-        os.makedirs(CUT_DATA_DIR, exist_ok=True)
-        os.makedirs(DISCRETE_DATA_DIR, exist_ok=True)
+    os.makedirs(CUT_DATA_DIR, exist_ok=True)
+    os.makedirs(DISCRETE_DATA_DIR, exist_ok=True)
 
     create_one_time_images(region, DISCRETE_DATA_DIR)
     stopping_step = 4
@@ -177,7 +143,6 @@ def extract(
         dates,
         region,
         clean_level,
-        in_memory,
         clustering,
         force_redo,
         stopping_step=stopping_step,

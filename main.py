@@ -39,13 +39,6 @@ def main():
         help="Force the extraction even if the data is already present, more f for more redone steps",
     )
     parser.add_argument(
-        "-m",
-        "--in-memory",
-        dest="in_memory",
-        action="store_true",
-        help="Pass intermediate data in memory instead of writing to disk",
-    )
-    parser.add_argument(
         "--clustering", action="store_true", help="Toggle clustering in data extraction"
     )
     parser.add_argument(
@@ -84,7 +77,6 @@ def main():
         dates,
         data_extraction.Region.FVG,
         clean_level=args.clean,
-        in_memory=args.in_memory,
         clustering=args.clustering,
         force_redo=args.force,
         just_cut=args.just_cut,

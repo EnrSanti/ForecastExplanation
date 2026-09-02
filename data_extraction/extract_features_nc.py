@@ -1,4 +1,3 @@
-import io
 import logging
 import os
 from dataclasses import dataclass
@@ -6,12 +5,11 @@ from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-from cartopy.io import shapereader
+import matplotlib
 import numpy as np
 import pandas as pd
 import xarray as xr
-
-import matplotlib
+from cartopy.io import shapereader
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -102,15 +100,6 @@ LEGEND_SPECS = {
         "label": "Relative humidity [%]",
     },
 }
-
-
-def _fig_to_bgr_array(fig: Any, **savefig_kwargs: Any) -> np.ndarray:
-    with io.BytesIO() as buf:
-        fig.savefig(buf, format="png", **savefig_kwargs)
-        buf.seek(0)
-        img_rgba = plt.imread(buf)
-        img_rgb = (img_rgba[:, :, :3] * 255).astype(np.uint8)
-        return img_rgb[:, :, ::-1]
 
 
 def _resolve_var(ds: xr.Dataset, var: Union[str, Tuple[str, ...]]) -> xr.DataArray:
@@ -326,35 +315,15 @@ def save_feature_maps(input_path: str, coordinates: Region, output_base: str) ->
         if not _has_required_variables(ds):
             return
 
-        save_cloud_maps(ds, coordinates, output_base)
-        save_temperature_maps(ds, coordinates, output_base)
-        save_wind_maps(ds, coordinates, output_base)
-        save_humidity_maps(ds, coordinates, output_base)
+        ds = _with_wind_speed(ds)
+        for spec in FEATURE_SPECS.values():
+            _save_scalar_maps(ds, coordinates, spec, output_base)
+
+        save_wind_vectors(ds, coordinates, output_base)
 
         ds.close()
 
     logger.debug(f"Feature maps saved for {input_path} in {output_base}")
-
-
-def render_feature_maps(
-    ds: xr.Dataset, coordinates: Region
-) -> Dict[str, Dict[str, np.ndarray]]:
-    if not _has_required_variables(ds):
-        return {}
-
-    ds = _with_wind_speed(ds)
-    images: Dict[str, Dict[str, np.ndarray]] = {}
-
-    for spec in FEATURE_SPECS.values():
-        for folder, fname, fig in _render_scalar_frames(ds, coordinates, spec):
-            images.setdefault(folder, {})[fname] = _fig_to_bgr_array(
-                fig, dpi=130, bbox_inches="tight", pad_inches=0
-            )
-
-    logger.debug(
-        f"Feature maps rendered in memory: {sum(len(v) for v in images.values())} images"
-    )
-    return images
 
 
 def save_borders_png(output_base: str, coordinates: Region) -> None:
@@ -416,27 +385,7 @@ def create_legends(output_base: str) -> None:
             plt.close(fig)
 
 
-def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    _save_scalar_maps(ds, coordinates, FEATURE_SPECS["cloud"], output_base)
-
-
-def save_temperature_maps(
-    ds: xr.Dataset, coordinates: Region, output_base: str
-) -> None:
-    _save_scalar_maps(ds, coordinates, FEATURE_SPECS["temp"], output_base)
-
-
-def save_humidity_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    _save_scalar_maps(ds, coordinates, FEATURE_SPECS["humidity"], output_base)
-
-
 def save_wind_vectors(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
     csv_writer = _file_csv_writer(output_base)
     for folder, fname, content in _render_wind_vectors(ds, coordinates):
         csv_writer(folder, fname, content)
-
-
-def save_wind_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    ds = _with_wind_speed(ds)
-    _save_scalar_maps(ds, coordinates, FEATURE_SPECS["wind"], output_base)
-    save_wind_vectors(ds, coordinates, output_base)

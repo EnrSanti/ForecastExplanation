@@ -163,6 +163,9 @@ def _run_tobac_single_day_single_phenomenon(
             continue
 
         image_files = sorted(image_files, key=extract_keys)
+
+        # TODO from here images are read from disk and converted to xarray
+
         frames = load_image_frames(image_files)
         datetimes = extract_times(image_files)
 

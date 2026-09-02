@@ -55,19 +55,6 @@ def extract_nc(
     return output_path
 
 
-def extract_nc_in_memory(
-    date: datetime, region: Region, raw_data_dir: str
-) -> xr.Dataset:
-    """Download GRIB (if needed) and return cropped dataset in memory."""
-    base_name = date.strftime("%Y-%m-%d")
-    grib_path = os.path.join(raw_data_dir, f"{base_name}.grib")
-
-    download_grib_if_needed(date, grib_path)
-
-    logger.debug(f"CUTTING GRIB (in-memory): {grib_path}")
-    return cut_grib_long_lat(grib_path, region.value).load()
-
-
 def download_grib_if_needed(date: datetime, grib_path: str) -> None:
     if os.path.exists(grib_path):
         logger.debug(f"GRIB already exists: {grib_path}")
