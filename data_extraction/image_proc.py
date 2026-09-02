@@ -242,6 +242,15 @@ def cluster_xarray(
                 clustered_frames.append(frame)
                 continue
 
+            unique_vals = np.unique(flat)
+            if unique_vals.size < k:
+                logger.warning(
+                    f"Skipping clustering for '{folder_name}' at frame {t} "
+                    f"because it only has {unique_vals.size} unique values (needs at least {k})."
+                )
+                clustered_frames.append(frame)
+                continue
+
             km = KMeans(n_clusters=k, n_init="auto", algorithm="elkan")
             labels = np.full(frame.shape, 0, dtype=np.int32)
             finite_mask = np.isfinite(frame)
