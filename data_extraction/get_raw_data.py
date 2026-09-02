@@ -62,7 +62,8 @@ def download_grib_if_needed(date: datetime, grib_path: str) -> None:
 
     date_str = date.strftime("%Y-%m-%d")
     logger.debug(f"Downloading GRIB for {date_str} to {grib_path}...")
-    client = cdsapi.Client()
+    quiet = logger.getEffectiveLevel() > logging.DEBUG
+    client = cdsapi.Client(quiet=quiet)
     year, month, day = date_str.split("-")
 
     base_request = {
