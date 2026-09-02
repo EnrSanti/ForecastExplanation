@@ -110,13 +110,6 @@ def _resolve_var(ds: xr.Dataset, var: Union[str, Tuple[str, ...]]) -> xr.DataArr
     raise KeyError(names)
 
 
-def _has_required_variables(ds: xr.Dataset) -> bool:
-    if any(var not in ds for var in REQUIRED_VARIABLES):
-        logger.error("Error: One or more required variables not found in dataset.")
-        return False
-    return True
-
-
 def _with_wind_speed(ds: xr.Dataset) -> xr.Dataset:
     return ds.assign(wind_speed=np.sqrt(ds["u"] ** 2 + ds["v"] ** 2))
 
@@ -205,92 +198,6 @@ def _render_scalar_frames(
         plt.close(fig)
 
 
-def _wind_pixel_transform(
-    coordinates: Region,
-) -> Tuple[Callable[[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray]], Any]:
-    fig, ax = plt.subplots(
-        figsize=(10, 8), dpi=130, subplot_kw={"projection": ccrs.PlateCarree()}
-    )
-    ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
-    ax.axis("off")
-    fig.canvas.draw()
-
-    bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    x0, y0, height_in = bbox.x0, bbox.y0, bbox.height
-
-    def to_pixel(lon: np.ndarray, lat: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        disp = ax.transData.transform(np.column_stack((lon, lat)))
-        px = np.round(disp[:, 0] - x0 * fig.dpi).astype(int)
-        py = np.round(int(height_in * fig.dpi) - (disp[:, 1] - y0 * fig.dpi)).astype(
-            int
-        )
-        return px, py
-
-    return to_pixel, fig
-
-
-def _render_wind_vectors(
-    ds: xr.Dataset, coordinates: Region
-) -> Iterator[Tuple[str, str, str]]:
-    wind_folders = {k: "winds" + v for k, v in FOLDERS.items()}
-    u_var = ds["u"]
-    v_var = ds["v"]
-    lon_min, lon_max, lat_min, lat_max = coordinates.value
-    vector_step = 10
-
-    to_pixel, fig = _wind_pixel_transform(coordinates)
-    try:
-        for lvl in LEVELS:
-            u_lvl = u_var.sel(isobaricInhPa=lvl)
-            v_lvl = v_var.sel(isobaricInhPa=lvl)
-
-            for i, j, valid_time in _valid_times(u_lvl):
-                u_slice = u_lvl.isel(time=i, step=j)
-                v_slice = v_lvl.isel(time=i, step=j)
-
-                if not np.isfinite(np.sqrt(u_slice**2 + v_slice**2)).any():
-                    continue
-
-                lon2d = u_slice["longitude"].broadcast_like(u_slice).values
-                lat2d = u_slice["latitude"].broadcast_like(u_slice).values
-                lon_subset = lon2d[::vector_step, ::vector_step]
-                lat_subset = lat2d[::vector_step, ::vector_step]
-                u_subset = u_slice.values[::vector_step, ::vector_step]
-                v_subset = v_slice.values[::vector_step, ::vector_step]
-
-                mask = (
-                    (lon_subset >= lon_min)
-                    & (lon_subset <= lon_max)
-                    & (lat_subset >= lat_min)
-                    & (lat_subset <= lat_max)
-                )
-
-                lon_visible = lon_subset[mask]
-                lat_visible = lat_subset[mask]
-                u_visible = u_subset[mask]
-                v_visible = v_subset[mask]
-
-                px, py = to_pixel(lon_visible, lat_visible)
-                mags = np.sqrt(u_visible**2 + v_visible**2)
-                alphas = np.degrees(np.arctan2(v_visible, u_visible))
-                alphas[~np.isfinite(alphas)] = 0
-                mags[~np.isfinite(mags)] = 0
-
-                rows = "\n".join(
-                    f"{idx},{px[idx]},{py[idx]},{lat_visible[idx]:.6f},{lon_visible[idx]:.6f},"
-                    f"{mags[idx]:.6f},{alphas[idx]:.2f}"
-                    for idx in range(len(lon_visible))
-                )
-                csv_content = (
-                    "vector_id,pixel_x,pixel_y,latitude,longitude,magnitude,alpha_deg\n"
-                    + rows
-                    + "\n"
-                )
-                csv_fname = f"wind_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.csv"
-                yield wind_folders[lvl], csv_fname, csv_content
-    finally:
-        plt.close(fig)
-
 
 def _save_scalar_maps(
     ds: xr.Dataset, coordinates: Region, spec: FeatureSpec, output_base: str
@@ -307,12 +214,14 @@ def create_one_time_images(coordinates: Region, output_base: str) -> None:
 
 def save_feature_maps(input_path: str, coordinates: Region, output_base: str) -> None:
     with xr.open_dataset(input_path, decode_cf=False) as ds:
+        # todo Here xarray becomes png images after extracting the needed data
         if "dtype" in ds["step"].attrs:
             del ds["step"].attrs["dtype"]
 
         ds = xr.decode_cf(ds)
 
-        if not _has_required_variables(ds):
+        if any(var not in ds for var in REQUIRED_VARIABLES):
+            logger.error("Error: One or more required variables not found in dataset.")
             return
 
         ds = _with_wind_speed(ds)
@@ -385,7 +294,3 @@ def create_legends(output_base: str) -> None:
             plt.close(fig)
 
 
-def save_wind_vectors(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
-    csv_writer = _file_csv_writer(output_base)
-    for folder, fname, content in _render_wind_vectors(ds, coordinates):
-        csv_writer(folder, fname, content)
