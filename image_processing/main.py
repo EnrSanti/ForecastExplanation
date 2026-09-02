@@ -32,6 +32,7 @@ from image_processing.segment_track import (
     track_features,
 )
 from image_processing.utils import (
+    build_referenced_data_from_xarray,
     build_referenced_data,
     convert_frames_to_grayscale,
     extract_keys,
@@ -85,28 +86,22 @@ def _run_tobac_single_day(
     temp_tra_df, temp_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
-        day_output_dir,
         region,
         WeatherPhenomenon.TEMPERATURE,
-        border_img,
         WeatherPhenomenonTobacParams.TEMPERATURE,
     )
     hum_tra_df, hum_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
-        day_output_dir,
         region,
         WeatherPhenomenon.HUMIDITY,
-        border_img,
         WeatherPhenomenonTobacParams.HUMIDITY,
     )
     cld_tra_df, cld_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
-        day_output_dir,
         region,
         WeatherPhenomenon.CLOUDS,
-        border_img,
         WeatherPhenomenonTobacParams.CLOUDS,
     )
 
@@ -130,10 +125,8 @@ def _run_tobac_single_day(
 def _run_tobac_single_day_single_phenomenon(
     date: datetime,
     day_input_dir: str,
-    day_output_dir: str,
     region: Region,
     phenomenon: WeatherPhenomenon,
-    border_img,
     phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
 ):
     """
@@ -145,46 +138,33 @@ def _run_tobac_single_day_single_phenomenon(
     logger.info(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
-        height_input_dir = os.path.join(day_input_dir, f"{phenomenon.value}{suffix}")
-        height_output_dir = os.path.join(day_output_dir, f"{phenomenon.value}{suffix}")
-        os.makedirs(height_output_dir, exist_ok=True)
-
-        if not os.path.exists(height_input_dir):
+        features_nc = os.path.join(day_input_dir, "features_clustered.nc")
+        if not os.path.exists(features_nc):
+            features_nc = os.path.join(day_input_dir, "features.nc")
+            
+        if not os.path.exists(features_nc):
             continue
 
-        image_files = [
-            os.path.join(height_input_dir, f)
-            for f in os.listdir(height_input_dir)
-            if f.lower().endswith((".png", ".jpg", ".jpeg"))
-        ]
-
-        if not image_files:
-            continue
-
-        image_files = sorted(image_files, key=extract_keys)
-
-        # TODO from here images are read from disk and converted to xarray
-
-        frames = load_image_frames(image_files)
-        datetimes = extract_times(image_files)
-
-        is_temp = phenomenon == WeatherPhenomenon.TEMPERATURE
-        frames_gray = convert_frames_to_grayscale(frames, is_temperature=is_temp)
-
-        frame_height = frames.sizes["y"]
-        frame_width = frames.sizes["x"]
-
-        referenced_data = build_referenced_data(
-            frames_gray, datetimes, region_bounds=region.value
+        with xr.open_dataset(features_nc) as ds:
+            folder_key = f"{phenomenon.value}{suffix}"
+            if folder_key not in ds:
+                continue
+            
+            da = ds[folder_key].load()
+            
+        datetimes = [pd.Timestamp(t) for t in da.time.values]
+        
+        referenced_data = build_referenced_data_from_xarray(
+            da, datetimes, region_bounds=region.value
         )
         dxy, dt = get_grid_spacings(referenced_data)
         referenced_data_norm = normalize_referenced_data(referenced_data)
-
+        
         if phenomenon_params is None:
             phenomenon_params = WeatherPhenomenonTobacParams[phenomenon.name]
 
         detection_params = phenomenon_params.value
-
+        
         min_blob_size = detection_params.get("min_blob_size", 100)
         target = detection_params.get("target", "maximum")
         smooth = detection_params.get("smooth", DEFAULT_SMOOTH)
@@ -221,9 +201,9 @@ def _run_tobac_single_day_single_phenomenon(
         )
 
         if x := [s[1] for s in segments_all if s[1] is not None]:
-            da = xr.concat(x, dim="time")
-            da = da.rename(f"{phenomenon.value}{suffix}")
-            segmentations_list.append(da)
+            seg_da = xr.concat(x, dim="time")
+            seg_da = seg_da.rename(f"{phenomenon.value}{suffix}")
+            segmentations_list.append(seg_da)
             del x
 
         if trajectories is not None and not trajectories.empty:
@@ -243,40 +223,6 @@ def _run_tobac_single_day_single_phenomenon(
             tmp["height"] = tmp["height"].astype("category")
             trajectories_list.append(tmp)
 
-        # Plotting on original images
-        images_no = len(image_files)
-
-        if trajectories is not None and not trajectories.empty:
-            trajectories_by_cell = {
-                cell: df for cell, df in trajectories.groupby("cell")
-            }
-        else:
-            trajectories_by_cell = {}
-
-        cell_info_by_frame = classify_cells_per_frame(trajectories, DEFAULT_GAP_FRAMES)
-
-        for i in range(images_no):
-            original_img_name = os.path.splitext(os.path.basename(image_files[i]))[0]
-            out_path = os.path.join(
-                height_output_dir, f"{original_img_name}_tracked.png"
-            )
-            original_img = frames.isel(frame=i)
-            cmap = phenomenon_params.value.get("cmap", "viridis")
-
-            generate_plots(
-                original_img,
-                out_path,
-                smooth,
-                region,
-                segments_all,
-                trajectories_by_cell,
-                frame_width,
-                frame_height,
-                cmap,
-                cell_info_by_frame,
-                border_img,
-                i,
-            )
         del trajectories
         del segments_all
 

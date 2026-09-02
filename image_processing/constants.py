@@ -40,6 +40,7 @@ class WeatherPhenomenon(Enum):
     WIND = "winds"
 
 
+# todo fix parameter for the new data type
 class WeatherPhenomenonTobacParams(Enum):
     TEMPERATURE = {
         "min_blob_size": 1500,

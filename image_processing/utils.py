@@ -260,3 +260,40 @@ def overlay_cities(axs: plt.Axes, region: Region, frame_height: int, frame_width
             fontsize=6,
             zorder=11,
         )
+
+def build_referenced_data_from_xarray(
+    da: xr.DataArray,
+    times: list,
+    region_bounds=None,
+) -> xr.DataArray:
+    """
+    Build tobac-compatible DataArray directly from an xarray DataArray.
+    No PNG reading needed.
+    """
+    import numpy as np
+    import pandas as pd
+    
+    # da already has (time, y, x) dims and proper coordinates
+    referenced_data = xr.DataArray(
+        da.values,
+        dims=("time", "y", "x"),
+        coords={
+            "time": pd.to_datetime(times),
+            "y": ("y", np.arange(da.sizes["y"]), {"units": "m"}),
+            "x": ("x", np.arange(da.sizes["x"]), {"units": "m"}),
+        },
+        attrs={"units": "m s-1"},
+    )
+    
+    if region_bounds is not None:
+        lon_min, lon_max, lat_min, lat_max = region_bounds
+        lat = np.linspace(lat_min, lat_max, da.sizes["y"])
+        lon = np.linspace(lon_min, lon_max, da.sizes["x"])
+        longitude = np.tile(lon[np.newaxis, :], (da.sizes["y"], 1))
+        latitude = np.tile(lat[:, np.newaxis], (1, da.sizes["x"]))
+        referenced_data = referenced_data.assign_coords(
+            latitude=(("y", "x"), latitude),
+            longitude=(("y", "x"), longitude),
+        )
+    
+    return referenced_data
