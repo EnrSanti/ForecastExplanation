@@ -146,7 +146,7 @@ def cluster(
     input_dir: Optional[str] = None,
     images_dict: Optional[Dict[str, Dict[str, np.ndarray]]] = None,
 ) -> None:
-    """todo add flag to run this
+    """
     Iterates variable-type subfolders and clusters each with its own K.
     Safe to call from multiple threads on different inputs.
     """
