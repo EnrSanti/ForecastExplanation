@@ -9,6 +9,7 @@ import matplotlib
 import numpy as np
 import pandas as pd
 import xarray as xr
+from tqdm import tqdm
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -67,13 +68,14 @@ def run_tobac(
                 input_dir,
                 output_dir,
                 region,
-                border_img,
                 save_images,
             ): date
             for date in dates
         }
 
-        for future in as_completed(futures):
+        for future in tqdm(
+            as_completed(futures), total=len(dates), desc="TOBAC Processing"
+        ):
             date = futures[future]
             try:
                 future.result()
@@ -88,7 +90,6 @@ def _run_tobac_single_day(
     input_dir: str,
     output_dir: str,
     region: Region,
-    border_img,
     save_images: bool = False,
 ):
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
@@ -155,7 +156,7 @@ def _run_tobac_single_day_single_phenomenon(
     trajectories_list = []
     segmentations_list = []
 
-    logger.info(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
+    logger.debug(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
         features_nc = os.path.join(day_input_dir, "features.nc")

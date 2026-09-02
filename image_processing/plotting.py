@@ -215,7 +215,7 @@ def generate_all_plots(
             frame_da["latitude"],
             frame_da,
             cmap=cmap,
-            shading="auto",
+            shading="gouraud",
             vmin=vmin,
             vmax=vmax,
             transform=ccrs.PlateCarree(),

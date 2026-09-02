@@ -319,7 +319,7 @@ def build_feature_dataarrays(
                     continue
 
                 stacked = xr.concat(
-                    frames, dim=pd.Index(times, name="time"), coords="different"
+                    frames, dim=pd.Index(times, name="time"), coords="minimal", compat="override"
                 )
                 stacked = stacked.sortby("time")
 

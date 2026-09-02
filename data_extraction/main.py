@@ -141,9 +141,7 @@ def extract(
     stopping_step = 4
     if just_cut:
         stopping_step = 1
-    print(
-        f"Starting data extraction for {len(dates)} dates with stopping step {stopping_step}..."
-    )
+
     extract_day(
         dates,
         region,
