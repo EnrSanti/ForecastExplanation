@@ -318,7 +318,7 @@ def build_feature_dataarrays(
                 if not frames:
                     continue
 
-                stacked = xr.concat(frames, dim=pd.Index(times, name="time"))
+                stacked = xr.concat(frames, dim=pd.Index(times, name="time"), coords="different")
                 stacked = stacked.sortby("time")
 
                 vmin, vmax = spec.limits[lvl]
