@@ -318,7 +318,10 @@ def build_feature_dataarrays(
                     continue
 
                 stacked = xr.concat(
-                    frames, dim=pd.Index(times, name="time"), coords="minimal", compat="override"
+                    frames,
+                    dim=pd.Index(times, name="time"),
+                    coords="minimal",
+                    compat="override",
                 )
                 stacked = stacked.sortby("time")
 
@@ -328,7 +331,9 @@ def build_feature_dataarrays(
 
                 nan_count = int(normalized.isnull().sum())
                 total_count = int(normalized.size)
-                print(f"NaNs in {spec.folder_key} at {lvl}hPa: {nan_count}/{total_count} ({(nan_count/total_count)*100:.2f}%)")
+                print(
+                    f"NaNs in {spec.folder_key} at {lvl}hPa: {nan_count}/{total_count} ({(nan_count/total_count)*100:.2f}%)"
+                )
 
                 normalized = normalized.fillna(0.0)
                 # todo guardare quanti nan ci sono e se usare media

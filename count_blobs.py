@@ -57,3 +57,4 @@ def count_blobs(base_dir):
 
 if __name__ == "__main__":
     count_blobs("data")
+    count_blobs("old_pipeline/data")
