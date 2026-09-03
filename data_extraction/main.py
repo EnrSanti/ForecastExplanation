@@ -87,6 +87,7 @@ def extract_day_worker(
         shutil.rmtree(cut_data_dir, ignore_errors=True)
     if clean_level >= 3:
         shutil.rmtree(discrete_data_dir, ignore_errors=True)
+        shutil.rmtree(clustered_dir, ignore_errors=True)
 
 
 def extract_day(
