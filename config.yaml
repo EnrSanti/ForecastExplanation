@@ -1,2 +1,20 @@
-dates:
-  - 2009-01-02
+run_1:
+  region: FVG
+  dates:
+    - 2009-01-02
+    - 2009-01-03
+  clean: 0
+  force: 0
+  clustering: false
+  debug: false
+  save_images: false
+
+run_2:
+  region: ITALY
+  dates:
+    - 2009-01-02
+  clean: 0
+  force: 0
+  clustering: false
+  debug: false
+  save_images: true
