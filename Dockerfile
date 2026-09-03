@@ -1,4 +1,4 @@
-FROM condaforge/mambaforge:latest
+FROM condaforge/miniforge3:latest
 LABEL authors="elius"
 
 WORKDIR /app
@@ -7,8 +7,8 @@ WORKDIR /app
 COPY environment.yml .
 
 # Create the conda environment
-RUN conda env create -f environment.yml && \
-    conda clean -afy
+RUN conda env create -f environment.yml
+RUn conda clean -afy
 
 # Make the environment the default for subsequent commands
 ENV PATH=/opt/conda/envs/weather/bin:$PATH

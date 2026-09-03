@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file: .env
     container_name: weather
-    restart: unless-stopped
 
     volumes:
       - ./tmp_data:/app/tmp_data
