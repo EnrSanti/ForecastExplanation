@@ -4,15 +4,13 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from typing import List, Optional
 
-import cv2
 import matplotlib
-import numpy as np
 import pandas as pd
 import xarray as xr
+from tqdm import tqdm
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
 
 
 from image_processing.constants import (
@@ -27,20 +25,13 @@ from image_processing.constants import (
 )
 from image_processing.segment_track import (
     detect_features,
-    print_cloud_labels,
-    print_clouds_center_line,
     segment_features,
     track_features,
 )
 from image_processing.utils import (
-    build_referenced_data,
-    convert_frames_to_grayscale,
-    extract_keys,
-    extract_times,
+    build_referenced_data_from_xarray,
     get_grid_spacings,
-    load_image_frames,
     normalize_referenced_data,
-    overlay_cities,
 )
 
 logger = logging.getLogger(__name__)
@@ -51,22 +42,29 @@ def run_tobac(
     input_dir: str,
     output_dir: str,
     region: Region,
-    border_img_path: str,
+    save_images: bool = False,
 ):
     """
     Executes TOBAC tracking across the specified list of dates and weather phenomena.
     """
+    logger.info(f"Starting TOBAC for {len(dates)} dates.")
     os.makedirs(output_dir, exist_ok=True)
-    border_img = cv2.imread(border_img_path, cv2.IMREAD_UNCHANGED)
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
             executor.submit(
-                _run_tobac_single_day, date, input_dir, output_dir, region, border_img
+                _run_tobac_single_day,
+                date,
+                input_dir,
+                output_dir,
+                region,
+                save_images,
             ): date
             for date in dates
         }
 
-        for future in as_completed(futures):
+        for future in tqdm(
+            as_completed(futures), total=len(dates), desc="TOBAC Processing"
+        ):
             date = futures[future]
             try:
                 future.result()
@@ -77,7 +75,11 @@ def run_tobac(
 
 
 def _run_tobac_single_day(
-    date: datetime, input_dir: str, output_dir: str, region: Region, border_img
+    date: datetime,
+    input_dir: str,
+    output_dir: str,
+    region: Region,
+    save_images: bool = False,
 ):
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
@@ -89,8 +91,8 @@ def _run_tobac_single_day(
         day_output_dir,
         region,
         WeatherPhenomenon.TEMPERATURE,
-        border_img,
         WeatherPhenomenonTobacParams.TEMPERATURE,
+        save_images,
     )
     hum_tra_df, hum_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
@@ -98,8 +100,8 @@ def _run_tobac_single_day(
         day_output_dir,
         region,
         WeatherPhenomenon.HUMIDITY,
-        border_img,
         WeatherPhenomenonTobacParams.HUMIDITY,
+        save_images,
     )
     cld_tra_df, cld_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
@@ -107,8 +109,8 @@ def _run_tobac_single_day(
         day_output_dir,
         region,
         WeatherPhenomenon.CLOUDS,
-        border_img,
         WeatherPhenomenonTobacParams.CLOUDS,
+        save_images,
     )
 
     dfs = [df for df in [temp_tra_df, hum_tra_df, cld_tra_df] if not df.empty]
@@ -134,8 +136,8 @@ def _run_tobac_single_day_single_phenomenon(
     day_output_dir: str,
     region: Region,
     phenomenon: WeatherPhenomenon,
-    border_img,
     phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
+    save_images: bool = False,
 ):
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
@@ -143,37 +145,25 @@ def _run_tobac_single_day_single_phenomenon(
     trajectories_list = []
     segmentations_list = []
 
-    logger.info(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
+    logger.debug(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
-        height_input_dir = os.path.join(day_input_dir, f"{phenomenon.value}{suffix}")
-        height_output_dir = os.path.join(day_output_dir, f"{phenomenon.value}{suffix}")
-        os.makedirs(height_output_dir, exist_ok=True)
+        features_nc = os.path.join(day_input_dir, "features.nc")
 
-        if not os.path.exists(height_input_dir):
+        if not os.path.exists(features_nc):
             continue
 
-        image_files = [
-            os.path.join(height_input_dir, f)
-            for f in os.listdir(height_input_dir)
-            if f.lower().endswith((".png", ".jpg", ".jpeg"))
-        ]
+        with xr.open_dataset(features_nc) as ds:
+            folder_key = f"{phenomenon.value}{suffix}"
+            if folder_key not in ds:
+                continue
 
-        if not image_files:
-            continue
+            da = ds[folder_key].load()
 
-        image_files = sorted(image_files, key=extract_keys)
-        frames = load_image_frames(image_files)
-        datetimes = extract_times(image_files)
+        datetimes = [pd.Timestamp(t) for t in da.time.values]
 
-        is_temp = phenomenon == WeatherPhenomenon.TEMPERATURE
-        frames_gray = convert_frames_to_grayscale(frames, is_temperature=is_temp)
-
-        frame_height = frames.sizes["y"]
-        frame_width = frames.sizes["x"]
-
-        referenced_data = build_referenced_data(
-            frames_gray, datetimes, region_bounds=region.value
+        referenced_data = build_referenced_data_from_xarray(
+            da, datetimes, region_bounds=region.value
         )
         dxy, dt = get_grid_spacings(referenced_data)
         referenced_data_norm = normalize_referenced_data(referenced_data)
@@ -219,10 +209,23 @@ def _run_tobac_single_day_single_phenomenon(
         )
 
         if x := [s[1] for s in segments_all if s[1] is not None]:
-            da = xr.concat(x, dim="time")
-            da = da.rename(f"{phenomenon.value}{suffix}")
-            segmentations_list.append(da)
+            seg_da = xr.concat(x, dim="time")
+            seg_da = seg_da.rename(f"{phenomenon.value}{suffix}")
+            segmentations_list.append(seg_da)
             del x
+
+        if save_images:
+            from image_processing.plotting import generate_all_plots
+
+            height_output_dir = os.path.join(day_output_dir, folder_key)
+            generate_all_plots(
+                da=da,
+                output_dir=height_output_dir,
+                cmap=detection_params.get("cmap", "viridis"),
+                region=region,
+                segments_all=segments_all,
+                trajectories=trajectories,
+            )
 
         if trajectories is not None and not trajectories.empty:
             tmp = trajectories.drop(
@@ -241,40 +244,6 @@ def _run_tobac_single_day_single_phenomenon(
             tmp["height"] = tmp["height"].astype("category")
             trajectories_list.append(tmp)
 
-        # Plotting on original images
-        images_no = len(image_files)
-
-        if trajectories is not None and not trajectories.empty:
-            trajectories_by_cell = {
-                cell: df for cell, df in trajectories.groupby("cell")
-            }
-        else:
-            trajectories_by_cell = {}
-
-        cell_info_by_frame = classify_cells_per_frame(trajectories, DEFAULT_GAP_FRAMES)
-
-        for i in range(images_no):
-            original_img_name = os.path.splitext(os.path.basename(image_files[i]))[0]
-            out_path = os.path.join(
-                height_output_dir, f"{original_img_name}_tracked.png"
-            )
-            original_img = frames.isel(frame=i)
-            cmap = phenomenon_params.value.get("cmap", "viridis")
-
-            generate_plots(
-                original_img,
-                out_path,
-                smooth,
-                region,
-                segments_all,
-                trajectories_by_cell,
-                frame_width,
-                frame_height,
-                cmap,
-                cell_info_by_frame,
-                border_img,
-                i,
-            )
         del trajectories
         del segments_all
 
@@ -311,135 +280,3 @@ def _run_tobac_single_day_single_phenomenon(
 
     plt.close("all")
     return trajectories_df, segmentation_ds
-
-
-def classify_cells_per_frame(trajectories: pd.DataFrame, gap_frames: int) -> dict:
-    """
-    For each frame, classify which cells are present, and split them into
-    'persisted' (also seen in the gap_frames window immediately before this
-    frame) vs 'new' (first appearance, or reappearing after a longer gap
-    than trackpy's memory bridged).
-
-    Returns {frame: {"cell_ids": set, "persisted": set, "new_cells": set,
-                      "all_frames_for_cell": {cell_id: [prior_frames_in_window]}}}
-
-    Replaces the manual cells_frames_before + nested gap-window loop: since
-    trajectories already carries each cell's full frame history (trackpy's
-    `memory` already did the gap-bridging when linking), this just reads
-    that history directly per cell instead of replaying it frame-by-frame.
-    """
-    if trajectories is None or trajectories.empty:
-        return {}
-
-    frames_by_cell = trajectories.groupby("cell")["frame"].apply(
-        lambda s: sorted(s.unique())
-    )
-
-    result = {}
-    for i, frame_traj in trajectories.groupby("frame"):
-        cell_ids = set(frame_traj["cell"].dropna().unique())
-        persisted, new_cells, all_frames_for_cell = set(), set(), {}
-
-        for cell_id in cell_ids:
-            cell_frames = frames_by_cell.get(cell_id, [])
-            recent = [f for f in cell_frames if i - gap_frames - 1 <= f < i]
-            if recent:
-                persisted.add(cell_id)
-                all_frames_for_cell[cell_id] = recent
-            else:
-                new_cells.add(cell_id)
-
-        result[i] = {
-            "cell_ids": cell_ids,
-            "persisted": persisted,
-            "new_cells": new_cells,
-            "all_frames_for_cell": all_frames_for_cell,
-        }
-    return result
-
-
-def generate_plots(
-    original_img,
-    out_path: str,
-    smooth: float,
-    region,
-    segments_all,
-    trajectories_by_cell,
-    frame_width,
-    frame_height,
-    cmap,
-    cell_info_by_frame,
-    border_img,
-    i,
-):
-    fig_width_in = frame_width / 100
-    fig_height_in = frame_height / 100
-
-    xlim = (0, frame_width)
-    ylim = (0, frame_height)
-
-    fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in), dpi=100)
-    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-
-    smoothed_bg = cv2.GaussianBlur(
-        np.asarray(original_img), (0, 0), sigmaX=smooth, sigmaY=smooth
-    )
-
-    axs.imshow(smoothed_bg, origin="upper", cmap=cmap)
-    axs.imshow(border_img, origin="upper")
-    overlay_cities(axs, region, 800, 915)  # TODO: da non hardcodare
-    info = cell_info_by_frame.get(
-        i,
-        {
-            "cell_ids": set(),
-            "persisted": set(),
-            "new_cells": set(),
-            "all_frames_for_cell": {},
-        },
-    )
-    cell_ids = info["cell_ids"]
-    persisted = info["persisted"]
-    new_cells = info["new_cells"]
-    all_frames_for_cell = info["all_frames_for_cell"]
-
-    # ... figure setup, imshow, overlay_image, overlay_cities unchanged ...
-
-    for cell_id in cell_ids:
-        track = trajectories_by_cell.get(cell_id, pd.DataFrame())
-        f_weighted = track[track["frame"] == i]
-
-        printing_symbol, color = (
-            ("^", "white") if cell_id in new_cells else ("x", "red")
-        )
-        print_clouds_center_line(
-            printing_symbol,
-            color,
-            f_weighted,
-            i,
-            track,
-            axs,
-            cell_id,
-            persisted,
-            all_frames_for_cell,
-        )
-
-        if len(f_weighted["x"]) > 0:
-            print_cloud_labels(f_weighted, cell_id, xlim, ylim, axs)
-
-    entry = next((s for s in segments_all if s[0] == i), None)
-    if entry is not None:
-        _, seg_labels, _ = entry
-        if seg_labels is not None:
-            seg_labels2d = seg_labels.isel(time=0)
-            seg_labels2d.plot.contour(levels=[0.5], ax=axs, colors="k")
-
-    axs.set_title("")
-    axs.set_xticks([])
-    axs.set_yticks([])
-    axs.set_xlim(0, frame_width)
-    axs.set_ylim(frame_height, 0)
-    axs.axis("off")
-
-    plt.savefig(out_path, dpi=100, bbox_inches=None, pad_inches=0)
-    fig.clf()
-    plt.close(fig)

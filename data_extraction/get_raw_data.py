@@ -5,6 +5,8 @@ from typing import List
 
 from ecmwf.datastores import Client
 import xarray as xr
+import numpy as np
+
 
 from . import Region
 
@@ -23,13 +25,24 @@ def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> xr.Dataset:
         decode_times=True,
     ) as ds:
         mask = (
-            (ds.longitude >= coordinates[0] - 0.5)
-            & (ds.longitude <= coordinates[1] + 0.5)
-            & (ds.latitude >= coordinates[2] - 0.5)
-            & (ds.latitude <= coordinates[3] + 0.5)
+            (ds.longitude >= coordinates[0])
+            & (ds.longitude <= coordinates[1])
+            & (ds.latitude >= coordinates[2])
+            & (ds.latitude <= coordinates[3])
         )
 
-        ds_sub = ds.where(mask, drop=True)
+        mask_np = mask.values
+        y_indices, x_indices = np.where(mask_np)
+
+        y_min = max(0, int(y_indices.min()) - 1)
+        y_max = min(ds.sizes["y"], int(y_indices.max()) + 2)
+        x_min = max(0, int(x_indices.min()) - 1)
+        x_max = min(ds.sizes["x"], int(x_indices.max()) + 2)
+
+        ds_sub = ds.isel(
+            y=slice(y_min, y_max),
+            x=slice(x_min, x_max),
+        )
         return ds_sub
 
 
@@ -55,19 +68,6 @@ def extract_nc(
     return output_path
 
 
-def extract_nc_in_memory(
-    date: datetime, region: Region, raw_data_dir: str
-) -> xr.Dataset:
-    """Download GRIB (if needed) and return cropped dataset in memory."""
-    base_name = date.strftime("%Y-%m-%d")
-    grib_path = os.path.join(raw_data_dir, f"{base_name}.grib")
-
-    download_grib_if_needed(date, grib_path)
-
-    logger.debug(f"CUTTING GRIB (in-memory): {grib_path}")
-    return cut_grib_long_lat(grib_path, region.value).load()
-
-
 def download_grib_if_needed(date: datetime, grib_path: str) -> None:
     if os.path.exists(grib_path):
         logger.debug(f"GRIB already exists: {grib_path}")
@@ -75,11 +75,12 @@ def download_grib_if_needed(date: datetime, grib_path: str) -> None:
 
     date_str = date.strftime("%Y-%m-%d")
     logger.debug(f"Downloading GRIB for {date_str} to {grib_path}...")
-    print(os.getenv("ECMWF_API_KEY", None), os.getenv("ECMWF_API_URL", None))
-    client = Client(key=os.getenv("ECMWF_API_KEY", None), url=os.getenv("ECMWF_API_URL", None))
+    quiet = logger.getEffectiveLevel() > logging.DEBUG #todo
+    client = Client(key=os.getenv("ECMWF_API_KEY", None), url=os.getenv("ECMWF_API_URL", None), progress=quiet)
     if not client.check_authentication():
         logger.critical("Failed to authenticate with ECMWF API.")
         raise Exception("Failed to authenticate with ECMWF API.")
+
     year, month, day = date_str.split("-")
 
     base_request = {
@@ -107,16 +108,6 @@ def download_grib_if_needed(date: datetime, grib_path: str) -> None:
             "1",
             "2",
             "3",
-            "4",
-            "5",
-            "6",
-            "9",
-            "12",
-            "15",
-            "18",
-            "21",
-            "24",
-            "27",
         ],
         "data_format": "grib",
     }
