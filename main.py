@@ -93,9 +93,7 @@ def main():
 
         clean = args.clean if args.clean else run_config.get("clean", 0)
         force = args.force if args.force else run_config.get("force", 0)
-        clustering = (
-            args.clustering if args.clustering else run_config.get("clustering", False)
-        )
+        clustering = (args.clustering if args.clustering else run_config.get("clustering", False))
         debug = args.debug if args.debug else run_config.get("debug", False)
         just_cut = args.just_cut if args.just_cut else run_config.get("just_cut", False)
         save_images = (
@@ -103,6 +101,7 @@ def main():
             if args.save_images
             else run_config.get("save_images", False)
         )
+        output_path = run_config.get("output_path", os.path.join("runs", run_name))
 
         if debug:
             logger.setLevel(logging.DEBUG)
@@ -126,7 +125,7 @@ def main():
         data_extraction.extract(
             dates,
             region,
-            output_path=os.path.join("runs", run_name),
+            output_path=output_path,
             clean_level=clean,
             clustering=clustering,
             force_redo=force,
@@ -138,19 +137,23 @@ def main():
             continue
 
         input_dir = (
-            os.path.join("runs", run_name, data_extraction.CLUSTERED_DATA_DIR)
+            os.path.join(output_path, data_extraction.CLUSTERED_DATA_DIR)
             if clustering
-            else os.path.join("runs", run_name, data_extraction.DISCRETE_DATA_DIR)
+            else os.path.join(output_path, data_extraction.DISCRETE_DATA_DIR)
         )
         image_processing.run_tobac(
             dates,
             input_dir=input_dir,
-            output_dir=os.path.join("runs", run_name),
+            output_dir=output_path,
             region=region,
             save_images=save_images,
         )
 
-        logger.info(f"--- Finished {run_name} ---")
+        logger.info(f"--- Finished {run_name} ---"
+                    f""
+                    f""
+                    f""
+                    f"")
 
 
 if __name__ == "__main__":

@@ -8,6 +8,18 @@ fvgnotcluster:
   debug: false
   save_images: false
 
+fvgnotcluster_run2:
+  region: ITALY
+  dates:
+    - 2009-01-04
+  output_path: custom_output/italy_run
+  clean: 0
+  force: 0
+  clustering: true
+  debug: false
+  just_cut: false
+  save_images: true
+
 francia:
   region: [45.8, 42.7, -3, 3]
   dates:
