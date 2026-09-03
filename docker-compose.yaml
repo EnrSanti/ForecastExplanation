@@ -1,0 +1,12 @@
+services:
+  weather:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    container_name: weather
+
+    volumes:
+      - ./tmp_data:/app/tmp_data
+      - ./data:/app/data
+      - ./config.yaml:/app/config.yaml

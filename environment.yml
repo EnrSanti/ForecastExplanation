@@ -13,7 +13,7 @@ dependencies:
   - scikit-image=0.26.0
   - numba=0.67.0
   - scitools-iris=3.16.0
-  - cdsapi=0.7.7
+  - ecmwf-datastores-client
   - py-opencv=5.0.0
   - seaborn=0.13.2
   - tobac=1.6.3
