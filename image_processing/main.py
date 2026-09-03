@@ -19,7 +19,6 @@ from image_processing.constants import (
     DEFAULT_SMOOTH,
     DEFAULT_V_MAX_AT_HEIGHT,
     FOLDERS_HEIGHT_SUFF,
-    Region,
     WeatherPhenomenon,
     WeatherPhenomenonTobacParams,
 )
@@ -33,6 +32,7 @@ from image_processing.utils import (
     get_grid_spacings,
     normalize_referenced_data,
 )
+from region import Region
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ def run_tobac(
     """
     Executes TOBAC tracking across the specified list of dates and weather phenomena.
     """
-    logger.info(f"Starting TOBAC for {len(dates)} dates.")
+    logger.info(f"Starting TOBAC.")
     os.makedirs(output_dir, exist_ok=True)
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
@@ -120,9 +120,6 @@ def _run_tobac_single_day(
         [temp_seg_ds, hum_seg_ds, cld_seg_ds], compat="override", join="outer"
     )
     del temp_seg_ds, hum_seg_ds, cld_seg_ds
-
-    logger.debug(f"total space used for day {date.strftime('%Y-%m-%d')}:")
-    logger.debug(results_tra.memory_usage())
 
     xr.Dataset.from_dataframe(results_tra).to_netcdf(
         os.path.join(day_output_dir, "trajectories.nc")

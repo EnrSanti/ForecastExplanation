@@ -1,2 +1,33 @@
-dates:
-  - 2009-01-02
+run_baseline:
+  region: FVG
+  dates:
+    - 2009-01-02
+  clean: 0
+  force: 0
+  clustering: false
+  debug: false
+  just_cut: false
+  save_images: false
+
+run_custom_path_and_region:
+  region: [12.0, 14.5, 45.0, 47.0]
+  dates:
+    - 2009-01-02
+  output_path: custom_output/test_run
+  clean: 0
+  force: 1
+  clustering: false
+  debug: true
+  just_cut: true
+  save_images: false
+
+run_features_images_clean:
+  region: ITALY
+  dates:
+    - 2009-01-02
+  clean: 1
+  force: 0
+  clustering: true
+  debug: false
+  just_cut: false
+  save_images: true
