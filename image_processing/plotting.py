@@ -4,7 +4,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import xarray as xr
 import pandas as pd
-from typing import Set, Dict, List, Tuple
+from typing import Set, Dict, List
 import logging
 
 from region import Region, CITIES
@@ -12,7 +12,7 @@ from region import Region, CITIES
 logger = logging.getLogger(__name__)
 
 
-def overlay_cities(axs: plt.Axes, region: Region):
+def overlay_cities(axs: plt.Axes):
     """
     Overlay city markers and labels on top of the map using Cartopy.
     """
@@ -224,7 +224,7 @@ def generate_all_plots(
         axs.add_feature(cfeature.BORDERS, linewidth=0.8, edgecolor="black")
 
         # Add cities
-        overlay_cities(axs, region)
+        overlay_cities(axs)
 
         # Add tracking data
         info = cell_info_by_frame.get(

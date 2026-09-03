@@ -61,7 +61,7 @@ def parse_args_and_config():
         help="Generate visualization images of the tracking results",
     )
 
-    args, unknown = parser.parse_known_args()
+    args, _ = parser.parse_known_args()
 
     if os.path.exists(args.config):
         with open(args.config, "r") as f:
