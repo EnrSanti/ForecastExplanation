@@ -329,14 +329,7 @@ def build_feature_dataarrays(
                 normalized = (stacked - vmin) / (vmax - vmin)
                 normalized = normalized.clip(0, 1)
 
-                nan_count = int(normalized.isnull().sum())
-                total_count = int(normalized.size)
-                print(
-                    f"NaNs in {spec.folder_key} at {lvl}hPa: {nan_count}/{total_count} ({(nan_count/total_count)*100:.2f}%)"
-                )
-
                 normalized = normalized.fillna(0.0)
-                # todo guardare quanti nan ci sono e se usare media
 
                 normalized = normalized.drop_vars(
                     ["valid_time", "step", "isobaricInhPa", "number", "surface"],

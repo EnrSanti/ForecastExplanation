@@ -89,7 +89,12 @@ def build_referenced_data_from_xarray(
         attrs={"units": "m s-1"},
     )
 
-    if region_bounds is not None:
+    if "latitude" in da.coords and "longitude" in da.coords:
+        referenced_data = referenced_data.assign_coords(
+            latitude=(("y", "x"), da["latitude"].values),
+            longitude=(("y", "x"), da["longitude"].values),
+        )
+    elif region_bounds is not None:
         lon_min, lon_max, lat_min, lat_max = region_bounds
         lat = np.linspace(lat_min, lat_max, da.sizes["y"])
         lon = np.linspace(lon_min, lon_max, da.sizes["x"])

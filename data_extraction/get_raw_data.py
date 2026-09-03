@@ -25,17 +25,23 @@ def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> xr.Dataset:
         decode_times=True,
     ) as ds:
         mask = (
-            (ds.longitude >= coordinates[0] - 0.5)
-            & (ds.longitude <= coordinates[1] + 0.5)
-            & (ds.latitude >= coordinates[2] - 0.5)
-            & (ds.latitude <= coordinates[3] + 0.5)
+            (ds.longitude >= coordinates[0])
+            & (ds.longitude <= coordinates[1])
+            & (ds.latitude >= coordinates[2])
+            & (ds.latitude <= coordinates[3])
         )
 
         mask_np = mask.values
         y_indices, x_indices = np.where(mask_np)
+
+        y_min = max(0, int(y_indices.min()) - 1)
+        y_max = min(ds.sizes["y"], int(y_indices.max()) + 2)
+        x_min = max(0, int(x_indices.min()) - 1)
+        x_max = min(ds.sizes["x"], int(x_indices.max()) + 2)
+
         ds_sub = ds.isel(
-            y=slice(y_indices.min(), y_indices.max() + 1),
-            x=slice(x_indices.min(), x_indices.max() + 1),
+            y=slice(y_min, y_max),
+            x=slice(x_min, x_max),
         )
         return ds_sub
 
