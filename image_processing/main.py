@@ -1,15 +1,18 @@
 import logging
 import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from typing import List, Optional
-from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import cv2
-import matplotlib.pyplot as plt
+import matplotlib
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-import json
+import xarray as xr
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
 
 
 from image_processing.constants import (
@@ -56,7 +59,6 @@ def run_tobac(
     os.makedirs(output_dir, exist_ok=True)
     border_img = cv2.imread(border_img_path, cv2.IMREAD_UNCHANGED)
     with ProcessPoolExecutor(max_workers=12) as executor:
-
         futures = {
             executor.submit(
                 _run_tobac_single_day, date, input_dir, output_dir, region, border_img
@@ -68,7 +70,7 @@ def run_tobac(
             date = futures[future]
             try:
                 future.result()
-            except Exception as e:
+            except Exception:
                 logger.error(f"TOBAC failed for {date}", exc_info=True)
 
     logger.info("TOBAC runs completed.")
@@ -77,12 +79,11 @@ def run_tobac(
 def _run_tobac_single_day(
     date: datetime, input_dir: str, output_dir: str, region: Region, border_img
 ):
-
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
     os.makedirs(day_output_dir, exist_ok=True)
 
-    temp_tra_df, temp_seg_df = _run_tobac_single_day_single_phenomenon(
+    temp_tra_df, temp_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
         day_output_dir,
@@ -91,7 +92,7 @@ def _run_tobac_single_day(
         border_img,
         WeatherPhenomenonTobacParams.TEMPERATURE,
     )
-    hum_tra_df, hum_seg_df = _run_tobac_single_day_single_phenomenon(
+    hum_tra_df, hum_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
         day_output_dir,
@@ -100,7 +101,7 @@ def _run_tobac_single_day(
         border_img,
         WeatherPhenomenonTobacParams.HUMIDITY,
     )
-    cld_tra_df, cld_seg_df = _run_tobac_single_day_single_phenomenon(
+    cld_tra_df, cld_seg_ds = _run_tobac_single_day_single_phenomenon(
         date,
         day_input_dir,
         day_output_dir,
@@ -110,15 +111,21 @@ def _run_tobac_single_day(
         WeatherPhenomenonTobacParams.CLOUDS,
     )
 
-    results_tra = pd.concat([temp_tra_df, hum_tra_df, cld_tra_df])
-    results_seg = pd.concat([temp_seg_df, hum_seg_df, cld_seg_df])
+    dfs = [df for df in [temp_tra_df, hum_tra_df, cld_tra_df] if not df.empty]
+    results_tra = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+    del temp_tra_df, hum_tra_df, cld_tra_df
+    results_seg_ds = xr.merge(
+        [temp_seg_ds, hum_seg_ds, cld_seg_ds], compat="override", join="outer"
+    )
+    del temp_seg_ds, hum_seg_ds, cld_seg_ds
 
-    results_tra.to_parquet(
-        os.path.join(day_output_dir, "trajectories.parquet"), index=False
+    logger.debug(f"total space used for day {date.strftime('%Y-%m-%d')}:")
+    logger.debug(results_tra.memory_usage())
+
+    xr.Dataset.from_dataframe(results_tra).to_netcdf(
+        os.path.join(day_output_dir, "trajectories.nc")
     )
-    results_seg.to_parquet(
-        os.path.join(day_output_dir, "segmentation.parquet"), index=False
-    )
+    results_seg_ds.to_netcdf(os.path.join(day_output_dir, "segmentation.nc"))
 
 
 def _run_tobac_single_day_single_phenomenon(
@@ -133,8 +140,9 @@ def _run_tobac_single_day_single_phenomenon(
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
     """
-    trajectories_df = pd.DataFrame()
-    segmentation_df = pd.DataFrame()
+    trajectories_list = []
+    segmentations_list = []
+
     logger.info(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
@@ -161,11 +169,11 @@ def _run_tobac_single_day_single_phenomenon(
         is_temp = phenomenon == WeatherPhenomenon.TEMPERATURE
         frames_gray = convert_frames_to_grayscale(frames, is_temperature=is_temp)
 
-        data = np.stack(frames_gray)
-        _, frame_height, frame_width = data.shape
+        frame_height = frames.sizes["y"]
+        frame_width = frames.sizes["x"]
 
         referenced_data = build_referenced_data(
-            data, datetimes, region_bounds=region.value
+            frames_gray, datetimes, region_bounds=region.value
         )
         dxy, dt = get_grid_spacings(referenced_data)
         referenced_data_norm = normalize_referenced_data(referenced_data)
@@ -176,7 +184,6 @@ def _run_tobac_single_day_single_phenomenon(
         detection_params = phenomenon_params.value
 
         min_blob_size = detection_params.get("min_blob_size", 100)
-        print("MIN_BLOB_SIZE: "+str(min_blob_size))
         target = detection_params.get("target", "maximum")
         smooth = detection_params.get("smooth", DEFAULT_SMOOTH)
         threshold = detection_params.get("threshold", 0.6)
@@ -211,32 +218,37 @@ def _run_tobac_single_day_single_phenomenon(
             dxy=dxy,
         )
 
-        print(trajectories)
-        print("--------------------------------------------")
-        print(segments_all[0][1], type(segments_all[0][1]))
-        print("--------------------------------------------")
+        if x := [s[1] for s in segments_all if s[1] is not None]:
+            da = xr.concat(x, dim="time")
+            da = da.rename(f"{phenomenon.value}{suffix}")
+            segmentations_list.append(da)
+            del x
 
-        if x := [s[1].to_dataframe() for s in segments_all if s[1] is not None]:
-            segmentations = pd.concat(x)
-        else:
-            segmentations = pd.DataFrame()
+        if trajectories is not None and not trajectories.empty:
+            tmp = trajectories.drop(
+                columns=[
+                    "frame",
+                    "idx",
+                    "threshold_value",
+                    "feature",
+                    "timestr",
+                    "y",
+                    "x",
+                ],
+                errors="ignore",
+            )
+            tmp["height"] = f"{phenomenon.value}{suffix}"
+            tmp["height"] = tmp["height"].astype("category")
+            trajectories_list.append(tmp)
 
-        trajectories_df = adapt_and_merge(trajectories, trajectories_df, suffix)
-        segmentation_df = adapt_and_merge(segmentations, segmentation_df, suffix)
-        print(trajectories_df.memory_usage())
-        print(segmentation_df.memory_usage())
         # Plotting on original images
         images_no = len(image_files)
 
         if trajectories is not None and not trajectories.empty:
-            trajectories_by_frame = {
-                frame: df for frame, df in trajectories.groupby("frame")
-            }  # da vedere se serve
             trajectories_by_cell = {
                 cell: df for cell, df in trajectories.groupby("cell")
             }
         else:
-            trajectories_by_frame = {}
             trajectories_by_cell = {}
 
         cell_info_by_frame = classify_cells_per_frame(trajectories, DEFAULT_GAP_FRAMES)
@@ -246,7 +258,7 @@ def _run_tobac_single_day_single_phenomenon(
             out_path = os.path.join(
                 height_output_dir, f"{original_img_name}_tracked.png"
             )
-            original_img = frames[i]
+            original_img = frames.isel(frame=i)
             cmap = phenomenon_params.value.get("cmap", "viridis")
 
             generate_plots(
@@ -265,7 +277,40 @@ def _run_tobac_single_day_single_phenomenon(
             )
         del trajectories
         del segments_all
-    return trajectories_df, segmentation_df
+
+    if segmentations_list:
+        segmentation_ds = xr.merge(segmentations_list, compat="override", join="outer")
+        del segmentations_list
+    else:
+        segmentation_ds = xr.Dataset()
+
+    if trajectories_list:
+        valid_dfs = [df for df in trajectories_list if not df.empty]
+        if valid_dfs:
+            trajectories_df = pd.concat(valid_dfs, ignore_index=True)
+        else:
+            trajectories_df = None
+        del trajectories_list
+    else:
+        trajectories_df = None
+
+    if trajectories_df is None:
+        trajectories_df = pd.DataFrame(
+            columns=[
+                "hdim_1",
+                "hdim_2",
+                "num",
+                "time",
+                "latitude",
+                "longitude",
+                "cell",
+                "time_cell",
+                "height",
+            ]
+        )
+
+    plt.close("all")
+    return trajectories_df, segmentation_ds
 
 
 def classify_cells_per_frame(trajectories: pd.DataFrame, gap_frames: int) -> dict:
@@ -336,7 +381,9 @@ def generate_plots(
     fig, axs = plt.subplots(figsize=(fig_width_in, fig_height_in), dpi=100)
     fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
-    smoothed_bg = cv2.GaussianBlur(original_img, (0, 0), sigmaX=smooth, sigmaY=smooth)
+    smoothed_bg = cv2.GaussianBlur(
+        np.asarray(original_img), (0, 0), sigmaX=smooth, sigmaY=smooth
+    )
 
     axs.imshow(smoothed_bg, origin="upper", cmap=cmap)
     axs.imshow(border_img, origin="upper")
@@ -394,24 +441,5 @@ def generate_plots(
     axs.axis("off")
 
     plt.savefig(out_path, dpi=100, bbox_inches=None, pad_inches=0)
+    fig.clf()
     plt.close(fig)
-
-
-def adapt_and_merge(input_df, output_df, height: str):
-    input_df["height"] = height
-
-    return pd.concat([output_df, input_df], ignore_index=True)
-
-
-def write_JSON(date, day_output_dir, JSON_clouds, JSON_hum, JSON_temp):
-    JSON_of_the_day = {
-        "date": date.strftime("%Y-%m-%d"),
-        "clouds": JSON_clouds,
-        "humidity": JSON_hum,
-        "temperature": JSON_temp,
-    }
-    json_path = os.path.join(
-        day_output_dir, date.strftime("%Y-%m-%d") + "_extracted.JSON"
-    )
-    with open(json_path, "w") as f:
-        json.dump(JSON_of_the_day, f, indent=2)

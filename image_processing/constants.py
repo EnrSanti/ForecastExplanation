@@ -52,7 +52,7 @@ class WeatherPhenomenonTobacParams(Enum):
         "min_blob_size": 2500,
         "target": "minimum",
         "smooth": 8,
-        "threshold": 0.55,
+        "threshold": 0.6,
         "cmap": "YlGnBu",
     }
     CLOUDS = {

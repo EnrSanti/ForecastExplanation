@@ -6,14 +6,16 @@ from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from cartopy.io import shapereader
+import numpy as np
+import pandas as pd
+import xarray as xr
+
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import xarray as xr
-from cartopy.io import shapereader
+
 
 from . import Region, LimitValues
 
@@ -39,8 +41,7 @@ CsvCallback = Callable[[str, str, str], None]
 class FeatureSpec:
     var: Union[str, Tuple[str, ...]]
     cmap: str
-    vmin: float
-    vmax: float
+    limits: dict[int, tuple[int | float, int | float]]
     prefix: str
     folder_prefix: Optional[str] = None
     axis_off: bool = False
@@ -82,31 +83,23 @@ FEATURE_SPECS: Dict[str, FeatureSpec] = {
 LEGEND_SPECS = {
     "cloud": {
         "cmap": "viridis",
-        "v": LimitValues.CLOUD,
+        "limits": LimitValues.CLOUD,
         "label": "Cloud cover [%]",
-        "txt_prefix": "Cloud cover",
-        "txt_unit": "%",
     },
     "temp": {
         "cmap": "OrRd",
-        "v": LimitValues.TEMP,
+        "limits": LimitValues.TEMP,
         "label": "Temperature [K]",
-        "txt_prefix": "Temperature",
-        "txt_unit": "K",
     },
     "wind": {
         "cmap": "viridis",
-        "v": LimitValues.WIND_SPEED,
+        "limits": LimitValues.WIND_SPEED,
         "label": "Wind speed [m/s]",
-        "txt_prefix": "Wind Speed",
-        "txt_unit": "m/s",
     },
     "humidity": {
         "cmap": "YlGnBu",
-        "v": LimitValues.HUMIDITY,
+        "limits": LimitValues.HUMIDITY,
         "label": "Relative humidity [%]",
-        "txt_prefix": "Humidity",
-        "txt_unit": "%",
     },
 }
 
@@ -182,7 +175,9 @@ def _render_scalar_frames(
     coordinates: Region,
     spec: FeatureSpec,
 ) -> Iterator[Tuple[str, str, Any]]:
+
     field = _resolve_var(ds, spec.var)
+
     folders = {k: spec.folder_key + v for k, v in FOLDERS.items()}
 
     fig, ax = plt.subplots(
@@ -201,14 +196,16 @@ def _render_scalar_frames(
                 if not np.isfinite(frame).any():
                     continue
 
+                vmin, vmax = spec.limits[lvl]
+
                 mesh = ax.pcolormesh(
                     frame["longitude"],
                     frame["latitude"],
                     frame,
                     cmap=spec.cmap,
                     shading="auto",
-                    vmin=spec.vmin,
-                    vmax=spec.vmax,
+                    vmin=vmin,
+                    vmax=vmax,
                     transform=ccrs.PlateCarree(),
                 )
 
@@ -398,31 +395,25 @@ def save_borders_png(output_base: str, coordinates: Region) -> None:
 
 
 def create_legends(output_base: str) -> None:
+
     for key, props in LEGEND_SPECS.items():
-        fig, ax = plt.subplots(figsize=(6, 1))
-        norm = plt.Normalize(vmin=props["vmin"], vmax=props["vmax"])
 
-        cb = plt.colorbar(
-            plt.cm.ScalarMappable(norm=norm, cmap=props["cmap"]),
-            cax=ax,
-            orientation="horizontal",
-        )
-        cb.set_label(props["label"])
+        for lvl in LEVELS:
+            vmin, vmax = props["limits"][lvl]
 
-        png_path = os.path.join(output_base, f"legend_{key}.png")
-        plt.savefig(png_path, dpi=130, bbox_inches="tight", pad_inches=0)
-        plt.close(fig)
+            fig, ax = plt.subplots(figsize=(6, 1))
+            norm = plt.Normalize(vmin=vmin, vmax=vmax)
 
-        cmap_obj = plt.get_cmap(props["cmap"])
-        rgb255_min = tuple(int(255 * c) for c in cmap_obj(norm(props["vmin"]))[:3])
-        rgb255_max = tuple(int(255 * c) for c in cmap_obj(norm(props["vmax"]))[:3])
+            cb = plt.colorbar(
+                plt.cm.ScalarMappable(norm=norm, cmap=props["cmap"]),
+                cax=ax,
+                orientation="horizontal",
+            )
+            cb.set_label(props["label"])
 
-        txt_path = os.path.join(output_base, f"legend_{key}.txt")
-        with open(txt_path, "w") as ftxt:
-            prefix, unit = props["txt_prefix"], props["txt_unit"]
-            vmin, vmax = props["vmin"], props["vmax"]
-            ftxt.write(f"{prefix} range: {vmin:.2f} {unit} to {vmax:.2f} {unit}\n")
-            ftxt.write(f"Respective colors: {rgb255_min}, {rgb255_max}\n")
+            png_path = os.path.join(output_base, f"legend_{key}_{lvl}.png")
+            plt.savefig(png_path, dpi=130, bbox_inches="tight", pad_inches=0)
+            plt.close(fig)
 
 
 def save_cloud_maps(ds: xr.Dataset, coordinates: Region, output_base: str) -> None:
