@@ -56,12 +56,11 @@ def print_clouds_center_line(
     all_frames_for_cell: Dict[int, List[int]],
 ):
     """Plots cloud center markers and fading trajectory path natively."""
-    cell_in_this_frame = not track[track["frame"] == itime].empty
 
-    if cell_id in persisted_cells and cell_in_this_frame:
+    if cell_id in persisted_cells:
         frames_list = all_frames_for_cell.get(int(cell_id), [])
-        if frames_list:
-            last_frame = frames_list[-1]
+        if len(frames_list) >= 2:
+            last_frame = frames_list[-2]
             line = track[(track["frame"] == last_frame) | (track["frame"] == itime)]
             if not line.empty:
                 axs.plot(
