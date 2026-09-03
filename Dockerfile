@@ -7,8 +7,7 @@ WORKDIR /app
 COPY environment.yml .
 
 # Create the conda environment
-RUN conda env create -f environment.yml
-RUn conda clean -afy
+RUN --mount=type=cache,target=/opt/conda/pkgs conda env create -f environment.yml
 
 # Make the environment the default for subsequent commands
 ENV PATH=/opt/conda/envs/weather/bin:$PATH
