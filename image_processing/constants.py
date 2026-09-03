@@ -65,6 +65,3 @@ class WeatherPhenomenonTobacParams(Enum):
         "threshold": 0.5,
         "cmap": "viridis",
     }
-
-
-

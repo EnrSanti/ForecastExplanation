@@ -9,6 +9,7 @@ from typing import Set, Dict, List, Tuple
 import logging
 
 from region import Region, CITIES
+
 logger = logging.getLogger(__name__)
 
 
@@ -283,11 +284,7 @@ def generate_all_plots(
         axs.axis("off")
 
         fig.canvas.draw()
-        bbox = axs.get_window_extent().transformed(
-            fig.dpi_scale_trans.inverted()
-        )
-        fig.savefig(
-            out_path, dpi=100, bbox_inches=bbox, pad_inches=0, transparent=True
-        )
+        bbox = axs.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        fig.savefig(out_path, dpi=100, bbox_inches=bbox, pad_inches=0, transparent=True)
         fig.clf()
         plt.close(fig)

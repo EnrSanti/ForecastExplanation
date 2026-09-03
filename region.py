@@ -15,7 +15,9 @@ class Region:
     @classmethod
     def custom(cls, bounds: list[float]) -> Region:
         if len(bounds) != 4:
-            raise ValueError(f"Region bounds must be 4 floats [lon_min, lon_max, lat_min, lat_max], got {bounds}")
+            raise ValueError(
+                f"Region bounds must be 4 floats [lon_min, lon_max, lat_min, lat_max], got {bounds}"
+            )
         return cls("CUSTOM", [float(b) for b in bounds])
 
     @classmethod
@@ -24,11 +26,15 @@ class Region:
             name = value.upper()
             preset = _PRESETS.get(name)
             if preset is None:
-                raise ValueError(f"Unknown region '{name}'. Must be one of {list(_PRESETS.keys())} or a list of 4 floats.")
+                raise ValueError(
+                    f"Unknown region '{name}'. Must be one of {list(_PRESETS.keys())} or a list of 4 floats."
+                )
             return preset
         if isinstance(value, list) and len(value) == 4:
             return cls.custom(value)
-        raise ValueError(f"Invalid region: {value}. Must be a string or a list of 4 floats.")
+        raise ValueError(
+            f"Invalid region: {value}. Must be a string or a list of 4 floats."
+        )
 
 
 Region.FVG = Region("FVG", [11, 15, 44.5, 48])

@@ -72,8 +72,6 @@ def parse_args_and_config():
     return args, config
 
 
-
-
 def main():
     args, config = parse_args_and_config()
 
@@ -93,7 +91,9 @@ def main():
 
         clean = args.clean if args.clean else run_config.get("clean", 0)
         force = args.force if args.force else run_config.get("force", 0)
-        clustering = (args.clustering if args.clustering else run_config.get("clustering", False))
+        clustering = (
+            args.clustering if args.clustering else run_config.get("clustering", False)
+        )
         debug = args.debug if args.debug else run_config.get("debug", False)
         just_cut = args.just_cut if args.just_cut else run_config.get("just_cut", False)
         save_images = (
@@ -149,11 +149,7 @@ def main():
             save_images=save_images,
         )
 
-        logger.info(f"--- Finished {run_name} ---"
-                    f""
-                    f""
-                    f""
-                    f"")
+        logger.info(f"--- Finished {run_name} ---" f"" f"" f"" f"")
 
 
 if __name__ == "__main__":
