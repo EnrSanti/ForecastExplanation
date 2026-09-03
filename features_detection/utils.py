@@ -7,7 +7,7 @@ import xarray as xr
 
 matplotlib.use("Agg")
 
-from image_processing.constants import (
+from features_detection.constants import (
     DEFAULT_DT,
     DEFAULT_DXY,
 )

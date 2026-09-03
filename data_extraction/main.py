@@ -16,7 +16,7 @@ from .extract_features_nc import (
     build_feature_dataarrays,
 )
 from .get_raw_data import extract_nc
-from .image_proc import cluster_xarray
+from .clustering import cluster_xarray
 
 logger = logging.getLogger(__name__)
 

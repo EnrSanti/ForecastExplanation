@@ -6,7 +6,7 @@ import yaml
 
 import data_extraction
 
-import image_processing
+import features_detection
 
 from region import Region
 
@@ -106,11 +106,11 @@ def main():
         if debug:
             logger.setLevel(logging.DEBUG)
             logging.getLogger("data_extraction").setLevel(logging.DEBUG)
-            logging.getLogger("image_processing").setLevel(logging.DEBUG)
+            logging.getLogger("features_detection").setLevel(logging.DEBUG)
         else:
             logger.setLevel(logging.INFO)
             logging.getLogger("data_extraction").setLevel(logging.INFO)
-            logging.getLogger("image_processing").setLevel(logging.INFO)
+            logging.getLogger("features_detection").setLevel(logging.INFO)
 
         if not dates:
             logger.error(f"No dates provided for {run_name}.")
@@ -141,7 +141,7 @@ def main():
             if clustering
             else os.path.join(output_path, data_extraction.DISCRETE_DATA_DIR)
         )
-        image_processing.run_tobac(
+        features_detection.run_tobac(
             dates,
             input_dir=input_dir,
             output_dir=output_path,

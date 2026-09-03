@@ -13,7 +13,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-from image_processing.constants import (
+from features_detection.constants import (
     DEFAULT_GAP_FRAMES,
     DEFAULT_MIN_DISTANCE,
     DEFAULT_SMOOTH,
@@ -22,12 +22,12 @@ from image_processing.constants import (
     WeatherPhenomenon,
     WeatherPhenomenonTobacParams,
 )
-from image_processing.segment_track import (
+from features_detection.features import (
     detect_features,
     segment_features,
     track_features,
 )
-from image_processing.utils import (
+from features_detection.utils import (
     build_referenced_data_from_xarray,
     get_grid_spacings,
     normalize_referenced_data,
@@ -212,7 +212,7 @@ def _run_tobac_single_day_single_phenomenon(
             del x
 
         if save_images:
-            from image_processing.plotting import generate_all_plots
+            from features_detection.plotting import generate_all_plots
 
             height_output_dir = os.path.join(day_output_dir, folder_key)
             generate_all_plots(
