@@ -1,7 +1,5 @@
 from enum import Enum
 
-TOBAC_OUTPUT = "data/tracked"
-
 FOLDERS_HEIGHT_SUFF = [
     "_at_100m",
     "_at_750m",

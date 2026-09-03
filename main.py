@@ -149,7 +149,7 @@ def main():
             save_images=save_images,
         )
 
-        logger.info(f"--- Finished {run_name} ---" f"" f"" f"" f"")
+        logger.info(f"--- Finished {run_name} ---\n\n")
 
 
 if __name__ == "__main__":

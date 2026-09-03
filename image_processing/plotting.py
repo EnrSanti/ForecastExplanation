@@ -4,7 +4,6 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import xarray as xr
 import pandas as pd
-import numpy as np
 from typing import Set, Dict, List, Tuple
 import logging
 

@@ -1,5 +1,4 @@
 from .constants import (
-    TOBAC_OUTPUT,
     FOLDERS_HEIGHT_SUFF,
     DEFAULT_DXY,
     DEFAULT_DT,
@@ -16,7 +15,6 @@ from region import Region
 from .main import run_tobac
 
 __all__: list[str] = [
-    "TOBAC_OUTPUT",
     "FOLDERS_HEIGHT_SUFF",
     "DEFAULT_DXY",
     "DEFAULT_DT",

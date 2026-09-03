@@ -197,7 +197,7 @@ def extract_day(
                 clustering,
                 force_redo,
                 stopping_step,
-                create_images
+                create_images,
             ): date
             for date in dates
         }
@@ -222,12 +222,12 @@ def extract(
     clustering: bool = True,
     force_redo: int = 0,
     just_cut: bool = False,
-    create_images: bool = False,  # todo handle this
+    create_images: bool = False,
 ) -> None:
 
     os.makedirs(output_path, exist_ok=True)
     os.makedirs(os.path.join(output_path, CLUSTERED_DATA_DIR), exist_ok=True)
-    os.makedirs(os.path.join(output_path, RAW_DATA_DIR), exist_ok=True)
+    os.makedirs(RAW_DATA_DIR, exist_ok=True)
     os.makedirs(os.path.join(output_path, CUT_DATA_DIR), exist_ok=True)
     os.makedirs(os.path.join(output_path, DISCRETE_DATA_DIR), exist_ok=True)
     os.makedirs(os.path.join(output_path, "legends"), exist_ok=True)
