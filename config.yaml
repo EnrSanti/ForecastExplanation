@@ -1,20 +1,19 @@
-run_1:
+fvgnotcluster:
   region: FVG
   dates:
     - 2009-01-02
-    - 2009-01-03
   clean: 0
   force: 0
   clustering: false
   debug: false
   save_images: false
 
-run_2:
-  region: ITALY
+francia:
+  region: [45.8, 42.7, -3, 3]
   dates:
     - 2009-01-02
   clean: 0
   force: 0
   clustering: false
-  debug: false
+  debug: true
   save_images: true

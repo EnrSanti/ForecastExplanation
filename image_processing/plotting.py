@@ -8,8 +8,7 @@ import numpy as np
 from typing import Set, Dict, List, Tuple
 import logging
 
-from image_processing.constants import Region, CITIES
-
+from region import Region, CITIES
 logger = logging.getLogger(__name__)
 
 

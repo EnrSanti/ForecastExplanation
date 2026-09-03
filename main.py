@@ -8,6 +8,8 @@ import data_extraction
 
 import image_processing
 
+from region import Region
+
 logging.basicConfig(
     level=logging.ERROR,
     format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
@@ -70,6 +72,8 @@ def parse_args_and_config():
     return args, config
 
 
+
+
 def main():
     args, config = parse_args_and_config()
 
@@ -86,7 +90,6 @@ def main():
         logger.info(f" --- Starting {run_name} ---")
 
         dates = run_config.get("dates", [])
-        region_str = run_config.get("region", "FVG").upper()
 
         clean = args.clean if args.clean else run_config.get("clean", 0)
         force = args.force if args.force else run_config.get("force", 0)
@@ -115,30 +118,15 @@ def main():
             continue
 
         try:
-            data_region = data_extraction.Region[region_str]
-            img_region = image_processing.Region[region_str]
-        except KeyError:
-            logger.error(
-                f"Invalid region '{region_str}' in {run_name}. Must be one of {[r.name for r in data_extraction.Region]}"
-            )
+            region = Region.from_config(run_config.get("region", "FVG"))
+        except ValueError as e:
+            logger.error(f"Region error in {run_name}: {e}")
             continue
-
-        data_extraction.DISCRETE_DATA_DIR = os.path.join(
-            "runs", run_name, data_extraction.DISCRETE_DATA_DIR
-        )
-        data_extraction.CLUSTERED_DATA_DIR = os.path.join(
-            "runs", run_name, data_extraction.CLUSTERED_DATA_DIR
-        )
-        data_extraction.CUT_DATA_DIR = os.path.join(
-            "runs", run_name, data_extraction.CUT_DATA_DIR
-        )
-        image_processing.TOBAC_OUTPUT = os.path.join(
-            "runs", run_name, image_processing.TOBAC_OUTPUT
-        )
 
         data_extraction.extract(
             dates,
-            data_region,
+            region,
+            output_path=os.path.join("runs", run_name),
             clean_level=clean,
             clustering=clustering,
             force_redo=force,
@@ -146,18 +134,19 @@ def main():
             create_images=save_images,
         )
         if just_cut:
+            logger.info(f"{run_name} finished just cut.")
             continue
 
         input_dir = (
-            data_extraction.CLUSTERED_DATA_DIR
+            os.path.join("runs", run_name, data_extraction.CLUSTERED_DATA_DIR)
             if clustering
-            else data_extraction.DISCRETE_DATA_DIR
+            else os.path.join("runs", run_name, data_extraction.DISCRETE_DATA_DIR)
         )
         image_processing.run_tobac(
             dates,
             input_dir=input_dir,
-            output_dir=image_processing.TOBAC_OUTPUT,
-            region=img_region,
+            output_dir=os.path.join("runs", run_name),
+            region=region,
             save_images=save_images,
         )
 

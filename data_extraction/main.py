@@ -19,12 +19,8 @@ from .image_proc import cluster_xarray
 logger = logging.getLogger(__name__)
 
 
-def find_starting_step(date: datetime) -> int:
-    clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
-    raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
-    cut_data_dir = os.path.join(CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
-    discrete_data_dir = os.path.join(DISCRETE_DATA_DIR, date.strftime("%Y-%m-%d"))
-
+def find_starting_step(clustered_dir: str, raw_data_dir: str, cut_data_dir: str, discrete_data_dir: str) -> int:
+    """Find the starting step for the data extraction process."""
     if os.path.exists(clustered_dir) and len(os.listdir(clustered_dir)) > 0:
         return 4  # Clustering done
     elif os.path.exists(discrete_data_dir) and len(os.listdir(discrete_data_dir)) > 0:
@@ -38,21 +34,23 @@ def find_starting_step(date: datetime) -> int:
 
 
 def extract_day_worker(
-    date,
-    region,
-    clean_level: int = 0,
-    clustering: bool = True,
-    force_redo: int = 0,
-    stopping_step: int = 4,
+        date,
+        region,
+        basePath: str,
+        clean_level: int = 0,
+        clustering: bool = True,
+        force_redo: int = 0,
+        stopping_step: int = 4,
 ):
     logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
-    clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
+    clustered_dir = os.path.join(basePath, CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
+    # raw data can be shared between runs
     raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
-    cut_data_dir = os.path.join(CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
-    discrete_data_dir = os.path.join(DISCRETE_DATA_DIR, date.strftime("%Y-%m-%d"))
+    cut_data_dir = os.path.join(basePath, CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
+    discrete_data_dir = os.path.join(basePath, DISCRETE_DATA_DIR, date.strftime("%Y-%m-%d"))
     features_nc_path = os.path.join(discrete_data_dir, "features.nc")
 
-    starting_step = find_starting_step(date)
+    starting_step = find_starting_step(clustered_dir, raw_data_dir, cut_data_dir, discrete_data_dir)
     nc_file = ""
 
     # todo better stepping
@@ -91,12 +89,13 @@ def extract_day_worker(
 
 
 def extract_day(
-    dates: List[datetime],
-    region: Region,
-    clean_level: int = 0,
-    clustering: bool = True,
-    force_redo: int = 0,
-    stopping_step: int = 4,
+        dates: List[datetime],
+        region: Region,
+        basePath: str,
+        clean_level: int = 0,
+        clustering: bool = True,
+        force_redo: int = 0,
+        stopping_step: int = 4,
 ) -> None:
     logger.info("Starting data extraction...")
 
@@ -105,13 +104,13 @@ def extract_day(
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
             executor.submit(
-                worker, date, region, clean_level, clustering, force_redo, stopping_step
+                worker, date, region, basePath, clean_level, clustering, force_redo, stopping_step
             ): date
             for date in dates
         }
 
         for future in tqdm(
-            as_completed(futures), total=len(dates), desc="Data Extraction"
+                as_completed(futures), total=len(dates), desc="Data Extraction"
         ):
             date = futures[future]
             try:
@@ -123,22 +122,25 @@ def extract_day(
 
 
 def extract(
-    dates: List[datetime],
-    region: Region,
-    clean_level: int = 0,
-    clustering: bool = True,
-    force_redo: int = 0,
-    just_cut: bool = False,
-    create_images: bool = False,  # todo handle this
+        dates: List[datetime],
+        region: Region,
+        output_path: str,
+        clean_level: int = 0,
+        clustering: bool = True,
+        force_redo: int = 0,
+        just_cut: bool = False,
+        create_images: bool = False,  # todo handle this
 ) -> None:
-    os.makedirs(CLUSTERED_DATA_DIR, exist_ok=True)
-    os.makedirs(RAW_DATA_DIR, exist_ok=True)
 
-    os.makedirs(CUT_DATA_DIR, exist_ok=True)
-    os.makedirs(DISCRETE_DATA_DIR, exist_ok=True)
+    os.makedirs(output_path, exist_ok=True)
+    os.makedirs(os.path.join(output_path, CLUSTERED_DATA_DIR), exist_ok=True)
+    os.makedirs(os.path.join(output_path, RAW_DATA_DIR), exist_ok=True)
+    os.makedirs(os.path.join(output_path, CUT_DATA_DIR), exist_ok=True)
+    os.makedirs(os.path.join(output_path, DISCRETE_DATA_DIR), exist_ok=True)
+    os.makedirs(os.path.join(output_path, "legends"), exist_ok=True)
 
     if create_images:
-        create_one_time_images(region, DISCRETE_DATA_DIR)
+        create_one_time_images(region, os.path.join(output_path, "legends"))
     stopping_step = 4
     if just_cut:
         stopping_step = 1
@@ -146,6 +148,7 @@ def extract(
     extract_day(
         dates,
         region,
+        output_path,
         clean_level,
         clustering,
         force_redo,
