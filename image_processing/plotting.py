@@ -283,9 +283,12 @@ def generate_all_plots(
         axs.set_title("")
         axs.axis("off")
 
-        # Save exact composition tightly cropped like before
-        plt.savefig(
-            out_path, dpi=100, bbox_inches="tight", pad_inches=0, transparent=True
+        fig.canvas.draw()
+        bbox = axs.get_window_extent().transformed(
+            fig.dpi_scale_trans.inverted()
+        )
+        fig.savefig(
+            out_path, dpi=100, bbox_inches=bbox, pad_inches=0, transparent=True
         )
         fig.clf()
         plt.close(fig)
