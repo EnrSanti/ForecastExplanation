@@ -4,7 +4,9 @@ import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from typing import List
-
+import cv2
+import pandas as pd
+import numpy as np
 import xarray as xr
 from tqdm import tqdm
 
@@ -44,6 +46,7 @@ def extract_day_worker(
     clustering: bool = True,
     force_redo: int = 0,
     stopping_step: int = 4,
+    create_images: bool = False,
 ):
     logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
     clustered_dir = os.path.join(CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d"))
@@ -67,6 +70,8 @@ def extract_day_worker(
         os.makedirs(discrete_data_dir, exist_ok=True)
         feature_data = build_feature_dataarrays(nc_file)
         feature_data.to_netcdf(features_nc_path)
+        if create_images:
+            save_tobac_input_images(feature_data, discrete_data_dir)
         starting_step = 3
 
     if ((starting_step == 3 or force_redo >= 1) and clustering) and stopping_step >= 4:
@@ -89,6 +94,77 @@ def extract_day_worker(
         shutil.rmtree(discrete_data_dir, ignore_errors=True)
 
 
+LEVEL_TO_SUFFIX = {
+    1000: "_at_100m",
+    925: "_at_750m",
+    850: "_at_1_4km",
+    700: "_at_3km",
+    500: "_at_5_5km",
+    300: "_at_9km",
+}
+
+
+def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
+    """
+    Renders each (variable, level, time) slice in feature_data to a raw
+    grayscale PNG — written directly from normalized pixel values, not
+    through a matplotlib colormap, since downstream code (convert_frames_to_
+    grayscale) just converts back to grayscale anyway; skipping the color
+    round-trip avoids the precision loss that introduces.
+
+    Layout matches what the rest of the pipeline expects to read back in
+    (FOLDERS_HEIGHT_SUFF, extract_keys/extract_times):
+        output_dir/<variable><level_suffix>/<variable>_<YYYYMMDD_HHMM>.png
+
+    Assumes feature_data has dims (time, level, y, x) with level values
+    matching LEVEL_TO_SUFFIX's keys — adjust the dim name / mapping if
+    build_feature_dataarrays uses something different.
+
+    Normalization is per (variable, level), computed across all of that
+    variable+level's time steps for the day — not per individual frame — so
+    a flat/no-signal frame comes out uniformly dark against the day's real
+    range instead of being stretched to fill [0, 255] on its own and looking
+    spuriously bright (the cause of the earlier "whole image reads as one
+    cloud" bug).
+    """
+    os.makedirs(output_dir, exist_ok=True)
+
+    for var_name in feature_data.data_vars:
+        da = feature_data[var_name]
+
+        has_level = "level" in da.dims
+        levels = da["level"].values if has_level else [None]
+
+        for level in levels:
+            level_da = da.sel(level=level) if has_level else da
+            suffix = (
+                LEVEL_TO_SUFFIX.get(int(level), f"_at_{level}")
+                if level is not None
+                else ""
+            )
+            var_dir = os.path.join(output_dir, f"{var_name}{suffix}")
+            os.makedirs(var_dir, exist_ok=True)
+
+            vmin = float(level_da.min())
+            vmax = float(level_da.max())
+            vrange = (
+                vmax - vmin if vmax > vmin else 1.0
+            )  # guard against a fully-flat day
+
+            for t in range(level_da.sizes["time"]):
+                frame = level_da.isel(time=t)
+                ts = pd.to_datetime(frame["time"].values)
+
+                norm = (
+                    ((frame.values - vmin) / vrange * 255).clip(0, 255).astype(np.uint8)
+                )
+
+                fname = f"{var_name}_{ts.strftime('%Y%m%d_%H%M')}.png"
+                cv2.imwrite(os.path.join(var_dir, fname), norm)
+
+    logger.info(f"Saved TOBAC input images to '{output_dir}'.")
+
+
 def extract_day(
     dates: List[datetime],
     region: Region,
@@ -96,6 +172,7 @@ def extract_day(
     clustering: bool = True,
     force_redo: int = 0,
     stopping_step: int = 4,
+    create_images: bool = False,
 ) -> None:
     logger.info("Starting data extraction...")
 
@@ -104,7 +181,14 @@ def extract_day(
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
             executor.submit(
-                worker, date, region, clean_level, clustering, force_redo, stopping_step
+                worker,
+                date,
+                region,
+                clean_level,
+                clustering,
+                force_redo,
+                stopping_step,
+                create_images,
             ): date
             for date in dates
         }
@@ -149,4 +233,5 @@ def extract(
         clustering,
         force_redo,
         stopping_step=stopping_step,
+        create_images=create_images,
     )

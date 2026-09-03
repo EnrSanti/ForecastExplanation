@@ -30,7 +30,7 @@ DEFAULT_TIME_OFFSET_HOURS = 0
 
 class Region(Enum):
     FVG = [11, 15, 44.5, 48]
-    ITALY = [10, 16, 42, 48]
+    ITALY = [8, 16, 36, 48]
 
 
 class WeatherPhenomenon(Enum):
