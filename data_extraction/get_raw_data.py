@@ -76,10 +76,11 @@ def download_grib_if_needed(date: datetime, grib_path: str) -> None:
     date_str = date.strftime("%Y-%m-%d")
     logger.debug(f"Downloading GRIB for {date_str} to {grib_path}...")
     quiet = logger.getEffectiveLevel() > logging.DEBUG #todo
-    client = Client(key=os.getenv("ECMWF_API_KEY", None), url=os.getenv("ECMWF_API_URL", None))
+    client = Client(key=os.getenv("ECMWF_API_KEY", None), url=os.getenv("ECMWF_API_URL", None), progress=quiet)
     if not client.check_authentication():
         logger.critical("Failed to authenticate with ECMWF API.")
         raise Exception("Failed to authenticate with ECMWF API.")
+
     year, month, day = date_str.split("-")
 
     base_request = {
