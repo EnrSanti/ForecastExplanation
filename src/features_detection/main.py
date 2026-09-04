@@ -86,7 +86,6 @@ def _run_tobac_single_day(
     os.makedirs(day_output_dir, exist_ok=True)
 
     temp_tra_df, temp_seg_ds = _run_tobac_single_day_single_phenomenon(
-        date,
         day_input_dir,
         day_output_dir,
         region,
@@ -95,7 +94,6 @@ def _run_tobac_single_day(
         save_images,
     )
     hum_tra_df, hum_seg_ds = _run_tobac_single_day_single_phenomenon(
-        date,
         day_input_dir,
         day_output_dir,
         region,
@@ -104,7 +102,6 @@ def _run_tobac_single_day(
         save_images,
     )
     cld_tra_df, cld_seg_ds = _run_tobac_single_day_single_phenomenon(
-        date,
         day_input_dir,
         day_output_dir,
         region,
@@ -113,12 +110,14 @@ def _run_tobac_single_day(
         save_images,
     )
 
+    wind_seg_ds = _extract_winds(day_input_dir)
+
     dfs = [df for df in [temp_tra_df, hum_tra_df, cld_tra_df] if not df.empty]
     results_tra = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
     del temp_tra_df, hum_tra_df, cld_tra_df
-    results_seg_ds = xr.merge(
-        [temp_seg_ds, hum_seg_ds, cld_seg_ds], compat="override", join="outer"
-    )
+
+    dss = [ds for ds in [temp_seg_ds, hum_seg_ds, cld_seg_ds, wind_seg_ds] if ds.data_vars]
+    results_seg_ds = xr.merge(dss, compat="override", join="outer")
     del temp_seg_ds, hum_seg_ds, cld_seg_ds
 
     xr.Dataset.from_dataframe(results_tra).to_netcdf(
@@ -128,21 +127,20 @@ def _run_tobac_single_day(
 
 
 def _run_tobac_single_day_single_phenomenon(
-    date: datetime,
     day_input_dir: str,
     day_output_dir: str,
     region: Region,
     phenomenon: WeatherPhenomenon,
     phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
     save_images: bool = False,
-):
+) -> tuple[pd.DataFrame, xr.Dataset]:
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
     """
     trajectories_list = []
     segmentations_list = []
 
-    logger.debug(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
+    logger.debug(f"Processing {phenomenon.value} for {day_input_dir}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
         features_nc = os.path.join(day_input_dir, "features.nc")
@@ -276,3 +274,15 @@ def _run_tobac_single_day_single_phenomenon(
 
     plt.close("all")
     return trajectories_df, segmentation_ds
+
+
+def _extract_winds(day_input_dir: str) -> xr.Dataset:
+    features_nc = os.path.join(day_input_dir, "features.nc")
+    tmp_ds = xr.Dataset()
+    with xr.open_dataset(features_nc) as feat_ds:
+        wind_vars = [v for v in feat_ds.data_vars if "wind" in v]
+        if wind_vars:
+            wind_ds = feat_ds[wind_vars].load()
+            tmp_ds = xr.merge([tmp_ds, wind_ds], compat="override", join="outer")
+
+    return tmp_ds

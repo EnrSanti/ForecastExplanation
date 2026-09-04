@@ -6,8 +6,8 @@ import yaml
 from dotenv import load_dotenv
 
 import data_extraction
-
 import features_detection
+import reasoning
 
 from region import Region
 
@@ -152,6 +152,7 @@ def main():
             region=region,
             save_images=save_images,
         )
+        reasoning.reason(dates, output_path, output_path, region)
 
         logger.info(f"--- Finished {run_name} ---\n\n")
 
