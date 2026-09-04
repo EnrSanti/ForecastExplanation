@@ -20,6 +20,14 @@ def haversine(lat1, lon1, lat2, lon2):
     return R * c
 
 
+def get_compass_direction(degrees):
+    if np.isnan(degrees):
+        return np.nan
+    directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+    idx = int((degrees + 22.5) // 45) % 8
+    return directions[idx]
+
+
 def detect_winds(data: xr.Dataset, cities: list, output_path: str):
     """
     writes a txt table with:
@@ -37,8 +45,8 @@ def detect_winds(data: xr.Dataset, cities: list, output_path: str):
 
     heights = set()
     for var in data.data_vars:
-        if "wind_speed_at_" in var:
-            heights.add(var.split("wind_speed_at_")[1])
+        if "wind_direction_at_" in var:
+            heights.add(var.split("wind_direction_at_")[1])
 
     records = []
 
@@ -51,7 +59,7 @@ def detect_winds(data: xr.Dataset, cities: list, output_path: str):
             continue
 
         for h in heights:
-            ws_var = f"wind_speed_at_{h}"
+            ws_var = f"wind_at_{h}"
             wd_var = f"wind_direction_at_{h}"
 
             for t_idx in range(data.sizes["time"]):
@@ -79,13 +87,13 @@ def detect_winds(data: xr.Dataset, cities: list, output_path: str):
                         "height": h.replace("m", ""),
                         "lat": city_lat,
                         "lon": city_lon,
-                        "wind_direction": wd_val,
+                        "wind_direction": get_compass_direction(wd_val),
                         "wind_speed": ws_val,
                     }
                 )
 
     df = pd.DataFrame(records)
-    df.to_csv(output_path, sep="\t", index=False)
+    df.to_csv(output_path, sep="\t", index=False, float_format="%.6f")
 
 
 def reason(dates: list, input_dir: str, output_dir: str, region: Region, force: bool = False):
@@ -113,4 +121,4 @@ def reason(dates: list, input_dir: str, output_dir: str, region: Region, force: 
         logger.debug(f"Processing reasoning for {date.strftime('%Y-%m-%d')}")
 
         with xr.open_dataset(os.path.join(day_input_dir, "segmentation.nc")) as ds:
-            detect_winds(ds, region.get_cities(), day_output_dir)
+            detect_winds(ds, region.get_cities(), os.path.join(day_output_dir, "winds.txt"))
