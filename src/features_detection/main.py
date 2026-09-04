@@ -42,6 +42,7 @@ def run_tobac(
     input_dir: str,
     output_dir: str,
     region: Region,
+    force: bool = False,
     save_images: bool = False,
 ):
     """
@@ -57,7 +58,8 @@ def run_tobac(
                 input_dir,
                 output_dir,
                 region,
-                save_images,
+                force=force,
+                save_images=save_images,
             ): date
             for date in dates
         }
@@ -79,11 +81,16 @@ def _run_tobac_single_day(
     input_dir: str,
     output_dir: str,
     region: Region,
+    force: bool = False,
     save_images: bool = False,
 ):
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
     os.makedirs(day_output_dir, exist_ok=True)
+
+    if not force and os.path.exists(os.path.join(day_output_dir, "segmentation.nc")):
+        logger.info(f"Segmentation already exists for {date.strftime('%Y-%m-%d')}. Skipping.")
+        return
 
     temp_tra_df, temp_seg_ds = _run_tobac_single_day_single_phenomenon(
         day_input_dir,

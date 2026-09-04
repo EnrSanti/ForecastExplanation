@@ -89,7 +89,7 @@ def detect_winds(data: xr.Dataset, cities: list, output_path: str):
         df.to_csv(output_path, sep="\t", index=False)
 
 
-def reason(dates: list, input_dir: str, output_dir: str, region: Region):
+def reason(dates: list, input_dir: str, output_dir: str, region: Region, force: bool = False):
     """
     Perform reasoning on the input data (nc format) and save the results to the output path (text format).
     Converts raw data to reasoning data, ready to be converted to ASP formats.
@@ -99,12 +99,18 @@ def reason(dates: list, input_dir: str, output_dir: str, region: Region):
         input_dir (str): Path to the input directory containing spatial data.
         output_dir (str): Path to the directory where processed output will be written.
         region (Region): The specific geographic region to be used.
+        force (bool, optional): If True, forces the processing of all dates. Defaults to False.
     """
     logger.info("Starting reasoning")
     for date in dates:
         day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
         day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
         os.makedirs(day_output_dir, exist_ok=True)
+
+        if not force and os.path.exists(os.path.join(day_output_dir, "reasoning.txt")):
+            logger.info(f"Reasoning already exists for {date.strftime('%Y-%m-%d')}. Skipping.")
+            continue
+
         logger.debug(f"Processing reasoning for {date.strftime('%Y-%m-%d')}")
 
         with xr.open_dataset(os.path.join(day_input_dir, "segmentation.nc")) as ds:
