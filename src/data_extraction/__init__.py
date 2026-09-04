@@ -47,6 +47,9 @@ CUT_DATA_DIR: str = "tmp_data/CERRA_cut"
 DISCRETE_DATA_DIR: str = "tmp_data/imgs_discrete"
 CLUSTERED_DATA_DIR: str = "tmp_data/clustered"
 
+LEVELS = [1000, 925, 850, 700, 500, 300]
+FOLDERS = {l: f"_at_{l:04d}m" for l in LEVELS}
+
 from .main import extract
 
 __all__: list[str] = [

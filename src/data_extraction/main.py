@@ -10,7 +10,14 @@ import numpy as np
 import xarray as xr
 from tqdm import tqdm
 
-from . import Region, RAW_DATA_DIR, CUT_DATA_DIR, DISCRETE_DATA_DIR, CLUSTERED_DATA_DIR
+from . import (
+    Region,
+    RAW_DATA_DIR,
+    CUT_DATA_DIR,
+    DISCRETE_DATA_DIR,
+    CLUSTERED_DATA_DIR,
+    FOLDERS,
+)
 from .extract_features_nc import (
     create_one_time_images,
     build_feature_dataarrays,
@@ -27,20 +34,20 @@ def find_starting_step(
     """Find the starting step for the data extraction process."""
     if os.path.exists(clustered_dir) and len(os.listdir(clustered_dir)) > 0:
         return 4  # Clustering done
-    elif os.path.exists(discrete_data_dir) and len(os.listdir(discrete_data_dir)) > 0:
+    if os.path.exists(discrete_data_dir) and len(os.listdir(discrete_data_dir)) > 0:
         return 3  # Feature maps saved
-    elif os.path.exists(cut_data_dir) and len(os.listdir(cut_data_dir)) > 0:
+    if os.path.exists(cut_data_dir) and len(os.listdir(cut_data_dir)) > 0:
         return 2  # GRIB cut
-    elif os.path.exists(raw_data_dir) and len(os.listdir(raw_data_dir)) > 0:
+    if os.path.exists(raw_data_dir) and len(os.listdir(raw_data_dir)) > 0:
         return 1  # GRIB downloaded
-    else:
-        return 0  # No data
+
+    return 0  # No data
 
 
 def extract_day_worker(
     date,
     region,
-    basePath: str,
+    base_path: str,
     clean_level: int = 0,
     clustering: bool = True,
     force_redo: int = 0,
@@ -49,13 +56,13 @@ def extract_day_worker(
 ):
     logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
     clustered_dir = os.path.join(
-        basePath, CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d")
+        base_path, CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d")
     )
     # raw data can be shared between runs
     raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
-    cut_data_dir = os.path.join(basePath, CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
+    cut_data_dir = os.path.join(base_path, CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
     discrete_data_dir = os.path.join(
-        basePath, DISCRETE_DATA_DIR, date.strftime("%Y-%m-%d")
+        base_path, DISCRETE_DATA_DIR, date.strftime("%Y-%m-%d")
     )
     features_nc_path = os.path.join(discrete_data_dir, "features.nc")
 
@@ -101,16 +108,6 @@ def extract_day_worker(
         shutil.rmtree(clustered_dir, ignore_errors=True)
 
 
-LEVEL_TO_SUFFIX = {
-    1000: "_at_100m",
-    925: "_at_750m",
-    850: "_at_1_4km",
-    700: "_at_3km",
-    500: "_at_5_5km",
-    300: "_at_9km",
-}
-
-
 def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
     """
     Renders each (variable, level, time) slice in feature_data to a raw
@@ -145,7 +142,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
         for level in levels:
             level_da = da.sel(level=level) if has_level else da
             suffix = (
-                LEVEL_TO_SUFFIX.get(int(level), f"_at_{level}")
+                FOLDERS.get(int(level), f"_at_{level}")
                 if level is not None
                 else ""
             )
@@ -175,7 +172,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
 def extract_day(
     dates: List[datetime],
     region: Region,
-    basePath: str,
+    base_path: str,
     clean_level: int = 0,
     clustering: bool = True,
     force_redo: int = 0,
@@ -192,7 +189,7 @@ def extract_day(
                 worker,
                 date,
                 region,
-                basePath,
+                base_path,
                 clean_level,
                 clustering,
                 force_redo,

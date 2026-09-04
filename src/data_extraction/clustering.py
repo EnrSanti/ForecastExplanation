@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, Optional
 
+from sklearn.cluster import KMeans
 import numpy as np
 import xarray as xr
 
@@ -23,7 +24,6 @@ def cluster_xarray(
     -------
     Same structure with values quantised to K evenly-spaced levels in [0, 1]
     """
-    from sklearn.cluster import KMeans
 
     if num_clusters_map is None:
         num_clusters_map = {}
@@ -80,4 +80,4 @@ def cluster_xarray(
         clustered_da = da.copy(data=np.stack(clustered_frames))
         result[folder_name] = clustered_da
 
-    return xr.Dataset({name: da for name, da in result.items()})
+    return xr.Dataset(result)

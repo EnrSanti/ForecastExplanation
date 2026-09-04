@@ -1,20 +1,16 @@
 from enum import Enum
 
-FOLDERS_HEIGHT_SUFF = [
-    "_at_100m",
-    "_at_750m",
-    "_at_1_4km",
-    "_at_3km",
-    "_at_5_5km",
-    "_at_9km",
-]
+
+LEVELS = [1000, 925, 850, 700, 500, 300]
+FOLDERS_HEIGHT_SUFF = [f"_at_{l:04d}m" for l in LEVELS]
+
 DEFAULT_V_MAX_AT_HEIGHT = {
-    "_at_100m": 20,
-    "_at_750m": 25,
-    "_at_1_4km": 25,
-    "_at_3km": 35,
-    "_at_5_5km": 45,
-    "_at_9km": 70,
+    "_at_0100m": 20,
+    "_at_0750m": 25,
+    "_at_1400m": 25,
+    "_at_3000m": 35,
+    "_at_5500m": 45,
+    "_at_9000m": 70,
 }
 DEFAULT_DXY = 2500
 DEFAULT_DT = 3600

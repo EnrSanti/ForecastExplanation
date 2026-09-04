@@ -5,29 +5,15 @@ from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
 from cartopy.io import shapereader
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
-
-from . import Region, LimitValues
+from . import Region, LimitValues, LEVELS, FOLDERS
 
 logger = logging.getLogger(__name__)
-
-LEVELS = [1000, 925, 850, 700, 500, 300]
-FOLDERS = {
-    1000: "_at_100m",
-    925: "_at_750m",
-    850: "_at_1_4km",
-    700: "_at_3km",
-    500: "_at_5_5km",
-    300: "_at_9km",
-}
 
 REQUIRED_VARIABLES = ["ccl", "t", "u", "v", "r"]
 
@@ -128,95 +114,9 @@ def _valid_times(coord_var: xr.DataArray) -> Iterator[Tuple[int, int, pd.Timesta
                 yield i, j, valid_time
 
 
-def _file_frame_writer(output_base: str) -> FrameCallback:
-    def on_frame(fig: Any, folder: str, fname: str) -> None:
-        out_dir = os.path.join(output_base, folder)
-        os.makedirs(out_dir, exist_ok=True)
-        fig.savefig(
-            os.path.join(out_dir, fname), dpi=130, bbox_inches="tight", pad_inches=0
-        )
-
-    return on_frame
-
-
-def _render_scalar_frames(
-    ds: xr.Dataset,
-    coordinates: Region,
-    spec: FeatureSpec,
-) -> Iterator[Tuple[str, str, Any]]:
-
-    field = _resolve_var(ds, spec.var)
-
-    folders = {k: spec.folder_key + v for k, v in FOLDERS.items()}
-
-    fig, ax = plt.subplots(
-        figsize=(10, 8), subplot_kw={"projection": ccrs.PlateCarree()}
-    )
-    ax.set_extent(coordinates.value, crs=ccrs.PlateCarree())
-    if spec.axis_off:
-        ax.axis("off")
-
-    try:
-        for lvl in LEVELS:
-            level_field = field.sel(isobaricInhPa=lvl)
-
-            for i, j, valid_time in _valid_times(level_field):
-                frame = level_field.isel(time=i, step=j)
-                if not np.isfinite(frame).any():
-                    continue
-
-                vmin, vmax = spec.limits[lvl]
-
-                mesh = ax.pcolormesh(
-                    frame["longitude"],
-                    frame["latitude"],
-                    frame,
-                    cmap=spec.cmap,
-                    shading="auto",
-                    vmin=vmin,
-                    vmax=vmax,
-                    transform=ccrs.PlateCarree(),
-                )
-
-                fname = f"{spec.prefix}_{lvl}_{valid_time.strftime('%Y%m%d_%H%M')}.png"
-                yield folders[lvl], fname, fig
-                mesh.remove()
-    finally:
-        plt.close(fig)
-
-
-def _save_scalar_maps(
-    ds: xr.Dataset, coordinates: Region, spec: FeatureSpec, output_base: str
-) -> None:
-    frame_writer = _file_frame_writer(output_base)
-    for folder, fname, fig in _render_scalar_frames(ds, coordinates, spec):
-        frame_writer(fig, folder, fname)
-
-
 def create_one_time_images(coordinates: Region, output_base: str) -> None:
     save_borders_png(output_base, coordinates)
     create_legends(output_base)
-
-
-def save_feature_maps(input_path: str, coordinates: Region, output_base: str) -> None:
-    # todo add flag to call this one
-    with xr.open_dataset(input_path, decode_cf=False) as ds:
-        if "dtype" in ds["step"].attrs:
-            del ds["step"].attrs["dtype"]
-
-        ds = xr.decode_cf(ds)
-
-        if any(var not in ds for var in REQUIRED_VARIABLES):
-            logger.error("Error: One or more required variables not found in dataset.")
-            return
-
-        ds = _with_wind_speed(ds)
-        for spec in FEATURE_SPECS.values():
-            _save_scalar_maps(ds, coordinates, spec, output_base)
-
-        ds.close()
-
-    logger.debug(f"Feature maps saved for {input_path} in {output_base}")
 
 
 def save_borders_png(output_base: str, coordinates: Region) -> None:
@@ -335,4 +235,4 @@ def build_feature_dataarrays(
 
                 result[folders[lvl]] = normalized
 
-    return xr.Dataset({name: da for name, da in result.items()})
+    return xr.Dataset(result)

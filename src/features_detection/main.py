@@ -145,18 +145,19 @@ def _run_tobac_single_day_single_phenomenon(
     logger.debug(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
+        # print('a')
         features_nc = os.path.join(day_input_dir, "features.nc")
 
         if not os.path.exists(features_nc):
             continue
-
+        # print(features_nc)
         with xr.open_dataset(features_nc) as ds:
             folder_key = f"{phenomenon.value}{suffix}"
             if folder_key not in ds:
                 continue
 
             da = ds[folder_key].load()
-
+        # print('b')
         datetimes = [pd.Timestamp(t) for t in da.time.values]
 
         referenced_data = build_referenced_data_from_xarray(
