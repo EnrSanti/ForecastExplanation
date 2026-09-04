@@ -242,4 +242,12 @@ def build_feature_dataarrays(
 
                 result[folders[lvl]] = normalized
 
+                if spec.prefix == "temp":
+                    raw = stacked.fillna(0.0)
+                    raw = raw.drop_vars(
+                        ["valid_time", "step", "isobaricInhPa", "number", "surface"],
+                        errors="ignore",
+                    )
+                    result[f"raw_{folders[lvl]}"] = raw
+
     return xr.Dataset(result)
