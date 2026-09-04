@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 import xarray as xr
+from tqdm import tqdm
 
 from region import Region
 
@@ -47,6 +48,7 @@ def detect_winds(data: xr.Dataset, cities: list, output_path: str):
     for var in data.data_vars:
         if "wind_direction_at_" in var:
             heights.add(var.split("wind_direction_at_")[1])
+    sorted_heights = sorted(heights, key=lambda x: int(x.replace("m", "")) if x.replace("m", "").isdigit() else x)
 
     records = []
 
@@ -58,7 +60,7 @@ def detect_winds(data: xr.Dataset, cities: list, output_path: str):
         if not np.any(mask):
             continue
 
-        for h in heights:
+        for h in sorted_heights:
             ws_var = f"wind_at_{h}"
             wd_var = f"wind_direction_at_{h}"
 
@@ -109,12 +111,12 @@ def reason(dates: list, input_dir: str, output_dir: str, region: Region, force: 
         force (bool, optional): If True, forces the processing of all dates. Defaults to False.
     """
     logger.info("Starting reasoning")
-    for date in dates:
+    for date in tqdm(dates):
         day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
-        day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
+        day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"), "reasoning")
         os.makedirs(day_output_dir, exist_ok=True)
 
-        if not force and os.path.exists(os.path.join(day_output_dir, "reasoning.txt")):
+        if not force and os.path.exists(day_output_dir) and os.listdir(day_output_dir):
             logger.info(f"Reasoning already exists for {date.strftime('%Y-%m-%d')}. Skipping.")
             continue
 
