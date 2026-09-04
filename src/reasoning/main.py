@@ -69,19 +69,23 @@ def detect_winds(data: xr.Dataset, cities: list, output_path: str):
                     "%Y-%m-%d %H:%M:%S"
                 )
 
-                ws_val = np.nan
-                wd_val = np.nan
+                if ws_var not in data or wd_var not in data:
+                    missing = [v for v in [ws_var, wd_var] if v not in data]
+                    logger.warning(
+                        f"Skipping {city_name} at height {h}, timestamp {timestamp}: "
+                        f"missing variable(s) {missing}"
+                    )
+                    continue
 
-                if ws_var in data and wd_var in data:
-                    ws_data = data[ws_var].isel(time=t_idx).values
-                    wd_data = data[wd_var].isel(time=t_idx).values
+                ws_data = data[ws_var].isel(time=t_idx).values
+                wd_data = data[wd_var].isel(time=t_idx).values
 
-                    ws_val = np.nanmean(ws_data[mask])
+                ws_val = np.nanmean(ws_data[mask])
 
-                    wd_rad = np.radians(wd_data[mask])
-                    wd_u = np.nanmean(np.sin(wd_rad))
-                    wd_v = np.nanmean(np.cos(wd_rad))
-                    wd_val = (np.degrees(np.arctan2(wd_u, wd_v)) + 360) % 360
+                wd_rad = np.radians(wd_data[mask])
+                wd_u = np.nanmean(np.sin(wd_rad))
+                wd_v = np.nanmean(np.cos(wd_rad))
+                wd_val = (np.degrees(np.arctan2(wd_u, wd_v)) + 360) % 360
 
                 records.append(
                     {
@@ -114,12 +118,12 @@ def reason(dates: list, input_dir: str, output_dir: str, region: Region, force: 
     for date in tqdm(dates):
         day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
         day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"), "reasoning")
-        os.makedirs(day_output_dir, exist_ok=True)
 
         if not force and os.path.exists(day_output_dir) and os.listdir(day_output_dir):
             logger.info(f"Reasoning already exists for {date.strftime('%Y-%m-%d')}. Skipping.")
             continue
 
+        os.makedirs(day_output_dir, exist_ok=True)
         logger.debug(f"Processing reasoning for {date.strftime('%Y-%m-%d')}")
 
         with xr.open_dataset(os.path.join(day_input_dir, "segmentation.nc")) as ds:
