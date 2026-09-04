@@ -45,7 +45,7 @@ class Region:
     ) -> Region:
         if isinstance(value, dict):
             cities = value.get("cities", cities)
-            city_radius = float(value.get("range", city_radius))
+            city_radius = float(value.get("radius", city_radius))
             if "name" in value:
                 return cls.from_config(value["name"], cities, city_radius)
             elif "bounds" in value:

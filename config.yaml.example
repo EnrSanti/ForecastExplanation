@@ -6,7 +6,7 @@ run_baseline:
 run_custom_path_and_region:
   region:
     bounds: [-3, 3, 42.7, 45.8]
-    range: 5
+    radius: 5
     cities:
       CustomCity:
         lat: 44.25
