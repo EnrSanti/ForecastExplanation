@@ -128,7 +128,7 @@ just_cut  (optional, default: false)
 ------
 
 save_images  (optional, default: false)
-  If true, visualization images of the tracking results are
+  If true, visualisation images of the tracking results are
   generated and saved alongside the output data.
 
     save_images: true

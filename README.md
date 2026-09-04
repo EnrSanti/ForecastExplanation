@@ -1,6 +1,6 @@
 # SERGIO, Forecast Explanation
 
-SERGIO (<b>S</b>imlulating <b>E</b>xplanation of <b>R</b>e<b>GIO</b>nal weather forecast) is framework aiming to provide simple explanations to weather forecasts made by experts (leveraging Machine learning), by using Inductive logic programming.
+SERGIO (<b>S</b>imlulating <b>E</b>xplanation of <b>R</b>e<b>GIO</b>nal weather forecast) is a framework aiming to provide simple explanations to weather forecasts made by experts (leveraging Machine learning), by using Inductive logic programming.
 
 <div align="center">
 <img src="doc/generated_explanation.png" alt="Explaining Stone" width="250"/>
@@ -8,7 +8,7 @@ SERGIO (<b>S</b>imlulating <b>E</b>xplanation of <b>R</b>e<b>GIO</b>nal weather 
 
 ## Installation
 
-To run the framework clone the repository, change the parameters for the learning task and run docker:
+To run the framework, clone the repository, change the parameters for the learning task and run docker:
 
 ```bash
 # 1. Clone

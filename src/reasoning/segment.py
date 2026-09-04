@@ -27,6 +27,7 @@ def detect_winds(
         cities: list of (name, lat, lon)
         heights: list of heights to consider
         output_path: path to the output file
+        city_radius: radius in km to consider around the city
     """
     lats = data.latitude.values
     lons = data.longitude.values

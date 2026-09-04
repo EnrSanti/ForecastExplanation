@@ -1,7 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, Tuple, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature

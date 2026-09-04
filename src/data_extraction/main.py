@@ -174,7 +174,6 @@ def extract_day(
     clustering: bool = True,
     force_redo: bool = False,
     just_cut: bool = False,
-    stopping_step: int = 4,
     create_images: bool = False,
 ) -> None:
     logger.info("Starting data extraction...")
