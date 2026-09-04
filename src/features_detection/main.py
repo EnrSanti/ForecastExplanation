@@ -21,6 +21,7 @@ from features_detection.constants import (
     FOLDERS_HEIGHT_SUFF,
     WeatherPhenomenon,
     WeatherPhenomenonTobacParams,
+    RAW_FEATURES_VARS,
 )
 from features_detection.features import (
     detect_features,
@@ -119,14 +120,14 @@ def _run_tobac_single_day(
         save_images,
     )
 
-    wind_seg_ds = _extract_winds(day_input_dir)
+    _create_output_features_nc(day_input_dir, day_output_dir)
 
     dfs = [df for df in [temp_tra_df, hum_tra_df, cld_tra_df] if not df.empty]
     results_tra = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
     del temp_tra_df, hum_tra_df, cld_tra_df
 
     dss = [
-        ds for ds in [temp_seg_ds, hum_seg_ds, cld_seg_ds, wind_seg_ds] if ds.data_vars
+        ds for ds in [temp_seg_ds, hum_seg_ds, cld_seg_ds] if ds.data_vars
     ]
     results_seg_ds = xr.merge(dss, compat="override", join="outer")
     del temp_seg_ds, hum_seg_ds, cld_seg_ds
@@ -287,13 +288,23 @@ def _run_tobac_single_day_single_phenomenon(
     return trajectories_df, segmentation_ds
 
 
-def _extract_winds(day_input_dir: str) -> xr.Dataset:
-    features_nc = os.path.join(day_input_dir, "features.nc")
+def _create_output_features_nc(day_input_dir: str, day_output_dir: str) -> None:
+    input_features_nc = os.path.join(day_input_dir, "features.nc")
+    output_features_nc = os.path.join(day_output_dir, "features.nc")
+    
+    if not os.path.exists(input_features_nc):
+        return
+        
     tmp_ds = xr.Dataset()
-    with xr.open_dataset(features_nc) as feat_ds:
-        wind_vars = [v for v in feat_ds.data_vars if "wind" in v]
-        if wind_vars:
-            wind_ds = feat_ds[wind_vars].load()
-            tmp_ds = xr.merge([tmp_ds, wind_ds], compat="override", join="outer")
+    with xr.open_dataset(input_features_nc) as feat_ds:
+        vars_to_extract = [
+            v for v in feat_ds.data_vars 
+            if any(prefix in v for prefix in RAW_FEATURES_VARS)
+        ]
 
-    return tmp_ds
+        if vars_to_extract:
+            extracted_ds = feat_ds[vars_to_extract].load()
+            tmp_ds = xr.merge([tmp_ds, extracted_ds], compat="override", join="outer")
+
+    if tmp_ds.data_vars:
+        tmp_ds.to_netcdf(output_features_nc)
