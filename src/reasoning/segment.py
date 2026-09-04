@@ -72,8 +72,7 @@ def detect_winds(
                     {
                         "timestamp": timestamp,
                         "height": h.replace("m", ""),
-                        "lat": city_lat,
-                        "lon": city_lon,
+                        "city": city_name,
                         "wind_direction": get_compass_direction(wd_val),
                         "wind_speed": ws_val,
                     }
