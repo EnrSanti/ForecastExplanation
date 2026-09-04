@@ -9,25 +9,21 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 
-from region import Region, CITIES
+from region import Region
 
 logger = logging.getLogger(__name__)
 
 
-def overlay_cities(axs: plt.Axes, region: Region = None):
+def overlay_cities(axs: plt.Axes, region: Region):
     """
     Overlay city markers and labels on top of the map using Cartopy.
     """
 
-    if region is not None:
-        cities = region.get_cities()
-    else:
-        cities = CITIES
-
-    for name, lon, lat in cities:
+    cities = region.get_cities()
+    for name, lat, lon in cities:
         axs.plot(
-            lon,
-            lat,
+            [lon],
+            [lat],
             marker="o",
             markersize=3,
             color="red",
@@ -59,7 +55,7 @@ def print_clouds_center_line(
     persisted_cells: Set[int],
     all_frames_for_cell: Dict[int, List[int]],
 ):
-    """Plots cloud center markers and fading trajectory path natively."""
+    """Plots cloud centre markers and fading trajectory path natively."""
 
     if cell_id in persisted_cells:
         frames_list = all_frames_for_cell.get(int(cell_id), [])
@@ -133,7 +129,7 @@ def print_cloud_labels(
     lon_min, lon_max, _, _ = region.value
     lon_span = lon_max - lon_min
 
-    # Adjust position so it doesn't clip off screen
+    # Adjust position so it doesn't clip off-screen
     if lon_pos < lon_min + 0.05 * lon_span:
         lon_pos += 0.02 * lon_span
     if lon_pos > lon_max - 0.05 * lon_span:
@@ -200,7 +196,7 @@ def generate_all_plots(
     for i in range(da.sizes["time"]):
         frame_da = da.isel(time=i)
 
-        # Valid time to filename string matching old pipeline format: e.g., ..._20090102_0100_tracked.png
+        # Valid time to filename string matching old pipeline format: e.g. ..._20090102_0100_tracked.png
         valid_time_pd = pd.Timestamp(da.time.values[i])
         out_name = f"{da.name}_{valid_time_pd.strftime('%Y%m%d_%H%M')}_tracked.png"
         out_path = os.path.join(output_dir, out_name)
@@ -212,7 +208,7 @@ def generate_all_plots(
         axs.set_extent(region.value, crs=ccrs.PlateCarree())
 
         # Map the underlying values
-        vmin, vmax = 0, 1  # features.nc is already normalized 0..1
+        vmin, vmax = 0, 1  # features.nc is already normalised 0..1
         axs.pcolormesh(
             frame_da["longitude"],
             frame_da["latitude"],
@@ -229,7 +225,7 @@ def generate_all_plots(
         axs.add_feature(cfeature.BORDERS, linewidth=0.8, edgecolor="black")
 
         # Add cities
-        overlay_cities(axs)
+        overlay_cities(axs, region)
 
         # Add tracking data
         info = cell_info_by_frame.get(

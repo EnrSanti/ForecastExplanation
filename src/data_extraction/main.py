@@ -10,7 +10,14 @@ import numpy as np
 import xarray as xr
 from tqdm import tqdm
 
-from . import Region, RAW_DATA_DIR, CUT_DATA_DIR, DISCRETE_DATA_DIR, CLUSTERED_DATA_DIR
+from . import (
+    Region,
+    RAW_DATA_DIR,
+    CUT_DATA_DIR,
+    DISCRETE_DATA_DIR,
+    CLUSTERED_DATA_DIR,
+    FOLDERS,
+)
 from .extract_features_nc import (
     create_one_time_images,
     build_feature_dataarrays,
@@ -101,16 +108,6 @@ def extract_day_worker(
         shutil.rmtree(clustered_dir, ignore_errors=True)
 
 
-LEVEL_TO_SUFFIX = {
-    1000: "_at_100m",
-    925: "_at_750m",
-    850: "_at_1_4km",
-    700: "_at_3km",
-    500: "_at_5_5km",
-    300: "_at_9km",
-}
-
-
 def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
     """
     Renders each (variable, level, time) slice in feature_data to a raw
@@ -145,7 +142,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
         for level in levels:
             level_da = da.sel(level=level) if has_level else da
             suffix = (
-                LEVEL_TO_SUFFIX.get(int(level), f"_at_{level}")
+                FOLDERS.get(int(level), f"_at_{level}")
                 if level is not None
                 else ""
             )
