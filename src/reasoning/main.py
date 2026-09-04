@@ -138,7 +138,7 @@ def reason(
         )
 
         if not force and os.path.exists(day_output_dir) and os.listdir(day_output_dir):
-            logger.info(
+            logger.debug(
                 f"Reasoning already exists for {date.strftime('%Y-%m-%d')}. Skipping."
             )
             continue

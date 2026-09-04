@@ -89,7 +89,7 @@ def _run_tobac_single_day(
     os.makedirs(day_output_dir, exist_ok=True)
 
     if not force and os.path.exists(os.path.join(day_output_dir, "segmentation.nc")):
-        logger.info(
+        logger.debug(
             f"Segmentation already exists for {date.strftime('%Y-%m-%d')}. Skipping."
         )
         return

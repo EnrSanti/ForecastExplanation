@@ -94,7 +94,7 @@ def extract_day_worker(
         clustered_data.to_netcdf(os.path.join(clustered_dir, "features.nc"))
 
     if starting_step == 4:
-        logger.info(
+        logger.debug(
             f"Feature maps already exist for {date.strftime('%Y-%m-%d')}, skipping."
         )
 
