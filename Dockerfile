@@ -9,11 +9,7 @@ RUN --mount=type=cache,target=/opt/conda/pkgs \
     conda env create -f environment.yml
 ENV PATH=/opt/conda/envs/weather/bin:$PATH
 
-COPY main.py .
-COPY region.py .
-COPY data_extraction ./data_extraction
-COPY features_detection ./features_detection
-COPY reasoning ./reasoning
+COPY src ./src
 
 # Run the application
-CMD ["python", "main.py"]
+CMD ["python", "src/main.py"]
