@@ -1,5 +1,4 @@
 from .constants import (
-    TOBAC_OUTPUT,
     FOLDERS_HEIGHT_SUFF,
     DEFAULT_DXY,
     DEFAULT_DT,
@@ -9,14 +8,13 @@ from .constants import (
     DEFAULT_SMOOTH,
     DEFAULT_BORDER_THICKNESS,
     DEFAULT_TIME_OFFSET_HOURS,
-    Region,
     WeatherPhenomenon,
     WeatherPhenomenonTobacParams,
 )
+from region import Region
 from .main import run_tobac
 
 __all__: list[str] = [
-    "TOBAC_OUTPUT",
     "FOLDERS_HEIGHT_SUFF",
     "DEFAULT_DXY",
     "DEFAULT_DT",
@@ -31,5 +29,3 @@ __all__: list[str] = [
     "WeatherPhenomenonTobacParams",
     "run_tobac",
 ]
-# duplicato
-DISCRETE_DATA_DIR: str = "./tmp_data/imgs_discrete"

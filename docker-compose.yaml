@@ -8,5 +8,5 @@ services:
 
     volumes:
       - ./tmp_data:/app/tmp_data
-      - ./data:/app/data
+      - ./runs:/app/runs
       - ./config.yaml:/app/config.yaml

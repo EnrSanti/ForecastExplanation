@@ -6,7 +6,9 @@ import yaml
 
 import data_extraction
 
-import image_processing
+import features_detection
+
+from region import Region
 
 logging.basicConfig(
     level=logging.ERROR,
@@ -59,7 +61,7 @@ def parse_args_and_config():
         help="Generate visualization images of the tracking results",
     )
 
-    args, unknown = parser.parse_known_args()
+    args, _ = parser.parse_known_args()
 
     if os.path.exists(args.config):
         with open(args.config, "r") as f:
@@ -86,7 +88,6 @@ def main():
         logger.info(f" --- Starting {run_name} ---")
 
         dates = run_config.get("dates", [])
-        region_str = run_config.get("region", "FVG").upper()
 
         clean = args.clean if args.clean else run_config.get("clean", 0)
         force = args.force if args.force else run_config.get("force", 0)
@@ -100,45 +101,31 @@ def main():
             if args.save_images
             else run_config.get("save_images", False)
         )
+        output_path = run_config.get("output_path", os.path.join("runs", run_name))
 
         if debug:
             logger.setLevel(logging.DEBUG)
             logging.getLogger("data_extraction").setLevel(logging.DEBUG)
-            logging.getLogger("image_processing").setLevel(logging.DEBUG)
+            logging.getLogger("features_detection").setLevel(logging.DEBUG)
         else:
             logger.setLevel(logging.INFO)
             logging.getLogger("data_extraction").setLevel(logging.INFO)
-            logging.getLogger("image_processing").setLevel(logging.INFO)
+            logging.getLogger("features_detection").setLevel(logging.INFO)
 
         if not dates:
             logger.error(f"No dates provided for {run_name}.")
             continue
 
         try:
-            data_region = data_extraction.Region[region_str]
-            img_region = image_processing.Region[region_str]
-        except KeyError:
-            logger.error(
-                f"Invalid region '{region_str}' in {run_name}. Must be one of {[r.name for r in data_extraction.Region]}"
-            )
+            region = Region.from_config(run_config.get("region", "FVG"))
+        except ValueError as e:
+            logger.error(f"Region error in {run_name}: {e}")
             continue
-
-        data_extraction.DISCRETE_DATA_DIR = os.path.join(
-            "runs", run_name, data_extraction.DISCRETE_DATA_DIR
-        )
-        data_extraction.CLUSTERED_DATA_DIR = os.path.join(
-            "runs", run_name, data_extraction.CLUSTERED_DATA_DIR
-        )
-        data_extraction.CUT_DATA_DIR = os.path.join(
-            "runs", run_name, data_extraction.CUT_DATA_DIR
-        )
-        image_processing.TOBAC_OUTPUT = os.path.join(
-            "runs", run_name, image_processing.TOBAC_OUTPUT
-        )
 
         data_extraction.extract(
             dates,
-            data_region,
+            region,
+            output_path=output_path,
             clean_level=clean,
             clustering=clustering,
             force_redo=force,
@@ -146,22 +133,23 @@ def main():
             create_images=save_images,
         )
         if just_cut:
+            logger.info(f"{run_name} finished just cut.")
             continue
 
         input_dir = (
-            data_extraction.CLUSTERED_DATA_DIR
+            os.path.join(output_path, data_extraction.CLUSTERED_DATA_DIR)
             if clustering
-            else data_extraction.DISCRETE_DATA_DIR
+            else os.path.join(output_path, data_extraction.DISCRETE_DATA_DIR)
         )
-        image_processing.run_tobac(
+        features_detection.run_tobac(
             dates,
             input_dir=input_dir,
-            output_dir=image_processing.TOBAC_OUTPUT,
-            region=img_region,
+            output_dir=output_path,
+            region=region,
             save_images=save_images,
         )
 
-        logger.info(f"--- Finished {run_name} ---")
+        logger.info(f"--- Finished {run_name} ---\n\n")
 
 
 if __name__ == "__main__":

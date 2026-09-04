@@ -13,26 +13,26 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-from image_processing.constants import (
+from features_detection.constants import (
     DEFAULT_GAP_FRAMES,
     DEFAULT_MIN_DISTANCE,
     DEFAULT_SMOOTH,
     DEFAULT_V_MAX_AT_HEIGHT,
     FOLDERS_HEIGHT_SUFF,
-    Region,
     WeatherPhenomenon,
     WeatherPhenomenonTobacParams,
 )
-from image_processing.segment_track import (
+from features_detection.features import (
     detect_features,
     segment_features,
     track_features,
 )
-from image_processing.utils import (
+from features_detection.utils import (
     build_referenced_data_from_xarray,
     get_grid_spacings,
     normalize_referenced_data,
 )
+from region import Region
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ def run_tobac(
     """
     Executes TOBAC tracking across the specified list of dates and weather phenomena.
     """
-    logger.info(f"Starting TOBAC for {len(dates)} dates.")
+    logger.info(f"Starting TOBAC.")
     os.makedirs(output_dir, exist_ok=True)
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
@@ -120,9 +120,6 @@ def _run_tobac_single_day(
         [temp_seg_ds, hum_seg_ds, cld_seg_ds], compat="override", join="outer"
     )
     del temp_seg_ds, hum_seg_ds, cld_seg_ds
-
-    logger.debug(f"total space used for day {date.strftime('%Y-%m-%d')}:")
-    logger.debug(results_tra.memory_usage())
 
     xr.Dataset.from_dataframe(results_tra).to_netcdf(
         os.path.join(day_output_dir, "trajectories.nc")
@@ -215,7 +212,7 @@ def _run_tobac_single_day_single_phenomenon(
             del x
 
         if save_images:
-            from image_processing.plotting import generate_all_plots
+            from features_detection.plotting import generate_all_plots
 
             height_output_dir = os.path.join(day_output_dir, folder_key)
             generate_all_plots(

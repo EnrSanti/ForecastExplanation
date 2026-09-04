@@ -268,7 +268,6 @@ def perform_multi_scale_matching(image_path, icon_templates, locations_df):
 
     # 1. Nested For: Category -> Individual Template
     for category, templates in icon_templates.items():
-
         for name, data in templates.items():
             icon = data["icon"]
             match_mask = data["match_mask"]
