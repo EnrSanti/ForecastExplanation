@@ -1,11 +1,12 @@
 import logging
 import os
+
 import xarray as xr
 from tqdm import tqdm
 
 from region import Region
-from .wind import detect_winds
-from .heat import detect_heat
+from .fronts import detect_phenomenon, detect_phenomenon_fronts
+from .segment import detect_winds, detect_clouds
 from .utils import get_heights
 
 logger = logging.getLogger("ForecastExplanation")
@@ -41,11 +42,12 @@ def reason(
         os.makedirs(day_output_dir, exist_ok=True)
         logger.debug(f"Processing reasoning for {date.strftime('%Y-%m-%d')}")
 
-        with xr.open_dataset(os.path.join(day_input_dir, "segmentation.nc")) as seg_ds:
-            pass # Keep opening if needed later, but heights comes from feat_ds
-
-        with xr.open_dataset(os.path.join(day_input_dir, "features.nc")) as feat_ds:
+        with (
+            xr.open_dataset(os.path.join(day_input_dir, "segmentation.nc")) as seg_ds,
+            xr.open_dataset(os.path.join(day_input_dir, "features.nc")) as feat_ds,
+        ):
             heights = get_heights(feat_ds)
+
             detect_winds(
                 feat_ds,
                 region.get_cities(),
@@ -53,9 +55,44 @@ def reason(
                 heights,
             )
 
-            detect_heat(
+            detect_clouds(
+                seg_ds,
+                feat_ds,
+                region.get_cities(),
+                os.path.join(day_output_dir, "cloud.txt"),
+                heights,
+            )
+
+            # Heat
+            detect_phenomenon(
                 feat_ds,
                 region.get_cities(),
                 os.path.join(day_output_dir, "heat.txt"),
                 heights,
+                "temp",
+            )
+            detect_phenomenon_fronts(
+                seg_ds,
+                feat_ds,
+                region.get_cities(),
+                os.path.join(day_output_dir, "heat_fronts.txt"),
+                heights,
+                "temp",
+            )
+
+            # Humidity
+            detect_phenomenon(
+                feat_ds,
+                region.get_cities(),
+                os.path.join(day_output_dir, "humidity.txt"),
+                heights,
+                "humidity",
+            )
+            detect_phenomenon_fronts(
+                seg_ds,
+                feat_ds,
+                region.get_cities(),
+                os.path.join(day_output_dir, "humidity_fronts.txt"),
+                heights,
+                "humidity",
             )

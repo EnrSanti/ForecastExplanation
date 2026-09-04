@@ -60,4 +60,4 @@ class WeatherPhenomenonTobacParams(Enum):
     }
 
 
-RAW_FEATURES_VARS = ["wind", "raw_temp"]
+RAW_FEATURES_VARS = ["wind", "raw_temp", "raw_humidity"]

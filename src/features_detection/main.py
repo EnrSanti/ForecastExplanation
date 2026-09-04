@@ -120,7 +120,7 @@ def _run_tobac_single_day(
         save_images,
     )
 
-    _create_output_features_nc(day_input_dir, day_output_dir)
+    _create_output_features_nc(day_input_dir, day_output_dir, region)
 
     dfs = [df for df in [temp_tra_df, hum_tra_df, cld_tra_df] if not df.empty]
     results_tra = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
@@ -286,7 +286,9 @@ def _run_tobac_single_day_single_phenomenon(
     return trajectories_df, segmentation_ds
 
 
-def _create_output_features_nc(day_input_dir: str, day_output_dir: str) -> None:
+def _create_output_features_nc(
+    day_input_dir: str, day_output_dir: str, region: Region
+) -> None:
     input_features_nc = os.path.join(day_input_dir, "features.nc")
     output_features_nc = os.path.join(day_output_dir, "features.nc")
 
@@ -303,7 +305,17 @@ def _create_output_features_nc(day_input_dir: str, day_output_dir: str) -> None:
 
         if vars_to_extract:
             extracted_ds = feat_ds[vars_to_extract].load()
+
+            da = feat_ds[vars_to_extract[0]]
+            datetimes = [pd.Timestamp(t) for t in da.time.values]
+            ref_data = build_referenced_data_from_xarray(
+                da, datetimes, region_bounds=region.value
+            )
+            dxy, dt = get_grid_spacings(ref_data)
+            extracted_ds.attrs["dxy"] = float(dxy)
+
             tmp_ds = xr.merge([tmp_ds, extracted_ds], compat="override", join="outer")
+            tmp_ds.attrs["dxy"] = float(dxy)
 
     if tmp_ds.data_vars:
         tmp_ds.to_netcdf(output_features_nc)
