@@ -1,119 +1,14 @@
 import logging
 import os
-
-import numpy as np
-import pandas as pd
 import xarray as xr
 from tqdm import tqdm
 
 from region import Region
+from .wind import detect_winds
+from .heat import detect_heat
+from .utils import get_heights
 
 logger = logging.getLogger("ForecastExplanation")
-
-
-def haversine(
-    lat1: float | np.ndarray,
-    lon1: float | np.ndarray,
-    lat2: float | np.ndarray,
-    lon2: float | np.ndarray,
-) -> float | np.ndarray:
-    """Return great-circle distance(s) in km between point(s) (lat1, lon1) and (lat2, lon2)."""
-    R = 6371.0
-    lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
-    c = 2 * np.arcsin(np.sqrt(a))
-    return R * c
-
-
-def get_compass_direction(degrees: float) -> str | float:
-    """Convert a bearing in degrees to an 8-point compass label (e.g. 'NE'). Returns nan for nan input."""
-    if np.isnan(degrees):
-        return np.nan
-    directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
-    idx = int((degrees + 22.5) // 45) % 8
-    return directions[idx]
-
-
-def detect_winds(
-    data: xr.Dataset,
-    cities: list[tuple[str, float | int, float | int]],
-    output_path: str,
-) -> None:
-    """
-    writes a txt table with:
-    timestamp, height, lat, lon, wind_direction, wind_speed
-
-    lat and lon are of the city
-    wind_speed and wind_direction are means of a 3km radius around the city
-    Args:
-        data: xarray.Dataset
-        cities: list of (name, lat, lon)
-        output_path: path to the output file
-    """
-    lats = data.latitude.values
-    lons = data.longitude.values
-
-    heights = set()
-    for var in data.data_vars:
-        if "wind_direction_at_" in var:
-            heights.add(var.split("wind_direction_at_")[1])
-    sorted_heights = sorted(
-        heights,
-        key=lambda x: int(x.replace("m", "")) if x.replace("m", "").isdigit() else x,
-    )
-
-    records = []
-
-    for city in cities:
-        city_name, city_lat, city_lon = city
-        dist = haversine(city_lat, city_lon, lats, lons)
-        mask = dist <= 3.0
-
-        if not np.any(mask):
-            continue
-
-        for h in sorted_heights:
-            ws_var = f"wind_at_{h}"
-            wd_var = f"wind_direction_at_{h}"
-
-            for t_idx in range(data.sizes["time"]):
-                timestamp = pd.to_datetime(data.time.values[t_idx]).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
-
-                if ws_var not in data or wd_var not in data:
-                    missing = [v for v in [ws_var, wd_var] if v not in data]
-                    logger.warning(
-                        f"Skipping {city_name} at height {h}, timestamp {timestamp}: "
-                        f"missing variable(s) {missing}"
-                    )
-                    continue
-
-                ws_data = data[ws_var].isel(time=t_idx).values
-                wd_data = data[wd_var].isel(time=t_idx).values
-
-                ws_val = np.nanmean(ws_data[mask])
-
-                wd_rad = np.radians(wd_data[mask])
-                wd_u = np.nanmean(np.sin(wd_rad))
-                wd_v = np.nanmean(np.cos(wd_rad))
-                wd_val = (np.degrees(np.arctan2(wd_u, wd_v)) + 360) % 360
-
-                records.append(
-                    {
-                        "timestamp": timestamp,
-                        "height": h.replace("m", ""),
-                        "lat": city_lat,
-                        "lon": city_lon,
-                        "wind_direction": get_compass_direction(wd_val),
-                        "wind_speed": ws_val,
-                    }
-                )
-
-    df = pd.DataFrame(records)
-    df.to_csv(output_path, sep="\t", index=False, float_format="%.6f")
 
 
 def reason(
@@ -131,7 +26,7 @@ def reason(
         force (bool, optional): If True, forces the processing of all dates. Defaults to False.
     """
     logger.info("Starting reasoning")
-    for date in tqdm(dates):
+    for date in tqdm(dates, desc="Reasoning"):
         day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
         day_output_dir = os.path.join(
             output_dir, date.strftime("%Y-%m-%d"), "reasoning"
@@ -146,7 +41,21 @@ def reason(
         os.makedirs(day_output_dir, exist_ok=True)
         logger.debug(f"Processing reasoning for {date.strftime('%Y-%m-%d')}")
 
-        with xr.open_dataset(os.path.join(day_input_dir, "segmentation.nc")) as ds:
+        with xr.open_dataset(os.path.join(day_input_dir, "segmentation.nc")) as seg_ds:
+            pass # Keep opening if needed later, but heights comes from feat_ds
+
+        with xr.open_dataset(os.path.join(day_input_dir, "features.nc")) as feat_ds:
+            heights = get_heights(feat_ds)
             detect_winds(
-                ds, region.get_cities(), os.path.join(day_output_dir, "winds.txt")
+                feat_ds,
+                region.get_cities(),
+                os.path.join(day_output_dir, "winds.txt"),
+                heights,
+            )
+
+            detect_heat(
+                feat_ds,
+                region.get_cities(),
+                os.path.join(day_output_dir, "heat.txt"),
+                heights,
             )

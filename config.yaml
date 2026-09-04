@@ -2,6 +2,8 @@ run_baseline:
   region: FVG
   dates:
     - 2009-01-02
+  force: 3
+
 
 #run_custom_path_and_region:
 #  region:
@@ -13,7 +15,7 @@ run_baseline:
 #  dates:
 #    - 2009-01-04
 #  clean: 0
-#  force: 3
+#  force: 1
 #  clustering: true
 #  debug: true
 #  just_cut: false
