@@ -7,7 +7,7 @@ import xarray as xr
 
 from region import Region
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 
 
 def haversine(lat1, lon1, lat2, lon2):
@@ -30,6 +30,7 @@ def detect_winds(data: xr.Dataset, cities: list, output_path: str):
     Args:
         data: xarray.Dataset
         cities: list of (name, lat, lon)
+        output_path: path to the output file
     """
     lats = data.latitude.values
     lons = data.longitude.values
@@ -84,9 +85,7 @@ def detect_winds(data: xr.Dataset, cities: list, output_path: str):
                 )
 
     df = pd.DataFrame(records)
-    if not df.empty:
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        df.to_csv(output_path, sep="\t", index=False)
+    df.to_csv(output_path, sep="\t", index=False)
 
 
 def reason(dates: list, input_dir: str, output_dir: str, region: Region, force: bool = False):
