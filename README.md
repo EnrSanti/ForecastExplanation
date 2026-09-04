@@ -3,7 +3,7 @@
 SERGIO (<b>S</b>imlulating <b>E</b>xplanation of <b>R</b>e<b>GIO</b>nal weather forecast) is framework aiming to provide simple explanations to weather forecasts made by experts (leveraging Machine learning), by using Inductive logic programming.
 
 <div align="center">
-<img src="generated_explanation.png" alt="Explaining Stone" width="250"/>
+<img src="doc/generated_explanation.png" alt="Explaining Stone" width="250"/>
 </div>
 
 ## Installation
