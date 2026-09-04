@@ -5,18 +5,19 @@ run_baseline:
   force: 3
 
 
-#run_custom_path_and_region:
-#  region:
-#    bounds: [-3, 3, 42.7, 45.8]
-#    cities:
-#      CustomCity:
-#        lat: 46.1
-#        lon: 13.0
-#  dates:
-#    - 2009-01-04
-#  clean: 0
-#  force: 1
-#  clustering: true
-#  debug: true
-#  just_cut: false
-#  save_images: true
+run_custom_path_and_region:
+  region:
+    bounds: [-3, 3, 42.7, 45.8]
+    radius: 3
+    cities:
+      CustomCity:
+        lat: 44.25
+        lon: 0.0
+  dates:
+    - 2009-01-04
+  clean: 0
+  force: 3
+  clustering: true
+  debug: true
+  just_cut: false
+  save_images: true
