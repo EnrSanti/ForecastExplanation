@@ -1,25 +1,33 @@
+import logging
 import os
-import matplotlib.pyplot as plt
+from typing import Set, Dict, List
+
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-import xarray as xr
+import matplotlib.patheffects as pe
+import matplotlib.pyplot as plt
 import pandas as pd
-from typing import Set, Dict, List
-import logging
+import xarray as xr
 
 from region import Region, CITIES
 
 logger = logging.getLogger(__name__)
 
 
-def overlay_cities(axs: plt.Axes):
+def overlay_cities(axs: plt.Axes, region: Region = None):
     """
     Overlay city markers and labels on top of the map using Cartopy.
     """
-    for name, coords in CITIES.items():
+
+    if region is not None:
+        cities = region.get_cities()
+    else:
+        cities = CITIES
+
+    for name, lon, lat in cities:
         axs.plot(
-            coords["lon"],
-            coords["lat"],
+            lon,
+            lat,
             marker="o",
             markersize=3,
             color="red",
@@ -30,7 +38,7 @@ def overlay_cities(axs: plt.Axes):
         )
         axs.annotate(
             name,
-            xy=(coords["lon"], coords["lat"]),
+            xy=(lon, lat),
             xytext=(4, -4),
             textcoords="offset points",
             color="red",
@@ -38,9 +46,6 @@ def overlay_cities(axs: plt.Axes):
             zorder=11,
             transform=ccrs.PlateCarree(),
         )
-
-
-import matplotlib.patheffects as pe
 
 
 def print_clouds_center_line(

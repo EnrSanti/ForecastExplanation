@@ -117,7 +117,9 @@ def main():
             continue
 
         try:
-            region = Region.from_config(run_config.get("region", "FVG"))
+            region = Region.from_config(
+                run_config.get("region", "FVG"), cities=run_config.get("cities", None)
+            )
         except ValueError as e:
             logger.error(f"Region error in {run_name}: {e}")
             continue
