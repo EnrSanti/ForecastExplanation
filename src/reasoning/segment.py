@@ -1,10 +1,11 @@
 import logging
+
+import numpy as np
 import pandas as pd
 import xarray as xr
-import numpy as np
 
-from .utils import haversine, get_compass_direction
 from .constants import CITY_RADIUS_KM
+from .utils import haversine, get_compass_direction
 
 logger = logging.getLogger("ForecastExplanation")
 

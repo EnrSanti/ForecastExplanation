@@ -1,11 +1,9 @@
-import xarray as xr
 import numpy as np
 import pandas as pd
+import xarray as xr
 
-from .utils import haversine
 from .constants import CITY_RADIUS_KM
-
-import os
+from .utils import haversine
 
 
 def detect_phenomenon(
