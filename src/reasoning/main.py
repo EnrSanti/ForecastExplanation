@@ -47,12 +47,14 @@ def reason(
             xr.open_dataset(os.path.join(day_input_dir, "features.nc")) as feat_ds,
         ):
             heights = get_heights(feat_ds)
+            radius = region.city_radius
 
             detect_winds(
                 feat_ds,
                 region.get_cities(),
                 os.path.join(day_output_dir, "winds.txt"),
                 heights,
+                radius,
             )
 
             detect_clouds(
@@ -61,6 +63,7 @@ def reason(
                 region.get_cities(),
                 os.path.join(day_output_dir, "cloud.txt"),
                 heights,
+                radius,
             )
 
             # Heat
@@ -70,6 +73,7 @@ def reason(
                 os.path.join(day_output_dir, "heat.txt"),
                 heights,
                 "temp",
+                radius,
             )
             detect_phenomenon_fronts(
                 seg_ds,
@@ -87,6 +91,7 @@ def reason(
                 os.path.join(day_output_dir, "humidity.txt"),
                 heights,
                 "humidity",
+                radius,
             )
             detect_phenomenon_fronts(
                 seg_ds,

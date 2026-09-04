@@ -1,1 +1,0 @@
-CITY_RADIUS_KM = 3.0

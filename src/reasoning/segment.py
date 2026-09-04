@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .constants import CITY_RADIUS_KM
 from .utils import haversine, get_compass_direction
 
 logger = logging.getLogger("ForecastExplanation")
@@ -15,13 +14,14 @@ def detect_winds(
     cities: list[tuple[str, float | int, float | int]],
     output_path: str,
     heights: list[str],
+    city_radius: float = 3.0,
 ) -> None:
     """
     writes a txt table with:
     timestamp, height, lat, lon, wind_direction, wind_speed
 
     lat and lon are of the city
-    wind_speed and wind_direction are means of a {CITY_RADIUS_KM}km radius around the city
+    wind_speed and wind_direction are means of a {city_radius}km radius around the city
     Args:
         data: xarray.Dataset
         cities: list of (name, lat, lon)
@@ -36,7 +36,7 @@ def detect_winds(
     for city in cities:
         city_name, city_lat, city_lon = city
         dist = haversine(city_lat, city_lon, lats, lons)
-        mask = dist <= CITY_RADIUS_KM
+        mask = dist <= city_radius
 
         if not np.any(mask):
             continue
@@ -88,6 +88,7 @@ def detect_clouds(
     cities: list[tuple[str, float | int, float | int]],
     output_path: str,
     heights: list[str],
+    city_radius: float = 3.0,
 ) -> None:
     """
     writes a txt table with:
@@ -95,7 +96,7 @@ def detect_clouds(
 
     tot area is the cloud segment area in km2
     city is the city that is covered
-    %covered is the % of the {CITY_RADIUS_KM}km radius around the city that is covered by the cloud
+    %covered is the % of the {city_radius}km radius around the city that is covered by the cloud
     """
     if "dxy" not in feat_data.attrs:
         logger.warning("Missing dxy attribute, falling back to 2500m")
@@ -107,12 +108,12 @@ def detect_clouds(
     lats = seg_data.latitude.values
     lons = seg_data.longitude.values
 
-    # Pre-calculate CITY_RADIUS_KM radius mask for each city
+    # Pre-calculate city_radius radius mask for each city
     city_masks = {}
     for city in cities:
         city_name, city_lat, city_lon = city
         dist = haversine(city_lat, city_lon, lats, lons)
-        mask = dist <= CITY_RADIUS_KM
+        mask = dist <= city_radius
         if np.any(mask):
             city_masks[city_name] = mask
 

@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .constants import CITY_RADIUS_KM
 from .utils import haversine
 
 
@@ -12,12 +11,13 @@ def detect_phenomenon(
     output_path: str,
     heights: list[str],
     phenomenon: str,
+    city_radius: float = 3.0,
 ) -> None:
     """
     writes a txt table with:
     timestamp, height, lat, lon, {phenomenon}
 
-    the value is the mean of a {CITY_RADIUS_KM}km radius around the city
+    the value is the mean of a {city_radius}km radius around the city
     """
     lats = data.latitude.values
     lons = data.longitude.values
@@ -29,7 +29,7 @@ def detect_phenomenon(
     for city in cities:
         _, city_lat, city_lon = city
         dist = haversine(city_lat, city_lon, lats, lons)
-        mask = dist <= CITY_RADIUS_KM
+        mask = dist <= city_radius
 
         if not np.any(mask):
             continue
