@@ -126,9 +126,7 @@ def _run_tobac_single_day(
     results_tra = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
     del temp_tra_df, hum_tra_df, cld_tra_df
 
-    dss = [
-        ds for ds in [temp_seg_ds, hum_seg_ds, cld_seg_ds] if ds.data_vars
-    ]
+    dss = [ds for ds in [temp_seg_ds, hum_seg_ds, cld_seg_ds] if ds.data_vars]
     results_seg_ds = xr.merge(dss, compat="override", join="outer")
     del temp_seg_ds, hum_seg_ds, cld_seg_ds
 
@@ -291,14 +289,15 @@ def _run_tobac_single_day_single_phenomenon(
 def _create_output_features_nc(day_input_dir: str, day_output_dir: str) -> None:
     input_features_nc = os.path.join(day_input_dir, "features.nc")
     output_features_nc = os.path.join(day_output_dir, "features.nc")
-    
+
     if not os.path.exists(input_features_nc):
         return
-        
+
     tmp_ds = xr.Dataset()
     with xr.open_dataset(input_features_nc) as feat_ds:
         vars_to_extract = [
-            v for v in feat_ds.data_vars 
+            v
+            for v in feat_ds.data_vars
             if any(prefix in v for prefix in RAW_FEATURES_VARS)
         ]
 

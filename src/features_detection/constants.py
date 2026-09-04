@@ -59,4 +59,5 @@ class WeatherPhenomenonTobacParams(Enum):
         "cmap": "viridis",
     }
 
+
 RAW_FEATURES_VARS = ["wind", "raw_temp"]
