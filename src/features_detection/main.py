@@ -89,7 +89,9 @@ def _run_tobac_single_day(
     os.makedirs(day_output_dir, exist_ok=True)
 
     if not force and os.path.exists(os.path.join(day_output_dir, "segmentation.nc")):
-        logger.info(f"Segmentation already exists for {date.strftime('%Y-%m-%d')}. Skipping.")
+        logger.info(
+            f"Segmentation already exists for {date.strftime('%Y-%m-%d')}. Skipping."
+        )
         return
 
     temp_tra_df, temp_seg_ds = _run_tobac_single_day_single_phenomenon(
@@ -123,7 +125,9 @@ def _run_tobac_single_day(
     results_tra = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
     del temp_tra_df, hum_tra_df, cld_tra_df
 
-    dss = [ds for ds in [temp_seg_ds, hum_seg_ds, cld_seg_ds, wind_seg_ds] if ds.data_vars]
+    dss = [
+        ds for ds in [temp_seg_ds, hum_seg_ds, cld_seg_ds, wind_seg_ds] if ds.data_vars
+    ]
     results_seg_ds = xr.merge(dss, compat="override", join="outer")
     del temp_seg_ds, hum_seg_ds, cld_seg_ds
 

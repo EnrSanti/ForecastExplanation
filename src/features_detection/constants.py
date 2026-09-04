@@ -1,6 +1,5 @@
 from enum import Enum
 
-
 LEVELS = [1000, 925, 850, 700, 500, 300]
 FOLDERS_HEIGHT_SUFF = [f"_at_{l:04d}m" for l in LEVELS]
 

@@ -141,9 +141,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
         for level in levels:
             level_da = da.sel(level=level) if has_level else da
             suffix = (
-                FOLDERS.get(int(level), f"_at_{level}")
-                if level is not None
-                else ""
+                FOLDERS.get(int(level), f"_at_{level}") if level is not None else ""
             )
             var_dir = os.path.join(output_dir, f"{var_name}{suffix}")
             os.makedirs(var_dir, exist_ok=True)

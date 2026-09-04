@@ -26,7 +26,7 @@ def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> xr.Dataset:
     ) as ds:
         lon_min, lon_max, lat_min, lat_max = coordinates
         lat_min, lat_max = min(lat_min, lat_max), max(lat_min, lat_max)
-        
+
         lon = ds.longitude
         if lon_min < 0 or lon_max < 0:
             lon = xr.where(lon > 180, lon - 360, lon)
@@ -53,7 +53,9 @@ def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> xr.Dataset:
 
         if lon_min < 0 or lon_max < 0:
             ds_sub = ds_sub.assign_coords(
-                longitude=xr.where(ds_sub.longitude > 180, ds_sub.longitude - 360, ds_sub.longitude)
+                longitude=xr.where(
+                    ds_sub.longitude > 180, ds_sub.longitude - 360, ds_sub.longitude
+                )
             )
 
         return ds_sub

@@ -11,7 +11,13 @@ from region import Region
 logger = logging.getLogger("ForecastExplanation")
 
 
-def haversine(lat1, lon1, lat2, lon2):
+def haversine(
+    lat1: float | np.ndarray,
+    lon1: float | np.ndarray,
+    lat2: float | np.ndarray,
+    lon2: float | np.ndarray,
+) -> float | np.ndarray:
+    """Return great-circle distance(s) in km between point(s) (lat1, lon1) and (lat2, lon2)."""
     R = 6371.0
     lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
     dlat = lat2 - lat1
@@ -21,7 +27,8 @@ def haversine(lat1, lon1, lat2, lon2):
     return R * c
 
 
-def get_compass_direction(degrees):
+def get_compass_direction(degrees: float) -> str | float:
+    """Convert a bearing in degrees to an 8-point compass label (e.g. 'NE'). Returns nan for nan input."""
     if np.isnan(degrees):
         return np.nan
     directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
@@ -29,7 +36,11 @@ def get_compass_direction(degrees):
     return directions[idx]
 
 
-def detect_winds(data: xr.Dataset, cities: list, output_path: str):
+def detect_winds(
+    data: xr.Dataset,
+    cities: list[tuple[str, float | int, float | int]],
+    output_path: str,
+) -> None:
     """
     writes a txt table with:
     timestamp, height, lat, lon, wind_direction, wind_speed
@@ -48,7 +59,10 @@ def detect_winds(data: xr.Dataset, cities: list, output_path: str):
     for var in data.data_vars:
         if "wind_direction_at_" in var:
             heights.add(var.split("wind_direction_at_")[1])
-    sorted_heights = sorted(heights, key=lambda x: int(x.replace("m", "")) if x.replace("m", "").isdigit() else x)
+    sorted_heights = sorted(
+        heights,
+        key=lambda x: int(x.replace("m", "")) if x.replace("m", "").isdigit() else x,
+    )
 
     records = []
 
@@ -102,7 +116,9 @@ def detect_winds(data: xr.Dataset, cities: list, output_path: str):
     df.to_csv(output_path, sep="\t", index=False, float_format="%.6f")
 
 
-def reason(dates: list, input_dir: str, output_dir: str, region: Region, force: bool = False):
+def reason(
+    dates: list, input_dir: str, output_dir: str, region: Region, force: bool = False
+):
     """
     Perform reasoning on the input data (nc format) and save the results to the output path (text format).
     Converts raw data to reasoning data, ready to be converted to ASP formats.
@@ -117,14 +133,20 @@ def reason(dates: list, input_dir: str, output_dir: str, region: Region, force: 
     logger.info("Starting reasoning")
     for date in tqdm(dates):
         day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
-        day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"), "reasoning")
+        day_output_dir = os.path.join(
+            output_dir, date.strftime("%Y-%m-%d"), "reasoning"
+        )
 
         if not force and os.path.exists(day_output_dir) and os.listdir(day_output_dir):
-            logger.info(f"Reasoning already exists for {date.strftime('%Y-%m-%d')}. Skipping.")
+            logger.info(
+                f"Reasoning already exists for {date.strftime('%Y-%m-%d')}. Skipping."
+            )
             continue
 
         os.makedirs(day_output_dir, exist_ok=True)
         logger.debug(f"Processing reasoning for {date.strftime('%Y-%m-%d')}")
 
         with xr.open_dataset(os.path.join(day_input_dir, "segmentation.nc")) as ds:
-            detect_winds(ds, region.get_cities(), os.path.join(day_output_dir, "winds.txt"))
+            detect_winds(
+                ds, region.get_cities(), os.path.join(day_output_dir, "winds.txt")
+            )
