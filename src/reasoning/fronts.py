@@ -27,7 +27,7 @@ def detect_phenomenon(
     col_name = "temperature" if phenomenon == "temp" else phenomenon
 
     for city in cities:
-        city_name, city_lat, city_lon = city
+        _, city_lat, city_lon = city
         dist = haversine(city_lat, city_lon, lats, lons)
         mask = dist <= CITY_RADIUS_KM
 
@@ -72,7 +72,8 @@ def detect_phenomenon_fronts(
 ):
     """
     writes a txt table with:
-    timestamp, height, front_id (from tobac), front area, list of cities inside the area, average {phenomenon} of the front
+    timestamp, height, front_id (from tobac), front area,
+     list of cities inside the area, average {phenomenon} of the front
     """
     dxy_m = float(feat_data.attrs["dxy"])
     area_per_pixel_km2 = (dxy_m / 1000.0) ** 2

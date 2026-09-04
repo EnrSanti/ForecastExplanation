@@ -19,7 +19,7 @@ def haversine(
 
 
 def get_compass_direction(degrees: float) -> str | float:
-    """Convert a bearing in degrees to an 8-point compass label (e.g. 'NE'). Returns nan for nan input."""
+    """Convert a bearing in degrees to an 8-point compass label."""
     if np.isnan(degrees):
         return np.nan
     directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
