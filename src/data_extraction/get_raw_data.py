@@ -24,11 +24,18 @@ def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> xr.Dataset:
         decode_cf=True,
         decode_times=True,
     ) as ds:
+        lon_min, lon_max, lat_min, lat_max = coordinates
+        lat_min, lat_max = min(lat_min, lat_max), max(lat_min, lat_max)
+        
+        lon = ds.longitude
+        if lon_min < 0 or lon_max < 0:
+            lon = xr.where(lon > 180, lon - 360, lon)
+
         mask = (
-            (ds.longitude >= coordinates[0])
-            & (ds.longitude <= coordinates[1])
-            & (ds.latitude >= coordinates[2])
-            & (ds.latitude <= coordinates[3])
+            (lon >= lon_min)
+            & (lon <= lon_max)
+            & (ds.latitude >= lat_min)
+            & (ds.latitude <= lat_max)
         )
 
         mask_np = mask.values
