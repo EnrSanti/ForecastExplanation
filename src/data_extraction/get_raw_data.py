@@ -1,0 +1,128 @@
+import logging
+import os
+from datetime import datetime
+from typing import List
+
+from ecmwf.datastores import Client
+import xarray as xr
+import numpy as np
+
+
+from . import Region
+
+logger = logging.getLogger(__name__)
+
+logging.getLogger("legacy_client").setLevel(logging.WARNING)
+logging.getLogger("ecmwf.datastores").setLevel(logging.WARNING)
+logging.getLogger("cdsapi").setLevel(logging.WARNING)
+
+
+def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> xr.Dataset:
+    with xr.open_dataset(
+        grib_path,
+        engine="cfgrib",
+        decode_cf=True,
+        decode_times=True,
+    ) as ds:
+        mask = (
+            (ds.longitude >= coordinates[0])
+            & (ds.longitude <= coordinates[1])
+            & (ds.latitude >= coordinates[2])
+            & (ds.latitude <= coordinates[3])
+        )
+
+        mask_np = mask.values
+        y_indices, x_indices = np.where(mask_np)
+
+        y_min = max(0, int(y_indices.min()) - 1)
+        y_max = min(ds.sizes["y"], int(y_indices.max()) + 2)
+        x_min = max(0, int(x_indices.min()) - 1)
+        x_max = min(ds.sizes["x"], int(x_indices.max()) + 2)
+
+        ds_sub = ds.isel(
+            y=slice(y_min, y_max),
+            x=slice(x_min, x_max),
+        )
+        return ds_sub
+
+
+def extract_nc(
+    date: datetime, region: Region, input_dir: str, output_dir: str, force_redo: int
+) -> str:
+    base_name = date.strftime("%Y-%m-%d")
+    grib_file = f"{base_name}.grib"
+    grib_path = os.path.join(input_dir, grib_file)
+    output_path = os.path.join(output_dir, base_name + "_" + region.name + "_cut.nc")
+
+    if not os.path.exists(output_path) or force_redo >= 3:
+        download_grib_if_needed(date, grib_path)
+
+        logger.debug(f"CUTTING GRIB: {grib_path} -> {output_path}")
+        ds = cut_grib_long_lat(grib_path, region.value)
+        ds.to_netcdf(output_path)
+        ds.close()
+
+    else:
+        logger.debug(f"ALREADY CUT: {output_path}")
+
+    return output_path
+
+
+def download_grib_if_needed(date: datetime, grib_path: str) -> None:
+    if os.path.exists(grib_path):
+        logger.debug(f"GRIB already exists: {grib_path}")
+        return
+
+    date_str = date.strftime("%Y-%m-%d")
+    logger.debug(f"Downloading GRIB for {date_str} to {grib_path}...")
+    quiet = logger.getEffectiveLevel() > logging.DEBUG
+    client = Client(
+        key=os.getenv("ECMWF_API_KEY", None),
+        url=os.getenv("ECMWF_API_URL", None),
+        progress=quiet,
+    )
+    if not client.check_authentication():
+        logger.critical("Failed to authenticate with ECMWF API.")
+        raise Exception("Failed to authenticate with ECMWF API.")
+
+    year, month, day = date_str.split("-")
+
+    base_request = {
+        "variable": [
+            "cloud_cover",
+            "relative_humidity",
+            "temperature",
+            "u_component_of_wind",
+            "v_component_of_wind",
+        ],
+        "pressure_level": ["300", "500", "700", "850", "925", "1000"],
+        "data_type": ["reanalysis"],
+        "product_type": ["forecast"],
+        "time": [
+            "00:00",
+            "03:00",
+            "06:00",
+            "09:00",
+            "12:00",
+            "15:00",
+            "18:00",
+            "21:00",
+        ],
+        "leadtime_hour": [
+            "1",
+            "2",
+            "3",
+        ],
+        "data_format": "grib",
+    }
+
+    try:
+        client.retrieve(
+            "reanalysis-cerra-pressure-levels",
+            {**base_request, "year": [year], "month": [month], "day": [day]},
+            grib_path,
+        )
+        logger.debug(f"Download complete: {grib_path}")
+    except Exception as e:
+        logger.error(f"Failed to download GRIB for {date_str}: {e}")
+        raise

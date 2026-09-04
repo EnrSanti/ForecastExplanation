@@ -1,13 +1,13 @@
-run_baseline:
-  region: FVG
-  dates:
-    - 2009-01-02
-  clean: 0
-  force: 0
-  clustering: false
-  debug: false
-  just_cut: false
-  save_images: false
+#run_baseline:
+#  region: FVG
+#  dates:
+#    - 2009-01-02
+#  clean: 0
+#  force: 0
+#  clustering: false
+#  debug: false
+#  just_cut: false
+#  save_images: false
 
 run_custom_path_and_region:
   region:
@@ -18,9 +18,8 @@ run_custom_path_and_region:
         lon: 13.0
   dates:
     - 2009-01-02
-  output_path: custom_output/test_run
   clean: 0
-  force: 1
+  force: 3
   clustering: false
   debug: true
   just_cut: true
