@@ -3,6 +3,7 @@ import logging
 import sys
 import os
 import yaml
+from dotenv import load_dotenv
 
 import data_extraction
 
@@ -19,6 +20,7 @@ logger = logging.getLogger("ForecastExplanation")
 
 
 def parse_args_and_config():
+    load_dotenv()
     parser = argparse.ArgumentParser(description="ForecastExplanation Pipeline")
     parser.add_argument(
         "--config",
