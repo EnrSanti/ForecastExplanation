@@ -46,18 +46,18 @@ def detect_winds(
             ws_var = f"wind_at_{h}"
             wd_var = f"wind_direction_at_{h}"
 
+            if ws_var not in data or wd_var not in data:
+                missing = [v for v in [ws_var, wd_var] if v not in data]
+                logger.warning(
+                    f"Skipping {city_name} at height {h}: "
+                    f"missing variable(s) {missing}"
+                )
+                continue
+
             for t_idx in range(data.sizes["time"]):
                 timestamp = pd.to_datetime(data.time.values[t_idx]).strftime(
                     "%Y-%m-%d %H:%M:%S"
                 )
-
-                if ws_var not in data or wd_var not in data:
-                    missing = [v for v in [ws_var, wd_var] if v not in data]
-                    logger.warning(
-                        f"Skipping {city_name} at height {h}, timestamp {timestamp}: "
-                        f"missing variable(s) {missing}"
-                    )
-                    continue
 
                 ws_data = data[ws_var].isel(time=t_idx).values
                 wd_data = data[wd_var].isel(time=t_idx).values
@@ -65,8 +65,9 @@ def detect_winds(
                 ws_val = np.nanmean(ws_data[mask])
 
                 wd_rad = np.radians(wd_data[mask])
-                wd_u = np.nanmean(np.sin(wd_rad))
-                wd_v = np.nanmean(np.cos(wd_rad))
+                speed = ws_data[mask]
+                wd_u = np.nanmean(speed * np.sin(wd_rad))
+                wd_v = np.nanmean(speed * np.cos(wd_rad))
                 wd_val = (np.degrees(np.arctan2(wd_u, wd_v)) + 360) % 360
 
                 records.append(
