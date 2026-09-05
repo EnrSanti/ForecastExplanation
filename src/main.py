@@ -6,8 +6,8 @@ import yaml
 from dotenv import load_dotenv
 
 import data_extraction
-
 import features_detection
+import reasoning
 
 from region import Region
 
@@ -40,7 +40,7 @@ def parse_args_and_config():
         dest="force",
         action="count",
         default=0,
-        help="Force the extraction even if the data is already present, more f for more redone steps",
+        help="-f forces reasoning, -ff forces feature extraction, -fff forces data extraction",
     )
     parser.add_argument(
         "--clustering", action="store_true", help="Toggle clustering in data extraction"
@@ -132,7 +132,7 @@ def main():
             output_path=output_path,
             clean_level=clean,
             clustering=clustering,
-            force_redo=force,
+            force_redo=force > 2,
             just_cut=just_cut,
             create_images=save_images,
         )
@@ -150,8 +150,10 @@ def main():
             input_dir=input_dir,
             output_dir=output_path,
             region=region,
+            force=force > 1,
             save_images=save_images,
         )
+        reasoning.reason(dates, output_path, output_path, region, force=force > 0)
 
         logger.info(f"--- Finished {run_name} ---\n\n")
 

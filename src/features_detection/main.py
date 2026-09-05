@@ -21,6 +21,7 @@ from features_detection.constants import (
     FOLDERS_HEIGHT_SUFF,
     WeatherPhenomenon,
     WeatherPhenomenonTobacParams,
+    RAW_FEATURES_VARS,
 )
 from features_detection.features import (
     detect_features,
@@ -42,6 +43,7 @@ def run_tobac(
     input_dir: str,
     output_dir: str,
     region: Region,
+    force: bool = False,
     save_images: bool = False,
 ):
     """
@@ -57,7 +59,8 @@ def run_tobac(
                 input_dir,
                 output_dir,
                 region,
-                save_images,
+                force=force,
+                save_images=save_images,
             ): date
             for date in dates
         }
@@ -79,14 +82,20 @@ def _run_tobac_single_day(
     input_dir: str,
     output_dir: str,
     region: Region,
+    force: bool = False,
     save_images: bool = False,
 ):
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
     os.makedirs(day_output_dir, exist_ok=True)
 
+    if not force and os.path.exists(os.path.join(day_output_dir, "segmentation.nc")):
+        logger.debug(
+            f"Segmentation already exists for {date.strftime('%Y-%m-%d')}. Skipping."
+        )
+        return
+
     temp_tra_df, temp_seg_ds = _run_tobac_single_day_single_phenomenon(
-        date,
         day_input_dir,
         day_output_dir,
         region,
@@ -95,7 +104,6 @@ def _run_tobac_single_day(
         save_images,
     )
     hum_tra_df, hum_seg_ds = _run_tobac_single_day_single_phenomenon(
-        date,
         day_input_dir,
         day_output_dir,
         region,
@@ -104,7 +112,6 @@ def _run_tobac_single_day(
         save_images,
     )
     cld_tra_df, cld_seg_ds = _run_tobac_single_day_single_phenomenon(
-        date,
         day_input_dir,
         day_output_dir,
         region,
@@ -113,12 +120,14 @@ def _run_tobac_single_day(
         save_images,
     )
 
+    _create_output_features_nc(day_input_dir, day_output_dir, region)
+
     dfs = [df for df in [temp_tra_df, hum_tra_df, cld_tra_df] if not df.empty]
     results_tra = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
     del temp_tra_df, hum_tra_df, cld_tra_df
-    results_seg_ds = xr.merge(
-        [temp_seg_ds, hum_seg_ds, cld_seg_ds], compat="override", join="outer"
-    )
+
+    dss = [ds for ds in [temp_seg_ds, hum_seg_ds, cld_seg_ds] if ds.data_vars]
+    results_seg_ds = xr.merge(dss, compat="override", join="outer")
     del temp_seg_ds, hum_seg_ds, cld_seg_ds
 
     xr.Dataset.from_dataframe(results_tra).to_netcdf(
@@ -128,21 +137,20 @@ def _run_tobac_single_day(
 
 
 def _run_tobac_single_day_single_phenomenon(
-    date: datetime,
     day_input_dir: str,
     day_output_dir: str,
     region: Region,
     phenomenon: WeatherPhenomenon,
     phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
     save_images: bool = False,
-):
+) -> tuple[pd.DataFrame, xr.Dataset]:
     """
     Runs the TOBAC tracking and visualization pipeline for a single day and phenomenon.
     """
     trajectories_list = []
     segmentations_list = []
 
-    logger.debug(f"Processing {phenomenon.value} for {date.strftime('%Y-%m-%d')}")
+    logger.debug(f"Processing {phenomenon.value} for {day_input_dir}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
         features_nc = os.path.join(day_input_dir, "features.nc")
@@ -276,3 +284,38 @@ def _run_tobac_single_day_single_phenomenon(
 
     plt.close("all")
     return trajectories_df, segmentation_ds
+
+
+def _create_output_features_nc(
+    day_input_dir: str, day_output_dir: str, region: Region
+) -> None:
+    input_features_nc = os.path.join(day_input_dir, "features.nc")
+    output_features_nc = os.path.join(day_output_dir, "features.nc")
+
+    if not os.path.exists(input_features_nc):
+        return
+
+    tmp_ds = xr.Dataset()
+    with xr.open_dataset(input_features_nc) as feat_ds:
+        vars_to_extract = [
+            v
+            for v in feat_ds.data_vars
+            if any(prefix in v for prefix in RAW_FEATURES_VARS)
+        ]
+
+        if vars_to_extract:
+            extracted_ds = feat_ds[vars_to_extract].load()
+
+            da = feat_ds[vars_to_extract[0]]
+            datetimes = [pd.Timestamp(t) for t in da.time.values]
+            ref_data = build_referenced_data_from_xarray(
+                da, datetimes, region_bounds=region.value
+            )
+            dxy, dt = get_grid_spacings(ref_data)
+            extracted_ds.attrs["dxy"] = float(dxy)
+
+            tmp_ds = xr.merge([tmp_ds, extracted_ds], compat="override", join="outer")
+            tmp_ds.attrs["dxy"] = float(dxy)
+
+    if tmp_ds.data_vars:
+        tmp_ds.to_netcdf(output_features_nc)

@@ -50,8 +50,8 @@ def extract_day_worker(
     base_path: str,
     clean_level: int = 0,
     clustering: bool = True,
-    force_redo: int = 0,
-    stopping_step: int = 4,
+    force_redo: bool = False,
+    just_cut: bool = False,
     create_images: bool = False,
 ):
     logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
@@ -71,15 +71,14 @@ def extract_day_worker(
     )
     nc_file = ""
 
-    # todo better stepping
-    if starting_step in [0, 1, 2] or force_redo >= 2:
+    if starting_step in [0, 1] or force_redo:
         os.makedirs(raw_data_dir, exist_ok=True)
         os.makedirs(cut_data_dir, exist_ok=True)
         # this skips 0 1 automatically if already done
         nc_file = extract_nc(date, region, raw_data_dir, cut_data_dir, force_redo)
         starting_step = 2
 
-    if (starting_step == 2 or force_redo >= 2) and stopping_step >= 3:
+    if (starting_step == 2 or force_redo) and not just_cut:
         os.makedirs(discrete_data_dir, exist_ok=True)
         feature_data = build_feature_dataarrays(nc_file)
         feature_data.to_netcdf(features_nc_path)
@@ -87,7 +86,7 @@ def extract_day_worker(
             save_tobac_input_images(feature_data, discrete_data_dir)
         starting_step = 3
 
-    if ((starting_step == 3 or force_redo >= 1) and clustering) and stopping_step >= 4:
+    if ((starting_step == 3 or force_redo) and clustering) and not just_cut:
         os.makedirs(clustered_dir, exist_ok=True)
         with xr.open_dataset(features_nc_path) as features_ds:
             feature_data = {str(name): da for name, da in features_ds.data_vars.items()}
@@ -95,7 +94,7 @@ def extract_day_worker(
         clustered_data.to_netcdf(os.path.join(clustered_dir, "features.nc"))
 
     if starting_step == 4:
-        logger.info(
+        logger.debug(
             f"Feature maps already exist for {date.strftime('%Y-%m-%d')}, skipping."
         )
 
@@ -142,9 +141,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
         for level in levels:
             level_da = da.sel(level=level) if has_level else da
             suffix = (
-                FOLDERS.get(int(level), f"_at_{level}")
-                if level is not None
-                else ""
+                FOLDERS.get(int(level), f"_at_{level}") if level is not None else ""
             )
             var_dir = os.path.join(output_dir, f"{var_name}{suffix}")
             os.makedirs(var_dir, exist_ok=True)
@@ -175,8 +172,8 @@ def extract_day(
     base_path: str,
     clean_level: int = 0,
     clustering: bool = True,
-    force_redo: int = 0,
-    stopping_step: int = 4,
+    force_redo: bool = False,
+    just_cut: bool = False,
     create_images: bool = False,
 ) -> None:
     logger.info("Starting data extraction...")
@@ -193,7 +190,7 @@ def extract_day(
                 clean_level,
                 clustering,
                 force_redo,
-                stopping_step,
+                just_cut,
                 create_images,
             ): date
             for date in dates
@@ -217,7 +214,7 @@ def extract(
     output_path: str,
     clean_level: int = 0,
     clustering: bool = True,
-    force_redo: int = 0,
+    force_redo: bool = False,
     just_cut: bool = False,
     create_images: bool = False,
 ) -> None:
@@ -231,9 +228,6 @@ def extract(
 
     if create_images:
         create_one_time_images(region, os.path.join(output_path, "legends"))
-    stopping_step = 4
-    if just_cut:
-        stopping_step = 1
 
     extract_day(
         dates,
@@ -242,6 +236,6 @@ def extract(
         clean_level,
         clustering,
         force_redo,
-        stopping_step=stopping_step,
+        just_cut,
         create_images=create_images,
     )

@@ -5,13 +5,20 @@ class Region:
     FVG: Region
     ITALY: Region
 
-    def __init__(self, name: str, value: list[float], cities: dict | None = None):
+    def __init__(
+        self,
+        name: str,
+        value: list[float],
+        cities: dict | None = None,
+        city_radius: float = 3.0,
+    ):
         self.name = name
         self.value = value
         self.cities = cities
+        self.city_radius = city_radius
 
     def __repr__(self) -> str:
-        return f"Region({self.name}, {self.value})"
+        return f"Region({self.name}, {self.value}, radius={self.city_radius})"
 
     def get_cities(self) -> list[tuple[str, float, float]]:
         cities_dict = self.cities if self.cities is not None else CITIES
@@ -23,21 +30,26 @@ class Region:
         ]
 
     @classmethod
-    def custom(cls, bounds: list[float], cities: dict | None = None) -> Region:
+    def custom(
+        cls, bounds: list[float], cities: dict | None = None, city_radius: float = 3.0
+    ) -> Region:
         if len(bounds) != 4:
             raise ValueError(
                 f"Region bounds must be 4 floats [lon_min, lon_max, lat_min, lat_max], got {bounds}"
             )
-        return cls("CUSTOM", [float(b) for b in bounds], cities)
+        return cls("CUSTOM", [float(b) for b in bounds], cities, city_radius)
 
     @classmethod
-    def from_config(cls, value, cities: dict | None = None) -> Region:
+    def from_config(
+        cls, value, cities: dict | None = None, city_radius: float = 3.0
+    ) -> Region:
         if isinstance(value, dict):
             cities = value.get("cities", cities)
+            city_radius = float(value.get("radius", city_radius))
             if "name" in value:
-                return cls.from_config(value["name"], cities)
+                return cls.from_config(value["name"], cities, city_radius)
             elif "bounds" in value:
-                return cls.from_config(value["bounds"], cities)
+                return cls.from_config(value["bounds"], cities, city_radius)
             else:
                 raise ValueError(
                     f"Invalid region dict: {value}. Must contain 'name' or 'bounds'."
@@ -50,11 +62,11 @@ class Region:
                 raise ValueError(
                     f"Unknown region '{name}'. Must be one of {list(_PRESETS.keys())} or a list of 4 floats."
                 )
-            if cities is not None:
-                return cls(preset.name, preset.value, cities)
+            if cities is not None or city_radius != 3.0:
+                return cls(preset.name, preset.value, cities, city_radius)
             return preset
         if isinstance(value, list) and len(value) == 4:
-            return cls.custom(value, cities)
+            return cls.custom(value, cities, city_radius)
         raise ValueError(
             f"Invalid region: {value}. Must be a string, a list of 4 floats, or a dict."
         )
