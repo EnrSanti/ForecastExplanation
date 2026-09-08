@@ -2,7 +2,6 @@ import logging
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
-from typing import List, Optional
 
 import matplotlib
 import pandas as pd
@@ -12,16 +11,15 @@ from tqdm import tqdm
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-
 from features_detection.constants import (
     DEFAULT_GAP_FRAMES,
     DEFAULT_MIN_DISTANCE,
     DEFAULT_SMOOTH,
     DEFAULT_V_MAX_AT_HEIGHT,
     FOLDERS_HEIGHT_SUFF,
+    RAW_FEATURES_VARS,
     WeatherPhenomenon,
     WeatherPhenomenonTobacParams,
-    RAW_FEATURES_VARS,
 )
 from features_detection.features import (
     detect_features,
@@ -39,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_tobac(
-    dates: List[datetime],
+    dates: list[datetime],
     input_dir: str,
     output_dir: str,
     region: Region,
@@ -49,7 +47,7 @@ def run_tobac(
     """
     Executes TOBAC tracking across the specified list of dates and weather phenomena.
     """
-    logger.info(f"Starting TOBAC.")
+    logger.info("Starting TOBAC.")
     os.makedirs(output_dir, exist_ok=True)
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
@@ -141,7 +139,7 @@ def _run_tobac_single_day_single_phenomenon(
     day_output_dir: str,
     region: Region,
     phenomenon: WeatherPhenomenon,
-    phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
+    phenomenon_params: WeatherPhenomenonTobacParams | None = None,
     save_images: bool = False,
 ) -> tuple[pd.DataFrame, xr.Dataset]:
     """

@@ -1,16 +1,15 @@
 import logging
-from typing import Dict, Optional
 
-from sklearn.cluster import KMeans
 import numpy as np
 import xarray as xr
+from sklearn.cluster import KMeans
 
 logger = logging.getLogger(__name__)
 
 
 def cluster_xarray(
-    data_dict: Dict[str, xr.DataArray],
-    num_clusters_map: Optional[Dict[str, int]] = None,
+    data_dict: dict[str, xr.DataArray],
+    num_clusters_map: dict[str, int] | None = None,
 ) -> xr.Dataset:
     """
     Cluster normalized xarray DataArrays using 1D KMeans on physical values.

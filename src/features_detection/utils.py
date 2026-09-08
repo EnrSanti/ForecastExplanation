@@ -1,5 +1,4 @@
 import logging
-from typing import Tuple
 
 import matplotlib
 import tobac
@@ -19,7 +18,7 @@ def get_grid_spacings(
     referenced_data: xr.DataArray,
     default_dxy: float = DEFAULT_DXY,
     default_dt: float = DEFAULT_DT,
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """
     Determines grid spacing dxy and dt dynamically from DataArray,
     falling back to provided defaults when unit dimensions are missing or 1.

@@ -3,27 +3,27 @@ import os
 import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
-from typing import List
+
 import cv2
-import pandas as pd
 import numpy as np
+import pandas as pd
 import xarray as xr
 from tqdm import tqdm
 
 from . import (
-    Region,
-    RAW_DATA_DIR,
+    CLUSTERED_DATA_DIR,
     CUT_DATA_DIR,
     DISCRETE_DATA_DIR,
-    CLUSTERED_DATA_DIR,
     FOLDERS,
+    RAW_DATA_DIR,
+    Region,
 )
+from .clustering import cluster_xarray
 from .extract_features_nc import (
-    create_one_time_images,
     build_feature_dataarrays,
+    create_one_time_images,
 )
 from .get_raw_data import extract_nc
-from .clustering import cluster_xarray
 
 logger = logging.getLogger(__name__)
 
@@ -167,7 +167,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
 
 
 def extract_day(
-    dates: List[datetime],
+    dates: list[datetime],
     region: Region,
     base_path: str,
     clean_level: int = 0,
@@ -209,7 +209,7 @@ def extract_day(
 
 
 def extract(
-    dates: List[datetime],
+    dates: list[datetime],
     region: Region,
     output_path: str,
     clean_level: int = 0,

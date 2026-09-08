@@ -1,12 +1,10 @@
 import logging
 import os
 from datetime import datetime
-from typing import List
 
-from ecmwf.datastores import Client
-import xarray as xr
 import numpy as np
-
+import xarray as xr
+from ecmwf.datastores import Client
 
 from . import Region
 
@@ -17,7 +15,7 @@ logging.getLogger("ecmwf.datastores").setLevel(logging.WARNING)
 logging.getLogger("cdsapi").setLevel(logging.WARNING)
 
 
-def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> xr.Dataset:
+def cut_grib_long_lat(grib_path: str, coordinates: list[int]) -> xr.Dataset:
     with xr.open_dataset(
         grib_path,
         engine="cfgrib",

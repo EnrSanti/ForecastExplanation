@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .utils import haversine, get_compass_direction
+from .utils import get_compass_direction, haversine
 
 logger = logging.getLogger("ForecastExplanation")
 

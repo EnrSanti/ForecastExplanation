@@ -1,14 +1,15 @@
 import argparse
 import logging
-import sys
 import os
+import sys
+
 import yaml
 from dotenv import load_dotenv
 
 import data_extraction
 import features_detection
+import ground_truth
 import reasoning
-
 from region import Region
 
 logging.basicConfig(
@@ -154,6 +155,7 @@ def main():
             save_images=save_images,
         )
         reasoning.reason(dates, output_path, output_path, region, force=force > 0)
+        ground_truth.generate_gt(dates, output_path)
 
         logger.info(f"--- Finished {run_name} ---\n\n")
 

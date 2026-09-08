@@ -13,15 +13,14 @@ def generate_gt(target_dates, output_path):
         save_to_file(res, output_path, date)
 
 
-
 def save_to_file(data, output_path, date):
-    #tmp
+    # tmp
     out = os.path.join(output_path, date.strftime("%Y-%m-%d"))
     os.makedirs(out, exist_ok=True)
-    with open(os.path.join(out, "gt.json"), 'w') as file:
+    with open(os.path.join(out, "gt.json"), "w") as file:
         file.write(json.dumps(data))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     target_date = datetime(2019, 1, 1)
     generate_gt([target_date], "tmp")

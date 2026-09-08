@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Set, Dict, List
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -52,8 +51,8 @@ def print_clouds_center_line(
     track: pd.DataFrame,
     axs: plt.Axes,
     cell_id: int,
-    persisted_cells: Set[int],
-    all_frames_for_cell: Dict[int, List[int]],
+    persisted_cells: set[int],
+    all_frames_for_cell: dict[int, list[int]],
 ):
     """Plots cloud centre markers and fading trajectory path natively."""
 

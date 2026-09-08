@@ -380,4 +380,3 @@ if __name__ == "__main__":
     target_date = datetime(2019, 1, 1)
     data = text_extraction(target_date)
     print(data)
-

@@ -1,7 +1,8 @@
 import logging
 import os
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterator, Tuple, Union
+from typing import Any
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -11,7 +12,7 @@ import pandas as pd
 import xarray as xr
 from cartopy.io import shapereader
 
-from . import Region, LimitValues, LEVELS, FOLDERS
+from . import FOLDERS, LEVELS, LimitValues, Region
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ CsvCallback = Callable[[str, str, str], None]
 
 @dataclass(frozen=True)
 class FeatureSpec:
-    var: Union[str, Tuple[str, ...]]
+    var: str | tuple[str, ...]
     cmap: str
     limits: dict[int, tuple[int | float, int | float]]
     prefix: str
@@ -33,7 +34,7 @@ class FeatureSpec:
         return self.prefix
 
 
-FEATURE_SPECS: Dict[str, FeatureSpec] = {
+FEATURE_SPECS: dict[str, FeatureSpec] = {
     "cloud": FeatureSpec(
         "ccl",
         "viridis",
@@ -90,7 +91,7 @@ LEGEND_SPECS = {
 }
 
 
-def _resolve_var(ds: xr.Dataset, var: Union[str, Tuple[str, ...]]) -> xr.DataArray:
+def _resolve_var(ds: xr.Dataset, var: str | tuple[str, ...]) -> xr.DataArray:
     names = (var,) if isinstance(var, str) else var
     for name in names:
         if name in ds:
@@ -104,7 +105,7 @@ def _with_wind_speed(ds: xr.Dataset) -> xr.Dataset:
     return ds.assign(wind_speed=ws, wind_direction=wd)
 
 
-def _valid_times(coord_var: xr.DataArray) -> Iterator[Tuple[int, int, pd.Timestamp]]:
+def _valid_times(coord_var: xr.DataArray) -> Iterator[tuple[int, int, pd.Timestamp]]:
     for i in range(coord_var.sizes["time"]):
         base_time = pd.to_datetime(str(coord_var["time"].isel(time=i).values))
         day_start = base_time.normalize() + pd.Timedelta(hours=1)

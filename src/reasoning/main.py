@@ -5,8 +5,9 @@ import xarray as xr
 from tqdm import tqdm
 
 from region import Region
+
 from .fronts import detect_phenomenon, detect_phenomenon_fronts
-from .segment import detect_winds, detect_clouds
+from .segment import detect_clouds, detect_winds
 from .utils import get_heights
 
 logger = logging.getLogger("ForecastExplanation")
