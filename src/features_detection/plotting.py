@@ -1,3 +1,4 @@
+import itertools
 import logging
 import os
 
@@ -77,7 +78,7 @@ def print_clouds_center_line(
 
     try:
         frames = all_frames_for_cell.get(int(cell_id), [])
-        for t0, t1 in zip(frames[:-1], frames[1:]):
+        for t0, t1 in itertools.pairwise(frames):
             line = track[(track["frame"] == t0) | (track["frame"] == t1)]
             if not line.empty:
                 time_diff = itime - track.iloc[0].frame

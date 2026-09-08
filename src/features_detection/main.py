@@ -70,7 +70,7 @@ def run_tobac(
             try:
                 future.result()
             except Exception:
-                logger.error(f"TOBAC failed for {date}", exc_info=True)
+                logger.exception(f"TOBAC failed for {date}")
 
     logger.info("TOBAC runs completed.")
 
@@ -309,7 +309,7 @@ def _create_output_features_nc(
             ref_data = build_referenced_data_from_xarray(
                 da, datetimes, region_bounds=region.value
             )
-            dxy, dt = get_grid_spacings(ref_data)
+            dxy, _ = get_grid_spacings(ref_data)
             extracted_ds.attrs["dxy"] = float(dxy)
 
             tmp_ds = xr.merge([tmp_ds, extracted_ds], compat="override", join="outer")

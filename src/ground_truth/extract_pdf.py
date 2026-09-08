@@ -1,6 +1,5 @@
 import logging
 import re
-from datetime import datetime
 
 import pymupdf
 import requests
@@ -65,7 +64,7 @@ def text_extraction(dt):
                 text = page.get_text("text").strip()
                 data[NAMES[zone]] = extract_zone_data(text, zone)
         except Exception as e:
-            logger.error(f"Error processing {zone}: {e}")
+            logger.error(f"Error processing {zone}, {dt}: {e}")
 
     return data
 
@@ -88,7 +87,7 @@ def extract_zone_data(raw_text, zone):
         case "z4":
             data = handler_costa(lines)
         case _:
-            print("Unknown zone")
+            logger.warning(f"Unknown zone {zone}")
             data = {}
 
     return data
@@ -119,10 +118,10 @@ def handler_alpi_carniche(lines):
             data["temporale_prob"] = lines[i + 1]
 
         if "Quota zero termico (m)" in line and "quota_zero_termico" not in data:
-            data["quota_zero_termico"] = int(lines[i + 1])
+            data["quota_zero_termico"] = lines[i + 1]
 
         if "Quota delle nevicate (m)" in line and "quota_nevicate" not in data:
-            data["quota_nevicate"] = int(lines[i + 1])
+            data["quota_nevicate"] = lines[i + 1]
 
         if "Vento medio a 2.000 m (m/s)" in line and "vento_2000" not in data:
             data["vento_2000_direzione"] = lines[i + 1]
@@ -133,12 +132,12 @@ def handler_alpi_carniche(lines):
             data["vento_3000_velocita"] = float(lines[i + 2])
 
         if "Forni Avoltri" in line and "forni_avoltri_min" not in data:
-            data["forni_avoltri_min"] = int(lines[i + 1])
-            data["forni_avoltri_max"] = int(lines[i + 2])
+            data["forni_avoltri_min"] = lines[i + 1]
+            data["forni_avoltri_max"] = lines[i + 2]
 
         if "M. Zoncolan" in line and "m_zoncolan_min" not in data:
-            data["m_zoncolan_min"] = int(lines[i + 1])
-            data["m_zoncolan_max"] = int(lines[i + 2])
+            data["m_zoncolan_min"] = lines[i + 1]
+            data["m_zoncolan_max"] = lines[i + 2]
 
     return data
 
@@ -150,30 +149,30 @@ def handler_alpi_giulie(lines):
             "Temperatura media a 1.000 m (°C)" in line
             and "temperatura_media_1000" not in data
         ):
-            data["temperatura_media_1000"] = int(lines[i + 1])
+            data["temperatura_media_1000"] = lines[i + 1]
 
         if (
             "Temperatura media a 2.000 m (°C)" in line
             and "temperatura_media_2000" not in data
         ):
-            data["temperatura_media_2000"] = int(lines[i + 1])
+            data["temperatura_media_2000"] = lines[i + 1]
 
         if (
             "Probabilità precipitazioni estese (%)" in line
             and "pioggia_prob" not in data
         ):
             value = lines[i + 1].strip()
-            data["pioggia_prob"] = int(value) if value.isdigit() else value
+            data["pioggia_prob"] = value
 
         if "Probabilità di temporali (%)" in line and "temporale_prob" not in data:
             value = lines[i + 1].strip()
-            data["temporale_prob"] = int(value) if value.isdigit() else value
+            data["temporale_prob"] = value
 
         if "Quota zero termico (m)" in line and "quota_zero_termico" not in data:
-            data["quota_zero_termico"] = int(lines[i + 1])
+            data["quota_zero_termico"] = lines[i + 1]
 
         if "Quota delle nevicate (m)" in line and "quota_nevicate" not in data:
-            data["quota_nevicate"] = int(lines[i + 1])
+            data["quota_nevicate"] = lines[i + 1]
 
         if "Vento medio a 2.000 m (m/s)" in line and "vento_2000_direzione" not in data:
             data["vento_2000_direzione"] = lines[i + 1].strip()
@@ -184,12 +183,12 @@ def handler_alpi_giulie(lines):
             data["vento_3000_velocita"] = float(lines[i + 2])
 
         if "Tarvisio" in line and "tarvisio_min" not in data:
-            data["tarvisio_min"] = int(lines[i + 1])
-            data["tarvisio_max"] = int(lines[i + 2])
+            data["tarvisio_min"] = lines[i + 1]
+            data["tarvisio_max"] = lines[i + 2]
 
         if "M. Lussari" in line and "m_lussari_min" not in data:
-            data["m_lussari_min"] = int(lines[i + 1])
-            data["m_lussari_max"] = int(lines[i + 2])
+            data["m_lussari_min"] = lines[i + 1]
+            data["m_lussari_max"] = lines[i + 2]
 
     return data
 
@@ -202,30 +201,30 @@ def handler_prealpi_carniche(lines):
             "Temperatura media a 1.000 m (°C)" in line
             and "temperatura_media_1000" not in data
         ):
-            data["temperatura_media_1000"] = int(lines[i + 1])
+            data["temperatura_media_1000"] = lines[i + 1]
 
         if (
             "Temperatura media a 2.000 m (°C)" in line
             and "temperatura_media_2000" not in data
         ):
-            data["temperatura_media_2000"] = int(lines[i + 1])
+            data["temperatura_media_2000"] = lines[i + 1]
 
         if (
             "Probabilità precipitazioni estese (%)" in line
             and "pioggia_prob" not in data
         ):
             value = lines[i + 1].strip()
-            data["pioggia_prob"] = int(value) if value.isdigit() else value
+            data["pioggia_prob"] = value
 
         if "Probabilità di temporali (%)" in line and "temporale_prob" not in data:
             value = lines[i + 1].strip()
-            data["temporale_prob"] = int(value) if value.isdigit() else value
+            data["temporale_prob"] = value
 
         if "Quota zero termico (m)" in line and "quota_zero_termico" not in data:
-            data["quota_zero_termico"] = int(lines[i + 1])
+            data["quota_zero_termico"] = lines[i + 1]
 
         if "Quota delle nevicate (m)" in line and "quota_nevicate" not in data:
-            data["quota_nevicate"] = int(lines[i + 1])
+            data["quota_nevicate"] = lines[i + 1]
 
         if "Vento medio a 2.000 m (m/s)" in line and "vento_2000_direzione" not in data:
             data["vento_2000_direzione"] = lines[i + 1].strip()
@@ -236,12 +235,12 @@ def handler_prealpi_carniche(lines):
             data["vento_3000_velocita"] = float(lines[i + 2])
 
         if "Claut" in line and "claut_min" not in data:
-            data["claut_min"] = int(lines[i + 1])
-            data["claut_max"] = int(lines[i + 2])
+            data["claut_min"] = lines[i + 1]
+            data["claut_max"] = lines[i + 2]
 
         if "Piancavallo" in line and "piancavallo_min" not in data:
-            data["piancavallo_min"] = int(lines[i + 1])
-            data["piancavallo_max"] = int(lines[i + 2])
+            data["piancavallo_min"] = lines[i + 1]
+            data["piancavallo_max"] = lines[i + 2]
 
     return data
 
@@ -254,30 +253,30 @@ def handler_prealpi_giulie(lines):
             "Temperatura media a 1.000 m (°C)" in line
             and "temperatura_media_1000" not in data
         ):
-            data["temperatura_media_1000"] = int(lines[i + 1])
+            data["temperatura_media_1000"] = lines[i + 1]
 
         if (
             "Temperatura media a 2.000 m (°C)" in line
             and "temperatura_media_2000" not in data
         ):
-            data["temperatura_media_2000"] = int(lines[i + 1])
+            data["temperatura_media_2000"] = lines[i + 1]
 
         if (
             "Probabilità precipitazioni estese (%)" in line
             and "pioggia_prob" not in data
         ):
             value = lines[i + 1].strip()
-            data["pioggia_prob"] = int(value) if value.isdigit() else value
+            data["pioggia_prob"] = value
 
         if "Probabilità di temporali (%)" in line and "temporale_prob" not in data:
             value = lines[i + 1].strip()
-            data["temporale_prob"] = int(value) if value.isdigit() else value
+            data["temporale_prob"] = value
 
         if "Quota zero termico (m)" in line and "quota_zero_termico" not in data:
-            data["quota_zero_termico"] = int(lines[i + 1])
+            data["quota_zero_termico"] = lines[i + 1]
 
         if "Quota delle nevicate (m)" in line and "quota_nevicate" not in data:
-            data["quota_nevicate"] = int(lines[i + 1])
+            data["quota_nevicate"] = lines[i + 1]
 
         if "Vento medio a 2.000 m (m/s)" in line and "vento_2000_direzione" not in data:
             data["vento_2000_direzione"] = lines[i + 1].strip()
@@ -288,12 +287,12 @@ def handler_prealpi_giulie(lines):
             data["vento_3000_velocita"] = float(lines[i + 2])
 
         if "Sella Nevea" in line and "sella_nevea_min" not in data:
-            data["sella_nevea_min"] = int(lines[i + 1])
-            data["sella_nevea_max"] = int(lines[i + 2])
+            data["sella_nevea_min"] = lines[i + 1]
+            data["sella_nevea_max"] = lines[i + 2]
 
         if "M. Canin (R. Gilberti)" in line and "m_canin_min" not in data:
-            data["m_canin_min"] = int(lines[i + 1])
-            data["m_canin_max"] = int(lines[i + 2])
+            data["m_canin_min"] = lines[i + 1]
+            data["m_canin_max"] = lines[i + 2]
 
     return data
 
@@ -315,24 +314,24 @@ def handler_alta_pianura(lines):
             data["temperatura_massima_pianura"] = lines[i + 1].strip()
 
         if "Quota zero termico (m)" in line and "quota_zero_termico" not in data:
-            data["quota_zero_termico"] = int(lines[i + 1].strip())
+            data["quota_zero_termico"] = lines[i + 1].strip()
 
         if "Quota delle nevicate (m)" in line and "quota_nevicate" not in data:
-            data["quota_nevicate"] = int(lines[i + 1].strip())
+            data["quota_nevicate"] = lines[i + 1].strip()
 
         if (
             "Probabilità precipitazioni estese (%)" in line
             and "pioggia_prob_prealpi" not in data
         ):
-            data["pioggia_prob_prealpi"] = int(lines[i + 1].strip())
-            data["pioggia_prob_pianura"] = int(lines[i + 2].strip())
+            data["pioggia_prob_prealpi"] = lines[i + 1].strip()
+            data["pioggia_prob_pianura"] = lines[i + 2].strip()
 
         if (
             "Probabilità di temporali (%)" in line
             and "temporale_prob_prealpi" not in data
         ):
-            data["temporale_prob_prealpi"] = int(lines[i + 1].strip())
-            data["temporale_prob_pianura"] = int(lines[i + 2].strip())
+            data["temporale_prob_prealpi"] = lines[i + 1].strip()
+            data["temporale_prob_pianura"] = lines[i + 2].strip()
 
     return data
 
@@ -351,10 +350,10 @@ def handler_costa(lines):
             "Probabilità precipitazioni estese (%)" in line
             and "pioggia_prob" not in data
         ):
-            data["pioggia_prob"] = int(lines[i + 1].strip())
+            data["pioggia_prob"] = lines[i + 1].strip()
 
         if "Probabilità di temporali (%)" in line and "temporale_prob" not in data:
-            data["temporale_prob"] = int(lines[i + 1].strip())
+            data["temporale_prob"] = lines[i + 1].strip()
 
         if (
             "Vento medio al largo: direzione ed intensità (kt)" in line
@@ -374,9 +373,3 @@ def handler_costa(lines):
                     data["vento_pomeriggio_intensita"] = pomeriggio[1]
 
     return data
-
-
-if __name__ == "__main__":
-    target_date = datetime(2019, 1, 1)
-    data = text_extraction(target_date)
-    print(data)
