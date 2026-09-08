@@ -71,7 +71,7 @@ def extract_day_worker(
     )
     nc_file = ""
 
-    if starting_step in [0, 1] or force_redo:
+    if starting_step in [0, 1, 2] or force_redo:
         os.makedirs(raw_data_dir, exist_ok=True)
         os.makedirs(cut_data_dir, exist_ok=True)
         # this skips 0 1 automatically if already done
