@@ -224,7 +224,8 @@ def extract(
     os.makedirs(RAW_DATA_DIR, exist_ok=True)
     os.makedirs(os.path.join(output_path, CUT_DATA_DIR), exist_ok=True)
     os.makedirs(os.path.join(output_path, DISCRETE_DATA_DIR), exist_ok=True)
-    os.makedirs(os.path.join(output_path, "legends"), exist_ok=True)
+    if create_images:
+        os.makedirs(os.path.join(output_path, "legends"), exist_ok=True)
 
     if create_images:
         create_one_time_images(region, os.path.join(output_path, "legends"))
