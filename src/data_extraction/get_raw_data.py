@@ -1,12 +1,10 @@
 import logging
 import os
 from datetime import datetime
-from typing import List
 
-from ecmwf.datastores import Client
-import xarray as xr
 import numpy as np
-
+import xarray as xr
+from ecmwf.datastores import Client
 
 from . import Region
 
@@ -17,7 +15,7 @@ logging.getLogger("ecmwf.datastores").setLevel(logging.WARNING)
 logging.getLogger("cdsapi").setLevel(logging.WARNING)
 
 
-def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> xr.Dataset:
+def cut_grib_long_lat(grib_path: str, coordinates: list[int]) -> xr.Dataset:
     with xr.open_dataset(
         grib_path,
         engine="cfgrib",
@@ -26,7 +24,7 @@ def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> xr.Dataset:
     ) as ds:
         lon_min, lon_max, lat_min, lat_max = coordinates
         lat_min, lat_max = min(lat_min, lat_max), max(lat_min, lat_max)
-        
+
         lon = ds.longitude
         if lon_min < 0 or lon_max < 0:
             lon = xr.where(lon > 180, lon - 360, lon)
@@ -53,7 +51,9 @@ def cut_grib_long_lat(grib_path: str, coordinates: List[int]) -> xr.Dataset:
 
         if lon_min < 0 or lon_max < 0:
             ds_sub = ds_sub.assign_coords(
-                longitude=xr.where(ds_sub.longitude > 180, ds_sub.longitude - 360, ds_sub.longitude)
+                longitude=xr.where(
+                    ds_sub.longitude > 180, ds_sub.longitude - 360, ds_sub.longitude
+                )
             )
 
         return ds_sub
@@ -67,7 +67,7 @@ def extract_nc(
     grib_path = os.path.join(input_dir, grib_file)
     output_path = os.path.join(output_dir, base_name + "_" + region.name + "_cut.nc")
 
-    if not os.path.exists(output_path) or force_redo >= 3:
+    if not os.path.exists(output_path) or force_redo:
         download_grib_if_needed(date, grib_path)
 
         logger.debug(f"CUTTING GRIB: {grib_path} -> {output_path}")

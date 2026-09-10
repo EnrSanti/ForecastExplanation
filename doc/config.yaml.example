@@ -2,13 +2,11 @@ run_baseline:
   region: FVG
   dates:
     - 2009-01-02
-  force: 3
-
 
 run_custom_path_and_region:
   region:
     bounds: [-3, 3, 42.7, 45.8]
-    radius: 3
+    radius: 5
     cities:
       CustomCity:
         lat: 44.25

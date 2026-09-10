@@ -1,5 +1,4 @@
 import logging
-from typing import Tuple
 
 import matplotlib
 import tobac
@@ -19,7 +18,7 @@ def get_grid_spacings(
     referenced_data: xr.DataArray,
     default_dxy: float = DEFAULT_DXY,
     default_dt: float = DEFAULT_DT,
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """
     Determines grid spacing dxy and dt dynamically from DataArray,
     falling back to provided defaults when unit dimensions are missing or 1.
@@ -71,7 +70,7 @@ def build_referenced_data_from_xarray(
     region_bounds=None,
 ) -> xr.DataArray:
     """
-    Build tobac-compatible DataArray directly from an xarray DataArray.
+    Build tobac-compatible DataArray directly from a xarray DataArray.
     No PNG reading needed.
     """
     import numpy as np
