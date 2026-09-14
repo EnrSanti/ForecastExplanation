@@ -1,6 +1,5 @@
 from enum import Enum
 
-
 LEVELS = [1000, 925, 850, 700, 500, 300]
 FOLDERS_HEIGHT_SUFF = [f"_at_{l:04d}m" for l in LEVELS]
 
@@ -59,3 +58,6 @@ class WeatherPhenomenonTobacParams(Enum):
         "threshold": 0.5,
         "cmap": "viridis",
     }
+
+
+RAW_FEATURES_VARS = ["wind", "raw_temp", "raw_humidity"]

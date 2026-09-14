@@ -1,200 +1,146 @@
-path = "./extracted_grib_bw/cloud_at_5_5km/cloud_500_20191102_1700.png"
-path1 = "./extracted_grib_bw/winds_at_5_5km/wind_500_20191102_1700.txt"
-import os
-
-import cv2
 import numpy as np
 import pandas as pd
-from PIL import Image
-from scipy import ndimage
-from scipy.interpolate import griddata
-from scipy.ndimage import gaussian_filter
-from scipy.ndimage import zoom
+import xarray as xr
 
-filename = os.path.basename(path)
-
-import matplotlib.pyplot as plt
-
-img = Image.open(path)
-img_array = np.array(img)
-red_channel = img_array.astype(np.float32) / 255.0
-red_channel = red_channel[:, :, 0]  # Extract the red channel
-print(red_channel.shape)
-
-# Read wind data
-df = pd.read_csv(path1)
-print(df.head())
+from .utils import haversine
 
 
-def create_magnitude_image(df, red_channel, tag):
-    label = "magnitude"
-    if tag == "x" or tag == "y":
-        label = "alpha_deg"
+def detect_phenomenon(
+    data: xr.Dataset,
+    cities: list[tuple[str, float | int, float | int]],
+    output_path: str,
+    heights: list[str],
+    phenomenon: str,
+    city_radius: float = 3.0,
+) -> None:
+    """
+    writes a txt table with:
+    timestamp, height, lat, lon, {phenomenon}
 
-    # Create 2D image with magnitude at correct pixel positions
-    height, width = red_channel.shape
-    magnitude_image = np.zeros((height, width))
+    the value is the mean of a {city_radius}km radius around the city
+    """
+    lats = data.latitude.values
+    lons = data.longitude.values
+    records = []
 
-    # Place magnitude values at pixel coordinates
-    for idx, row in df.iterrows():
-        x = int(row["pixel_x"])
-        y = int(row["pixel_y"])
-        if 0 <= x < width and 0 <= y < height:
-            val = row[label]
-            if tag == "x":
-                val = np.cos(np.deg2rad(row["alpha_deg"]))
-            elif tag == "y":
-                val = np.sin(np.deg2rad(row["alpha_deg"]))
-            magnitude_image[y, x] = val
+    # Map phenomenon for output column name if needed
+    col_name = "temperature" if phenomenon == "temp" else phenomenon
 
-    # Inpainting for missing values using griddata
-    x = np.arange(magnitude_image.shape[1])
-    y = np.arange(magnitude_image.shape[0])
-    xx, yy = np.meshgrid(x, y)
+    for city in cities:
+        _, city_lat, city_lon = city
+        dist = haversine(city_lat, city_lon, lats, lons)
+        mask = dist <= city_radius
 
-    mask = magnitude_image == 0
-    if mask.any():
-        magnitude_image[mask] = griddata(
-            (xx[~mask], yy[~mask]),
-            magnitude_image[~mask],
-            (xx[mask], yy[mask]),
-            method="linear",
-        )
+        if not np.any(mask):
+            continue
 
-    if tag == "magnitude":
-        # Normalize magnitude image 0..1 (vento max 50 m/s)
-        magnitude_image = (magnitude_image / 50.0).clip(0, 1)
+        for h in heights:
+            raw_var = f"raw_{phenomenon}_at_{h}"
 
-    magnitude_image_upsampled = magnitude_image
-    # Upsample 4x using ndimage zoom
-    # magnitude_image_upsampled = zoom(magnitude_image, zoom=4, order=1)
-    # magnitude_image_upsampled = magnitude_image_upsampled[:red_channel.shape[0], :red_channel.shape[1]]
+            if raw_var not in data:
+                continue
 
-    # Identify pixels still equal to 0 after griddata
-    remaining_mask = ~np.isfinite(magnitude_image_upsampled)
-
-    # Apply inpainting to fill remaining zeros
-    magnitude_image_uint8 = (magnitude_image_upsampled * 255).astype(np.uint8)
-    # plt.imshow(magnitude_image_uint8)
-    # plt.show()
-
-    remaining_mask_uint8 = remaining_mask.astype(np.uint8)
-    magnitude_image_upsampled = (
-        cv2.inpaint(
-            magnitude_image_uint8, remaining_mask_uint8, 3, cv2.INPAINT_NS
-        ).astype(np.float32)
-        / 255.0
-    )
-
-    magnitude_image_upsampled = gaussian_filter(magnitude_image_upsampled, sigma=100)
-
-    return magnitude_image_upsampled
-
-
-# Call the function with appropriate parameters
-magnitude_wind = create_magnitude_image(df, red_channel, "magnitude")
-degx_wind = create_magnitude_image(df, red_channel, "x")
-degy_wind = create_magnitude_image(df, red_channel, "y")
-
-# Apply Gaussian filter
-red_channel = gaussian_filter(red_channel, sigma=100)
-
-# Calculate Sobel gradients
-sobel_x = ndimage.sobel(red_channel, axis=1)
-sobel_y = ndimage.sobel(red_channel, axis=0)
-
-# Calculate magnitude
-magnitude = np.sqrt(sobel_x**2 + sobel_y**2)
-
-# Normalize direction images
-sobel_x_normalized = sobel_x / magnitude
-sobel_y_normalized = sobel_y / magnitude
-
-# Calculate dot product between Sobel gradients and wind gradients
-dot_product = (sobel_x_normalized * degx_wind) + (sobel_y_normalized * degy_wind)
-
-w = dot_product
-thr_w = 0.1
-w = (w - thr_w) / (1 - thr_w)
-w[w < thr_w] = 0
-w[~np.isfinite(w)] = 0
-front = w * magnitude
-
-thr_front = 0.005
-front[front < thr_front] = 0
-front[front >= thr_front] = front[front >= thr_front] - thr_front
-
-# Label connected components
-labeled_array, num_features = ndimage.label(front > 0)
-
-# Filter regions by PCA analysis
-pca_filtered_regions = np.zeros_like(front)  # Create an RGB image
-
-for region_id in range(1, num_features + 1):
-    region_mask = labeled_array == region_id
-    coords = np.argwhere(region_mask)
-
-    if len(coords) > 1000:  # Minimum region size at least 1000 pixels
-        # Compute PCA weighted by front values
-        coords_centered = coords - coords.mean(axis=0)
-        weights = front[region_mask]
-        # weights = weights / weights.sum()  # Normalize weights
-        cov_matrix = np.cov(coords_centered.T, aweights=weights)
-        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
-        idx = np.argsort(eigenvalues)[::-1]
-        eigenvalues = eigenvalues[idx]
-        eigenvector_max = eigenvectors[:, idx[0]]
-        eigenvector_max = eigenvector_max / np.linalg.norm(eigenvector_max)
-
-        # Check elongation ratio: lambda1/lambda2 > 5
-        if eigenvalues[1] > 1e-6:
-            ratio = eigenvalues[0] / eigenvalues[1]
-            print(ratio)
-            if ratio >= 20:
-                mean_weight = weights.sum()
-                pca_filtered_regions[region_mask] = mean_weight
-
-                # Draw eigenvector as line through centroid
-                centroid = coords.mean(axis=0)
-                length = 100
-                p1 = (centroid - eigenvector_max * length).astype(int)
-                p2 = (centroid + eigenvector_max * length).astype(int)
-
-                # Draw line on the region
-                y1, x1 = np.clip(p1, 0, np.array(front.shape) - 1)
-                y2, x2 = np.clip(p2, 0, np.array(front.shape) - 1)
-                rr, cc = np.linspace(y1, y2, 50).astype(int), np.linspace(
-                    x1, x2, 50
-                ).astype(int)
-                valid = (
-                    (rr >= 0)
-                    & (rr < front.shape[0])
-                    & (cc >= 0)
-                    & (cc < front.shape[1])
+            for t_idx in range(data.sizes["time"]):
+                timestamp = pd.to_datetime(data.time.values[t_idx]).strftime(
+                    "%Y-%m-%d %H:%M:%S"
                 )
-                pca_filtered_regions[rr[valid], cc[valid]] = 1
 
-front = pca_filtered_regions
+                val_data = data[raw_var].isel(time=t_idx).values
+                val_mean = np.nanmean(val_data[mask])
 
-# Display results
-fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-axes[0, 0].imshow(magnitude, cmap="gray")
-axes[0, 0].set_title("Magnitude (Sobel)")
-axes[0, 0].axis("off")
-axes[0, 1].imshow(sobel_x_normalized, cmap="gray", vmin=-1, vmax=1)
-axes[0, 1].set_title("Gradient X (Sobel)")
-axes[0, 1].axis("off")
-axes[0, 2].imshow(sobel_y_normalized, cmap="gray", vmin=-1, vmax=1)
-axes[0, 2].set_title("Gradient Y (Sobel)")
-axes[0, 2].axis("off")
-axes[1, 0].imshow(front, cmap="gray")
-axes[1, 0].set_title("Dot Product (Sobel x Wind)")
-axes[1, 0].axis("off")
-axes[1, 1].imshow(red_channel, cmap="gray")
-axes[1, 1].set_title("cloud")
-axes[1, 1].axis("off")
-axes[1, 2].imshow(degy_wind, cmap="gray", vmin=-1, vmax=1)
-axes[1, 2].set_title("Gradient Y (Wind)")
-axes[1, 2].axis("off")
-plt.tight_layout()
-plt.show()
+                records.append(
+                    {
+                        "timestamp": timestamp,
+                        "height": h.replace("m", ""),
+                        "lat": city_lat,
+                        "lon": city_lon,
+                        col_name: val_mean,
+                    }
+                )
+
+    df = pd.DataFrame(records)
+    df.to_csv(output_path, sep="\t", index=False, float_format="%.6f")
+
+
+def detect_phenomenon_fronts(
+    seg_data: xr.Dataset,
+    feat_data: xr.Dataset,
+    cities: list[tuple[str, float | int, float | int]],
+    output_path: str,
+    heights: list[str],
+    phenomenon: str,
+):
+    """
+    writes a txt table with:
+    timestamp, height, front_id (from tobac), front area,
+     list of cities inside the area, average {phenomenon} of the front
+    """
+    dxy_m = float(feat_data.attrs["dxy"])
+    area_per_pixel_km2 = (dxy_m / 1000.0) ** 2
+
+    lats = seg_data.latitude.values
+    lons = seg_data.longitude.values
+
+    # Map phenomenon for output column name if needed
+    col_name = "temperature" if phenomenon == "temp" else phenomenon
+
+    # Pre-calculate nearest pixel index for each city
+    city_pixels = {}
+    for city in cities:
+        city_name, city_lat, city_lon = city
+        dist = haversine(city_lat, city_lon, lats, lons)
+        min_idx = np.unravel_index(np.argmin(dist), dist.shape)
+        city_pixels[city_name] = min_idx
+
+    records = []
+
+    for h in heights:
+        seg_var = f"{phenomenon}_at_{h}"
+        raw_var = f"raw_{phenomenon}_at_{h}"
+
+        if seg_var not in seg_data or raw_var not in feat_data:
+            continue
+
+        for t_idx in range(seg_data.sizes["time"]):
+            timestamp = pd.to_datetime(seg_data.time.values[t_idx]).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+
+            seg_frame = seg_data[seg_var].isel(time=t_idx).values
+            val_frame = feat_data[raw_var].isel(time=t_idx).values
+
+            # Find unique front IDs (excluding 0, which is background, and nans)
+            front_ids = np.unique(seg_frame[~np.isnan(seg_frame)])
+            front_ids = [fid for fid in front_ids if fid > 0]
+
+            for fid in front_ids:
+                mask = seg_frame == fid
+
+                # Area in pixels
+                pixel_count = np.sum(mask)
+                area_km2 = pixel_count * area_per_pixel_km2
+
+                # Average value
+                avg_val = np.nanmean(val_frame[mask])
+
+                # Cities inside this front
+                cities_inside = []
+                for city_name, idx in city_pixels.items():
+                    if seg_frame[idx] == fid:
+                        cities_inside.append(city_name)
+
+                cities_str = ",".join(cities_inside) if cities_inside else "none"
+
+                records.append(
+                    {
+                        "timestamp": timestamp,
+                        "height": h.replace("m", ""),
+                        "front_id": int(fid),
+                        "area": int(area_km2),
+                        "cities": cities_str,
+                        col_name: avg_val,
+                    }
+                )
+
+    df = pd.DataFrame(records)
+    df.to_csv(output_path, sep="\t", index=False, float_format="%.6f")

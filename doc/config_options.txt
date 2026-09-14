@@ -1,0 +1,182 @@
+====================================================
+  ForecastExplanation — config.yaml Options Guide
+====================================================
+
+The config.yaml file defines one or more "runs" to execute.
+Each top-level key is a run name (e.g. "run_baseline"), and its
+value is the configuration for that run.
+
+If the file contains "dates" or "region" at the top level, the
+whole file is treated as a single anonymous run.
+
+
+------------------------------------------------------
+TOP-LEVEL STRUCTURE
+------------------------------------------------------
+
+  run_name:           # Arbitrary name for the run (used for output folder)
+    region: ...
+    dates: [...]
+    force: N
+    clean: N
+    clustering: true/false
+    debug: true/false
+    just_cut: true/false
+    save_images: true/false
+    output_path: path/to/output
+
+Multiple run blocks can coexist in the same file and will be
+executed sequentially.
+
+
+------------------------------------------------------
+OPTIONS
+------------------------------------------------------
+
+region  (required)
+  The geographic area to process. Can be specified in three ways:
+
+  a) Preset string:
+       region: FVG           # Friuli-Venezia Giulia [11,15,44.5,48]
+       region: ITALY         # Italy bounding box    [10,16,42,48]
+
+  b) Bounding box (list of 4 floats: [lon_min, lon_max, lat_min, lat_max]):
+       region:
+         bounds: [-3, 3, 42.7, 45.8]
+
+  c) Bounding box + custom cities + custom radius:
+       region:
+         bounds: [-3, 3, 42.7, 45.8]
+         radius: 5.0
+         cities:
+           CityName:
+             lat: 46.1
+             lon: 13.0
+       Custom cities override the built-in city list for this run.
+       Only cities whose lat/lon fall within the bounds are used.
+       The 'radius' parameter (optional, default 3.0) defines the 
+       search radius in kilometers around each city for calculating 
+       mean feature values.
+
+------
+
+dates  (required)
+  List of dates to process, in YYYY-MM-DD format.
+
+    dates:
+      - 2009-01-02
+      - 2009-01-03
+
+------
+
+force  (optional, default: 0)
+  Controls how aggressively cached/existing results are recomputed.
+  Acts as a counter — higher values rerun more stages:
+
+    force: 0   No forced recomputation (use cached results).
+    force: 1   Re-run reasoning only.
+    force: 2   Re-run feature extraction + reasoning.
+    force: 3   Re-run everything: data extraction, feature extraction,
+               and reasoning.
+
+  Equivalent CLI flag: -f (repeat for higher levels, e.g. -fff = force 3).
+
+------
+
+clean  (optional, default: 0)
+  Controls cleanup of temporary folders before running.
+
+    clean: 0   No cleanup.
+    clean: 1   Light cleanup of tmp folders.
+    clean: 2   Delete all temporary data.
+
+  Equivalent CLI flag: -c / -cc.
+
+------
+
+clustering  (optional, default: false)
+  If true, enables clustering during data extraction.
+  Clustered data is used as input for feature detection.
+  If false, discrete (non-clustered) data is used instead.
+
+    clustering: true
+
+  Equivalent CLI flag: --clustering.
+
+------
+
+debug  (optional, default: false)
+  If true, sets logging level to DEBUG for all modules, producing
+  verbose output useful for troubleshooting.
+
+    debug: true
+
+  Equivalent CLI flag: -d / --debug.
+
+------
+
+just_cut  (optional, default: false)
+  If true, the pipeline only downloads and cuts the GRIB files
+  for the specified region and dates, then stops. Feature
+  extraction, clustering, and reasoning are all skipped.
+  No images are generated.
+
+    just_cut: true
+
+  Equivalent CLI flag: -jc / --just-cut.
+
+------
+
+save_images  (optional, default: false)
+  If true, visualisation images of the tracking results are
+  generated and saved alongside the output data.
+
+    save_images: true
+
+  Equivalent CLI flag: --save-images.
+
+------
+
+output_path  (optional, default: "runs/<run_name>")
+  Custom path for all outputs of this run (data, features,
+  reasoning results, images). Defaults to a folder named after
+  the run inside the "runs/" directory.
+
+    output_path: path/to/my/output/dir
+
+
+------------------------------------------------------
+FULL EXAMPLE
+------------------------------------------------------
+
+run_baseline:
+  region: FVG
+  dates:
+    - 2009-01-02
+
+run_custom:
+  region:
+    bounds: [-3, 3, 42.7, 45.8]
+    radius: 3.0
+    cities:
+      CustomCity:
+        lat: 46.1
+        lon: 13.0
+  dates:
+    - 2009-01-04
+  force: 3
+  clean: 0
+  clustering: true
+  debug: true
+  just_cut: false
+  save_images: true
+  output_path: runs/my_custom_run
+
+
+------------------------------------------------------
+NOTES
+------------------------------------------------------
+
+- CLI flags always override the corresponding config.yaml option
+  when both are provided.
+- The config file path itself can be changed with --config <path>.

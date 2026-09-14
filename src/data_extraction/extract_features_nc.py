@@ -1,7 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, Tuple, Union
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -27,12 +27,10 @@ class FeatureSpec:
     cmap: str
     limits: dict[int, tuple[int | float, int | float]]
     prefix: str
-    folder_prefix: Optional[str] = None
-    axis_off: bool = False
 
     @property
     def folder_key(self) -> str:
-        return self.folder_prefix or self.prefix
+        return self.prefix
 
 
 FEATURE_SPECS: Dict[str, FeatureSpec] = {
@@ -59,8 +57,12 @@ FEATURE_SPECS: Dict[str, FeatureSpec] = {
         "viridis",
         LimitValues.WIND_SPEED,
         "wind",
-        folder_prefix="winds",
-        axis_off=True,
+    ),
+    "wind_direction": FeatureSpec(
+        "wind_direction",
+        "viridis",
+        LimitValues.WIND_SPEED,
+        "wind_direction",
     ),
 }
 
@@ -97,7 +99,9 @@ def _resolve_var(ds: xr.Dataset, var: Union[str, Tuple[str, ...]]) -> xr.DataArr
 
 
 def _with_wind_speed(ds: xr.Dataset) -> xr.Dataset:
-    return ds.assign(wind_speed=np.sqrt(ds["u"] ** 2 + ds["v"] ** 2))
+    ws = np.sqrt(ds["u"] ** 2 + ds["v"] ** 2)
+    wd = (270 - np.arctan2(ds["v"], ds["u"]) * 180 / np.pi) % 360
+    return ds.assign(wind_speed=ws, wind_direction=wd)
 
 
 def _valid_times(coord_var: xr.DataArray) -> Iterator[Tuple[int, int, pd.Timestamp]]:
@@ -222,11 +226,14 @@ def build_feature_dataarrays(
                 )
                 stacked = stacked.sortby("time")
 
-                vmin, vmax = spec.limits[lvl]
-                normalized = (stacked - vmin) / (vmax - vmin)
-                normalized = normalized.clip(0, 1)
+                if "wind" in spec.prefix:
+                    normalized = stacked.fillna(0.0)
+                else:
+                    vmin, vmax = spec.limits[lvl]
+                    normalized = (stacked - vmin) / (vmax - vmin)
+                    normalized = normalized.clip(0, 1)
 
-                normalized = normalized.fillna(0.0)
+                    normalized = normalized.fillna(0.0)
 
                 normalized = normalized.drop_vars(
                     ["valid_time", "step", "isobaricInhPa", "number", "surface"],
@@ -234,5 +241,13 @@ def build_feature_dataarrays(
                 )
 
                 result[folders[lvl]] = normalized
+
+                if spec.prefix in ["temp", "humidity"]:
+                    raw = stacked.fillna(0.0)
+                    raw = raw.drop_vars(
+                        ["valid_time", "step", "isobaricInhPa", "number", "surface"],
+                        errors="ignore",
+                    )
+                    result[f"raw_{folders[lvl]}"] = raw
 
     return xr.Dataset(result)

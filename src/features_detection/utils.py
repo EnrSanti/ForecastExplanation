@@ -71,7 +71,7 @@ def build_referenced_data_from_xarray(
     region_bounds=None,
 ) -> xr.DataArray:
     """
-    Build tobac-compatible DataArray directly from an xarray DataArray.
+    Build tobac-compatible DataArray directly from a xarray DataArray.
     No PNG reading needed.
     """
     import numpy as np
