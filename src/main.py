@@ -90,7 +90,7 @@ def parse_dates(dates_entry):
 
     for item in dates_entry:
         if isinstance(item, (datetime, date)):
-            parsed_dates.add(item.strftime("%Y-%m-%d"))
+            parsed_dates.add(item)
         elif isinstance(item, dict):
             start = item.get("start")
             end = item.get("end")
@@ -108,7 +108,7 @@ def parse_dates(dates_entry):
             curr = start
             step = item.get("step", 1)
             while curr <= end:
-                parsed_dates.add(curr.strftime("%Y-%m-%d"))
+                parsed_dates.add(curr)
                 curr += timedelta(days=step)
 
     return sorted(list(parsed_dates))
