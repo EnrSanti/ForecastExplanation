@@ -203,7 +203,7 @@ def extract_day(
             try:
                 future.result()
             except Exception:
-                logger.error(f"Extract failed for {date}", exc_info=True)
+                logger.exception(f"Extract failed for {date}")
 
     logger.info("Data extraction completed.")
 
