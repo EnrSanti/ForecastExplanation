@@ -1,12 +1,9 @@
 services:
   weather:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file: .env
-    container_name: weather
+    image: eliussolis/sergio:latest
+    env_file: .env                       # for data downloads (can be omitted if data is already downloaded in tmp_data)
 
     volumes:
-      - ./tmp_data:/app/tmp_data
-      - ./runs:/app/runs
-      - ./config.yaml:/app/config.yaml
+      - ./runs:/app/runs                 # output folder
+      - ./config.yaml:/app/config.yaml   # config file location
+      - ./tmp_data:/app/tmp_data         # optional
