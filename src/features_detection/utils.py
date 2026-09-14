@@ -30,7 +30,7 @@ def get_grid_spacings(
         if dt is None or dt <= 0:
             dt = default_dt
         return float(dxy), float(dt)
-    except Exception:
+    except Exception:  # noqa: BLE001
         return default_dxy, default_dt
 
 

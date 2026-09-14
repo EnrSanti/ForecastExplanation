@@ -112,7 +112,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
     Renders each (variable, level, time) slice in feature_data to a raw
     grayscale PNG — written directly from normalized pixel values, not
     through a matplotlib colormap, since downstream code (convert_frames_to_
-    grayscale) just converts back to grayscale anyway; skipping the color
+    grayscale) just converts back to grayscale anyway; skipping the colour
     round-trip avoids the precision loss that introduces.
 
     Layout matches what the rest of the pipeline expects to read back in
@@ -150,7 +150,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
             vmax = float(level_da.max())
             vrange = (
                 vmax - vmin if vmax > vmin else 1.0
-            )  # guard against a fully-flat day
+            )  # guard against a fully flat day
 
             for t in range(level_da.sizes["time"]):
                 frame = level_da.isel(time=t)

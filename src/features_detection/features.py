@@ -87,7 +87,7 @@ def track_features(
                 method_linking=method_linking,
             )
         return trajectories
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.debug(f"No trajectories found: {e}")
         return pd.DataFrame()
 

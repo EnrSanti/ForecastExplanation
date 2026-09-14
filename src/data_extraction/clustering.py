@@ -21,7 +21,7 @@ def cluster_xarray(
 
     Returns
     -------
-    Same structure with values quantised to K evenly-spaced levels in [0, 1]
+    Same structure with values quantized to K evenly spaced levels in [0, 1]
     """
 
     if num_clusters_map is None:
@@ -42,7 +42,7 @@ def cluster_xarray(
             result[folder_name] = da
             continue
 
-        # Cluster each time frame independently (matching current behavior)
+        # Cluster each time frame independently (matching current behaviour)
         clustered_frames = []
         for t in range(da.sizes["time"]):
             frame = da.isel(time=t).values

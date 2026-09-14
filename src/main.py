@@ -86,6 +86,7 @@ def _parse_date_value(value):
 
     raise ValueError(f"Unsupported date value: {value!r}")
 
+
 def parse_dates(dates_entry):
     """
     Parses a date configuration entry, which can be a single date item or a list of items.

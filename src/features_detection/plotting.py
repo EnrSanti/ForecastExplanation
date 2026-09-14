@@ -208,7 +208,7 @@ def generate_all_plots(
         axs.set_extent(region.value, crs=ccrs.PlateCarree())
 
         # Map the underlying values
-        vmin, vmax = 0, 1  # features.nc is already normalised 0..1
+        vmin, vmax = 0, 1  # features.nc is already normalized 0..1
         axs.pcolormesh(
             frame_da["longitude"],
             frame_da["latitude"],

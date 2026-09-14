@@ -63,7 +63,7 @@ def text_extraction(dt):
             for page in doc:
                 text = page.get_text("text").strip()
                 data[NAMES[zone]] = extract_zone_data(text, zone)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error processing {zone}, {dt}: {e}")
 
     return data
