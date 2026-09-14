@@ -2,7 +2,7 @@ import argparse
 import logging
 import os
 import sys
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
 
 import yaml
 from dotenv import load_dotenv
@@ -82,7 +82,7 @@ def _parse_date_value(value):
     if isinstance(value, date):
         return value
     if isinstance(value, str):
-        return datetime.strptime(value, "%Y-%m-%d").date()
+        return date.fromisoformat(value)
 
     raise ValueError(f"Unsupported date value: {value!r}")
 
@@ -112,7 +112,7 @@ def parse_dates(dates_entry):
                 parsed_dates.add(curr)
                 curr += timedelta(days=step)
 
-    return sorted(list(parsed_dates))
+    return sorted(parsed_dates)
 
 
 def main():
