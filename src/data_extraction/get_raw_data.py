@@ -95,8 +95,8 @@ def download_grib_if_needed(date: datetime, grib_path: str) -> None:
         progress=quiet,
     )
     if not client.check_authentication():
-        logger.critical("Failed to authenticate with ECMWF API.")
-        raise Exception("Failed to authenticate with ECMWF API.")
+        logger.exception("Failed to authenticate with ECMWF API.")
+        raise RuntimeError("Failed to authenticate with ECMWF API.")
 
     year, month, day = date_str.split("-")
 
