@@ -75,6 +75,16 @@ def parse_args_and_config():
     return args, config
 
 
+def _parse_date_value(value):
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        return datetime.strptime(value, "%Y-%m-%d").date()
+
+    raise ValueError(f"Unsupported date value: {value!r}")
+
 def parse_dates(dates_entry):
     """
     Parses a date configuration entry, which can be a single date item or a list of items.
@@ -89,21 +99,11 @@ def parse_dates(dates_entry):
     parsed_dates = set()
 
     for item in dates_entry:
-        if isinstance(item, (datetime, date)):
-            parsed_dates.add(item)
+        if isinstance(item, (datetime, date, str)):
+            parsed_dates.add(_parse_date_value(item))
         elif isinstance(item, dict):
-            start = item.get("start")
-            end = item.get("end")
-            if (
-                not start
-                or not end
-                or not isinstance(start, (datetime, date))
-                or not isinstance(end, (datetime, date))
-            ):
-                logger.warning(
-                    "Invalid date range: start or end is missing or not a valid date"
-                )
-                continue
+            start = _parse_date_value(item.get("start"))
+            end = _parse_date_value(item.get("end"))
 
             curr = start
             step = item.get("step", 1)
