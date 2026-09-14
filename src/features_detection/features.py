@@ -99,7 +99,7 @@ def segment_features(
     target: str,
     smooth: float = DEFAULT_SMOOTH,
     dxy: float = DEFAULT_DXY,
-) -> tuple[list[tuple[int, xr.DataArray | None, xr.DataArray | None]]]:
+) -> list[tuple[int, xr.DataArray | None, xr.DataArray | None]]:
     """Performs 2D segmentation for each frame in data_norm."""
     segments_all = []
     images_no = len(data_norm.time)

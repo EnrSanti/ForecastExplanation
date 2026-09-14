@@ -43,7 +43,7 @@ def run_tobac(
     region: Region,
     force: bool = False,
     save_images: bool = False,
-):
+) -> None:
     """
     Executes TOBAC tracking across the specified list of dates and weather phenomena.
     """
@@ -82,7 +82,7 @@ def _run_tobac_single_day(
     region: Region,
     force: bool = False,
     save_images: bool = False,
-):
+) -> None:
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
     os.makedirs(day_output_dir, exist_ok=True)
@@ -183,10 +183,10 @@ def _run_tobac_single_day_single_phenomenon(
         # Feature detection & tracking
         features, features_weighted_points = detect_features(
             referenced_data_norm,
-            threshold=threshold,
-            target=target,
-            smooth=smooth,
-            min_blob_size=min_blob_size,
+            threshold=float(threshold),
+            target=str(target),
+            smooth=float(smooth),
+            min_blob_size=int(min_blob_size),
             min_distance=DEFAULT_MIN_DISTANCE,
             dxy=dxy,
         )
@@ -223,9 +223,9 @@ def _run_tobac_single_day_single_phenomenon(
             generate_all_plots(
                 da=da,
                 output_dir=height_output_dir,
-                cmap=detection_params.get("cmap", "viridis"),
+                cmap=str(detection_params.get("cmap", "viridis")),
                 region=region,
-                segments_all=segments_all,
+                segments_all=segments_all or [],
                 trajectories=trajectories,
             )
 
@@ -298,7 +298,7 @@ def _create_output_features_nc(
         vars_to_extract = [
             v
             for v in feat_ds.data_vars
-            if any(prefix in v for prefix in RAW_FEATURES_VARS)
+            if any(prefix in str(v) for prefix in RAW_FEATURES_VARS)
         ]
 
         if vars_to_extract:

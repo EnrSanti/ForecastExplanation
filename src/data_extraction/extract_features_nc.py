@@ -115,7 +115,7 @@ def _valid_times(coord_var: xr.DataArray) -> Iterator[tuple[int, int, pd.Timesta
             step_val = int(coord_var["step"].isel(step=j).values)
             valid_time = base_time + pd.Timedelta(hours=step_val)
 
-            if day_start <= valid_time <= day_end:
+            if not pd.isna(valid_time) and day_start <= valid_time <= day_end:
                 yield i, j, valid_time
 
 
@@ -169,14 +169,14 @@ def create_legends(output_base: str) -> None:
             vmin, vmax = props["limits"][lvl]
 
             fig, ax = plt.subplots(figsize=(6, 1))
-            norm = plt.Normalize(vmin=vmin, vmax=vmax)
+            norm = plt.Normalize(vmin=float(vmin), vmax=float(vmax))
 
             cb = plt.colorbar(
-                plt.cm.ScalarMappable(norm=norm, cmap=props["cmap"]),
+                plt.cm.ScalarMappable(norm=norm, cmap=str(props["cmap"])),
                 cax=ax,
                 orientation="horizontal",
             )
-            cb.set_label(props["label"])
+            cb.set_label(str(props["label"]))
 
             png_path = os.path.join(output_base, f"legend_{key}_{lvl}.png")
             plt.savefig(png_path, dpi=130, bbox_inches="tight", pad_inches=0)

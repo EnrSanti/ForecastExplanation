@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 
 import xarray as xr
 from tqdm import tqdm
@@ -14,8 +15,12 @@ logger = logging.getLogger("ForecastExplanation")
 
 
 def reason(
-    dates: list, input_dir: str, output_dir: str, region: Region, force: bool = False
-):
+    dates: list[datetime],
+    input_dir: str,
+    output_dir: str,
+    region: Region,
+    force: bool = False,
+) -> None:
     """
     Perform reasoning on the input data (nc format) and save the results to the output path (text format).
     Converts raw data to reasoning data, ready to be converted to ASP formats.

@@ -45,15 +45,15 @@ def find_starting_step(
 
 
 def extract_day_worker(
-    date,
-    region,
+    date: datetime, time,
+    region: Region,
     base_path: str,
     clean_level: int = 0,
     clustering: bool = True,
     force_redo: bool = False,
     just_cut: bool = False,
     create_images: bool = False,
-):
+) -> None:
     logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
     clustered_dir = os.path.join(
         base_path, CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d")
@@ -209,7 +209,7 @@ def extract_day(
 
 
 def extract(
-    dates: list[datetime],
+    dates: list[tuple[datetime, time]],
     region: Region,
     output_path: str,
     clean_level: int = 0,

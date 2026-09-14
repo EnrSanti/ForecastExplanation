@@ -153,7 +153,7 @@ def generate_all_plots(
     output_dir: str,
     cmap: str,
     region: Region,
-    segments_all: list,
+    segments_all: list | tuple,
     trajectories: pd.DataFrame,
 ):
     """
