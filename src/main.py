@@ -1,14 +1,15 @@
 import argparse
 import logging
-import sys
 import os
+import sys
+from datetime import datetime, timedelta, date
+
 import yaml
 from dotenv import load_dotenv
 
 import data_extraction
 import features_detection
 import reasoning
-
 from region import Region
 
 logging.basicConfig(
@@ -74,6 +75,45 @@ def parse_args_and_config():
     return args, config
 
 
+def parse_dates(dates_entry):
+    """
+    Parses a date configuration entry, which can be a single date item or a list of items.
+    """
+
+    if not dates_entry:
+        return []
+
+    if not isinstance(dates_entry, list):
+        dates_entry = [dates_entry]
+
+    parsed_dates = set()
+
+    for item in dates_entry:
+        if isinstance(item, (datetime, date)):
+            parsed_dates.add(item.strftime("%Y-%m-%d"))
+        elif isinstance(item, dict):
+            start = item.get("start")
+            end = item.get("end")
+            if (
+                not start
+                or not end
+                or not isinstance(start, (datetime, date))
+                or not isinstance(end, (datetime, date))
+            ):
+                logger.warning(
+                    "Invalid date range: start or end is missing or not a valid date"
+                )
+                continue
+
+            curr = start
+            step = item.get("step", 1)
+            while curr <= end:
+                parsed_dates.add(curr.strftime("%Y-%m-%d"))
+                curr += timedelta(days=step)
+
+    return sorted(list(parsed_dates))
+
+
 def main():
     args, config = parse_args_and_config()
 
@@ -89,7 +129,8 @@ def main():
     for run_name, run_config in runs.items():
         logger.info(f" --- Starting {run_name} ---")
 
-        dates = run_config.get("dates", [])
+        raw_dates = run_config.get("dates", [])
+        dates = parse_dates(raw_dates)
 
         clean = args.clean if args.clean else run_config.get("clean", 0)
         force = args.force if args.force else run_config.get("force", 0)

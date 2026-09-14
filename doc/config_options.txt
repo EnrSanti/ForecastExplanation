@@ -61,11 +61,13 @@ region  (required)
 ------
 
 dates  (required)
-  List of dates to process, in YYYY-MM-DD format.
+  List of dates or date ranges to process (dates format: YYYY-MM-DD).
+  Supports single dates as well as date range dictionary objects:
 
     dates:
-      - 2009-01-02
-      - 2009-01-03
+      - 2009-01-02                           # Single date
+      - start: 2009-01-05                   # Range with start and end (inclusive)
+        end: 2009-01-08
 
 ------
 
