@@ -10,7 +10,7 @@ class Region:
         name: str,
         value: list[float],
         cities: dict | None = None,
-        city_radius: float = 3.0,
+        city_radius: float = 20.0,
     ):
         self.name = name
         self.value = value

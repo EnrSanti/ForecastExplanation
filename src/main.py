@@ -2,13 +2,14 @@ import argparse
 import logging
 import os
 import sys
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
 
 import yaml
 from dotenv import load_dotenv
 
 import data_extraction
 import features_detection
+import ground_truth
 import reasoning
 from region import Region
 
@@ -20,7 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger("ForecastExplanation")
 
 
-def parse_args_and_config():
+def parse_args_and_config() -> tuple[argparse.Namespace, dict]:
     load_dotenv()
     parser = argparse.ArgumentParser(description="ForecastExplanation Pipeline")
     parser.add_argument(
@@ -75,17 +76,19 @@ def parse_args_and_config():
     return args, config
 
 
-def _parse_date_value(value):
+def _parse_date_value(value: datetime | date | str) -> datetime:
     if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, date):
         return value
+    if isinstance(value, date):
+        return datetime(value.year, value.month, value.day)
     if isinstance(value, str):
-        return datetime.strptime(value, "%Y-%m-%d").date()
+        d = date.fromisoformat(value)
+        return datetime(d.year, d.month, d.day)
 
     raise ValueError(f"Unsupported date value: {value!r}")
 
-def parse_dates(dates_entry):
+
+def parse_dates(dates_entry: list | str | dict | None) -> list[datetime]:
     """
     Parses a date configuration entry, which can be a single date item or a list of items.
     """
@@ -111,10 +114,10 @@ def parse_dates(dates_entry):
                 parsed_dates.add(curr)
                 curr += timedelta(days=step)
 
-    return sorted(list(parsed_dates))
+    return sorted(parsed_dates)
 
 
-def main():
+def main() -> None:
     args, config = parse_args_and_config()
 
     if "dates" in config or "region" in config:
@@ -195,6 +198,7 @@ def main():
             save_images=save_images,
         )
         reasoning.reason(dates, output_path, output_path, region, force=force > 0)
+        ground_truth.generate_gt(dates, output_path)
 
         logger.info(f"--- Finished {run_name} ---\n\n")
 

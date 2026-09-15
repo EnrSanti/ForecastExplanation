@@ -1,10 +1,10 @@
+from typing import ClassVar
+
 from region import Region
 
 
-# split by level
 class LimitValues:
-
-    CLOUD = {
+    CLOUD: ClassVar[dict[int, tuple[int, int]]] = {
         1000: (0, 100),
         925: (0, 100),
         850: (0, 100),
@@ -13,8 +13,8 @@ class LimitValues:
         300: (0, 100),
     }
 
-    # one temperature level per layer
-    TEMP = {
+    # One temperature level per layer
+    TEMP: ClassVar[dict[int, tuple[float, float]]] = {
         1000: (263.15, 311.15),
         925: (259.15, 306.15),
         850: (254.15, 302.15),
@@ -23,7 +23,7 @@ class LimitValues:
         300: (218.15, 268.15),
     }
 
-    WIND_SPEED = {
+    WIND_SPEED: ClassVar[dict[int, tuple[int, int]]] = {
         1000: (0, 100),
         925: (0, 100),
         850: (0, 100),
@@ -32,7 +32,7 @@ class LimitValues:
         300: (0, 200),
     }
 
-    HUMIDITY = {
+    HUMIDITY: ClassVar[dict[int, tuple[int, int]]] = {
         1000: (0, 100),
         925: (0, 100),
         850: (0, 100),
@@ -53,11 +53,11 @@ FOLDERS = {l: f"_at_{l:04d}m" for l in LEVELS}
 from .main import extract
 
 __all__: list[str] = [
-    "extract",
-    "Region",
-    "LimitValues",
-    "RAW_DATA_DIR",
+    "CLUSTERED_DATA_DIR",
     "CUT_DATA_DIR",
     "DISCRETE_DATA_DIR",
-    "CLUSTERED_DATA_DIR",
+    "RAW_DATA_DIR",
+    "LimitValues",
+    "Region",
+    "extract",
 ]

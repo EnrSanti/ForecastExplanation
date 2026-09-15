@@ -3,27 +3,27 @@ import os
 import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
-from typing import List
+
 import cv2
-import pandas as pd
 import numpy as np
+import pandas as pd
 import xarray as xr
 from tqdm import tqdm
 
 from . import (
-    Region,
-    RAW_DATA_DIR,
+    CLUSTERED_DATA_DIR,
     CUT_DATA_DIR,
     DISCRETE_DATA_DIR,
-    CLUSTERED_DATA_DIR,
     FOLDERS,
+    RAW_DATA_DIR,
+    Region,
 )
+from .clustering import cluster_xarray
 from .extract_features_nc import (
-    create_one_time_images,
     build_feature_dataarrays,
+    create_one_time_images,
 )
 from .get_raw_data import extract_nc
-from .clustering import cluster_xarray
 
 logger = logging.getLogger(__name__)
 
@@ -45,15 +45,15 @@ def find_starting_step(
 
 
 def extract_day_worker(
-    date,
-    region,
+    date: datetime, time,
+    region: Region,
     base_path: str,
     clean_level: int = 0,
     clustering: bool = True,
     force_redo: bool = False,
     just_cut: bool = False,
     create_images: bool = False,
-):
+) -> None:
     logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
     clustered_dir = os.path.join(
         base_path, CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d")
@@ -112,7 +112,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
     Renders each (variable, level, time) slice in feature_data to a raw
     grayscale PNG — written directly from normalized pixel values, not
     through a matplotlib colormap, since downstream code (convert_frames_to_
-    grayscale) just converts back to grayscale anyway; skipping the color
+    grayscale) just converts back to grayscale anyway; skipping the colour
     round-trip avoids the precision loss that introduces.
 
     Layout matches what the rest of the pipeline expects to read back in
@@ -150,7 +150,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
             vmax = float(level_da.max())
             vrange = (
                 vmax - vmin if vmax > vmin else 1.0
-            )  # guard against a fully-flat day
+            )  # guard against a fully flat day
 
             for t in range(level_da.sizes["time"]):
                 frame = level_da.isel(time=t)
@@ -167,7 +167,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
 
 
 def extract_day(
-    dates: List[datetime],
+    dates: list[datetime],
     region: Region,
     base_path: str,
     clean_level: int = 0,
@@ -209,7 +209,7 @@ def extract_day(
 
 
 def extract(
-    dates: List[datetime],
+    dates: list[tuple[datetime, time]],
     region: Region,
     output_path: str,
     clean_level: int = 0,
@@ -224,7 +224,8 @@ def extract(
     os.makedirs(RAW_DATA_DIR, exist_ok=True)
     os.makedirs(os.path.join(output_path, CUT_DATA_DIR), exist_ok=True)
     os.makedirs(os.path.join(output_path, DISCRETE_DATA_DIR), exist_ok=True)
-    os.makedirs(os.path.join(output_path, "legends"), exist_ok=True)
+    if create_images:
+        os.makedirs(os.path.join(output_path, "legends"), exist_ok=True)
 
     if create_images:
         create_one_time_images(region, os.path.join(output_path, "legends"))

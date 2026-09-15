@@ -69,7 +69,7 @@ def detect_phenomenon_fronts(
     output_path: str,
     heights: list[str],
     phenomenon: str,
-):
+) -> None:
     """
     writes a txt table with:
     timestamp, height, front_id (from tobac), front area,

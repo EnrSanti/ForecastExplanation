@@ -1,6 +1,6 @@
 # Pipeline Data Flow
 
-**This document has been written by AI model reading the code**
+**This document has been written by an AI model reading the code**
 
 It describes the data files produced at each step of the pipeline, including their location, variables, and dimensions.
 All heights `{h}` span the six pressure levels: `0300m`, `0500m`, `0700m`, `0850m`, `0925m`, `1000m`.

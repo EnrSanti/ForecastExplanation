@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .utils import haversine, get_compass_direction
+from .utils import get_compass_direction, haversine
 
 logger = logging.getLogger("ForecastExplanation")
 
@@ -150,7 +150,9 @@ def detect_clouds(
                     intersection_pixels = np.sum(cloud_mask & city_mask)
                     if intersection_pixels > 0:
                         total_city_pixels = np.sum(city_mask)
-                        pct_covered = (intersection_pixels / total_city_pixels) * 100.0
+                        pct_covered = int(
+                            (intersection_pixels / total_city_pixels) * 100.0
+                        )
 
                         records.append(
                             {
