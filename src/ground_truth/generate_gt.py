@@ -1,13 +1,20 @@
 import json
 import os
+import logging
 
-from .extract_pdf import text_extraction
+from .extract_pdf import text_extract
+from .extract_xml import xml_extract
 
+logger = logging.getLogger("ForecastExplanation")
 
 def generate_gt(target_dates: list, output_path: str) -> None:
     os.makedirs(output_path, exist_ok=True)
     for date in target_dates:
-        res = text_extraction(date)
+        if os.path.exists("./xmls"):
+            res = xml_extract(date)
+        else:
+            logger.warning("XML files not found. Falling back to pdf text extraction.")
+            res = text_extract(date)
         save_to_file(res, output_path, date)
 
 

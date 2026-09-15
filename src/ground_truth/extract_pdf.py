@@ -21,7 +21,7 @@ PDF_BASE = "https://www.osmer.fvg.it/"
 logger = logging.getLogger("ForecastExplanation")
 
 
-def text_extraction(dt) -> dict:
+def text_extract(dt) -> dict:
     session = requests.Session()
     yyyymmdd = f"{dt.year:04d}{dt.month:02d}{dt.day:02d}"
     data = {}
