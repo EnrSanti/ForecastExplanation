@@ -45,7 +45,7 @@ def find_starting_step(
 
 
 def extract_day_worker(
-    date: datetime, time,
+    date: datetime,
     region: Region,
     base_path: str,
     clean_level: int = 0,
@@ -209,7 +209,7 @@ def extract_day(
 
 
 def extract(
-    dates: list[tuple[datetime, time]],
+    dates: list[datetime],
     region: Region,
     output_path: str,
     clean_level: int = 0,

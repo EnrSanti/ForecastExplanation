@@ -1,13 +1,14 @@
 import json
 import os
 import logging
-
+from datetime import datetime
 from .extract_pdf import text_extract
 from .extract_xml import xml_extract
 
 logger = logging.getLogger("ForecastExplanation")
 
-def generate_gt(target_dates: list, output_path: str) -> None:
+
+def generate_gt(target_dates: list[datetime], output_path: str) -> None:
     os.makedirs(output_path, exist_ok=True)
     for date in target_dates:
         if os.path.exists("./xmls"):
