@@ -15,9 +15,9 @@ Returns a dictionary shaped like::
 """
 
 import html
+import logging
 import xml.etree.ElementTree as ET
 from datetime import datetime
-import logging
 
 logger = logging.getLogger("ForecastExplanation")
 
