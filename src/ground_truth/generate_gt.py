@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
-
+import datetime as dt
 from .extract_pdf import text_extract
 from .extract_xml import xml_extract
 
@@ -14,12 +14,12 @@ def generate_gt(target_dates: list[datetime], output_path: str) -> None:
     for date in target_dates:
         try:
             if os.path.exists("./xmls"):
-                res = xml_extract(date)
+                res = xml_extract(date - dt.timedelta(days=1))
             else:
                 logger.warning(
                     "XML files not found. Falling back to pdf text extraction."
                 )
-                res = text_extract(date)
+                res = text_extract(date - dt.timedelta(days=1))
             save_to_file(res, output_path, date)
         except Exception as e:  # noqa: BLE001
             logger.error(f"Error generating ground truth for date {date}: {e}")
