@@ -2,7 +2,6 @@ import logging
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
-from typing import List, Optional
 
 import matplotlib
 import pandas as pd
@@ -12,16 +11,15 @@ from tqdm import tqdm
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-
 from features_detection.constants import (
     DEFAULT_GAP_FRAMES,
     DEFAULT_MIN_DISTANCE,
     DEFAULT_SMOOTH,
     DEFAULT_V_MAX_AT_HEIGHT,
     FOLDERS_HEIGHT_SUFF,
+    RAW_FEATURES_VARS,
     WeatherPhenomenon,
     WeatherPhenomenonTobacParams,
-    RAW_FEATURES_VARS,
 )
 from features_detection.features import (
     detect_features,
@@ -39,17 +37,17 @@ logger = logging.getLogger(__name__)
 
 
 def run_tobac(
-    dates: List[datetime],
+    dates: list[datetime],
     input_dir: str,
     output_dir: str,
     region: Region,
     force: bool = False,
     save_images: bool = False,
-):
+) -> None:
     """
     Executes TOBAC tracking across the specified list of dates and weather phenomena.
     """
-    logger.info(f"Starting TOBAC.")
+    logger.info("Starting TOBAC.")
     os.makedirs(output_dir, exist_ok=True)
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
@@ -72,7 +70,7 @@ def run_tobac(
             try:
                 future.result()
             except Exception:
-                logger.error(f"TOBAC failed for {date}", exc_info=True)
+                logger.exception(f"TOBAC failed for {date}")
 
     logger.info("TOBAC runs completed.")
 
@@ -84,7 +82,7 @@ def _run_tobac_single_day(
     region: Region,
     force: bool = False,
     save_images: bool = False,
-):
+) -> None:
     day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
     day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
     os.makedirs(day_output_dir, exist_ok=True)
@@ -141,7 +139,7 @@ def _run_tobac_single_day_single_phenomenon(
     day_output_dir: str,
     region: Region,
     phenomenon: WeatherPhenomenon,
-    phenomenon_params: Optional[WeatherPhenomenonTobacParams] = None,
+    phenomenon_params: WeatherPhenomenonTobacParams | None = None,
     save_images: bool = False,
 ) -> tuple[pd.DataFrame, xr.Dataset]:
     """
@@ -177,10 +175,10 @@ def _run_tobac_single_day_single_phenomenon(
 
         detection_params = phenomenon_params.value
 
-        min_blob_size = detection_params.get("min_blob_size", 100)
-        target = detection_params.get("target", "maximum")
-        smooth = detection_params.get("smooth", DEFAULT_SMOOTH)
-        threshold = detection_params.get("threshold", 0.6)
+        min_blob_size = int(detection_params.get("min_blob_size", 100))
+        target = str(detection_params.get("target", "maximum"))
+        smooth = float(detection_params.get("smooth", DEFAULT_SMOOTH))
+        threshold = float(detection_params.get("threshold", 0.6))
 
         # Feature detection & tracking
         features, features_weighted_points = detect_features(
@@ -225,9 +223,9 @@ def _run_tobac_single_day_single_phenomenon(
             generate_all_plots(
                 da=da,
                 output_dir=height_output_dir,
-                cmap=detection_params.get("cmap", "viridis"),
+                cmap=str(detection_params.get("cmap", "viridis")),
                 region=region,
-                segments_all=segments_all,
+                segments_all=segments_all or [],
                 trajectories=trajectories,
             )
 
@@ -300,7 +298,7 @@ def _create_output_features_nc(
         vars_to_extract = [
             v
             for v in feat_ds.data_vars
-            if any(prefix in v for prefix in RAW_FEATURES_VARS)
+            if any(prefix in str(v) for prefix in RAW_FEATURES_VARS)
         ]
 
         if vars_to_extract:
@@ -311,7 +309,7 @@ def _create_output_features_nc(
             ref_data = build_referenced_data_from_xarray(
                 da, datetimes, region_bounds=region.value
             )
-            dxy, dt = get_grid_spacings(ref_data)
+            dxy, _ = get_grid_spacings(ref_data)
             extracted_ds.attrs["dxy"] = float(dxy)
 
             tmp_ds = xr.merge([tmp_ds, extracted_ds], compat="override", join="outer")

@@ -10,7 +10,7 @@ class Region:
         name: str,
         value: list[float],
         cities: dict | None = None,
-        city_radius: float = 3.0,
+        city_radius: float = 20.0,
     ):
         self.name = name
         self.value = value
@@ -31,7 +31,7 @@ class Region:
 
     @classmethod
     def custom(
-        cls, bounds: list[float], cities: dict | None = None, city_radius: float = 3.0
+        cls, bounds: list[float], cities: dict | None = None, city_radius: float = 20.0
     ) -> Region:
         if len(bounds) != 4:
             raise ValueError(
@@ -41,7 +41,7 @@ class Region:
 
     @classmethod
     def from_config(
-        cls, value, cities: dict | None = None, city_radius: float = 3.0
+        cls, value, cities: dict | None = None, city_radius: float = 20.0
     ) -> Region:
         if isinstance(value, dict):
             cities = value.get("cities", cities)
@@ -62,7 +62,7 @@ class Region:
                 raise ValueError(
                     f"Unknown region '{name}'. Must be one of {list(_PRESETS.keys())} or a list of 4 floats."
                 )
-            if cities is not None or city_radius != 3.0:
+            if cities is not None or city_radius != 20.0:
                 return cls(preset.name, preset.value, cities, city_radius)
             return preset
         if isinstance(value, list) and len(value) == 4:

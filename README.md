@@ -35,16 +35,16 @@ A CDS API key is required for CERRA GRIB downloads — see the [CDS API setup gu
 Use the file `config.yaml` to set up a run for a specific region.
 Runs are configured via `config.yaml`. Each top-level key names a run, with the following options set per region/date combination:
 
-| Key | Type | Description |
-|---|---|---|
-| `region.bounds` | `[LONG_MIN, LONG_MAX, LAT_MIN, LAT_MAX]` | Geographical bounding box to extract and process |
-| `region.cities` | map of `city: {lat, lon}` | Named cities within the region, used for per-city feature/label extraction and overlays |
-| `dates` | list of `YYYY-MM-DD` | Dates to analyze |
-| `clean` | `true` \| `false` | Remove downloaded `.GRIB` files after processing |
-| `clustering` | `true` \| `false` | Run TOBAC on clustered images instead of raw ones |
-| `debug` | `true` \| `false` | Enable debug logging |
-| `just_cut` | `true` \| `false` | Only download and cut the GRIB files, skipping feature extraction/clustering |
-| `save_images` | `true` \| `false` | Save TOBAC's input/output images, for visually checking detection quality |
+| Key             | Type                                     | Description                                                                             |
+|-----------------|------------------------------------------|-----------------------------------------------------------------------------------------|
+| `region.bounds` | `[LONG_MIN, LONG_MAX, LAT_MIN, LAT_MAX]` | Geographical bounding box to extract and process                                        |
+| `region.cities` | map of `city: {lat, lon}`                | Named cities within the region, used for per-city feature/label extraction and overlays |
+| `dates`         | list of `YYYY-MM-DD`                     | Dates to analyze                                                                        |
+| `clean`         | `true` \| `false`                        | Remove downloaded `.GRIB` files after processing                                        |
+| `clustering`    | `true` \| `false`                        | Run TOBAC on clustered images instead of raw ones                                       |
+| `debug`         | `true` \| `false`                        | Enable debug logging                                                                    |
+| `just_cut`      | `true` \| `false`                        | Only download and cut the GRIB files, skipping feature extraction/clustering            |
+| `save_images`   | `true` \| `false`                        | Save TOBAC's input/output images, for visually checking detection quality               |
 
 ## Current pipeline
 ```mermaid

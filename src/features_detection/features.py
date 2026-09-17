@@ -1,6 +1,5 @@
 import logging
 import warnings
-from typing import List, Optional, Tuple
 
 import cv2
 import matplotlib
@@ -33,7 +32,7 @@ def detect_features(
     min_blob_size: int = 100,
     min_distance: float = DEFAULT_MIN_DISTANCE,
     dxy: float = DEFAULT_DXY,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Performs multithreshold feature detection on normalized DataArray.
     Returns (features for segmentation, features_weighted_points for tracking).
@@ -88,7 +87,7 @@ def track_features(
                 method_linking=method_linking,
             )
         return trajectories
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.debug(f"No trajectories found: {e}")
         return pd.DataFrame()
 
@@ -100,7 +99,7 @@ def segment_features(
     target: str,
     smooth: float = DEFAULT_SMOOTH,
     dxy: float = DEFAULT_DXY,
-) -> Tuple[List[Tuple[int, Optional[xr.DataArray], Optional[xr.DataArray]]]]:
+) -> list[tuple[int, xr.DataArray | None, xr.DataArray | None]]:
     """Performs 2D segmentation for each frame in data_norm."""
     segments_all = []
     images_no = len(data_norm.time)

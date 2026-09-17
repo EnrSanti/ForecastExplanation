@@ -11,5 +11,4 @@ ENV PATH=/opt/conda/envs/weather/bin:$PATH
 
 COPY src ./src
 
-# Run the application
 CMD ["python", "src/main.py"]

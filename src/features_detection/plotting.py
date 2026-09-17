@@ -1,6 +1,6 @@
+import itertools
 import logging
 import os
-from typing import Set, Dict, List
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -52,8 +52,8 @@ def print_clouds_center_line(
     track: pd.DataFrame,
     axs: plt.Axes,
     cell_id: int,
-    persisted_cells: Set[int],
-    all_frames_for_cell: Dict[int, List[int]],
+    persisted_cells: set[int],
+    all_frames_for_cell: dict[int, list[int]],
 ):
     """Plots cloud centre markers and fading trajectory path natively."""
 
@@ -78,7 +78,7 @@ def print_clouds_center_line(
 
     try:
         frames = all_frames_for_cell.get(int(cell_id), [])
-        for t0, t1 in zip(frames[:-1], frames[1:]):
+        for t0, t1 in itertools.pairwise(frames):
             line = track[(track["frame"] == t0) | (track["frame"] == t1)]
             if not line.empty:
                 time_diff = itime - track.iloc[0].frame
@@ -153,7 +153,7 @@ def generate_all_plots(
     output_dir: str,
     cmap: str,
     region: Region,
-    segments_all: list,
+    segments_all: list | tuple,
     trajectories: pd.DataFrame,
 ):
     """
@@ -208,7 +208,7 @@ def generate_all_plots(
         axs.set_extent(region.value, crs=ccrs.PlateCarree())
 
         # Map the underlying values
-        vmin, vmax = 0, 1  # features.nc is already normalised 0..1
+        vmin, vmax = 0, 1  # features.nc is already normalized 0..1
         axs.pcolormesh(
             frame_da["longitude"],
             frame_da["latitude"],
