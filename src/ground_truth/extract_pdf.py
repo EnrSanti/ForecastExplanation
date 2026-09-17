@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import Callable, NamedTuple, Optional
 
 import pymupdf
 import requests
@@ -36,7 +37,6 @@ def text_extract(dt) -> dict:
             "ln": "",
         }
 
-
         r = session.get(BASE_ARCHIVE_URL, params=params, timeout=10)
         if r.status_code != 200:
             logger.error(f"Failed to load archive HTML for {zone}, date {dt}")
@@ -68,308 +68,128 @@ def text_extract(dt) -> dict:
     return data
 
 
+class FieldSpec(NamedTuple):
+    label: str
+    keys: tuple[str, ...]
+    casts: Optional[dict[str, Callable]] = None
+
+
+def apply_fields(lines: list[str], specs: list[FieldSpec]) -> dict:
+    """Extract fields from a list of specs, each matched against a label line."""
+    data = {}
+    for i, line in enumerate(lines):
+        for label, keys, casts in specs:
+            if label not in line or keys[0] in data:
+                continue
+
+            for offset, key in enumerate(keys, start=1):
+                if i + offset >= len(lines):
+                    break
+                cast = (casts or {}).get(key, str)
+                data[key] = cast(lines[i + offset])
+
+    return data
+
+
+MOUNTAIN_COMMON_FIELDS = [
+    FieldSpec("Temperatura media a 1.000 m (°C)", ("temperatura_media_1000",)),
+    FieldSpec("Temperatura media a 2.000 m (°C)", ("temperatura_media_2000",)),
+    FieldSpec("Probabilità precipitazioni estese (%)", ("pioggia_prob",)),
+    FieldSpec("Probabilità di temporali (%)", ("temporale_prob",)),
+    FieldSpec("Quota zero termico (m)", ("quota_zero_termico",)),
+    FieldSpec("Quota delle nevicate (m)", ("quota_nevicate",)),
+    FieldSpec(
+        "Vento medio a 2.000 m (m/s)",
+        ("vento_2000_direzione", "vento_2000_velocita"),
+        {"vento_2000_velocita": float},
+    ),
+    FieldSpec(
+        "Vento medio a 3.000 m (m/s)",
+        ("vento_3000_direzione", "vento_3000_velocita"),
+        {"vento_3000_velocita": float},
+    ),
+]
+
+ZONE_FIELDS = {
+    "a1": MOUNTAIN_COMMON_FIELDS
+    + [
+        FieldSpec("Forni Avoltri", ("forni_avoltri_min", "forni_avoltri_max")),
+        FieldSpec("M. Zoncolan", ("m_zoncolan_min", "m_zoncolan_max")),
+    ],
+    "a2": MOUNTAIN_COMMON_FIELDS
+    + [
+        FieldSpec("Tarvisio", ("tarvisio_min", "tarvisio_max")),
+        FieldSpec("M. Lussari", ("m_lussari_min", "m_lussari_max")),
+    ],
+    "a3": MOUNTAIN_COMMON_FIELDS
+    + [
+        FieldSpec("Claut", ("claut_min", "claut_max")),
+        FieldSpec("Piancavallo", ("piancavallo_min", "piancavallo_max")),
+    ],
+    "a4": MOUNTAIN_COMMON_FIELDS
+    + [
+        FieldSpec("Sella Nevea", ("sella_nevea_min", "sella_nevea_max")),
+        FieldSpec("M. Canin (R. Gilberti)", ("m_canin_min", "m_canin_max")),
+    ],
+    "z2": [
+        FieldSpec("Temperatura minima pianura (°C)", ("temperatura_minima_pianura",)),
+        FieldSpec("Temperatura massima pianura (°C)", ("temperatura_massima_pianura",)),
+        FieldSpec("Quota zero termico (m)", ("quota_zero_termico",)),
+        FieldSpec("Quota delle nevicate (m)", ("quota_nevicate",)),
+        FieldSpec(
+            "Probabilità precipitazioni estese (%)",
+            ("pioggia_prob_prealpi", "pioggia_prob_pianura"),
+        ),
+        FieldSpec(
+            "Probabilità di temporali (%)",
+            ("temporale_prob_prealpi", "temporale_prob_pianura"),
+        ),
+    ],
+    "z4": [
+        FieldSpec("Temperatura minima (°C)", ("temperatura_minima",)),
+        FieldSpec("Temperatura massima (°C)", ("temperatura_massima",)),
+        FieldSpec("Probabilità precipitazioni estese (%)", ("pioggia_prob",)),
+        FieldSpec("Probabilità di temporali (%)", ("temporale_prob",)),
+    ],
+}
+
+
 def extract_zone_data(raw_text, zone):
     main_forecast = raw_text.split("ARPA FVG")[0]
     lines = [line.strip() for line in main_forecast.split("\n") if line.strip()]
 
-    match zone:
-        case "a1":
-            data = handler_alpi_carniche(lines)
-        case "a2":
-            data = handler_alpi_giulie(lines)
-        case "a3":
-            data = handler_prealpi_carniche(lines)
-        case "a4":
-            data = handler_prealpi_giulie(lines)
-        case "z2":
-            data = handler_alta_pianura(lines)
-        case "z4":
-            data = handler_costa(lines)
-        case _:
-            logger.warning(f"Unknown zone {zone}")
-            data = {}
+    fields = ZONE_FIELDS.get(zone)
+    if fields is None:
+        logger.warning(f"Unknown zone {zone}")
+        return {}
+
+    data = apply_fields(lines, fields)
+
+    if zone == "z4":
+        data.update(extract_costa_wind(lines))
 
     return data
 
 
-def handler_alpi_carniche(lines):
-    data = {}
-    for i, line in enumerate(lines):
-        if (
-            "Temperatura media a 1.000 m (°C)" in line
-            and "temperatura_media_1000" not in data
-        ):
-            data["temperatura_media_1000"] = lines[i + 1]
-
-        if (
-            "Temperatura media a 2.000 m (°C)" in line
-            and "temperatura_media_2000" not in data
-        ):
-            data["temperatura_media_2000"] = lines[i + 1]
-
-        if (
-            "Probabilità precipitazioni estese (%)" in line
-            and "pioggia_prob" not in data
-        ):
-            data["pioggia_prob"] = lines[i + 1]
-
-        if "Probabilità di temporali (%)" in line and "temporale_prob" not in data:
-            data["temporale_prob"] = lines[i + 1]
-
-        if "Quota zero termico (m)" in line and "quota_zero_termico" not in data:
-            data["quota_zero_termico"] = lines[i + 1]
-
-        if "Quota delle nevicate (m)" in line and "quota_nevicate" not in data:
-            data["quota_nevicate"] = lines[i + 1]
-
-        if "Vento medio a 2.000 m (m/s)" in line and "vento_2000_direzione" not in data:
-            data["vento_2000_direzione"] = lines[i + 1]
-            data["vento_2000_velocita"] = float(lines[i + 2])
-
-
-        if "Vento medio a 3.000 m (m/s)" in line and "vento_3000_direzione" not in data:
-            data["vento_3000_direzione"] = lines[i + 1]
-            data["vento_3000_velocita"] = float(lines[i + 2])
-
-        if "Forni Avoltri" in line and "forni_avoltri_min" not in data:
-            data["forni_avoltri_min"] = lines[i + 1]
-            data["forni_avoltri_max"] = lines[i + 2]
-
-        if "M. Zoncolan" in line and "m_zoncolan_min" not in data:
-            data["m_zoncolan_min"] = lines[i + 1]
-            data["m_zoncolan_max"] = lines[i + 2]
-
-    return data
-
-
-def handler_alpi_giulie(lines):
-    data = {}
-    for i, line in enumerate(lines):
-        if (
-            "Temperatura media a 1.000 m (°C)" in line
-            and "temperatura_media_1000" not in data
-        ):
-            data["temperatura_media_1000"] = lines[i + 1]
-
-        if (
-            "Temperatura media a 2.000 m (°C)" in line
-            and "temperatura_media_2000" not in data
-        ):
-            data["temperatura_media_2000"] = lines[i + 1]
-
-        if (
-            "Probabilità precipitazioni estese (%)" in line
-            and "pioggia_prob" not in data
-        ):
-            value = lines[i + 1].strip()
-            data["pioggia_prob"] = value
-
-        if "Probabilità di temporali (%)" in line and "temporale_prob" not in data:
-            value = lines[i + 1].strip()
-            data["temporale_prob"] = value
-
-        if "Quota zero termico (m)" in line and "quota_zero_termico" not in data:
-            data["quota_zero_termico"] = lines[i + 1]
-
-        if "Quota delle nevicate (m)" in line and "quota_nevicate" not in data:
-            data["quota_nevicate"] = lines[i + 1]
-
-        if "Vento medio a 2.000 m (m/s)" in line and "vento_2000_direzione" not in data:
-            data["vento_2000_direzione"] = lines[i + 1].strip()
-            data["vento_2000_velocita"] = float(lines[i + 2])
-
-        if "Vento medio a 3.000 m (m/s)" in line and "vento_3000_direzione" not in data:
-            data["vento_3000_direzione"] = lines[i + 1].strip()
-            data["vento_3000_velocita"] = float(lines[i + 2])
-
-        if "Tarvisio" in line and "tarvisio_min" not in data:
-            data["tarvisio_min"] = lines[i + 1]
-            data["tarvisio_max"] = lines[i + 2]
-
-        if "M. Lussari" in line and "m_lussari_min" not in data:
-            data["m_lussari_min"] = lines[i + 1]
-            data["m_lussari_max"] = lines[i + 2]
-
-    return data
-
-
-def handler_prealpi_carniche(lines):
+def extract_costa_wind(lines):
     data = {}
 
     for i, line in enumerate(lines):
-        if (
-            "Temperatura media a 1.000 m (°C)" in line
-            and "temperatura_media_1000" not in data
-        ):
-            data["temperatura_media_1000"] = lines[i + 1]
+        if "Vento medio al largo: direzione ed intensità (kt)" not in line:
+            continue
+        if "vento_mattino_direzione" in data:
+            break
 
-        if (
-            "Temperatura media a 2.000 m (°C)" in line
-            and "temperatura_media_2000" not in data
-        ):
-            data["temperatura_media_2000"] = lines[i + 1]
+        if i + 2 < len(lines):
+            mattino = lines[i + 2].split()
+            if len(mattino) >= 2:
+                data["vento_mattino_direzione"] = mattino[0]
+                data["vento_mattino_intensita"] = mattino[1]
 
-        if (
-            "Probabilità precipitazioni estese (%)" in line
-            and "pioggia_prob" not in data
-        ):
-            value = lines[i + 1].strip()
-            data["pioggia_prob"] = value
-
-        if "Probabilità di temporali (%)" in line and "temporale_prob" not in data:
-            value = lines[i + 1].strip()
-            data["temporale_prob"] = value
-
-        if "Quota zero termico (m)" in line and "quota_zero_termico" not in data:
-            data["quota_zero_termico"] = lines[i + 1]
-
-        if "Quota delle nevicate (m)" in line and "quota_nevicate" not in data:
-            data["quota_nevicate"] = lines[i + 1]
-
-        if "Vento medio a 2.000 m (m/s)" in line and "vento_2000_direzione" not in data:
-            data["vento_2000_direzione"] = lines[i + 1].strip()
-            data["vento_2000_velocita"] = float(lines[i + 2])
-
-        if "Vento medio a 3.000 m (m/s)" in line and "vento_3000_direzione" not in data:
-            data["vento_3000_direzione"] = lines[i + 1].strip()
-            data["vento_3000_velocita"] = float(lines[i + 2])
-
-        if "Claut" in line and "claut_min" not in data:
-            data["claut_min"] = lines[i + 1]
-            data["claut_max"] = lines[i + 2]
-
-        if "Piancavallo" in line and "piancavallo_min" not in data:
-            data["piancavallo_min"] = lines[i + 1]
-            data["piancavallo_max"] = lines[i + 2]
-
-    return data
-
-
-def handler_prealpi_giulie(lines):
-    data = {}
-
-    for i, line in enumerate(lines):
-        if (
-            "Temperatura media a 1.000 m (°C)" in line
-            and "temperatura_media_1000" not in data
-        ):
-            data["temperatura_media_1000"] = lines[i + 1]
-
-        if (
-            "Temperatura media a 2.000 m (°C)" in line
-            and "temperatura_media_2000" not in data
-        ):
-            data["temperatura_media_2000"] = lines[i + 1]
-
-        if (
-            "Probabilità precipitazioni estese (%)" in line
-            and "pioggia_prob" not in data
-        ):
-            value = lines[i + 1].strip()
-            data["pioggia_prob"] = value
-
-        if "Probabilità di temporali (%)" in line and "temporale_prob" not in data:
-            value = lines[i + 1].strip()
-            data["temporale_prob"] = value
-
-        if "Quota zero termico (m)" in line and "quota_zero_termico" not in data:
-            data["quota_zero_termico"] = lines[i + 1]
-
-        if "Quota delle nevicate (m)" in line and "quota_nevicate" not in data:
-            data["quota_nevicate"] = lines[i + 1]
-
-        if "Vento medio a 2.000 m (m/s)" in line and "vento_2000_direzione" not in data:
-            data["vento_2000_direzione"] = lines[i + 1].strip()
-            data["vento_2000_velocita"] = float(lines[i + 2])
-
-        if "Vento medio a 3.000 m (m/s)" in line and "vento_3000_direzione" not in data:
-            data["vento_3000_direzione"] = lines[i + 1].strip()
-            data["vento_3000_velocita"] = float(lines[i + 2])
-
-        if "Sella Nevea" in line and "sella_nevea_min" not in data:
-            data["sella_nevea_min"] = lines[i + 1]
-            data["sella_nevea_max"] = lines[i + 2]
-
-        if "M. Canin (R. Gilberti)" in line and "m_canin_min" not in data:
-            data["m_canin_min"] = lines[i + 1]
-            data["m_canin_max"] = lines[i + 2]
-
-    return data
-
-
-def handler_alta_pianura(lines):
-    data = {}
-
-    for i, line in enumerate(lines):
-        if (
-            "Temperatura minima pianura (°C)" in line
-            and "temperatura_minima_pianura" not in data
-        ):
-            data["temperatura_minima_pianura"] = lines[i + 1].strip()
-
-        if (
-            "Temperatura massima pianura (°C)" in line
-            and "temperatura_massima_pianura" not in data
-        ):
-            data["temperatura_massima_pianura"] = lines[i + 1].strip()
-
-        if "Quota zero termico (m)" in line and "quota_zero_termico" not in data:
-            data["quota_zero_termico"] = lines[i + 1].strip()
-
-        if "Quota delle nevicate (m)" in line and "quota_nevicate" not in data:
-            data["quota_nevicate"] = lines[i + 1].strip()
-
-        if (
-            "Probabilità precipitazioni estese (%)" in line
-            and "pioggia_prob_prealpi" not in data
-        ):
-            data["pioggia_prob_prealpi"] = lines[i + 1].strip()
-            data["pioggia_prob_pianura"] = lines[i + 2].strip()
-
-        if (
-            "Probabilità di temporali (%)" in line
-            and "temporale_prob_prealpi" not in data
-        ):
-            data["temporale_prob_prealpi"] = lines[i + 1].strip()
-            data["temporale_prob_pianura"] = lines[i + 2].strip()
-
-    return data
-
-
-def handler_costa(lines):
-    data = {}
-
-    for i, line in enumerate(lines):
-        if "Temperatura minima (°C)" in line and "temperatura_minima" not in data:
-            data["temperatura_minima"] = lines[i + 1].strip()
-
-        if "Temperatura massima (°C)" in line and "temperatura_massima" not in data:
-            data["temperatura_massima"] = lines[i + 1].strip()
-
-        if (
-            "Probabilità precipitazioni estese (%)" in line
-            and "pioggia_prob" not in data
-        ):
-            data["pioggia_prob"] = lines[i + 1].strip()
-
-        if "Probabilità di temporali (%)" in line and "temporale_prob" not in data:
-            data["temporale_prob"] = lines[i + 1].strip()
-
-        if (
-            "Vento medio al largo: direzione ed intensità (kt)" in line
-            and "vento_mattino_direzione" not in data
-        ):
-            # Mattino
-            if i + 2 < len(lines):
-                mattino = lines[i + 2].strip().split()
-                if len(mattino) >= 2:
-                    data["vento_mattino_direzione"] = mattino[0]
-                    data["vento_mattino_intensita"] = mattino[1]
-
-            if i + 4 < len(lines):
-                pomeriggio = lines[i + 4].strip().split()
-                if len(pomeriggio) >= 2:
-                    data["vento_pomeriggio_direzione"] = pomeriggio[0]
-                    data["vento_pomeriggio_intensita"] = pomeriggio[1]
+        if i + 4 < len(lines):
+            pomeriggio = lines[i + 4].split()
+            if len(pomeriggio) >= 2:
+                data["vento_pomeriggio_direzione"] = pomeriggio[0]
+                data["vento_pomeriggio_intensita"] = pomeriggio[1]
 
     return data

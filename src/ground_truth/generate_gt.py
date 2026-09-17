@@ -16,10 +16,12 @@ def generate_gt(target_dates: list[datetime], output_path: str) -> None:
             if os.path.exists("./xmls"):
                 res = xml_extract(date)
             else:
-                logger.warning("XML files not found. Falling back to pdf text extraction.")
+                logger.warning(
+                    "XML files not found. Falling back to pdf text extraction."
+                )
                 res = text_extract(date)
             save_to_file(res, output_path, date)
-        except Exception as e: # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error generating ground truth for date {date}: {e}")
 
 
