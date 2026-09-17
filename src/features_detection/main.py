@@ -175,18 +175,18 @@ def _run_tobac_single_day_single_phenomenon(
 
         detection_params = phenomenon_params.value
 
-        min_blob_size = detection_params.get("min_blob_size", 100)
-        target = detection_params.get("target", "maximum")
-        smooth = detection_params.get("smooth", DEFAULT_SMOOTH)
-        threshold = detection_params.get("threshold", 0.6)
+        min_blob_size = int(detection_params.get("min_blob_size", 100))
+        target = str(detection_params.get("target", "maximum"))
+        smooth = float(detection_params.get("smooth", DEFAULT_SMOOTH))
+        threshold = float(detection_params.get("threshold", 0.6))
 
         # Feature detection & tracking
         features, features_weighted_points = detect_features(
             referenced_data_norm,
-            threshold=float(threshold),
-            target=str(target),
-            smooth=float(smooth),
-            min_blob_size=int(min_blob_size),
+            threshold=threshold,
+            target=target,
+            smooth=smooth,
+            min_blob_size=min_blob_size,
             min_distance=DEFAULT_MIN_DISTANCE,
             dxy=dxy,
         )

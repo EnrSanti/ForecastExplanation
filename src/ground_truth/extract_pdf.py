@@ -1,6 +1,7 @@
 import logging
 import re
-from typing import Callable, NamedTuple, Optional
+from collections.abc import Callable
+from typing import NamedTuple
 
 import pymupdf
 import requests
@@ -71,7 +72,7 @@ def text_extract(dt) -> dict:
 class FieldSpec(NamedTuple):
     label: str
     keys: tuple[str, ...]
-    casts: Optional[dict[str, Callable]] = None
+    casts: dict[str, Callable] | None = None
 
 
 def apply_fields(lines: list[str], specs: list[FieldSpec]) -> dict:

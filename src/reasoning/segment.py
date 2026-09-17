@@ -150,7 +150,7 @@ def detect_clouds(
                     intersection_pixels = np.sum(cloud_mask & city_mask)
                     if intersection_pixels > 0:
                         total_city_pixels = np.sum(city_mask)
-                        pct_covered = int(
+                        pct_covered = round(
                             (intersection_pixels / total_city_pixels) * 100.0
                         )
 
