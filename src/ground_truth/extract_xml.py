@@ -22,7 +22,6 @@ from datetime import datetime
 logger = logging.getLogger("ForecastExplanation")
 
 A_ZONES = [f"A{i}" for i in range(1, 10)]
-_NONE_VALUES = {"100", "", None}
 KEYS = ["CIELO_DESCRIZIONE", "TEMPORALE_DESCRIZIONE", "PIOGGIA_DESCRIZIONE"]
 
 
@@ -51,7 +50,7 @@ def _zone_name(zone_raw: dict) -> str:
 
 
 def xml_extract(date: datetime) -> dict:
-    xml_path = f"xml/PW{date.strftime('%Y%m%d')}.xml"
+    xml_path = f"xmls/PW{date.strftime('%Y%m%d')}.xml"
     tree = ET.parse(xml_path)
     root = tree.getroot()
     deadline = root.find("previsioni/scadenze/scadenza[@id='1']")

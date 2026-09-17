@@ -36,35 +36,34 @@ def text_extract(dt) -> dict:
             "ln": "",
         }
 
-        try:
-            r = session.get(BASE_ARCHIVE_URL, params=params, timeout=10)
-            if r.status_code != 200:
-                logger.error(f"Failed to load archive HTML for {zone}, date {dt}")
-                continue
 
-            clean_html = r.text.replace("\\/", "/").replace('\\"', '"')
-            pattern = rf"pdf/\d{{4}}/\d{{8}}/(\d{{12}})/pdf/{zone}-\d{{8}}-it\.pdf"
-            matches = re.findall(pattern, clean_html)
+        r = session.get(BASE_ARCHIVE_URL, params=params, timeout=10)
+        if r.status_code != 200:
+            logger.error(f"Failed to load archive HTML for {zone}, date {dt}")
+            continue
 
-            if not matches:
-                logger.error(f"No PDF link found for {zone}, date {dt}")
-                continue
+        clean_html = r.text.replace("\\/", "/").replace('\\"', '"')
+        pattern = rf"pdf/\d{{4}}/\d{{8}}/(\d{{12}})/pdf/{zone}-\d{{8}}-it\.pdf"
+        matches = re.findall(pattern, clean_html)
 
-            # most recent timestamp
-            timestamp = matches[-1]
-            pdf_url = f"{PDF_BASE}pdf/{dt.year}/{yyyymmdd}/{timestamp}/pdf/{zone}-{yyyymmdd}-it.pdf"
+        if not matches:
+            logger.error(f"No PDF link found for {zone}, date {dt}")
+            continue
 
-            pdf_resp = session.get(pdf_url, timeout=10)
-            if pdf_resp.status_code != 200:
-                logger.error(f"Failed to download PDF from {pdf_url}")
-                continue
+        # most recent timestamp
+        timestamp = matches[-1]
+        pdf_url = f"{PDF_BASE}pdf/{dt.year}/{yyyymmdd}/{timestamp}/pdf/{zone}-{yyyymmdd}-it.pdf"
 
-            doc = pymupdf.open(stream=pdf_resp.content, filetype="pdf")
-            for page in doc:
-                text = page.get_text("text").strip()
-                data[NAMES[zone]] = extract_zone_data(text, zone)
-        except Exception as e:  # noqa: BLE001
-            logger.error(f"Error processing {zone}, {dt}: {e}")
+        pdf_resp = session.get(pdf_url, timeout=10)
+        if pdf_resp.status_code != 200:
+            logger.error(f"Failed to download PDF from {pdf_url}")
+            continue
+
+        doc = pymupdf.open(stream=pdf_resp.content, filetype="pdf")
+        for page in doc:
+            text = page.get_text("text").strip()
+            data[NAMES[zone]] = extract_zone_data(text, zone)
+            break
 
     return data
 
@@ -123,11 +122,12 @@ def handler_alpi_carniche(lines):
         if "Quota delle nevicate (m)" in line and "quota_nevicate" not in data:
             data["quota_nevicate"] = lines[i + 1]
 
-        if "Vento medio a 2.000 m (m/s)" in line and "vento_2000" not in data:
+        if "Vento medio a 2.000 m (m/s)" in line and "vento_2000_direzione" not in data:
             data["vento_2000_direzione"] = lines[i + 1]
             data["vento_2000_velocita"] = float(lines[i + 2])
 
-        if "Vento medio a 3.000 m (m/s)" in line and "vento_3000" not in data:
+
+        if "Vento medio a 3.000 m (m/s)" in line and "vento_3000_direzione" not in data:
             data["vento_3000_direzione"] = lines[i + 1]
             data["vento_3000_velocita"] = float(lines[i + 2])
 

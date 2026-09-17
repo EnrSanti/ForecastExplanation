@@ -178,12 +178,10 @@ def extract_day(
 ) -> None:
     logger.info("Starting data extraction...")
 
-    worker = extract_day_worker
-
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
             executor.submit(
-                worker,
+                extract_day_worker,
                 date,
                 region,
                 base_path,
