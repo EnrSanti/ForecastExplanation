@@ -10,3 +10,4 @@ services:
       - ./tmp_data:/app/tmp_data
       - ./runs:/app/runs
       - ./config.yaml:/app/config.yaml
+      - ./xml:/app/xmls

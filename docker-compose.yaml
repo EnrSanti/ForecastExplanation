@@ -6,4 +6,5 @@ services:
     volumes:
       - ./runs:/app/runs                 # output folder
       - ./config.yaml:/app/config.yaml   # config file location
+      - ./xml:/app/xmls                  # xml forecast files location
       - ./tmp_data:/app/tmp_data         # optional
