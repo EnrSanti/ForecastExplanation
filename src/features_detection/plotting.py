@@ -1,6 +1,6 @@
 import itertools
 import logging
-import os
+from pathlib import Path
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -150,7 +150,7 @@ def print_cloud_labels(
 
 def generate_all_plots(
     da: xr.DataArray,
-    output_dir: str,
+    output_dir: Path,
     cmap: str,
     region: Region,
     segments_all: list | tuple,
@@ -160,7 +160,7 @@ def generate_all_plots(
     Renders all frames in the given DataArray with native Cartopy projection,
     overlaying segments and tracking lines, and saving to output_dir.
     """
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Build tracking info memory mapping
     cell_info_by_frame = {}
@@ -199,7 +199,7 @@ def generate_all_plots(
         # Valid time to filename string matching old pipeline format: e.g. ..._20090102_0100_tracked.png
         valid_time_pd = pd.Timestamp(da.time.values[i])
         out_name = f"{da.name}_{valid_time_pd.strftime('%Y%m%d_%H%M')}_tracked.png"
-        out_path = os.path.join(output_dir, out_name)
+        out_path = output_dir / out_name
 
         # 10x8 inches matches Cartopy default map size used in old _save_scalar_maps
         fig, axs = plt.subplots(

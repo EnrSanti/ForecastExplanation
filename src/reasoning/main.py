@@ -1,6 +1,6 @@
 import logging
-import os
 from datetime import datetime
+from pathlib import Path
 
 import xarray as xr
 from tqdm import tqdm
@@ -16,8 +16,8 @@ logger = logging.getLogger("ForecastExplanation")
 
 def reason(
     dates: list[datetime],
-    input_dir: str,
-    output_dir: str,
+    input_dir: Path,
+    output_dir: Path,
     region: Region,
     force: bool = False,
 ) -> None:
@@ -27,30 +27,29 @@ def reason(
 
     Args:
         dates (list): List of dates for which reasoning is to be performed.
-        input_dir (str): Path to the input directory containing spatial data.
-        output_dir (str): Path to the directory where processed output will be written.
+        input_dir (Path): Path to the input directory containing spatial data.
+        output_dir (Path): Path to the directory where processed output will be written.
         region (Region): The specific geographic region to be used.
         force (bool, optional): If True, forces the processing of all dates. Defaults to False.
     """
     logger.info("Starting reasoning")
-    for date in tqdm(dates, desc="Reasoning"):
-        day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
-        day_output_dir = os.path.join(
-            output_dir, date.strftime("%Y-%m-%d"), "reasoning"
-        )
 
-        if not force and os.path.exists(day_output_dir) and os.listdir(day_output_dir):
+    for date in tqdm(dates, desc="Reasoning"):
+        day_input_dir = input_dir / date.strftime("%Y-%m-%d")
+        day_output_dir = output_dir / date.strftime("%Y-%m-%d") / "reasoning"
+
+        if not force and day_output_dir.exists() and any(day_output_dir.iterdir()):
             logger.debug(
                 f"Reasoning already exists for {date.strftime('%Y-%m-%d')}. Skipping."
             )
             continue
 
-        os.makedirs(day_output_dir, exist_ok=True)
+        day_output_dir.mkdir(parents=True, exist_ok=True)
         logger.debug(f"Processing reasoning for {date.strftime('%Y-%m-%d')}")
 
         with (
-            xr.open_dataset(os.path.join(day_input_dir, "segmentation.nc")) as seg_ds,
-            xr.open_dataset(os.path.join(day_input_dir, "features.nc")) as feat_ds,
+            xr.open_dataset(day_input_dir / "segmentation.nc") as seg_ds,
+            xr.open_dataset(day_input_dir / "features.nc") as feat_ds,
         ):
             heights = get_heights(feat_ds)
             radius = region.city_radius
@@ -58,7 +57,7 @@ def reason(
             detect_winds(
                 feat_ds,
                 region.get_cities(),
-                os.path.join(day_output_dir, "winds.txt"),
+                day_output_dir / "winds.txt",
                 heights,
                 radius,
             )
@@ -67,7 +66,7 @@ def reason(
                 seg_ds,
                 feat_ds,
                 region.get_cities(),
-                os.path.join(day_output_dir, "cloud.txt"),
+                day_output_dir / "cloud.txt",
                 heights,
                 radius,
             )
@@ -76,7 +75,7 @@ def reason(
             detect_phenomenon(
                 feat_ds,
                 region.get_cities(),
-                os.path.join(day_output_dir, "heat.txt"),
+                day_output_dir / "heat.txt",
                 heights,
                 "temp",
                 radius,
@@ -85,7 +84,7 @@ def reason(
                 seg_ds,
                 feat_ds,
                 region.get_cities(),
-                os.path.join(day_output_dir, "heat_fronts.txt"),
+                day_output_dir / "heat_fronts.txt",
                 heights,
                 "temp",
             )
@@ -94,7 +93,7 @@ def reason(
             detect_phenomenon(
                 feat_ds,
                 region.get_cities(),
-                os.path.join(day_output_dir, "humidity.txt"),
+                day_output_dir / "humidity.txt",
                 heights,
                 "humidity",
                 radius,
@@ -103,7 +102,7 @@ def reason(
                 seg_ds,
                 feat_ds,
                 region.get_cities(),
-                os.path.join(day_output_dir, "humidity_fronts.txt"),
+                day_output_dir / "humidity_fronts.txt",
                 heights,
                 "humidity",
             )

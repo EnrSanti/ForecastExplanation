@@ -1,7 +1,7 @@
 import logging
-import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
+from pathlib import Path
 
 import matplotlib
 import pandas as pd
@@ -38,8 +38,8 @@ logger = logging.getLogger(__name__)
 
 def run_tobac(
     dates: list[datetime],
-    input_dir: str,
-    output_dir: str,
+    input_dir: Path,
+    output_dir: Path,
     region: Region,
     force: bool = False,
     save_images: bool = False,
@@ -47,8 +47,9 @@ def run_tobac(
     """
     Executes TOBAC tracking across the specified list of dates and weather phenomena.
     """
+
     logger.info("Starting TOBAC.")
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     with ProcessPoolExecutor(max_workers=12) as executor:
         futures = {
             executor.submit(
@@ -77,17 +78,17 @@ def run_tobac(
 
 def _run_tobac_single_day(
     date: datetime,
-    input_dir: str,
-    output_dir: str,
+    input_dir: Path,
+    output_dir: Path,
     region: Region,
     force: bool = False,
     save_images: bool = False,
 ) -> None:
-    day_input_dir = os.path.join(input_dir, date.strftime("%Y-%m-%d"))
-    day_output_dir = os.path.join(output_dir, date.strftime("%Y-%m-%d"))
-    os.makedirs(day_output_dir, exist_ok=True)
+    day_input_dir = input_dir / date.strftime("%Y-%m-%d")
+    day_output_dir = output_dir / date.strftime("%Y-%m-%d")
+    day_output_dir.mkdir(parents=True, exist_ok=True)
 
-    if not force and os.path.exists(os.path.join(day_output_dir, "segmentation.nc")):
+    if not force and (day_output_dir / "segmentation.nc").exists():
         logger.debug(
             f"Segmentation already exists for {date.strftime('%Y-%m-%d')}. Skipping."
         )
@@ -128,15 +129,13 @@ def _run_tobac_single_day(
     results_seg_ds = xr.merge(dss, compat="override", join="outer")
     del temp_seg_ds, hum_seg_ds, cld_seg_ds
 
-    xr.Dataset.from_dataframe(results_tra).to_netcdf(
-        os.path.join(day_output_dir, "trajectories.nc")
-    )
-    results_seg_ds.to_netcdf(os.path.join(day_output_dir, "segmentation.nc"))
+    xr.Dataset.from_dataframe(results_tra).to_netcdf(day_output_dir / "trajectories.nc")
+    results_seg_ds.to_netcdf(day_output_dir / "segmentation.nc")
 
 
 def _run_tobac_single_day_single_phenomenon(
-    day_input_dir: str,
-    day_output_dir: str,
+    day_input_dir: Path,
+    day_output_dir: Path,
     region: Region,
     phenomenon: WeatherPhenomenon,
     phenomenon_params: WeatherPhenomenonTobacParams | None = None,
@@ -151,9 +150,9 @@ def _run_tobac_single_day_single_phenomenon(
     logger.debug(f"Processing {phenomenon.value} for {day_input_dir}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
-        features_nc = os.path.join(day_input_dir, "features.nc")
+        features_nc = day_input_dir / "features.nc"
 
-        if not os.path.exists(features_nc):
+        if not features_nc.exists():
             continue
         with xr.open_dataset(features_nc) as ds:
             folder_key = f"{phenomenon.value}{suffix}"
@@ -219,7 +218,7 @@ def _run_tobac_single_day_single_phenomenon(
         if save_images:
             from features_detection.plotting import generate_all_plots
 
-            height_output_dir = os.path.join(day_output_dir, folder_key)
+            height_output_dir = day_output_dir / folder_key
             generate_all_plots(
                 da=da,
                 output_dir=height_output_dir,
@@ -285,12 +284,12 @@ def _run_tobac_single_day_single_phenomenon(
 
 
 def _create_output_features_nc(
-    day_input_dir: str, day_output_dir: str, region: Region
+    day_input_dir: Path, day_output_dir: Path, region: Region
 ) -> None:
-    input_features_nc = os.path.join(day_input_dir, "features.nc")
-    output_features_nc = os.path.join(day_output_dir, "features.nc")
+    input_features_nc = day_input_dir / "features.nc"
+    output_features_nc = day_output_dir / "features.nc"
 
-    if not os.path.exists(input_features_nc):
+    if not input_features_nc.exists():
         return
 
     tmp_ds = xr.Dataset()

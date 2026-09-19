@@ -1,8 +1,8 @@
 import logging
-import os
 import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -29,16 +29,16 @@ logger = logging.getLogger(__name__)
 
 
 def find_starting_step(
-    clustered_dir: str, raw_data_dir: str, cut_data_dir: str, discrete_data_dir: str
+    clustered_dir: Path, raw_data_dir: Path, cut_data_dir: Path, discrete_data_dir: Path
 ) -> int:
     """Find the starting step for the data extraction process."""
-    if os.path.exists(clustered_dir) and len(os.listdir(clustered_dir)) > 0:
+    if clustered_dir.exists() and any(clustered_dir.iterdir()):
         return 4  # Clustering done
-    if os.path.exists(discrete_data_dir) and len(os.listdir(discrete_data_dir)) > 0:
+    if discrete_data_dir.exists() and any(discrete_data_dir.iterdir()):
         return 3  # Feature maps saved
-    if os.path.exists(cut_data_dir) and len(os.listdir(cut_data_dir)) > 0:
+    if cut_data_dir.exists() and any(cut_data_dir.iterdir()):
         return 2  # GRIB cut
-    if os.path.exists(raw_data_dir) and len(os.listdir(raw_data_dir)) > 0:
+    if raw_data_dir.exists() and any(raw_data_dir.iterdir()):
         return 1  # GRIB downloaded
 
     return 0  # No data
@@ -47,7 +47,7 @@ def find_starting_step(
 def extract_day_worker(
     date: datetime,
     region: Region,
-    base_path: str,
+    base_path: Path,
     clean_level: int = 0,
     clustering: bool = True,
     force_redo: bool = False,
@@ -55,16 +55,12 @@ def extract_day_worker(
     create_images: bool = False,
 ) -> None:
     logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
-    clustered_dir = os.path.join(
-        base_path, CLUSTERED_DATA_DIR, date.strftime("%Y-%m-%d")
-    )
+    clustered_dir = base_path / CLUSTERED_DATA_DIR / date.strftime("%Y-%m-%d")
     # raw data can be shared between runs
-    raw_data_dir = os.path.join(RAW_DATA_DIR, date.strftime("%Y-%m-%d"))
-    cut_data_dir = os.path.join(base_path, CUT_DATA_DIR, date.strftime("%Y-%m-%d"))
-    discrete_data_dir = os.path.join(
-        base_path, DISCRETE_DATA_DIR, date.strftime("%Y-%m-%d")
-    )
-    features_nc_path = os.path.join(discrete_data_dir, "features.nc")
+    raw_data_dir = Path(RAW_DATA_DIR) / date.strftime("%Y-%m-%d")
+    cut_data_dir = base_path / CUT_DATA_DIR / date.strftime("%Y-%m-%d")
+    discrete_data_dir = base_path / DISCRETE_DATA_DIR / date.strftime("%Y-%m-%d")
+    features_nc_path = discrete_data_dir / "features.nc"
 
     starting_step = find_starting_step(
         clustered_dir, raw_data_dir, cut_data_dir, discrete_data_dir
@@ -72,14 +68,14 @@ def extract_day_worker(
     nc_file = ""
 
     if starting_step in [0, 1, 2] or force_redo:
-        os.makedirs(raw_data_dir, exist_ok=True)
-        os.makedirs(cut_data_dir, exist_ok=True)
+        raw_data_dir.mkdir(parents=True, exist_ok=True)
+        cut_data_dir.mkdir(parents=True, exist_ok=True)
         # this skips 0 1 automatically if already done
         nc_file = extract_nc(date, region, raw_data_dir, cut_data_dir, force_redo)
         starting_step = 2
 
     if (starting_step == 2 or force_redo) and not just_cut:
-        os.makedirs(discrete_data_dir, exist_ok=True)
+        discrete_data_dir.mkdir(parents=True, exist_ok=True)
         feature_data = build_feature_dataarrays(nc_file)
         feature_data.to_netcdf(features_nc_path)
         if create_images:
@@ -87,11 +83,11 @@ def extract_day_worker(
         starting_step = 3
 
     if ((starting_step == 3 or force_redo) and clustering) and not just_cut:
-        os.makedirs(clustered_dir, exist_ok=True)
+        clustered_dir.mkdir(parents=True, exist_ok=True)
         with xr.open_dataset(features_nc_path) as features_ds:
             feature_data = {str(name): da for name, da in features_ds.data_vars.items()}
         clustered_data = cluster_xarray(feature_data)
-        clustered_data.to_netcdf(os.path.join(clustered_dir, "features.nc"))
+        clustered_data.to_netcdf(clustered_dir / "features.nc")
 
     if starting_step == 4:
         logger.debug(
@@ -107,7 +103,7 @@ def extract_day_worker(
         shutil.rmtree(clustered_dir, ignore_errors=True)
 
 
-def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
+def save_tobac_input_images(feature_data: xr.Dataset, output_dir: Path) -> None:
     """
     Renders each (variable, level, time) slice in feature_data to a raw
     grayscale PNG — written directly from normalized pixel values, not
@@ -130,7 +126,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
     spuriously bright (the cause of the earlier "whole image reads as one
     cloud" bug).
     """
-    os.makedirs(output_dir, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     for var_name in feature_data.data_vars:
         da = feature_data[var_name]
@@ -143,8 +139,8 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
             suffix = (
                 FOLDERS.get(int(level), f"_at_{level}") if level is not None else ""
             )
-            var_dir = os.path.join(output_dir, f"{var_name}{suffix}")
-            os.makedirs(var_dir, exist_ok=True)
+            var_dir = output_dir / f"{var_name}{suffix}"
+            var_dir.mkdir(parents=True, exist_ok=True)
 
             vmin = float(level_da.min())
             vmax = float(level_da.max())
@@ -161,7 +157,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
                 )
 
                 fname = f"{var_name}_{ts.strftime('%Y%m%d_%H%M')}.png"
-                cv2.imwrite(os.path.join(var_dir, fname), norm)
+                cv2.imwrite(str(var_dir / fname), norm)
 
     logger.info(f"Saved TOBAC input images to '{output_dir}'.")
 
@@ -169,7 +165,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: str) -> None:
 def extract_day(
     dates: list[datetime],
     region: Region,
-    base_path: str,
+    base_path: Path,
     clean_level: int = 0,
     clustering: bool = True,
     force_redo: bool = False,
@@ -209,24 +205,23 @@ def extract_day(
 def extract(
     dates: list[datetime],
     region: Region,
-    output_path: str,
+    output_path: Path,
     clean_level: int = 0,
     clustering: bool = True,
     force_redo: bool = False,
     just_cut: bool = False,
     create_images: bool = False,
 ) -> None:
-
-    os.makedirs(output_path, exist_ok=True)
-    os.makedirs(os.path.join(output_path, CLUSTERED_DATA_DIR), exist_ok=True)
-    os.makedirs(RAW_DATA_DIR, exist_ok=True)
-    os.makedirs(os.path.join(output_path, CUT_DATA_DIR), exist_ok=True)
-    os.makedirs(os.path.join(output_path, DISCRETE_DATA_DIR), exist_ok=True)
+    output_path.mkdir(parents=True, exist_ok=True)
+    (output_path / CLUSTERED_DATA_DIR).mkdir(parents=True, exist_ok=True)
+    Path(RAW_DATA_DIR).mkdir(parents=True, exist_ok=True)
+    (output_path / CUT_DATA_DIR).mkdir(parents=True, exist_ok=True)
+    (output_path / DISCRETE_DATA_DIR).mkdir(parents=True, exist_ok=True)
     if create_images:
-        os.makedirs(os.path.join(output_path, "legends"), exist_ok=True)
+        (output_path / "legends").mkdir(parents=True, exist_ok=True)
 
     if create_images:
-        create_one_time_images(region, os.path.join(output_path, "legends"))
+        create_one_time_images(region, output_path / "legends")
 
     extract_day(
         dates,
