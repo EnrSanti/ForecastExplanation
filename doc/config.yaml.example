@@ -14,7 +14,7 @@ run_custom_path_and_region:
   dates:
     - 2009-01-04
   clean: 0
-  force: 3
+  force: 4
   clustering: true
   debug: true
   just_cut: false
