@@ -1,0 +1,24 @@
+[project]
+name = "forecastexplanation"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "cartopy>=0.26.0",
+    "dotenv>=0.9.9",
+    "ecmwf-datastores-client>=0.5.3",
+    "matplotlib>=3.11.2",
+    "numpy==2.5.3",
+    "opencv-python>=5.0.0.93",
+    "pandas==2.3.3",
+    "pymupdf>=1.28.2",
+    "python-dotenv>=1.2.3",
+    "pyyaml>=6.0.3",
+    "requests>=2.34.2",
+    "ruff>=0.16.8",
+    "scikit-learn>=1.9.1",
+    "scipy-stubs~=1.18.1",
+    "seaborn>=0.13.2",
+    "tobac>=1.6.3",
+    "tqdm>=4.70.1",
+    "xarray>=2026.7.0",
+]
