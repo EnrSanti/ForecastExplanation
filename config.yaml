@@ -1,7 +1,7 @@
 run_baseline:
   region: FVG
   dates:
-    - 2021-01-01
+    - 2021-01-02
   force: 4 # redo all (excluding download grib)
 
 

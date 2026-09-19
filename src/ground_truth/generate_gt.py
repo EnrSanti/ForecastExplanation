@@ -21,7 +21,7 @@ def generate_gt(
             )
             continue
         try:
-            if Path("./xmls").exists() and date >= datetime(2021, 1, 1):  # todo
+            if Path("./xmls").exists() and date >= datetime(2021, 1, 2):  # todo
                 res = xml_extract(date - dt.timedelta(days=1))
             else:
                 logger.warning(
