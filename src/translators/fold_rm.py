@@ -20,6 +20,7 @@ _PIOGGIA_ENUM = {
 }
 
 _CLOUD_ENUM = {
+    None: 0,
     "sereno": 0,
     "poco nuvoloso": 1,
     "variabile": 2,

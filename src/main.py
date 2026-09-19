@@ -43,7 +43,7 @@ def parse_args_and_config() -> tuple[argparse.Namespace, dict]:
         dest="force",
         action="count",
         default=0,
-        help="-f forces reasoning, -ff forces feature extraction, -fff forces data extraction",
+        help="-f forces translation, -ff forces reasoning & ground truth, -fff forces feature extraction, -ffff forces data extraction",
     )
     parser.add_argument(
         "--clustering", action="store_true", help="Toggle clustering in data extraction"
