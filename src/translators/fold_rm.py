@@ -62,19 +62,20 @@ def _attach_city(df: pd.DataFrame) -> pd.DataFrame:
     return df.dropna(subset=["city"])
 
 
-def pivot(
+def _pivot(
     df: pd.DataFrame, value_col: str, round_ndigits: int | None = None
 ) -> tuple[dict, list[str], list[str]]:
     times = sorted({_time_label(ts) for ts in df["timestamp"]})
     heights = sorted({_height_label(h) for h in df["height"]})
-    lookup = {
-        (row["city"], _time_label(row["timestamp"]), _height_label(row["height"])): (
-            round(row[value_col], round_ndigits)
-            if round_ndigits is not None
-            else row[value_col]
-        )
-        for _, row in df.iterrows()
-    }
+    keys = zip(
+        df["city"],
+        df["timestamp"].map(_time_label),
+        df["height"].map(_height_label),
+    )
+    values = df[value_col]
+    if round_ndigits is not None:
+        values = values.round(round_ndigits)
+    lookup = dict(zip(keys, values))
     return lookup, times, heights
 
 
@@ -101,14 +102,14 @@ class FoldRmTranslator(BaseTranslator):
             ["timestamp", "height", "city"], keep="last"
         )
 
-        wind_dir, wind_dir_t, wind_dir_h = pivot(winds_df, "wind_direction")
-        wind_speed, wind_speed_t, wind_speed_h = pivot(
+        wind_dir, wind_dir_t, wind_dir_h = _pivot(winds_df, "wind_direction")
+        wind_speed, wind_speed_t, wind_speed_h = _pivot(
             winds_df, "wind_speed", round_ndigits=1
         )
-        coverage, cloud_t, cloud_h = pivot(cloud_df, "%covered")
-        size, _, _ = pivot(cloud_df, "tot area")
-        temperature, temp_t, temp_h = pivot(heat_df, "temperature", round_ndigits=1)
-        humidity, humidity_t, humidity_h = pivot(
+        coverage, cloud_t, cloud_h = _pivot(cloud_df, "%covered")
+        size, _, _ = _pivot(cloud_df, "tot area")
+        temperature, temp_t, temp_h = _pivot(heat_df, "temperature", round_ndigits=1)
+        humidity, humidity_t, humidity_h = _pivot(
             humidity_df, "humidity", round_ndigits=1
         )
 

@@ -1,7 +1,7 @@
 run_baseline:
   region: FVG
   dates:
-    - 2021-01-02
+    - 2021-01-01
   force: 4 # redo all (excluding download grib)
 
 
@@ -14,8 +14,8 @@ run_custom_path_and_region:
         lat: 44.25
         lon: 0.0
   dates:
-    - start: 2009-01-02
-      end: 2009-01-04
+    - start: 2021-01-02
+      end: 2021-01-04
   clean: 0
   force: 3
   clustering: true
