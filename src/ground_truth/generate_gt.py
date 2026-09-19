@@ -1,8 +1,9 @@
+import datetime as dt
 import json
 import logging
 import os
 from datetime import datetime
-import datetime as dt
+
 from .extract_pdf import text_extract
 from .extract_xml import xml_extract
 
