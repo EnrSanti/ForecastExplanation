@@ -1,8 +1,8 @@
 run_baseline:
   region: FVG
   dates:
-    - 2009-01-02
-  force: 3
+    - 2021-01-02
+  force: 4 # redo all (excluding download grib)
 
 
 run_custom_path_and_region:

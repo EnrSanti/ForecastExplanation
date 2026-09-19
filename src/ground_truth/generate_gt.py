@@ -1,10 +1,8 @@
 import datetime as dt
 import json
 import logging
-import os
 from datetime import datetime
 from pathlib import Path
-
 
 from .extract_pdf import text_extract
 from .extract_xml import xml_extract
@@ -13,10 +11,10 @@ logger = logging.getLogger("ForecastExplanation")
 
 
 def generate_gt(
-    target_dates: list[datetime], output_path: str, force: bool = False
+    target_dates: list[datetime], output_path: Path, force: bool = False
 ) -> None:
-    os.makedirs(output_path, exist_ok=True)
-    if not force and "gt.json" in os.listdir(output_path):
+    output_path.mkdir(parents=True, exist_ok=True)
+    if not force and (output_path / "gt.json").exists():
         logger.info(
             f"Ground truth already exists in {output_path}. Skipping generation."
         )

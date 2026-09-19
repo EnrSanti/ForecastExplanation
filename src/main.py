@@ -202,7 +202,7 @@ def main() -> None:
         reasoning.reason(dates, output_path, output_path, region, force=force > 1)
         ground_truth.generate_gt(dates, output_path, force=force > 1)
 
-        translate_output_path = os.path.join(output_path, "translated")
+        translate_output_path = output_path / "translated"
         translators.FoldRmTranslator().translate(
             output_path, translate_output_path, force=force > 0
         )
