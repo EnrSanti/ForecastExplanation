@@ -10,8 +10,15 @@ from .extract_xml import xml_extract
 logger = logging.getLogger("ForecastExplanation")
 
 
-def generate_gt(target_dates: list[datetime], output_path: str) -> None:
+def generate_gt(
+    target_dates: list[datetime], output_path: str, force: bool = False
+) -> None:
     os.makedirs(output_path, exist_ok=True)
+    if not force and "gt.json" in os.listdir(output_path):
+        logger.info(
+            f"Ground truth already exists in {output_path}. Skipping generation."
+        )
+        return
     for date in target_dates:
         try:
             if os.path.exists("./xmls"):

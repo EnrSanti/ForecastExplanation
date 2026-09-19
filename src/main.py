@@ -11,6 +11,7 @@ import data_extraction
 import features_detection
 import ground_truth
 import reasoning
+import translators
 from region import Region
 
 logging.basicConfig(
@@ -176,7 +177,7 @@ def main() -> None:
             output_path=output_path,
             clean_level=clean,
             clustering=clustering,
-            force_redo=force > 2,
+            force_redo=force > 3,
             just_cut=just_cut,
             create_images=save_images,
         )
@@ -194,11 +195,16 @@ def main() -> None:
             input_dir=input_dir,
             output_dir=output_path,
             region=region,
-            force=force > 1,
+            force=force > 2,
             save_images=save_images,
         )
-        reasoning.reason(dates, output_path, output_path, region, force=force > 0)
-        ground_truth.generate_gt(dates, output_path)
+        reasoning.reason(dates, output_path, output_path, region, force=force > 1)
+        ground_truth.generate_gt(dates, output_path, force=force > 1)
+
+        translate_output_path = os.path.join(output_path, "translated")
+        translators.FoldRmTranslator().translate(
+            output_path, translate_output_path, force=force > 0
+        )
 
         logger.info(f"--- Finished {run_name} ---\n\n")
 
