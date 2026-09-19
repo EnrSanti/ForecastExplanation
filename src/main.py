@@ -172,42 +172,46 @@ def main() -> None:
             logger.error(f"Region error in {run_name}: {e}")
             continue
 
-        data_extraction.extract(
-            dates,
-            region,
-            output_path=output_path,
-            clean_level=clean,
-            clustering=clustering,
-            force_redo=force > 3,
-            just_cut=just_cut,
-            create_images=save_images,
-        )
-        if just_cut:
-            logger.info(f"{run_name} finished just cut.")
+        try:
+            data_extraction.extract(
+                dates,
+                region,
+                output_path=output_path,
+                clean_level=clean,
+                clustering=clustering,
+                force_redo=force > 3,
+                just_cut=just_cut,
+                create_images=save_images,
+            )
+            if just_cut:
+                logger.info(f"{run_name} finished just cut.")
+                continue
+
+            input_dir = (
+                output_path / data_extraction.CLUSTERED_DATA_DIR
+                if clustering
+                else output_path / data_extraction.DISCRETE_DATA_DIR
+            )
+            features_detection.run_tobac(
+                dates,
+                input_dir=input_dir,
+                output_dir=output_path,
+                region=region,
+                force=force > 2,
+                save_images=save_images,
+            )
+            reasoning.reason(dates, output_path, output_path, region, force=force > 1)
+            ground_truth.generate_gt(dates, output_path, force=force > 1)
+
+            translate_output_path = output_path / "translated"
+            translators.FoldRmTranslator().translate(
+                dates, output_path, translate_output_path, force=force > 0
+            )
+
+            logger.info(f"--- Finished {run_name} ---\n\n")
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"Error running {run_name}: {e}")
             continue
-
-        input_dir = (
-            output_path / data_extraction.CLUSTERED_DATA_DIR
-            if clustering
-            else output_path / data_extraction.DISCRETE_DATA_DIR
-        )
-        features_detection.run_tobac(
-            dates,
-            input_dir=input_dir,
-            output_dir=output_path,
-            region=region,
-            force=force > 2,
-            save_images=save_images,
-        )
-        reasoning.reason(dates, output_path, output_path, region, force=force > 1)
-        ground_truth.generate_gt(dates, output_path, force=force > 1)
-
-        translate_output_path = output_path / "translated"
-        translators.FoldRmTranslator().translate(
-            output_path, translate_output_path, force=force > 0
-        )
-
-        logger.info(f"--- Finished {run_name} ---\n\n")
 
 
 if __name__ == "__main__":
