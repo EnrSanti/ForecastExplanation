@@ -1,7 +1,7 @@
 import logging
-import os
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import cartopy.crs as ccrs
@@ -119,12 +119,12 @@ def _valid_times(coord_var: xr.DataArray) -> Iterator[tuple[int, int, pd.Timesta
                 yield i, j, valid_time
 
 
-def create_one_time_images(coordinates: Region, output_base: str) -> None:
+def create_one_time_images(coordinates: Region, output_base: Path) -> None:
     save_borders_png(output_base, coordinates)
     create_legends(output_base)
 
 
-def save_borders_png(output_base: str, coordinates: Region) -> None:
+def save_borders_png(output_base: Path, coordinates: Region) -> None:
     fig, ax = plt.subplots(
         figsize=(10, 8), subplot_kw={"projection": ccrs.PlateCarree()}
     )
@@ -152,7 +152,7 @@ def save_borders_png(output_base: str, coordinates: Region) -> None:
 
     ax.axis("off")
     fig.savefig(
-        os.path.join(output_base, "borders.png"),
+        output_base / "borders.png",
         dpi=130,
         bbox_inches="tight",
         pad_inches=0,
@@ -161,7 +161,7 @@ def save_borders_png(output_base: str, coordinates: Region) -> None:
     plt.close(fig)
 
 
-def create_legends(output_base: str) -> None:
+def create_legends(output_base: Path) -> None:
 
     for key, props in LEGEND_SPECS.items():
 
@@ -178,13 +178,13 @@ def create_legends(output_base: str) -> None:
             )
             cb.set_label(str(props["label"]))
 
-            png_path = os.path.join(output_base, f"legend_{key}_{lvl}.png")
+            png_path = output_base / f"legend_{key}_{lvl}.png"
             plt.savefig(png_path, dpi=130, bbox_inches="tight", pad_inches=0)
             plt.close(fig)
 
 
 def build_feature_dataarrays(
-    input_path: str,
+    input_path: Path,
 ) -> xr.Dataset:
     """
     Extract per-variable, per-level, time-series DataArrays from the NC file.

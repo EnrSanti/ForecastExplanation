@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -15,7 +16,7 @@ logging.getLogger("ecmwf.datastores").setLevel(logging.WARNING)
 logging.getLogger("cdsapi").setLevel(logging.WARNING)
 
 
-def cut_grib_long_lat(grib_path: str, coordinates: list[float]) -> xr.Dataset:
+def cut_grib_long_lat(grib_path: Path, coordinates: list[float]) -> xr.Dataset:
     with xr.open_dataset(
         grib_path,
         engine="cfgrib",
@@ -60,14 +61,14 @@ def cut_grib_long_lat(grib_path: str, coordinates: list[float]) -> xr.Dataset:
 
 
 def extract_nc(
-    date: datetime, region: Region, input_dir: str, output_dir: str, force_redo: int
-) -> str:
+    date: datetime, region: Region, input_dir: Path, output_dir: Path, force_redo: int
+) -> Path:
     base_name = date.strftime("%Y-%m-%d")
     grib_file = f"{base_name}.grib"
-    grib_path = os.path.join(input_dir, grib_file)
-    output_path = os.path.join(output_dir, base_name + "_" + region.name + "_cut.nc")
+    grib_path = input_dir / grib_file
+    output_path = output_dir / (base_name + "_" + region.name + "_cut.nc")
 
-    if not os.path.exists(output_path) or force_redo:
+    if not output_path.exists() or force_redo:
         download_grib_if_needed(date, grib_path)
 
         logger.debug(f"CUTTING GRIB: {grib_path} -> {output_path}")
@@ -81,8 +82,8 @@ def extract_nc(
     return output_path
 
 
-def download_grib_if_needed(date: datetime, grib_path: str) -> None:
-    if os.path.exists(grib_path):
+def download_grib_if_needed(date: datetime, grib_path: Path) -> None:
+    if grib_path.exists():
         logger.debug(f"GRIB already exists: {grib_path}")
         return
 
@@ -133,7 +134,7 @@ def download_grib_if_needed(date: datetime, grib_path: str) -> None:
         client.retrieve(
             "reanalysis-cerra-pressure-levels",
             {**base_request, "year": [year], "month": [month], "day": [day]},
-            grib_path,
+            str(grib_path),
         )
         logger.debug(f"Download complete: {grib_path}")
     except Exception as e:

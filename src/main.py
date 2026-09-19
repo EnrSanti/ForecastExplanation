@@ -1,8 +1,8 @@
 import argparse
 import logging
-import os
 import sys
 from datetime import date, datetime, timedelta
+from pathlib import Path
 
 import yaml
 from dotenv import load_dotenv
@@ -68,8 +68,9 @@ def parse_args_and_config() -> tuple[argparse.Namespace, dict]:
 
     args, _ = parser.parse_known_args()
 
-    if os.path.exists(args.config):
-        with open(args.config, "r") as f:
+    config_path = Path(args.config)
+    if config_path.exists():
+        with open(config_path, "r") as f:
             config = yaml.safe_load(f) or {}
     else:
         config = {}
@@ -148,7 +149,7 @@ def main() -> None:
             if args.save_images
             else run_config.get("save_images", False)
         )
-        output_path = run_config.get("output_path", os.path.join("runs", run_name))
+        output_path = Path(run_config.get("output_path", Path("runs") / run_name))
 
         if debug:
             logger.setLevel(logging.DEBUG)
@@ -186,9 +187,9 @@ def main() -> None:
             continue
 
         input_dir = (
-            os.path.join(output_path, data_extraction.CLUSTERED_DATA_DIR)
+            output_path / data_extraction.CLUSTERED_DATA_DIR
             if clustering
-            else os.path.join(output_path, data_extraction.DISCRETE_DATA_DIR)
+            else output_path / data_extraction.DISCRETE_DATA_DIR
         )
         features_detection.run_tobac(
             dates,

@@ -3,6 +3,8 @@ import json
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
+
 
 from .extract_pdf import text_extract
 from .extract_xml import xml_extract
@@ -21,7 +23,7 @@ def generate_gt(
         return
     for date in target_dates:
         try:
-            if os.path.exists("./xmls"):
+            if Path("./xmls").exists():
                 res = xml_extract(date - dt.timedelta(days=1))
             else:
                 logger.warning(
@@ -33,8 +35,8 @@ def generate_gt(
             logger.error(f"Error generating ground truth for date {date}: {e}")
 
 
-def save_to_file(data: dict, output_path: str, date) -> None:
-    out = os.path.join(output_path, date.strftime("%Y-%m-%d"))
-    os.makedirs(out, exist_ok=True)
-    with open(os.path.join(out, "gt.json"), "w") as file:
+def save_to_file(data: dict, output_path: Path, date) -> None:
+    out = output_path / date.strftime("%Y-%m-%d")
+    out.mkdir(parents=True, exist_ok=True)
+    with open(out / "gt.json", "w") as file:
         file.write(json.dumps(data, indent=4))
