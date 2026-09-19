@@ -17,7 +17,7 @@ Returns a dictionary shaped like::
 import html
 import logging
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import date
 
 logger = logging.getLogger("ForecastExplanation")
 
@@ -49,8 +49,8 @@ def _zone_name(zone_raw: dict) -> str:
     return description.replace("_", " ").strip()
 
 
-def xml_extract(date: datetime) -> dict:
-    xml_path = f"xmls/PW{date.strftime('%Y%m%d')}.xml"
+def xml_extract(target_date: date) -> dict:
+    xml_path = f"xmls/PW{target_date.strftime('%Y%m%d')}.xml"
     tree = ET.parse(xml_path)
     root = tree.getroot()
     deadline = root.find("previsioni/scadenze/scadenza[@id='1']")
