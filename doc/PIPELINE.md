@@ -238,7 +238,7 @@ One row per city. Columns are structured as `{feature}_{time}_{height}`:
 | `prev_cloud`          | `{city_slug}_{cloud_enum}` — encoded sky forecast |
 | `wind_direction_*`    | Compass direction per time/height                 |
 | `wind_speed_*`        | Wind speed (m/s) per time/height                  |
-| `%coverage_clouds_*`  | Cloud coverage (%) per time/height                |
+| `coverage_clouds_*`  | Cloud coverage (%) per time/height                |
 | `size_cloud_*`        | Cloud segment area (km²) per time/height          |
 | `temperature_*`       | Temperature (K) per time/height                   |
 | `humidity_*`          | Relative humidity (%) per time/height             |
