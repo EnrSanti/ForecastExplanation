@@ -192,3 +192,54 @@ Humidity fronts detected by TOBAC, with their physical humidity and city members
 | `area`      | Front area (km²)                                |
 | `cities`    | Comma-separated list of cities inside the front |
 | `humidity`  | Mean relative humidity of the front (%)         |
+
+---
+
+## Step 4 — Ground Truth Generation
+
+Extracts the official weather forecast from ARPA FVG XML (or PDF fallback) files for the day before each target date,
+producing a structured JSON with per-city forecast descriptions.
+
+### Input
+
+- XML forecast files in `./xmls/` (preferred), or PDF fallback
+
+### Output
+
+**Path:** `{run}/{date}/gt.json`
+
+A JSON object keyed by date, mapping each city to its forecast fields (e.g. `PIOGGIA_DESCRIZIONE`,
+`CIELO_DESCRIZIONE`).
+
+---
+
+## Step 5 — Translation
+
+Reads the reasoning TSV files and the ground-truth JSON for each day and flattens them into a single CSV row per city,
+suitable for downstream ML models. Currently the only translator is `FoldRmTranslator`.
+
+### Input
+
+- `{run}/{date}/gt.json` (from Step 4)
+- `{run}/{date}/reasoning/winds.txt` (from Step 3)
+- `{run}/{date}/reasoning/cloud.txt` (from Step 3)
+- `{run}/{date}/reasoning/heat.txt` (from Step 3)
+- `{run}/{date}/reasoning/humidity.txt` (from Step 3)
+
+### Output
+
+**Path:** `{run}/translated/{date}.csv`
+
+One row per city. Columns are structured as `{feature}_{time}_{height}`:
+
+| Column group          | Description                                       |
+|-----------------------|---------------------------------------------------|
+| `prev_pioggia`        | `{city_slug}_{rain_enum}` — encoded rain forecast |
+| `prev_cloud`          | `{city_slug}_{cloud_enum}` — encoded sky forecast |
+| `wind_direction_*`    | Compass direction per time/height                 |
+| `wind_speed_*`        | Wind speed (m/s) per time/height                  |
+| `%coverage_clouds_*`  | Cloud coverage (%) per time/height                |
+| `size_cloud_*`        | Cloud segment area (km²) per time/height          |
+| `temperature_*`       | Temperature (K) per time/height                   |
+| `humidity_*`          | Relative humidity (%) per time/height             |
+

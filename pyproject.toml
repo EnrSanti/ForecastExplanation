@@ -1,0 +1,27 @@
+[project]
+name = "forecastexplanation"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "black[jupyter]>=26.5.1",
+    "cartopy==0.26.0",
+    "cdsapi>=0.7.7",
+    "cfgrib>=0.9.15.1",
+    "eccodes>=2.48.0",
+    "matplotlib==3.11.2",
+    "numba>=0.67.0",
+    "numpy==2.5.3",
+    "opencv-python>=5.0.0.93",
+    "pandas==2.3.3",
+    "pandas-stubs==2.3.3.260113",
+    "pyarrow>=25.0.1",
+    "pymupdf>=1.28.2",
+    "python-dotenv>=1.2.3",
+    "pyyaml>=6.0.3",
+    "requests>=2.34.2",
+    "scipy>=1.18.1",
+    "tobac==1.6.3",
+    "torch==2.14.0",
+    "tqdm==4.70.1",
+    "xarray>=2026.7.0",
+]

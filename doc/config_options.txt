@@ -76,12 +76,13 @@ force  (optional, default: 0)
   Acts as a counter — higher values rerun more stages:
 
     force: 0   No forced recomputation (use cached results).
-    force: 1   Re-run reasoning only.
-    force: 2   Re-run feature extraction + reasoning.
-    force: 3   Re-run everything: data extraction, feature extraction,
-               and reasoning.
+    force: 1   Re-run translation only.
+    force: 2   Re-run reasoning, ground truth generation, and translation.
+    force: 3   Re-run feature extraction + reasoning + ground truth + translation.
+    force: 4   Re-run everything: data extraction, feature extraction,
+               reasoning, ground truth, and translation.
 
-  Equivalent CLI flag: -f (repeat for higher levels, e.g. -fff = force 3).
+  Equivalent CLI flag: -f (repeat for higher levels, e.g. -ffff = force 4).
 
 ------
 
@@ -166,7 +167,7 @@ run_custom:
         lon: 13.0
   dates:
     - 2009-01-04
-  force: 3
+  force: 4
   clean: 0
   clustering: true
   debug: true
