@@ -31,14 +31,14 @@ class WeatherPhenomenon(Enum):
 # Parameters scaled for native 95x76 grid (from old 800x915 pixel grid)
 class WeatherPhenomenonTobacParams(Enum):
     TEMPERATURE = {  # noqa: RUF012
-        "min_blob_size": 1,
+        "min_blob_size": 150,
         "target": "maximum",
         "smooth": 2,
         "threshold": 0.5,
         "cmap": "OrRd",
     }
     HUMIDITY = {  # noqa: RUF012
-        "min_blob_size": 1,
+        "min_blob_size": 150,
         "target": "minimum",
         "smooth": 2,
         "threshold": 0.5,

@@ -90,19 +90,6 @@ def _hour_group(time_label: str) -> str:
         return "evening"
 
 
-def _circular_mean_direction(degrees: list[float]) -> str | float | None:
-    """Circular mean of a list of bearings (degrees), snapped to an 8-point label."""
-    valid = [d for d in degrees if isinstance(d, (int, float)) and not pd.isna(d)]
-    if not valid:
-        return None
-
-    sin_sum = sum(math.sin(math.radians(d)) for d in valid)
-    cos_sum = sum(math.cos(math.radians(d)) for d in valid)
-    mean_deg = math.degrees(math.atan2(sin_sum, cos_sum)) % 360
-
-    return get_compass_direction(mean_deg)
-
-
 def _attach_city(df: pd.DataFrame) -> pd.DataFrame:
     """Joins a lat/lon-keyed frame (heat/humidity) to a city name via region.CITIES."""
     latlon_to_city = {
@@ -266,6 +253,11 @@ class FoldRmTranslator(BaseTranslator):
         humidity_df = _attach_city(
             pd.read_csv(reasoning_dir / "humidity.txt", sep="\t")
         )
+
+        humidity_fronts_df = pd.read_csv(
+            reasoning_dir / "humidity_fronts.txt", sep="\t"
+        )
+        heat_fronts_df = pd.read_csv(reasoning_dir / "humidity_fronts.txt", sep="\t")
 
         if SUM_CLOUDS:
             cloud_df = (
