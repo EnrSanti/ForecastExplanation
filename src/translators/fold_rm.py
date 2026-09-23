@@ -3,11 +3,11 @@ import io
 import json
 import math
 from pathlib import Path
-
+from datetime import datetime
 import pandas as pd
 
 from region import CITIES
-
+import numpy as np
 from .translator import BaseTranslator
 
 _PIOGGIA_ENUM = {
@@ -90,36 +90,17 @@ def _hour_group(time_label: str) -> str:
         return "evening"
 
 
-def _circular_mean_direction(directions: list[str]) -> str | None:
-    """
-    Circular mean of 8-point cardinal directions, snapped back to the
-    nearest cardinal label. Never average the compass angles arithmetically
-    (N=0/360 and NE=45 would wrongly average toward NNE-ish nonsense near
-    the wrap-around) — this goes through sin/cos averaging instead.
-
-    Note: when directions are perfectly symmetric (e.g. N/E/S/W evenly
-    represented), the true resultant vector has ~zero magnitude — there is
-    genuinely no dominant direction — but floating-point noise in sin/cos
-    can still snap the result to an arbitrary-looking cardinal label rather
-    than something meaningful. Rare for real 6-hour wind windows, but worth
-    knowing if you ever see a surprising direction for a mixed-direction
-    period.
-    """
-    valid = [d for d in directions if d in CARDINAL_TO_DEG]
+def _circular_mean_direction(degrees: list[float]) -> str | float | None:
+    """Circular mean of a list of bearings (degrees), snapped to an 8-point label."""
+    valid = [d for d in degrees if isinstance(d, (int, float)) and not pd.isna(d)]
     if not valid:
         return None
 
-    sin_sum = sum(math.sin(math.radians(CARDINAL_TO_DEG[d])) for d in valid)
-    cos_sum = sum(math.cos(math.radians(CARDINAL_TO_DEG[d])) for d in valid)
+    sin_sum = sum(math.sin(math.radians(d)) for d in valid)
+    cos_sum = sum(math.cos(math.radians(d)) for d in valid)
     mean_deg = math.degrees(math.atan2(sin_sum, cos_sum)) % 360
 
-    def _angular_dist(a, b):
-        return min(abs(a - b), 360 - abs(a - b))
-
-    nearest = min(
-        CARDINAL_TO_DEG.items(), key=lambda kv: _angular_dist(kv[1], mean_deg)
-    )
-    return nearest[0]
+    return get_compass_direction(mean_deg)
 
 
 def _attach_city(df: pd.DataFrame) -> pd.DataFrame:
@@ -157,12 +138,20 @@ def _column_group(prefix: str, times: list[str], heights: list[str]) -> list[str
     return [f"{prefix}_{t}_{h}" for t in times for h in heights]
 
 
+def get_compass_direction(degrees: float) -> str | float:
+    """Convert a bearing in degrees to an 8-point compass label."""
+    if np.isnan(degrees):
+        return np.nan
+    directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+    idx = int((degrees + 22.5) // 45) % 8
+    return directions[idx]
+
+
 def average_by_height_and_time(
     lookup: dict,
     cities: list[str],
     times: list[str],
     heights: list[str],
-    kind: str = "mean",
     round_ndigits: int = 2,
 ) -> dict:
     """
@@ -191,11 +180,73 @@ def average_by_height_and_time(
 
     result = {}
     for key, vals in buckets.items():
-        if kind == "direction":
-            result[key] = _circular_mean_direction(vals)
-        else:
-            nums = [v for v in vals if isinstance(v, (int, float)) and not pd.isna(v)]
-            result[key] = round(sum(nums) / len(nums), round_ndigits) if nums else None
+        nums = [v for v in vals if isinstance(v, (int, float)) and not pd.isna(v)]
+        result[key] = round(sum(nums) / len(nums), round_ndigits) if nums else None
+
+    return result
+
+
+def average_by_height_and_time_vector(
+    speed_lookup: dict,
+    dir_lookup: dict,
+    cities: list[str],
+    times: list[str],
+    heights: list[str],
+    round_ndigits: int = 2,
+) -> dict:
+    """
+    Groups (city, time, height)-keyed speed+direction lookups into
+    (city, time_group, height_group) and computes the resultant wind
+    vector for each group: decomposes each (speed, direction) pair into
+    u/v components, averages those components within the group, then
+    derives resultant speed (vector magnitude) and resultant direction
+    (vector bearing, snapped to an 8-point compass label) from that same
+    averaged vector — not two independent scalar/circular means.
+
+    Returns a dict keyed the same way as average_by_height_and_time,
+    with each value a dict: {"speed": float, "direction": str} (or
+    None if there's no valid data for that group).
+    """
+    buckets: dict[tuple, list] = {}
+    for city in cities:
+        for t in times:
+            time_group = _hour_group(t)
+            for h in heights:
+                height_group = LEVEL_GROUP_MAP.get(h, h)
+                key = (city, t, h)
+                speed = speed_lookup.get(key)
+                direction = dir_lookup.get(key)
+                if (
+                    speed is None
+                    or speed == ""
+                    or direction is None
+                    or direction == ""
+                    or not isinstance(speed, (int, float))
+                    or pd.isna(speed)
+                    or not isinstance(direction, (int, float))
+                    or pd.isna(direction)
+                ):
+                    continue
+                buckets.setdefault((city, time_group, height_group), []).append(
+                    (speed, direction)
+                )
+
+    result = {}
+    for key, vals in buckets.items():
+        u = [speed * math.sin(math.radians(d)) for speed, d in vals]
+        v = [speed * math.cos(math.radians(d)) for speed, d in vals]
+        if not u:
+            result[key] = None
+            continue
+
+        u_mean = sum(u) / len(u)
+        v_mean = sum(v) / len(v)
+
+        resultant_speed = round(math.hypot(u_mean, v_mean), round_ndigits)
+        resultant_deg = math.degrees(math.atan2(u_mean, v_mean)) % 360
+        resultant_dir = get_compass_direction(resultant_deg)
+
+        result[key] = {"speed": resultant_speed, "direction": resultant_dir}
 
     return result
 
@@ -203,7 +254,7 @@ def average_by_height_and_time(
 class FoldRmTranslator(BaseTranslator):
     extension = "csv"
 
-    def translate_day(self, day_input_folder: Path) -> bytes:
+    def translate_day(self, day_input_folder: Path, date: datetime) -> bytes:
         gt_data = json.loads((day_input_folder / "gt.json").read_text())
         cities_gt = next(iter(gt_data.values()))
         cities = sorted(cities_gt)
@@ -229,6 +280,7 @@ class FoldRmTranslator(BaseTranslator):
         wind_speed, wind_speed_t, wind_speed_h = _pivot(
             winds_df, "wind_speed", round_ndigits=1
         )
+
         coverage, cloud_t, cloud_h = _pivot(cloud_df, "%covered")
         size, _, _ = _pivot(cloud_df, "tot area")
 
@@ -241,6 +293,8 @@ class FoldRmTranslator(BaseTranslator):
         # what TOBAC actually found.
         all_hours = [f"{h:02d}00" for h in range(24)]
         missing_hours = sorted(set(all_hours) - set(cloud_t))
+
+        month = date.month
 
         if missing_hours:
             for city in cities:
@@ -258,26 +312,23 @@ class FoldRmTranslator(BaseTranslator):
 
         # --- group hours -> early_morning/morning/afternoon/evening and
         # levels -> low/medium/high, averaging within each group ---
-        wind_dir_grouped = average_by_height_and_time(
-            wind_dir, cities, wind_dir_t, wind_dir_h, kind="direction"
-        )
-        wind_speed_grouped = average_by_height_and_time(
-            wind_speed, cities, wind_speed_t, wind_speed_h, kind="mean"
-        )
-        coverage_grouped = average_by_height_and_time(
-            coverage, cities, cloud_t, cloud_h, kind="mean"
-        )
-        size_grouped = average_by_height_and_time(
-            size, cities, cloud_t, cloud_h, kind="mean"
-        )
-        temperature_grouped = average_by_height_and_time(
-            temperature, cities, temp_t, temp_h, kind="mean"
-        )
-        humidity_grouped = average_by_height_and_time(
-            humidity, cities, humidity_t, humidity_h, kind="mean"
+        wind_grouped = average_by_height_and_time_vector(
+            wind_speed, wind_dir, cities, wind_speed_t, wind_speed_h
         )
 
-        header = ["prev_pioggia", "prev_cloud"]
+        coverage_grouped = average_by_height_and_time(
+            coverage, cities, cloud_t, cloud_h
+        )
+        size_grouped = average_by_height_and_time(size, cities, cloud_t, cloud_h)
+        temperature_grouped = average_by_height_and_time(
+            temperature, cities, temp_t, temp_h
+        )
+        humidity_grouped = average_by_height_and_time(
+            humidity, cities, humidity_t, humidity_h
+        )
+
+        header = ["prev_pioggia", "prev_cloud", "month"]
+
         header += _column_group(
             "wind_direction", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
         )
@@ -299,15 +350,16 @@ class FoldRmTranslator(BaseTranslator):
                 _CLOUD_ENUM, gt_entry.get("CIELO_DESCRIZIONE"), city, "CIELO"
             )
             slug = _slugify_city(city)
-            row = [f"{slug}_{pioggia}", f"{slug}_{cloud}"]
+            row = [f"{slug}_{pioggia}", f"{slug}_{cloud}", month]
 
+            # se non trova esplode "".get
             row += [
-                wind_dir_grouped.get((city, tg, hg), "")
+                wind_grouped.get((city, tg, hg), "").get("direction", "")
                 for tg in TIME_GROUPS_ORDER
                 for hg in HEIGHT_GROUPS_ORDER
             ]
             row += [
-                wind_speed_grouped.get((city, tg, hg), "")
+                wind_grouped.get((city, tg, hg), "").get("speed", "")
                 for tg in TIME_GROUPS_ORDER
                 for hg in HEIGHT_GROUPS_ORDER
             ]

@@ -126,7 +126,7 @@ reported as a compass octave.
 | `height`         | Pressure level                              |
 | `lat`            | City latitude                               |
 | `lon`            | City longitude                              |
-| `wind_direction` | Compass octave (N, NE, E, SE, S, SW, W, NW) |
+| `wind_direction` | Vector angle, clockwise rotation, 0 North   |
 | `wind_speed`     | Mean wind speed (m/s)                       |
 
 #### `cloud.txt`

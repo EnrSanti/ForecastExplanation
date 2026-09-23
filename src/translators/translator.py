@@ -46,16 +46,17 @@ class BaseTranslator(ABC):
             if not force and output_file.exists():
                 continue
 
-            result_bytes = self.translate_day(item)
+            result_bytes = self.translate_day(item, date)
             output_file.write_bytes(result_bytes)
 
     @abstractmethod
-    def translate_day(self, day_input_folder: Path) -> bytes:
+    def translate_day(self, day_input_folder: Path, date: datetime) -> bytes:
         """
         Translates the reasoning files for a specific day.
 
         Args:
             day_input_folder: The input folder for a specific day.
+            date: The date for which to translate the data.
 
         Returns:
             bytes: The translated content to be saved to a file.
