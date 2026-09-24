@@ -48,9 +48,23 @@ class BaseTranslator(ABC):
 
             result_bytes = self.translate_day(item, date)
             output_file.write_bytes(result_bytes)
+        self.merge_into_dataset(dates, output_path)
 
     @abstractmethod
     def translate_day(self, day_input_folder: Path, date: datetime) -> bytes:
+        """
+        Translates the reasoning files for a specific day.
+
+        Args:
+            day_input_folder: The input folder for a specific day.
+            date: The date for which to translate the data.
+
+        Returns:
+            bytes: The translated content to be saved to a file.
+        """
+
+    @abstractmethod
+    def merge_into_dataset(self, dates: list[datetime], input_folder: str | Path):
         """
         Translates the reasoning files for a specific day.
 

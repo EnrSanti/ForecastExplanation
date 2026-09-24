@@ -502,3 +502,39 @@ class FoldRmTranslator(BaseTranslator):
         writer.writerow(header)
         writer.writerows(rows)
         return buffer.getvalue().encode("utf-8")
+
+    def merge_into_dataset(self, dates: list[datetime], input_folder: str | Path):
+        if not dates:
+            print("No dates provided.")
+            return
+
+        input_path = Path(input_folder)
+        print("FOLDER:", input_path)
+
+        # Determine the smallest and biggest dates for the output filename
+        min_date = min(dates)
+        max_date = max(dates)
+
+        date_format = "%Y-%m-%d"
+        output_filename = (
+            f"{min_date.strftime(date_format)}_{max_date.strftime(date_format)}.csv"
+        )
+        output_path = input_path / output_filename
+
+        # Read and collect dataframes for each date file that exists
+        dfs = []
+        for d in sorted(dates):
+            file_path = input_path / f"{d.strftime(date_format)}.csv"
+            if file_path.exists():
+                df = pd.read_csv(file_path)
+                dfs.append(df)
+            else:
+                print(f"Warning: File not found for date {file_path.name}")
+
+        # Merge and save if there's data
+        if dfs:
+            merged_df = pd.concat(dfs, ignore_index=True)
+            merged_df.to_csv(output_path, index=False)
+            print(f"Successfully merged {len(dfs)} files into: {output_path}")
+        else:
+            print("No matching CSV files found for the given dates.")
