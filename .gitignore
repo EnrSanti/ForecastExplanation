@@ -10,6 +10,9 @@ __pycache__/
 .vscode/
 .python-version
 
+# Ignore JetBrains IDE settings
+.idea/
+
 #api key
 .env
 

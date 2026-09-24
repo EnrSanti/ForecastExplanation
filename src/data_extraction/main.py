@@ -1,7 +1,7 @@
 import logging
 import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 
 import cv2
@@ -45,7 +45,7 @@ def find_starting_step(
 
 
 def extract_day_worker(
-    date: datetime,
+    target_date: date,
     region: Region,
     base_path: Path,
     clean_level: int = 0,
@@ -54,12 +54,12 @@ def extract_day_worker(
     just_cut: bool = False,
     create_images: bool = False,
 ) -> None:
-    logger.debug(f"Extracting data for {date.strftime('%Y-%m-%d')}")
-    clustered_dir = base_path / CLUSTERED_DATA_DIR / date.strftime("%Y-%m-%d")
+    logger.debug(f"Extracting data for {target_date.strftime('%Y-%m-%d')}")
+    clustered_dir = base_path / CLUSTERED_DATA_DIR / target_date.strftime("%Y-%m-%d")
     # raw data can be shared between runs
-    raw_data_dir = Path(RAW_DATA_DIR) / date.strftime("%Y-%m-%d")
-    cut_data_dir = base_path / CUT_DATA_DIR / date.strftime("%Y-%m-%d")
-    discrete_data_dir = base_path / DISCRETE_DATA_DIR / date.strftime("%Y-%m-%d")
+    raw_data_dir = Path(RAW_DATA_DIR) / target_date.strftime("%Y-%m-%d")
+    cut_data_dir = base_path / CUT_DATA_DIR / target_date.strftime("%Y-%m-%d")
+    discrete_data_dir = base_path / DISCRETE_DATA_DIR / target_date.strftime("%Y-%m-%d")
     features_nc_path = discrete_data_dir / "features.nc"
 
     starting_step = find_starting_step(
@@ -71,7 +71,9 @@ def extract_day_worker(
         raw_data_dir.mkdir(parents=True, exist_ok=True)
         cut_data_dir.mkdir(parents=True, exist_ok=True)
         # this skips 0 1 automatically if already done
-        nc_file = extract_nc(date, region, raw_data_dir, cut_data_dir, force_redo)
+        nc_file = extract_nc(
+            target_date, region, raw_data_dir, cut_data_dir, force_redo
+        )
         starting_step = 2
 
     if (starting_step == 2 or force_redo) and not just_cut:
@@ -91,7 +93,7 @@ def extract_day_worker(
 
     if starting_step == 4:
         logger.debug(
-            f"Feature maps already exist for {date.strftime('%Y-%m-%d')}, skipping."
+            f"Feature maps already exist for {target_date.strftime('%Y-%m-%d')}, skipping."
         )
 
     if clean_level >= 1:
@@ -163,7 +165,7 @@ def save_tobac_input_images(feature_data: xr.Dataset, output_dir: Path) -> None:
 
 
 def extract_day(
-    dates: list[datetime],
+    dates: list[date],
     region: Region,
     base_path: Path,
     clean_level: int = 0,
@@ -178,7 +180,7 @@ def extract_day(
         futures = {
             executor.submit(
                 extract_day_worker,
-                date,
+                target_date,
                 region,
                 base_path,
                 clean_level,
@@ -186,24 +188,24 @@ def extract_day(
                 force_redo,
                 just_cut,
                 create_images,
-            ): date
-            for date in dates
+            ): target_date
+            for target_date in dates
         }
 
         for future in tqdm(
             as_completed(futures), total=len(dates), desc="Data Extraction"
         ):
-            date = futures[future]
+            target_date = futures[future]
             try:
                 future.result()
             except Exception:
-                logger.exception(f"Extract failed for {date}")
+                logger.exception(f"Extract failed for {target_date}")
 
     logger.info("Data extraction completed.")
 
 
 def extract(
-    dates: list[datetime],
+    dates: list[date],
     region: Region,
     output_path: Path,
     clean_level: int = 0,

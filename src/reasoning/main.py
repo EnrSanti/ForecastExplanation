@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 
 import xarray as xr
@@ -15,7 +15,7 @@ logger = logging.getLogger("ForecastExplanation")
 
 
 def reason(
-    dates: list[datetime],
+    dates: list[date],
     input_dir: Path,
     output_dir: Path,
     region: Region,
@@ -34,18 +34,18 @@ def reason(
     """
     logger.info("Starting reasoning")
 
-    for date in tqdm(dates, desc="Reasoning"):
-        day_input_dir = input_dir / date.strftime("%Y-%m-%d")
-        day_output_dir = output_dir / date.strftime("%Y-%m-%d") / "reasoning"
+    for target_date in tqdm(dates, desc="Reasoning"):
+        day_input_dir = input_dir / target_date.strftime("%Y-%m-%d")
+        day_output_dir = output_dir / target_date.strftime("%Y-%m-%d") / "reasoning"
 
         if not force and day_output_dir.exists() and any(day_output_dir.iterdir()):
             logger.debug(
-                f"Reasoning already exists for {date.strftime('%Y-%m-%d')}. Skipping."
+                f"Reasoning already exists for {target_date.strftime('%Y-%m-%d')}. Skipping."
             )
             continue
 
         day_output_dir.mkdir(parents=True, exist_ok=True)
-        logger.debug(f"Processing reasoning for {date.strftime('%Y-%m-%d')}")
+        logger.debug(f"Processing reasoning for {target_date.strftime('%Y-%m-%d')}")
 
         with (
             xr.open_dataset(day_input_dir / "segmentation.nc") as seg_ds,
