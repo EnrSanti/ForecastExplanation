@@ -4,8 +4,9 @@ import json
 import math
 from pathlib import Path
 from datetime import datetime
+from collections import Counter
 import pandas as pd
-
+from collections import defaultdict
 from region import CITIES
 import numpy as np
 from .translator import BaseTranslator
@@ -32,6 +33,7 @@ _CLOUD_ENUM = {
 
 SUM_CLOUDS = True
 
+
 # --- Grouping definitions (fixed order, so every day's CSV has the same
 # column set regardless of which groups actually had data that day — same
 # rationale as the earlier missing-hour backfill). ---
@@ -43,6 +45,8 @@ LEVEL_GROUP_MAP = {
     "0500": "medium",
     "0300": "high",
 }
+
+LEVEL_GROUP_COUNT = Counter(LEVEL_GROUP_MAP.values())
 HEIGHT_GROUPS_ORDER = ["low", "medium", "high"]
 TIME_GROUPS_ORDER = ["early_morning", "morning", "afternoon", "evening"]
 
@@ -60,6 +64,19 @@ CARDINAL_TO_DEG = {
 
 def _slugify_city(city: str) -> str:
     return city.lower().replace(" ", "_")
+
+
+def _front_frequency(detected, total) -> str:
+    """Returns the frequency of a front detection as a float between 0 and 1."""
+    if total == 0:
+        return "absent"
+    ratio = detected / total
+    if ratio >= 0.8:
+        return "present"
+    elif ratio >= 0.3:
+        return "partially_present"
+    else:
+        return "absent"
 
 
 def _lookup_enum(enum: dict, value, city: str, field: str) -> int:
@@ -102,6 +119,28 @@ def _attach_city(df: pd.DataFrame) -> pd.DataFrame:
         for lat, lon in zip(df["lat"], df["lon"])
     ]
     return df.dropna(subset=["city"])
+
+
+def _pivot_no_city(
+    df: pd.DataFrame, value_col: list[str], round_ndigits: int | None = None
+) -> tuple[dict, list[str], list[str]]:
+    times = sorted({_time_label(ts) for ts in df["timestamp"]})
+    heights = sorted({_height_label(h) for h in df["height"]})
+    keys = zip(
+        df["timestamp"].map(_time_label),
+        df["height"].map(_height_label),
+    )
+    found_values = (
+        df[value_col].round(round_ndigits).apply(tuple, axis=1)
+        if round_ndigits is not None
+        else df[value_col].apply(tuple, axis=1)
+    )
+
+    lookup = defaultdict(list)
+    for key, value in zip(keys, found_values):
+        lookup[key].append(value)
+
+    return dict(lookup), times, heights
 
 
 def _pivot(
@@ -238,6 +277,53 @@ def average_by_height_and_time_vector(
     return result
 
 
+def _get_frames_number(t, h):
+    """
+    Returns the number of frames (hours) in a given time and height group.
+    """
+    layer_nos = LEVEL_GROUP_COUNT[h]
+    if t == "early_morning":
+        return 7 * layer_nos
+    elif t == "morning":
+        return 6 * layer_nos
+    elif t == "afternoon":
+        return 6 * layer_nos
+    elif t == "evening":
+        return 5 * layer_nos
+    else:
+        raise ValueError(f"Unknown time group: {t}")
+
+
+def average_by_height_and_time_fronts(
+    humidity_front_data: dict,
+    times: list[str],
+    heights: list[str],
+    round_ndigits: int = 2,
+):
+    buckets: dict[tuple, int] = {}
+    for t_all in TIME_GROUPS_ORDER:
+        for h_all in HEIGHT_GROUPS_ORDER:
+            buckets[(t_all, h_all)] = 0
+
+    # se ho 2 fronti stessa h ne conto 1
+    for t in times:
+        time_group = _hour_group(t)
+        for h in heights:
+            height_group = LEVEL_GROUP_MAP.get(h, h)
+            val = humidity_front_data.get((t, h))
+            if val is None or val == "":
+                continue
+            buckets[(time_group, height_group)] += 1
+
+    res: dict[tuple, str] = {}
+    for (t, h), detected in buckets.items():
+        print(
+            f"Detected {detected} fronts for time group {t} and height group {h} over all {_get_frames_number(t, h)}"
+        )
+        res[(t, h)] = _front_frequency(detected, _get_frames_number(t, h))
+    return res
+
+
 class FoldRmTranslator(BaseTranslator):
     extension = "csv"
 
@@ -257,7 +343,7 @@ class FoldRmTranslator(BaseTranslator):
         humidity_fronts_df = pd.read_csv(
             reasoning_dir / "humidity_fronts.txt", sep="\t"
         )
-        heat_fronts_df = pd.read_csv(reasoning_dir / "humidity_fronts.txt", sep="\t")
+        heat_fronts_df = pd.read_csv(reasoning_dir / "heat_fronts.txt", sep="\t")
 
         if SUM_CLOUDS:
             cloud_df = (
@@ -271,6 +357,19 @@ class FoldRmTranslator(BaseTranslator):
         wind_dir, wind_dir_t, wind_dir_h = _pivot(winds_df, "wind_direction")
         wind_speed, wind_speed_t, wind_speed_h = _pivot(
             winds_df, "wind_speed", round_ndigits=1
+        )
+
+        humidity_front_data, humidity_fronts_t, humidity_fronts_h = _pivot_no_city(
+            humidity_fronts_df,
+            ["cities", "area", "humidity_inside", "humidity_outside"],
+            round_ndigits=2,
+        )
+        temperature_front_data, temperature_fronts_t, temperature_fronts_h = (
+            _pivot_no_city(
+                heat_fronts_df,
+                ["cities", "area", "temperature_inside", "temperature_outside"],
+                round_ndigits=2,
+            )
         )
 
         coverage, cloud_t, cloud_h = _pivot(cloud_df, "%covered")
@@ -318,7 +417,12 @@ class FoldRmTranslator(BaseTranslator):
         humidity_grouped = average_by_height_and_time(
             humidity, cities, humidity_t, humidity_h
         )
-
+        humidity_front_grouped = average_by_height_and_time_fronts(
+            humidity_front_data, humidity_fronts_t, humidity_fronts_h
+        )
+        temp_front_grouped = average_by_height_and_time_fronts(
+            temperature_front_data, temperature_fronts_t, temperature_fronts_h
+        )
         header = ["prev_pioggia", "prev_cloud", "month"]
 
         header += _column_group(
@@ -331,6 +435,12 @@ class FoldRmTranslator(BaseTranslator):
         header += _column_group("size_cloud", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
         header += _column_group("temperature", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
         header += _column_group("humidity", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
+        header += _column_group(
+            "humidity_fronts", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
+        )
+        header += _column_group(
+            "temperature_fronts", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
+        )
 
         rows = []
         for city in cities:
@@ -375,7 +485,16 @@ class FoldRmTranslator(BaseTranslator):
                 for tg in TIME_GROUPS_ORDER
                 for hg in HEIGHT_GROUPS_ORDER
             ]
-
+            row += [
+                humidity_front_grouped.get((tg, hg), "")
+                for tg in TIME_GROUPS_ORDER
+                for hg in HEIGHT_GROUPS_ORDER
+            ]
+            row += [
+                temp_front_grouped.get((tg, hg), "")
+                for tg in TIME_GROUPS_ORDER
+                for hg in HEIGHT_GROUPS_ORDER
+            ]
             rows.append(row)
 
         buffer = io.StringIO()
