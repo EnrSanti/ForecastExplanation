@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 
 logger = logging.getLogger("ForecastExplanation")
@@ -11,7 +11,7 @@ class BaseTranslator(ABC):
 
     def translate(
         self,
-        dates: list[datetime],
+        dates: list[date],
         input_folder: str | Path,
         output_folder: str | Path,
         force: bool = False,
@@ -31,8 +31,8 @@ class BaseTranslator(ABC):
 
         ext = self.extension.strip(".") or "txt"
 
-        for date in dates:
-            date_str = date.strftime("%Y-%m-%d")
+        for target_date in dates:
+            date_str = target_date.strftime("%Y-%m-%d")
             item = input_path / date_str
 
             if not item.is_dir():
