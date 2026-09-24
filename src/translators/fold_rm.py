@@ -295,32 +295,63 @@ def _get_frames_number(t, h):
 
 
 def average_by_height_and_time_fronts(
-    humidity_front_data: dict,
+    front_data: dict,
     times: list[str],
     heights: list[str],
     round_ndigits: int = 2,
 ):
     buckets: dict[tuple, int] = {}
+    metric_lists: dict[tuple, list[tuple[float, float, float]]] = defaultdict(list)
+
     for t_all in TIME_GROUPS_ORDER:
         for h_all in HEIGHT_GROUPS_ORDER:
             buckets[(t_all, h_all)] = 0
-
+    print(front_data)
     # se ho 2 fronti stessa h ne conto 1
     for t in times:
         time_group = _hour_group(t)
         for h in heights:
             height_group = LEVEL_GROUP_MAP.get(h, h)
-            val = humidity_front_data.get((t, h))
+            val = front_data.get((t, h))
             if val is None or val == "":
                 continue
-            buckets[(time_group, height_group)] += 1
 
-    res: dict[tuple, str] = {}
+            areas = [item[1] for item in val]
+            insides = [item[2] for item in val]
+            outsides = [item[3] for item in val]
+
+            frame_area = sum(areas)  # sum simultaneous fronts' area
+            frame_inside = sum(insides) / len(
+                insides
+            )  # avg simultaneous fronts' interior value
+            frame_outside = sum(outsides) / len(
+                outsides
+            )  # avg simultaneous fronts' exterior value
+
+            buckets[(time_group, height_group)] += 1
+            metric_lists[(time_group, height_group)].append(
+                (frame_area, frame_inside, frame_outside)
+            )
+
+    # front frequency, avg size and avg tmp/hum
+    res: dict[tuple, tuple[str, int, float, float]] = {}
     for (t, h), detected in buckets.items():
         print(
             f"Detected {detected} fronts for time group {t} and height group {h} over all {_get_frames_number(t, h)}"
         )
-        res[(t, h)] = _front_frequency(detected, _get_frames_number(t, h))
+        vals = metric_lists.get((t, h), [])
+        avg_area, avg_inside, avg_outside = 0, 0.0, 0.0
+        if vals:
+            avg_area = int(sum(v[0] for v in vals) / len(vals))
+            avg_inside = round(sum(v[1] for v in vals) / len(vals), round_ndigits)
+            avg_outside = round(sum(v[2] for v in vals) / len(vals), round_ndigits)
+
+        res[(t, h)] = (
+            _front_frequency(detected, _get_frames_number(t, h)),
+            avg_area,
+            avg_inside,
+            avg_outside,
+        )
     return res
 
 
@@ -439,7 +470,25 @@ class FoldRmTranslator(BaseTranslator):
             "humidity_fronts", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
         )
         header += _column_group(
+            "humidity_fronts_area", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
+        )
+        header += _column_group(
+            "humidity_fronts_inside_hum", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
+        )
+        header += _column_group(
+            "humidity_fronts_outside_hum", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
+        )
+        header += _column_group(
             "temperature_fronts", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
+        )
+        header += _column_group(
+            "temperature_fronts_area", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
+        )
+        header += _column_group(
+            "temperature_fronts_inside_temp", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
+        )
+        header += _column_group(
+            "temperature_fronts_outside_temp", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
         )
 
         rows = []
@@ -486,12 +535,42 @@ class FoldRmTranslator(BaseTranslator):
                 for hg in HEIGHT_GROUPS_ORDER
             ]
             row += [
-                humidity_front_grouped.get((tg, hg), "")
+                humidity_front_grouped.get((tg, hg), "")[0]
                 for tg in TIME_GROUPS_ORDER
                 for hg in HEIGHT_GROUPS_ORDER
             ]
             row += [
-                temp_front_grouped.get((tg, hg), "")
+                humidity_front_grouped.get((tg, hg), "")[1]
+                for tg in TIME_GROUPS_ORDER
+                for hg in HEIGHT_GROUPS_ORDER
+            ]
+            row += [
+                humidity_front_grouped.get((tg, hg), "")[2]
+                for tg in TIME_GROUPS_ORDER
+                for hg in HEIGHT_GROUPS_ORDER
+            ]
+            row += [
+                humidity_front_grouped.get((tg, hg), "")[3]
+                for tg in TIME_GROUPS_ORDER
+                for hg in HEIGHT_GROUPS_ORDER
+            ]
+            row += [
+                temp_front_grouped.get((tg, hg), "")[0]
+                for tg in TIME_GROUPS_ORDER
+                for hg in HEIGHT_GROUPS_ORDER
+            ]
+            row += [
+                temp_front_grouped.get((tg, hg), "")[1]
+                for tg in TIME_GROUPS_ORDER
+                for hg in HEIGHT_GROUPS_ORDER
+            ]
+            row += [
+                temp_front_grouped.get((tg, hg), "")[2]
+                for tg in TIME_GROUPS_ORDER
+                for hg in HEIGHT_GROUPS_ORDER
+            ]
+            row += [
+                temp_front_grouped.get((tg, hg), "")[3]
                 for tg in TIME_GROUPS_ORDER
                 for hg in HEIGHT_GROUPS_ORDER
             ]
