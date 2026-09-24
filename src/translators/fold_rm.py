@@ -29,6 +29,8 @@ _CLOUD_ENUM = {
     "sole/nebbia": 5,
 }
 
+SUM_CLOUDS = True
+
 
 def _slugify_city(city: str) -> str:
     return city.lower().replace(" ", "_")
@@ -98,9 +100,14 @@ class FoldRmTranslator(BaseTranslator):
             pd.read_csv(reasoning_dir / "humidity.txt", sep="\t")
         )
 
-        cloud_df = cloud_df.sort_values("%covered").drop_duplicates(
-            ["timestamp", "height", "city"], keep="last"
-        )
+        if SUM_CLOUDS:
+            cloud_df = (
+                cloud_df.groupby(["timestamp", "height", "city"]).sum().reset_index()
+            )
+        else:
+            cloud_df = cloud_df.sort_values("%covered").drop_duplicates(
+                ["timestamp", "height", "city"], keep="last"
+            )
 
         wind_dir, wind_dir_t, wind_dir_h = _pivot(winds_df, "wind_direction")
         wind_speed, wind_speed_t, wind_speed_h = _pivot(
