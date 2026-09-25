@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from region import CITIES
+from region import Region
 
 from .translator import BaseTranslator
 
@@ -68,6 +68,11 @@ def _slugify_city(city: str) -> str:
     return city.lower().replace(" ", "_")
 
 
+def _mean_skip_nan(values: list[float], default: float = 0.0) -> float:
+    nums = [v for v in values if not pd.isna(v)]
+    return sum(nums) / len(nums) if nums else default
+
+
 def _front_frequency(detected, total) -> str:
     """Buckets the detected/total frame ratio into "present" (>=0.8),
     "partially_present" (>=0.3), or "absent"."""
@@ -80,6 +85,12 @@ def _front_frequency(detected, total) -> str:
         return "partially_present"
     else:
         return "absent"
+
+
+def _read_tsv_or_empty(path: Path, columns: list[str]) -> pd.DataFrame:
+    if not path.read_text().strip():
+        return pd.DataFrame(columns=columns)
+    return pd.read_csv(path, sep="\t")
 
 
 def _lookup_enum(enum: dict, value, city: str, field: str) -> int:
@@ -110,12 +121,12 @@ def _hour_group(time_label: str) -> str:
         return "evening"
 
 
-def _attach_city(df: pd.DataFrame) -> pd.DataFrame:
-    """Joins a lat/lon-keyed frame (heat/humidity) to a city name via region.CITIES."""
-    latlon_to_city = {
-        (round(info["lat"], 6), round(info["lon"], 6)): city
-        for city, info in CITIES.items()
-    }
+def _attach_city(
+    df: pd.DataFrame, cities: list[tuple[str, float, float]]
+) -> pd.DataFrame:
+    """Joins a lat/lon-keyed frame (heat/humidity) to a city name via the
+    run's resolved city list (region.get_cities())."""
+    latlon_to_city = {(round(lat, 6), round(lon, 6)): city for city, lat, lon in cities}
     df = df.copy()
     df["city"] = [
         latlon_to_city.get((round(lat, 6), round(lon, 6)))
@@ -318,12 +329,11 @@ def average_by_height_and_time_fronts(
             outsides = [item[2] for item in val]
 
             frame_area = sum(areas)  # sum simultaneous fronts' area
-            frame_inside = sum(insides) / len(
-                insides
-            )  # avg simultaneous fronts' interior value
-            frame_outside = sum(outsides) / len(
-                outsides
-            )  # avg simultaneous fronts' exterior value
+            # avg simultaneous fronts' interior/exterior value, skipping NaN
+            # (a front with an empty background at this frame contributes
+            # NaN for "outside") so it doesn't wipe out the whole frame
+            frame_inside = _mean_skip_nan(insides)
+            frame_outside = _mean_skip_nan(outsides)
 
             buckets[(time_group, height_group)] += 1
             metric_lists[(time_group, height_group)].append(
@@ -337,8 +347,12 @@ def average_by_height_and_time_fronts(
         avg_area, avg_inside, avg_outside = 0, 0.0, 0.0
         if vals:
             avg_area = int(sum(v[0] for v in vals) / len(vals))
-            avg_inside = round(sum(v[1] for v in vals) / len(vals), round_ndigits)
-            avg_outside = round(sum(v[2] for v in vals) / len(vals), round_ndigits)
+            avg_inside = round(
+                _mean_skip_nan([v[1] for v in vals]), round_ndigits
+            )
+            avg_outside = round(
+                _mean_skip_nan([v[2] for v in vals]), round_ndigits
+            )
 
         res[(t, h)] = (
             _front_frequency(detected, _get_frames_number(t, h)),
@@ -352,23 +366,48 @@ def average_by_height_and_time_fronts(
 class FoldRmTranslator(BaseTranslator):
     extension = "csv"
 
-    def translate_day(self, day_input_folder: Path, target_date: date) -> bytes:
+    def translate_day(
+        self, day_input_folder: Path, target_date: date, region: Region
+    ) -> bytes:
         gt_data = json.loads((day_input_folder / "gt.json").read_text())
         cities_gt = next(iter(gt_data.values()))
         cities = sorted(cities_gt)
+        city_coords = region.get_cities()
 
         reasoning_dir = day_input_folder / "reasoning"
         winds_df = pd.read_csv(reasoning_dir / "winds.txt", sep="\t")
         cloud_df = pd.read_csv(reasoning_dir / "cloud.txt", sep="\t")
-        heat_df = _attach_city(pd.read_csv(reasoning_dir / "heat.txt", sep="\t"))
+        heat_df = _attach_city(
+            pd.read_csv(reasoning_dir / "heat.txt", sep="\t"), city_coords
+        )
         humidity_df = _attach_city(
-            pd.read_csv(reasoning_dir / "humidity.txt", sep="\t")
+            pd.read_csv(reasoning_dir / "humidity.txt", sep="\t"), city_coords
         )
 
-        humidity_fronts_df = pd.read_csv(
-            reasoning_dir / "humidity_fronts.txt", sep="\t"
+        humidity_fronts_df = _read_tsv_or_empty(
+            reasoning_dir / "humidity_fronts.txt",
+            [
+                "timestamp",
+                "height",
+                "front_id",
+                "area",
+                "cities",
+                "humidity_inside",
+                "humidity_outside",
+            ],
         )
-        heat_fronts_df = pd.read_csv(reasoning_dir / "heat_fronts.txt", sep="\t")
+        heat_fronts_df = _read_tsv_or_empty(
+            reasoning_dir / "heat_fronts.txt",
+            [
+                "timestamp",
+                "height",
+                "front_id",
+                "area",
+                "cities",
+                "temperature_inside",
+                "temperature_outside",
+            ],
+        )
 
         if SUM_CLOUDS:
             cloud_df = (

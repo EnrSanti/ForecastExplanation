@@ -29,7 +29,6 @@ from features_detection.features import (
 from features_detection.utils import (
     build_referenced_data_from_xarray,
     get_grid_spacings,
-    normalize_referenced_data,
 )
 from region import Region
 
@@ -167,7 +166,6 @@ def _run_tobac_single_day_single_phenomenon(
             da, datetimes, region_bounds=region.value
         )
         dxy, dt = get_grid_spacings(referenced_data)
-        referenced_data_norm = normalize_referenced_data(referenced_data)
 
         if phenomenon_params is None:
             phenomenon_params = WeatherPhenomenonTobacParams[phenomenon.name]
@@ -181,7 +179,7 @@ def _run_tobac_single_day_single_phenomenon(
 
         # Feature detection & tracking
         features, features_weighted_points = detect_features(
-            referenced_data_norm,
+            referenced_data,
             threshold=threshold,
             target=target,
             smooth=smooth,
@@ -202,7 +200,7 @@ def _run_tobac_single_day_single_phenomenon(
         # Segmentation
         segments_all = segment_features(
             features,
-            referenced_data_norm,
+            referenced_data,
             threshold=threshold,
             target=target,
             smooth=smooth,

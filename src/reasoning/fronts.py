@@ -5,6 +5,11 @@ import xarray as xr
 from .utils import haversine
 
 
+def _safe_nanmean(arr: np.ndarray) -> float:
+    """nanmean that returns NaN instead of warning on an all-NaN/empty slice."""
+    return float(np.nanmean(arr)) if np.any(np.isfinite(arr)) else float("nan")
+
+
 def detect_phenomenon(
     data: xr.Dataset,
     cities: list[tuple[str, float | int, float | int]],
@@ -46,7 +51,7 @@ def detect_phenomenon(
                 )
 
                 val_data = data[raw_var].isel(time=t_idx).values
-                val_mean = np.nanmean(val_data[mask])
+                val_mean = _safe_nanmean(val_data[mask])
 
                 records.append(
                     {
@@ -102,13 +107,18 @@ def detect_phenomenon_fronts(
         if seg_var not in seg_data or raw_var not in feat_data:
             continue
 
-        for t_idx in range(seg_data.sizes["time"]):
-            timestamp = pd.to_datetime(seg_data.time.values[t_idx]).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+        seg_da = seg_data[seg_var]
+        raw_da = feat_data[raw_var]
+        raw_time_set = set(raw_da.time.values)
 
-            seg_frame = seg_data[seg_var].isel(time=t_idx).values
-            val_frame = feat_data[raw_var].isel(time=t_idx).values
+        for t in seg_da.time.values:
+            if t not in raw_time_set:
+                continue
+
+            timestamp = pd.to_datetime(t).strftime("%Y-%m-%d %H:%M:%S")
+
+            seg_frame = seg_da.sel(time=t).values
+            val_frame = raw_da.sel(time=t).values
 
             # Find unique front IDs (excluding 0, which is background, and nans)
             front_ids = np.unique(seg_frame[~np.isnan(seg_frame)])
@@ -116,7 +126,7 @@ def detect_phenomenon_fronts(
 
             # Background = not in any front (id 0 or nan), computed once per frame
             background_mask = (seg_frame == 0) | np.isnan(seg_frame)
-            avg_val_outside = np.nanmean(val_frame[background_mask])
+            avg_val_outside = _safe_nanmean(val_frame[background_mask])
 
             for fid in front_ids:
                 mask = seg_frame == fid
@@ -126,7 +136,7 @@ def detect_phenomenon_fronts(
                 area_km2 = pixel_count * area_per_pixel_km2
 
                 # Average value inside this front
-                avg_val_inside = np.nanmean(val_frame[mask])
+                avg_val_inside = _safe_nanmean(val_frame[mask])
 
                 # Cities inside this front
                 cities_inside = []

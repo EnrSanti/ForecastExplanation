@@ -3,13 +3,15 @@ from enum import Enum
 LEVELS = [1000, 925, 850, 700, 500, 300]
 FOLDERS_HEIGHT_SUFF = [f"_at_{l:04d}m" for l in LEVELS]
 
+# Keyed by pressure-level suffix (matches FOLDERS_HEIGHT_SUFF); the comment
+# gives the approximate real-world altitude for each level.
 DEFAULT_V_MAX_AT_HEIGHT = {
-    "_at_0100m": 20,
-    "_at_0750m": 25,
-    "_at_1400m": 25,
-    "_at_3000m": 35,
-    "_at_5500m": 45,
-    "_at_9000m": 70,
+    "_at_1000m": 20,  # ~100m
+    "_at_0925m": 25,  # ~750m
+    "_at_0850m": 25,  # ~1400m
+    "_at_0700m": 35,  # ~3000m
+    "_at_0500m": 45,  # ~5500m
+    "_at_0300m": 70,  # ~9000m
 }
 DEFAULT_DXY = 2500
 DEFAULT_DT = 3600

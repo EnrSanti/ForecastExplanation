@@ -204,7 +204,7 @@ def main() -> None:
 
             translate_output_path = output_path / "translated"
             translators.FoldRmTranslator().translate(
-                dates, output_path, translate_output_path, force=force > 0
+                dates, output_path, translate_output_path, region, force=force > 0
             )
 
             logger.info(f"--- Finished {run_name} ---\n\n")
