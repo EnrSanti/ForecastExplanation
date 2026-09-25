@@ -31,8 +31,8 @@ class BaseTranslator(ABC):
 
         ext = self.extension.strip(".") or "txt"
 
-        for date in dates:
-            date_str = date.strftime("%Y-%m-%d")
+        for target_date in dates:
+            date_str = target_date.strftime("%Y-%m-%d")
             item = input_path / date_str
 
             if not item.is_dir():

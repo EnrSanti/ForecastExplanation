@@ -1,6 +1,6 @@
 import logging
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 
 import matplotlib
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_tobac(
-    dates: list[datetime],
+    dates: list[date],
     input_dir: Path,
     output_dir: Path,
     region: Region,
@@ -54,43 +54,43 @@ def run_tobac(
         futures = {
             executor.submit(
                 _run_tobac_single_day,
-                date,
+                target_date,
                 input_dir,
                 output_dir,
                 region,
                 force=force,
                 save_images=save_images,
-            ): date
-            for date in dates
+            ): target_date
+            for target_date in dates
         }
 
         for future in tqdm(
             as_completed(futures), total=len(dates), desc="TOBAC Processing"
         ):
-            date = futures[future]
+            target_date = futures[future]
             try:
                 future.result()
             except Exception:
-                logger.exception(f"TOBAC failed for {date}")
+                logger.exception(f"TOBAC failed for {target_date}")
 
     logger.info("TOBAC runs completed.")
 
 
 def _run_tobac_single_day(
-    date: datetime,
+    target_date: date,
     input_dir: Path,
     output_dir: Path,
     region: Region,
     force: bool = False,
     save_images: bool = False,
 ) -> None:
-    day_input_dir = input_dir / date.strftime("%Y-%m-%d")
-    day_output_dir = output_dir / date.strftime("%Y-%m-%d")
+    day_input_dir = input_dir / target_date.strftime("%Y-%m-%d")
+    day_output_dir = output_dir / target_date.strftime("%Y-%m-%d")
     day_output_dir.mkdir(parents=True, exist_ok=True)
 
     if not force and (day_output_dir / "segmentation.nc").exists():
         logger.debug(
-            f"Segmentation already exists for {date.strftime('%Y-%m-%d')}. Skipping."
+            f"Segmentation already exists for {target_date.strftime('%Y-%m-%d')}. Skipping."
         )
         return
 
