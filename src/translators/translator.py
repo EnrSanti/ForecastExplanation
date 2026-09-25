@@ -46,7 +46,7 @@ class BaseTranslator(ABC):
             if not force and output_file.exists():
                 continue
 
-            result_bytes = self.translate_day(item, date)
+            result_bytes = self.translate_day(item, target_date)
             output_file.write_bytes(result_bytes)
         self.merge_into_dataset(dates, output_path)
 
@@ -66,12 +66,9 @@ class BaseTranslator(ABC):
     @abstractmethod
     def merge_into_dataset(self, dates: list[date], input_folder: Path):
         """
-        Translates the reasoning files for a specific day.
+        Merges the per-day translated files into a single combined dataset file.
 
         Args:
-            dates: The dates for which to merge the data.
-            input_folder: The input folder for a specific day.
-
-        Returns:
-            bytes: The translated content to be saved to a file.
+            dates: The dates whose translated files should be merged.
+            input_folder: The folder containing the per-day translated files.
         """
