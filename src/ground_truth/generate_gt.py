@@ -31,8 +31,8 @@ def generate_gt(
                 )
                 res = text_extract(target_date - timedelta(days=1))
             save_to_file(res, output_path, target_date)
-        except Exception as e:  # noqa: BLE001
-            logger.error(f"Error generating ground truth for date {target_date}: {e}")
+        except Exception:
+            logger.exception(f"Error generating ground truth for date {target_date}")
 
 
 def save_to_file(data: dict, output_path: Path, target_date: date) -> None:

@@ -34,27 +34,6 @@ def get_grid_spacings(
         return default_dxy, default_dt
 
 
-def _latlon_to_px(
-    lat: float,
-    lon: float,
-    lat_min: float,
-    lat_max: float,
-    lon_min: float,
-    lon_max: float,
-    frame_height: int,
-    frame_width: int,
-):
-    """
-    Convert a lat/lon into pixel (x, y) using the same linear mapping used
-    to build the frame's coordinate grid elsewhere in the pipeline (row 0 /
-    top of image = lat_min, matching the existing np.linspace(lat_min,
-    lat_max, frame_height) convention — not the usual north-up mapping).
-    """
-    px_x = (lon - lon_min) / (lon_max - lon_min) * (frame_width - 1)
-    px_y = (lat_max - lat) / (lat_max - lat_min) * (frame_height - 1)
-    return px_x, px_y
-
-
 def build_referenced_data_from_xarray(
     da: xr.DataArray,
     times: list,
