@@ -244,8 +244,7 @@ def build_feature_dataarrays(
                 result[folders[lvl]] = normalized
 
                 if spec.prefix in ["temp", "humidity"]:
-                    raw = stacked.fillna(0.0)
-                    raw = raw.drop_vars(
+                    raw = stacked.drop_vars(
                         ["valid_time", "step", "isobaricInhPa", "number", "surface"],
                         errors="ignore",
                     )

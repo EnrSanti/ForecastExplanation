@@ -88,7 +88,7 @@ def track_features(
             )
         return trajectories
     except Exception as e:  # noqa: BLE001
-        logger.debug(f"No trajectories found: {e}")
+        logger.warning(f"tobac.linking_trackpy failed ({type(e).__name__}: {e}); returning no trajectories")
         return pd.DataFrame()
 
 

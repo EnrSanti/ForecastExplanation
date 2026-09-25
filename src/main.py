@@ -208,8 +208,8 @@ def main() -> None:
             )
 
             logger.info(f"--- Finished {run_name} ---\n\n")
-        except Exception as e:  # noqa: BLE001
-            logger.error(f"Error running {run_name}: {e}")
+        except Exception:
+            logger.exception(f"Error running {run_name}")
             continue
 
 

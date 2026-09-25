@@ -375,13 +375,24 @@ class FoldRmTranslator(BaseTranslator):
         city_coords = region.get_cities()
 
         reasoning_dir = day_input_folder / "reasoning"
-        winds_df = pd.read_csv(reasoning_dir / "winds.txt", sep="\t")
+        winds_df = _read_tsv_or_empty(
+            reasoning_dir / "winds.txt",
+            ["timestamp", "height", "city", "wind_direction", "wind_speed"],
+        )
         cloud_df = pd.read_csv(reasoning_dir / "cloud.txt", sep="\t")
         heat_df = _attach_city(
-            pd.read_csv(reasoning_dir / "heat.txt", sep="\t"), city_coords
+            _read_tsv_or_empty(
+                reasoning_dir / "heat.txt",
+                ["timestamp", "height", "lat", "lon", "temperature"],
+            ),
+            city_coords,
         )
         humidity_df = _attach_city(
-            pd.read_csv(reasoning_dir / "humidity.txt", sep="\t"), city_coords
+            _read_tsv_or_empty(
+                reasoning_dir / "humidity.txt",
+                ["timestamp", "height", "lat", "lon", "humidity"],
+            ),
+            city_coords,
         )
 
         humidity_fronts_df = _read_tsv_or_empty(
