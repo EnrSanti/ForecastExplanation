@@ -385,7 +385,7 @@ class FoldRmTranslator(BaseTranslator):
                 ["timestamp", "height", "city"], keep="last"
             )
 
-        wind_dir, wind_dir_t, wind_dir_h = _pivot(winds_df, "wind_direction")
+        wind_dir, _, _ = _pivot(winds_df, "wind_direction")
         wind_speed, wind_speed_t, wind_speed_h = _pivot(
             winds_df, "wind_speed", round_ndigits=1
         )
