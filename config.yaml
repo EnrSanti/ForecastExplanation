@@ -1,24 +1,8 @@
 run_baseline:
   region: FVG
   dates:
-    - 2021-01-02
-  force: 4 # redo all (excluding download grib)
-
-
-run_custom_path_and_region:
-  region:
-    bounds: [-3, 3, 42.7, 45.8]
-    radius: 3
-    cities:
-      CustomCity:
-        lat: 44.25
-        lon: 0.0
-  dates:
-    - start: 2021-01-02
-      end: 2021-01-04
-  clean: 0
-  force: 3
-  clustering: true
-  debug: true
-  just_cut: false
+    - 2025-07-01
+    - 2025-07-02
+    - 2025-07-03
+  force: 3 # redo all (excluding download grib)
   save_images: true

@@ -73,7 +73,8 @@ def detect_phenomenon_fronts(
     """
     writes a txt table with:
     timestamp, height, front_id (from tobac), front area,
-     list of cities inside the area, average {phenomenon} of the front
+     list of cities inside the area, average {phenomenon} inside the
+     front, average {phenomenon} outside all fronts (background only)
     """
     dxy_m = float(feat_data.attrs["dxy"])
     area_per_pixel_km2 = (dxy_m / 1000.0) ** 2
@@ -113,6 +114,10 @@ def detect_phenomenon_fronts(
             front_ids = np.unique(seg_frame[~np.isnan(seg_frame)])
             front_ids = [fid for fid in front_ids if fid > 0]
 
+            # Background = not in any front (id 0 or nan), computed once per frame
+            background_mask = (seg_frame == 0) | np.isnan(seg_frame)
+            avg_val_outside = np.nanmean(val_frame[background_mask])
+
             for fid in front_ids:
                 mask = seg_frame == fid
 
@@ -120,8 +125,8 @@ def detect_phenomenon_fronts(
                 pixel_count = np.sum(mask)
                 area_km2 = pixel_count * area_per_pixel_km2
 
-                # Average value
-                avg_val = np.nanmean(val_frame[mask])
+                # Average value inside this front
+                avg_val_inside = np.nanmean(val_frame[mask])
 
                 # Cities inside this front
                 cities_inside = []
@@ -138,7 +143,8 @@ def detect_phenomenon_fronts(
                         "front_id": int(fid),
                         "area": int(area_km2),
                         "cities": cities_str,
-                        col_name: avg_val,
+                        f"{col_name}_inside": avg_val_inside,
+                        f"{col_name}_outside": avg_val_outside,
                     }
                 )
 
