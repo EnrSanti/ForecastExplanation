@@ -18,15 +18,6 @@ def haversine(
     return R * c
 
 
-def get_compass_direction(degrees: float) -> str | float:
-    """Convert a bearing in degrees to an 8-point compass label."""
-    if np.isnan(degrees):
-        return np.nan
-    directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
-    idx = int((degrees + 22.5) // 45) % 8
-    return directions[idx]
-
-
 def get_heights(data: xr.Dataset) -> list[str]:
     heights = set()
     for var in data.data_vars:
