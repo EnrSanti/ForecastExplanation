@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .utils import get_compass_direction, haversine
+from .utils import haversine
 
 logger = logging.getLogger("ForecastExplanation")
 
@@ -75,7 +75,7 @@ def detect_winds(
                         "timestamp": timestamp,
                         "height": h.replace("m", ""),
                         "city": city_name,
-                        "wind_direction": get_compass_direction(wd_val),
+                        "wind_direction": wd_val,
                         "wind_speed": ws_val,
                     }
                 )
