@@ -34,15 +34,6 @@ def get_grid_spacings(
         return default_dxy, default_dt
 
 
-def normalize_referenced_data(referenced_data: xr.DataArray) -> xr.DataArray:
-    """Normalizes DataArray values to the [0, 1] range."""
-    vmin = float(referenced_data.min())
-    vmax = float(referenced_data.max())
-    if vmax == vmin:
-        return xr.zeros_like(referenced_data)
-    return (referenced_data - vmin) / (vmax - vmin)
-
-
 def _latlon_to_px(
     lat: float,
     lon: float,
