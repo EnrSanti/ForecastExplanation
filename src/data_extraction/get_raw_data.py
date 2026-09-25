@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 
 import numpy as np
@@ -61,15 +61,19 @@ def cut_grib_long_lat(grib_path: Path, coordinates: list[float]) -> xr.Dataset:
 
 
 def extract_nc(
-    date: datetime, region: Region, input_dir: Path, output_dir: Path, force_redo: int
+    target_date: date,
+    region: Region,
+    input_dir: Path,
+    output_dir: Path,
+    force_redo: int,
 ) -> Path:
-    base_name = date.strftime("%Y-%m-%d")
+    base_name = target_date.strftime("%Y-%m-%d")
     grib_file = f"{base_name}.grib"
     grib_path = input_dir / grib_file
     output_path = output_dir / (base_name + "_" + region.name + "_cut.nc")
 
     if not output_path.exists() or force_redo:
-        download_grib_if_needed(date, grib_path)
+        download_grib_if_needed(target_date, grib_path)
 
         logger.debug(f"CUTTING GRIB: {grib_path} -> {output_path}")
         ds = cut_grib_long_lat(grib_path, region.value)
@@ -82,12 +86,12 @@ def extract_nc(
     return output_path
 
 
-def download_grib_if_needed(date: datetime, grib_path: Path) -> None:
+def download_grib_if_needed(target_date: date, grib_path: Path) -> None:
     if grib_path.exists():
         logger.debug(f"GRIB already exists: {grib_path}")
         return
 
-    date_str = date.strftime("%Y-%m-%d")
+    date_str = target_date.strftime("%Y-%m-%d")
     logger.debug(f"Downloading GRIB for {date_str} to {grib_path}...")
     progress = logger.getEffectiveLevel() == logging.DEBUG
     client = Client(
