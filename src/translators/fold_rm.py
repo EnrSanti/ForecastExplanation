@@ -2,13 +2,15 @@ import csv
 import io
 import json
 import math
+from collections import Counter, defaultdict
+from datetime import date
 from pathlib import Path
-from datetime import datetime
-from collections import Counter
-import pandas as pd
-from collections import defaultdict
-from region import CITIES
+
 import numpy as np
+import pandas as pd
+
+from region import CITIES
+
 from .translator import BaseTranslator
 
 _PIOGGIA_ENUM = {
@@ -284,9 +286,7 @@ def _get_frames_number(t, h):
     layer_nos = LEVEL_GROUP_COUNT[h]
     if t == "early_morning":
         return 7 * layer_nos
-    elif t == "morning":
-        return 6 * layer_nos
-    elif t == "afternoon":
+    elif t == "morning" or t == "afternoon":
         return 6 * layer_nos
     elif t == "evening":
         return 5 * layer_nos
@@ -358,7 +358,7 @@ def average_by_height_and_time_fronts(
 class FoldRmTranslator(BaseTranslator):
     extension = "csv"
 
-    def translate_day(self, day_input_folder: Path, date: datetime) -> bytes:
+    def translate_day(self, day_input_folder: Path, target_date: date) -> bytes:
         gt_data = json.loads((day_input_folder / "gt.json").read_text())
         cities_gt = next(iter(gt_data.values()))
         cities = sorted(cities_gt)
@@ -582,7 +582,7 @@ class FoldRmTranslator(BaseTranslator):
         writer.writerows(rows)
         return buffer.getvalue().encode("utf-8")
 
-    def merge_into_dataset(self, dates: list[datetime], input_folder: str | Path):
+    def merge_into_dataset(self, dates: list[date], input_folder: Path):
         if not dates:
             print("No dates provided.")
             return

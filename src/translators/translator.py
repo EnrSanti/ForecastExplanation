@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import date
 from pathlib import Path
 
 logger = logging.getLogger("ForecastExplanation")
@@ -11,7 +11,7 @@ class BaseTranslator(ABC):
 
     def translate(
         self,
-        dates: list[datetime],
+        dates: list[date],
         input_folder: str | Path,
         output_folder: str | Path,
         force: bool = False,
@@ -51,26 +51,26 @@ class BaseTranslator(ABC):
         self.merge_into_dataset(dates, output_path)
 
     @abstractmethod
-    def translate_day(self, day_input_folder: Path, date: datetime) -> bytes:
+    def translate_day(self, day_input_folder: Path, target_date: date) -> bytes:
         """
         Translates the reasoning files for a specific day.
 
         Args:
             day_input_folder: The input folder for a specific day.
-            date: The date for which to translate the data.
+            target_date: The date for which to translate the data.
 
         Returns:
             bytes: The translated content to be saved to a file.
         """
 
     @abstractmethod
-    def merge_into_dataset(self, dates: list[datetime], input_folder: str | Path):
+    def merge_into_dataset(self, dates: list[date], input_folder: Path):
         """
         Translates the reasoning files for a specific day.
 
         Args:
-            day_input_folder: The input folder for a specific day.
-            date: The date for which to translate the data.
+            dates: The dates for which to merge the data.
+            input_folder: The input folder for a specific day.
 
         Returns:
             bytes: The translated content to be saved to a file.
