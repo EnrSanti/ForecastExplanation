@@ -16,7 +16,7 @@ def cluster_xarray(
 
     Parameters
     ----------
-    data_dict : maps folder name -> DataArray (time, y, x) with values in [0, 1]
+    data_dict : maps folder name -> DataArray (time, y, x) with values in [0, 1].
     num_clusters_map : override for number of clusters per variable type
 
     Returns
@@ -30,9 +30,10 @@ def cluster_xarray(
     result = {}
     for folder_name, da in data_dict.items():
         name = folder_name.lower()
-        if "wind" in name:
-            k = num_clusters_map.get("wind", 3)
-        elif "temp" in name:
+        if name.startswith("raw_") or "wind" in name:
+            result[folder_name] = da
+            continue
+        if "temp" in name:
             k = num_clusters_map.get("temp", 5)
         elif "cloud" in name:
             k = num_clusters_map.get("cloud", 3)

@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 from datetime import date
 from pathlib import Path
 
+from region import Region
+
 logger = logging.getLogger("ForecastExplanation")
 
 
@@ -14,6 +16,7 @@ class BaseTranslator(ABC):
         dates: list[date],
         input_folder: str | Path,
         output_folder: str | Path,
+        region: Region,
         force: bool = False,
     ) -> None:
         """
@@ -23,6 +26,7 @@ class BaseTranslator(ABC):
             dates: The dates to translate.
             input_folder: The root folder containing date-formatted subdirectories.
             output_folder: The root folder where translated files should be saved.
+            region: The region the run was configured with (and its resolved cities).
             force: If True, re-translates a day even if its output file already exists.
         """
         input_path = Path(input_folder)
@@ -46,18 +50,21 @@ class BaseTranslator(ABC):
             if not force and output_file.exists():
                 continue
 
-            result_bytes = self.translate_day(item, target_date)
+            result_bytes = self.translate_day(item, target_date, region)
             output_file.write_bytes(result_bytes)
         self.merge_into_dataset(dates, output_path)
 
     @abstractmethod
-    def translate_day(self, day_input_folder: Path, target_date: date) -> bytes:
+    def translate_day(
+        self, day_input_folder: Path, target_date: date, region: Region
+    ) -> bytes:
         """
         Translates the reasoning files for a specific day.
 
         Args:
             day_input_folder: The input folder for a specific day.
             target_date: The date for which to translate the data.
+            region: The region the run was configured with (and its resolved cities).
 
         Returns:
             bytes: The translated content to be saved to a file.
