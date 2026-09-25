@@ -69,7 +69,8 @@ def _slugify_city(city: str) -> str:
 
 
 def _front_frequency(detected, total) -> str:
-    """Returns the frequency of a front detection as a float between 0 and 1."""
+    """Buckets the detected/total frame ratio into "present" (>=0.8),
+    "partially_present" (>=0.3), or "absent"."""
     if total == 0:
         return "absent"
     ratio = detected / total
@@ -184,11 +185,8 @@ def average_by_height_and_time(
 ) -> dict:
     """
     Groups a (city, time, height)-keyed lookup into (city, time_group,
-    height_group), averaging within each group.
-
-    kind="mean"      -> arithmetic mean, skipping missing/non-numeric entries
-    kind="direction" -> circular mean of 8-point cardinal directions (see
-                         _circular_mean_direction), snapped back to a label
+    height_group), averaging within each group with an arithmetic mean
+    that skips missing/non-numeric entries.
 
     Always groups into the fixed TIME_GROUPS_ORDER / HEIGHT_GROUPS_ORDER —
     a group with no underlying data for a given city just won't have an
@@ -306,8 +304,7 @@ def average_by_height_and_time_fronts(
     for t_all in TIME_GROUPS_ORDER:
         for h_all in HEIGHT_GROUPS_ORDER:
             buckets[(t_all, h_all)] = 0
-    print(front_data)
-    # se ho 2 fronti stessa h ne conto 1
+
     for t in times:
         time_group = _hour_group(t)
         for h in heights:
@@ -316,9 +313,9 @@ def average_by_height_and_time_fronts(
             if val is None or val == "":
                 continue
 
-            areas = [item[1] for item in val]
-            insides = [item[2] for item in val]
-            outsides = [item[3] for item in val]
+            areas = [item[0] for item in val]
+            insides = [item[1] for item in val]
+            outsides = [item[2] for item in val]
 
             frame_area = sum(areas)  # sum simultaneous fronts' area
             frame_inside = sum(insides) / len(
@@ -336,9 +333,6 @@ def average_by_height_and_time_fronts(
     # front frequency, avg size and avg tmp/hum
     res: dict[tuple, tuple[str, int, float, float]] = {}
     for (t, h), detected in buckets.items():
-        print(
-            f"Detected {detected} fronts for time group {t} and height group {h} over all {_get_frames_number(t, h)}"
-        )
         vals = metric_lists.get((t, h), [])
         avg_area, avg_inside, avg_outside = 0, 0.0, 0.0
         if vals:
@@ -392,13 +386,13 @@ class FoldRmTranslator(BaseTranslator):
 
         humidity_front_data, humidity_fronts_t, humidity_fronts_h = _pivot_no_city(
             humidity_fronts_df,
-            ["cities", "area", "humidity_inside", "humidity_outside"],
+            ["area", "humidity_inside", "humidity_outside"],
             round_ndigits=2,
         )
         temperature_front_data, temperature_fronts_t, temperature_fronts_h = (
             _pivot_no_city(
                 heat_fronts_df,
-                ["cities", "area", "temperature_inside", "temperature_outside"],
+                ["area", "temperature_inside", "temperature_outside"],
                 round_ndigits=2,
             )
         )
@@ -416,7 +410,7 @@ class FoldRmTranslator(BaseTranslator):
         all_hours = [f"{h:02d}00" for h in range(24)]
         missing_hours = sorted(set(all_hours) - set(cloud_t))
 
-        month = date.month
+        month = target_date.month
 
         if missing_hours:
             for city in cities:
@@ -503,14 +497,13 @@ class FoldRmTranslator(BaseTranslator):
             slug = _slugify_city(city)
             row = [f"{pioggia}", f"{cloud}", month, slug]
 
-            # se non trova esplode "".get
             row += [
-                wind_grouped.get((city, tg, hg), "").get("direction", "")
+                wind_grouped.get((city, tg, hg), {}).get("direction", "")
                 for tg in TIME_GROUPS_ORDER
                 for hg in HEIGHT_GROUPS_ORDER
             ]
             row += [
-                wind_grouped.get((city, tg, hg), "").get("speed", "")
+                wind_grouped.get((city, tg, hg), {}).get("speed", "")
                 for tg in TIME_GROUPS_ORDER
                 for hg in HEIGHT_GROUPS_ORDER
             ]
@@ -588,22 +581,22 @@ class FoldRmTranslator(BaseTranslator):
             return
 
         input_path = Path(input_folder)
-        print("FOLDER:", input_path)
 
         # Determine the smallest and biggest dates for the output filename
         min_date = min(dates)
         max_date = max(dates)
 
         date_format = "%Y-%m-%d"
+        ext = self.extension.strip(".") or "csv"
         output_filename = (
-            f"{min_date.strftime(date_format)}_{max_date.strftime(date_format)}.csv"
+            f"{min_date.strftime(date_format)}_{max_date.strftime(date_format)}.{ext}"
         )
         output_path = input_path / output_filename
 
         # Read and collect dataframes for each date file that exists
         dfs = []
         for d in sorted(dates):
-            file_path = input_path / f"{d.strftime(date_format)}.csv"
+            file_path = input_path / f"{d.strftime(date_format)}.{ext}"
             if file_path.exists():
                 df = pd.read_csv(file_path)
                 dfs.append(df)

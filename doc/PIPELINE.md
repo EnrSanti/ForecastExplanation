@@ -159,14 +159,15 @@ Mean temperature within a 3 km radius of each city, per height and hour.
 
 Temperature fronts detected by TOBAC, with their physical temperature and city membership.
 
-| Column        | Description                                     |
-|---------------|-------------------------------------------------|
-| `timestamp`   | Hourly timestamp                                |
-| `height`      | Pressure level                                  |
-| `front_id`    | TOBAC blob ID                                   |
-| `area`        | Front area (km²)                                |
-| `cities`      | Comma-separated list of cities inside the front |
-| `temperature` | Mean temperature of the front (K)               |
+| Column                 | Description                                            |
+|------------------------|---------------------------------------------------------|
+| `timestamp`            | Hourly timestamp                                        |
+| `height`               | Pressure level                                          |
+| `front_id`             | TOBAC blob ID                                           |
+| `area`                 | Front area (km²)                                        |
+| `cities`               | Comma-separated list of cities inside the front         |
+| `temperature_inside`   | Mean temperature inside the front (K)                   |
+| `temperature_outside`  | Mean temperature outside all fronts, background only (K)|
 
 #### `humidity.txt`
 
@@ -184,14 +185,15 @@ Mean relative humidity within a 3 km radius of each city, per height and hour.
 
 Humidity fronts detected by TOBAC, with their physical humidity and city membership.
 
-| Column      | Description                                     |
-|-------------|-------------------------------------------------|
-| `timestamp` | Hourly timestamp                                |
-| `height`    | Pressure level                                  |
-| `front_id`  | TOBAC blob ID                                   |
-| `area`      | Front area (km²)                                |
-| `cities`    | Comma-separated list of cities inside the front |
-| `humidity`  | Mean relative humidity of the front (%)         |
+| Column               | Description                                                  |
+|----------------------|---------------------------------------------------------------|
+| `timestamp`          | Hourly timestamp                                              |
+| `height`             | Pressure level                                                |
+| `front_id`           | TOBAC blob ID                                                 |
+| `area`               | Front area (km²)                                              |
+| `cities`             | Comma-separated list of cities inside the front                |
+| `humidity_inside`    | Mean relative humidity inside the front (%)                    |
+| `humidity_outside`   | Mean relative humidity outside all fronts, background only (%) |
 
 ---
 
@@ -225,21 +227,38 @@ suitable for downstream ML models. Currently the only translator is `FoldRmTrans
 - `{run}/{date}/reasoning/cloud.txt` (from Step 3)
 - `{run}/{date}/reasoning/heat.txt` (from Step 3)
 - `{run}/{date}/reasoning/humidity.txt` (from Step 3)
+- `{run}/{date}/reasoning/heat_fronts.txt` (from Step 3)
+- `{run}/{date}/reasoning/humidity_fronts.txt` (from Step 3)
 
 ### Output
 
 **Path:** `{run}/translated/{date}.csv`
 
-One row per city. Columns are structured as `{feature}_{time}_{height}`:
+One row per city. Per-hour, per-level values are grouped before being written out: hours are bucketed into
+`early_morning` (00–06), `morning` (07–12), `afternoon` (13–18), `evening` (19–23), and pressure levels into
+`low` (1000/0925/0850), `medium` (0700/0500), `high` (0300). Columns are structured as `{feature}_{time_group}_{height_group}`:
 
-| Column group          | Description                                       |
-|-----------------------|---------------------------------------------------|
-| `prev_pioggia`        | `{city_slug}_{rain_enum}` — encoded rain forecast |
-| `prev_cloud`          | `{city_slug}_{cloud_enum}` — encoded sky forecast |
-| `wind_direction_*`    | Compass direction per time/height                 |
-| `wind_speed_*`        | Wind speed (m/s) per time/height                  |
-| `coverage_clouds_*`  | Cloud coverage (%) per time/height                |
-| `size_cloud_*`        | Cloud segment area (km²) per time/height          |
-| `temperature_*`       | Temperature (K) per time/height                   |
-| `humidity_*`          | Relative humidity (%) per time/height             |
+| Column group                          | Description                                                          |
+|----------------------------------------|-----------------------------------------------------------------------|
+| `prev_pioggia`                         | Encoded rain forecast (`rain_enum`)                                    |
+| `prev_cloud`                           | Encoded sky forecast (`cloud_enum`)                                    |
+| `month`                                | Month of the target date                                               |
+| `location`                             | City slug                                                              |
+| `wind_direction_*`                     | Resultant vector wind direction, compass octave, per time/height group |
+| `wind_speed_*`                         | Resultant vector wind speed (m/s), per time/height group               |
+| `coverage_clouds_*`                    | Cloud coverage (%), averaged per time/height group                     |
+| `size_cloud_*`                         | Cloud segment area (km²), averaged per time/height group               |
+| `temperature_*`                        | Temperature (K), averaged per time/height group                        |
+| `humidity_*`                           | Relative humidity (%), averaged per time/height group                  |
+| `humidity_fronts_*`                    | Humidity front frequency (`present`/`partially_present`/`absent`)      |
+| `humidity_fronts_area_*`               | Average humidity front area (km²)                                      |
+| `humidity_fronts_inside_hum_*`         | Average humidity inside humidity fronts (%)                            |
+| `humidity_fronts_outside_hum_*`        | Average humidity outside humidity fronts, background only (%)          |
+| `temperature_fronts_*`                 | Temperature front frequency (`present`/`partially_present`/`absent`)   |
+| `temperature_fronts_area_*`            | Average temperature front area (km²)                                   |
+| `temperature_fronts_inside_temp_*`     | Average temperature inside temperature fronts (K)                      |
+| `temperature_fronts_outside_temp_*`    | Average temperature outside temperature fronts, background only (K)    |
+
+After all requested dates are translated, the per-day CSVs are concatenated into a single merged dataset at
+`{run}/translated/{min_date}_{max_date}.csv`.
 
