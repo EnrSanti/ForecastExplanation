@@ -78,19 +78,18 @@ def parse_args_and_config() -> tuple[argparse.Namespace, dict]:
     return args, config
 
 
-def _parse_date_value(value: datetime | date | str) -> datetime:
+def _parse_date_value(value: datetime | date | str) -> date:
     if isinstance(value, datetime):
-        return value
+        return value.date()
     if isinstance(value, date):
-        return datetime(value.year, value.month, value.day)
+        return value
     if isinstance(value, str):
-        d = date.fromisoformat(value)
-        return datetime(d.year, d.month, d.day)
+        return date.fromisoformat(value)
 
     raise ValueError(f"Unsupported date value: {value!r}")
 
 
-def parse_dates(dates_entry: list | str | dict | None) -> list[datetime]:
+def parse_dates(dates_entry: list | str | dict | None) -> list[date]:
     """
     Parses a date configuration entry, which can be a single date item or a list of items.
     """
