@@ -454,7 +454,7 @@ class FoldRmTranslator(BaseTranslator):
         temp_front_grouped = average_by_height_and_time_fronts(
             temperature_front_data, temperature_fronts_t, temperature_fronts_h
         )
-        header = ["prev_pioggia", "prev_cloud", "month"]
+        header = ["prev_pioggia", "prev_cloud", "month", "location"]
 
         header += _column_group(
             "wind_direction", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
@@ -501,7 +501,7 @@ class FoldRmTranslator(BaseTranslator):
                 _CLOUD_ENUM, gt_entry.get("CIELO_DESCRIZIONE"), city, "CIELO"
             )
             slug = _slugify_city(city)
-            row = [f"{slug}_{pioggia}", f"{slug}_{cloud}", month]
+            row = [f"{pioggia}", f"{cloud}", month, slug]
 
             # se non trova esplode "".get
             row += [
