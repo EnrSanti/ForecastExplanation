@@ -104,7 +104,9 @@ def _lookup_enum(enum: dict, value, city: str, field: str) -> int:
 
 
 def _time_label(timestamp) -> str:
-    return pd.to_datetime(timestamp).strftime("%H%M")
+    # return pd.to_datetime(timestamp).strftime("%H%M")
+    # this saves around 6 minutes out of 7 for a one year run
+    return timestamp[11:13] + timestamp[14:16]
 
 
 def _height_label(height) -> str:
