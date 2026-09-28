@@ -32,6 +32,15 @@ def detect_winds(
     """
     lats = data.latitude.values
     lons = data.longitude.values
+    timestamps = pd.to_datetime(data.time.values).strftime("%Y-%m-%d %H:%M:%S")
+
+    # Read each variable once instead of once per city/time step
+    arrays = {
+        v: data[v].transpose("time", ...).values
+        for h in heights
+        for v in (f"wind_at_{h}", f"wind_direction_at_{h}")
+        if v in data
+    }
 
     records = []
 
@@ -55,13 +64,9 @@ def detect_winds(
                 )
                 continue
 
-            for t_idx in range(data.sizes["time"]):
-                timestamp = pd.to_datetime(data.time.values[t_idx]).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
-
-                ws_data = data[ws_var].isel(time=t_idx).values
-                wd_data = data[wd_var].isel(time=t_idx).values
+            for t_idx, timestamp in enumerate(timestamps):
+                ws_data = arrays[ws_var][t_idx]
+                wd_data = arrays[wd_var][t_idx]
 
                 ws_val = np.nanmean(ws_data[mask])
 
@@ -120,6 +125,8 @@ def detect_clouds(
         if np.any(mask):
             city_masks[city_name] = mask
 
+    timestamps = pd.to_datetime(seg_data.time.values).strftime("%Y-%m-%d %H:%M:%S")
+
     records = []
 
     for h in heights:
@@ -128,12 +135,10 @@ def detect_clouds(
         if seg_var not in seg_data:
             continue
 
-        for t_idx in range(seg_data.sizes["time"]):
-            timestamp = pd.to_datetime(seg_data.time.values[t_idx]).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+        seg_arr = seg_data[seg_var].transpose("time", ...).values
 
-            seg_frame = seg_data[seg_var].isel(time=t_idx).values
+        for t_idx, timestamp in enumerate(timestamps):
+            seg_frame = seg_arr[t_idx]
 
             # Find unique cloud IDs (excluding 0, which is background, and nans)
             cloud_ids = np.unique(seg_frame[~np.isnan(seg_frame)])
