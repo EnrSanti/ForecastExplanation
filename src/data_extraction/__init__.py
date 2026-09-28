@@ -23,6 +23,15 @@ class LimitValues:
         300: (218.15, 268.15),
     }
 
+    TEMP_MIN_RANGE: ClassVar[dict[int, float]] = {
+        1000: 12.0,
+        925: 10.0,
+        850: 9.0,
+        700: 5.0,
+        500: 4.0,
+        300: 3.0,
+    }
+
     WIND_SPEED: ClassVar[dict[int, tuple[int, int]]] = {
         1000: (0, 100),
         925: (0, 100),
@@ -44,8 +53,8 @@ class LimitValues:
 
 RAW_DATA_DIR: str = "tmp_data/original_CERRA"
 CUT_DATA_DIR: str = "tmp_data/CERRA_cut"
-DISCRETE_DATA_DIR: str = "tmp_data/imgs_discrete"
-CLUSTERED_DATA_DIR: str = "tmp_data/clustered"
+DISCRETE_DATA_DIR: str = "tmp_data/extracted_data"
+CLUSTERED_DATA_DIR: str = "tmp_data/clustered_data"
 
 LEVELS = [1000, 925, 850, 700, 500, 300]
 FOLDERS = {l: f"_at_{l:04d}m" for l in LEVELS}

@@ -1,6 +1,7 @@
 import csv
 import io
 import json
+import logging
 import math
 from collections import Counter, defaultdict
 from datetime import date
@@ -8,11 +9,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from joblib import logger
 
 from region import Region
 
 from .translator import BaseTranslator
+
+# logger = logging.getLogger("ForecastExplanation")
 
 _PIOGGIA_ENUM = {
     None: 0,
@@ -649,7 +651,7 @@ class FoldRmTranslator(BaseTranslator):
                 df = pd.read_csv(file_path)
                 dfs.append(df)
             else:
-                logger.warn(f"File not found for date {file_path.name}")
+                logger.warning(f"File not found for date {file_path.name}")
 
         # Merge and save if there's data
         if dfs:
