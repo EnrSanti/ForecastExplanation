@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from joblib import logger
 
 from region import Region
 
@@ -624,7 +625,7 @@ class FoldRmTranslator(BaseTranslator):
 
     def merge_into_dataset(self, dates: list[date], input_folder: Path):
         if not dates:
-            print("No dates provided.")
+            logger.error("No dates provided.")
             return
 
         input_path = Path(input_folder)
@@ -648,12 +649,12 @@ class FoldRmTranslator(BaseTranslator):
                 df = pd.read_csv(file_path)
                 dfs.append(df)
             else:
-                print(f"Warning: File not found for date {file_path.name}")
+                logger.warn(f"File not found for date {file_path.name}")
 
         # Merge and save if there's data
         if dfs:
             merged_df = pd.concat(dfs, ignore_index=True)
             merged_df.to_csv(output_path, index=False)
-            print(f"Successfully merged {len(dfs)} files into: {output_path}")
+            logger.info(f"Successfully merged {len(dfs)} files into: {output_path}")
         else:
-            print("No matching CSV files found for the given dates.")
+            logger.error("No matching CSV files found for the given dates.")
