@@ -1,6 +1,7 @@
 run_baseline:
   region: FVG
   dates:
-    - 2025-01-01
-  force: 3 # redo all (excluding download grib)
-  save_images: true
+    start: 2025-01-01
+    end: 2026-01-01
+  save_images: false
+  workers: 4

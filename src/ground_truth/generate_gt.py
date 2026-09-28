@@ -18,7 +18,7 @@ def generate_gt(
             not force
             and (output_path / target_date.strftime("%Y-%m-%d") / "gt.json").exists()
         ):
-            logger.info(
+            logger.debug(
                 f"Ground truth already exists in {output_path} for {target_date.strftime('%Y-%m-%d')}. Skipping generation."
             )
             continue
