@@ -23,6 +23,7 @@ TOP-LEVEL STRUCTURE
     debug: true/false
     just_cut: true/false
     save_images: true/false
+    workers: N
     output_path: path/to/output
 
 Multiple run blocks can coexist in the same file and will be
@@ -140,6 +141,17 @@ save_images  (optional, default: false)
 
 ------
 
+workers  (optional, default: 12)
+  Number of parallel worker processes used by the multi-process
+  stages (data extraction, TOBAC feature detection, reasoning).
+  Each worker processes one day at a time; the same value is used
+  for all stages. If a day fails, the error is logged and the
+  remaining days continue.
+
+    workers: 12
+
+------
+
 output_path  (optional, default: "runs/<run_name>")
   Custom path for all outputs of this run (data, features,
   reasoning results, images). Defaults to a folder named after
@@ -173,6 +185,7 @@ run_custom:
   debug: true
   just_cut: false
   save_images: true
+  workers: 12
   output_path: runs/my_custom_run
 
 

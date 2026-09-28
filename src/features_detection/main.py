@@ -42,6 +42,7 @@ def run_tobac(
     region: Region,
     force: bool = False,
     save_images: bool = False,
+    workers: int = 12,
 ) -> None:
     """
     Executes TOBAC tracking across the specified list of dates and weather phenomena.
@@ -49,7 +50,7 @@ def run_tobac(
 
     logger.info("Starting TOBAC.")
     output_dir.mkdir(parents=True, exist_ok=True)
-    with ProcessPoolExecutor(max_workers=12) as executor:
+    with ProcessPoolExecutor(max_workers=workers) as executor:
         futures = {
             executor.submit(
                 _run_tobac_single_day,

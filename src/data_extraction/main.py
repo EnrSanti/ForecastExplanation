@@ -173,10 +173,11 @@ def extract_day(
     force_redo: bool = False,
     just_cut: bool = False,
     create_images: bool = False,
+    workers: int = 12,
 ) -> None:
     logger.info("Starting data extraction...")
 
-    with ProcessPoolExecutor(max_workers=12) as executor:
+    with ProcessPoolExecutor(max_workers=workers) as executor:
         futures = {
             executor.submit(
                 extract_day_worker,
@@ -213,6 +214,7 @@ def extract(
     force_redo: bool = False,
     just_cut: bool = False,
     create_images: bool = False,
+    workers: int = 12,
 ) -> None:
     output_path.mkdir(parents=True, exist_ok=True)
     (output_path / CLUSTERED_DATA_DIR).mkdir(parents=True, exist_ok=True)
@@ -234,4 +236,5 @@ def extract(
         force_redo,
         just_cut,
         create_images=create_images,
+        workers=workers,
     )
