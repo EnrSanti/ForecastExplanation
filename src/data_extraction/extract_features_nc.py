@@ -28,14 +28,12 @@ class FeatureSpec:
     cmap: str
     limits: dict[int, tuple[int | float, int | float]]
     prefix: str
-    relative: bool = False
+    min_range: dict[int, float] | None = None
 
     @property
     def folder_key(self) -> str:
         return self.prefix
 
-
-MIN_RELATIVE_RANGE = 2.0
 
 FEATURE_SPECS: dict[str, FeatureSpec] = {
     "cloud": FeatureSpec(
@@ -49,7 +47,7 @@ FEATURE_SPECS: dict[str, FeatureSpec] = {
         "OrRd",
         LimitValues.TEMP,
         "temp",
-        relative=True,
+        min_range=LimitValues.TEMP_MIN_RANGE,
     ),
     "humidity": FeatureSpec(
         ("r", "rhum"),
@@ -79,8 +77,8 @@ LEGEND_SPECS = {
     },
     "temp": {
         "cmap": "OrRd",
-        "limits": LimitValues.TEMP,
-        "label": "Temperature [K]",
+        "limits": {lvl: (0, 1) for lvl in LimitValues.TEMP},
+        "label": "Relative temperature (0 = coldest point of the hour)",
     },
     "wind": {
         "cmap": "viridis",
@@ -233,10 +231,10 @@ def build_feature_dataarrays(
 
                 if "wind" in spec.prefix:
                     normalized = stacked.fillna(0.0)
-                elif spec.relative:
+                elif spec.min_range is not None:
                     vmin = stacked.min(dim=("y", "x"))
                     vmax = stacked.max(dim=("y", "x"))
-                    vrange = np.maximum(vmax - vmin, MIN_RELATIVE_RANGE)
+                    vrange = np.maximum(vmax - vmin, spec.min_range[lvl])
                     normalized = ((stacked - vmin) / vrange).fillna(0.0)
                 else:
                     vmin, vmax = spec.limits[lvl]
