@@ -25,12 +25,13 @@ _PIOGGIA_ENUM = {
 
 _CLOUD_ENUM = {
     None: 0,
+    False: 0,
     "sereno": 0,
     "poco nuvoloso": 1,
     "variabile": 2,
     "nuvoloso": 3,
     "coperto": 4,
-    "sole/nebbia": 5,
+    "sole, nebbia, nubi basse": 5,
 }
 
 SUM_CLOUDS = True
@@ -347,12 +348,8 @@ def average_by_height_and_time_fronts(
         avg_area, avg_inside, avg_outside = 0, 0.0, 0.0
         if vals:
             avg_area = int(sum(v[0] for v in vals) / len(vals))
-            avg_inside = round(
-                _mean_skip_nan([v[1] for v in vals]), round_ndigits
-            )
-            avg_outside = round(
-                _mean_skip_nan([v[2] for v in vals]), round_ndigits
-            )
+            avg_inside = round(_mean_skip_nan([v[1] for v in vals]), round_ndigits)
+            avg_outside = round(_mean_skip_nan([v[2] for v in vals]), round_ndigits)
 
         res[(t, h)] = (
             _front_frequency(detected, _get_frames_number(t, h)),

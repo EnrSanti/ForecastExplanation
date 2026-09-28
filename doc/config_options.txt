@@ -143,7 +143,8 @@ save_images  (optional, default: false)
 
 workers  (optional, default: 12)
   Number of parallel worker processes used by the multi-process
-  stages (data extraction, TOBAC feature detection, reasoning).
+  stages (data extraction, TOBAC feature detection, reasoning,
+  translation).
   Each worker processes one day at a time; the same value is used
   for all stages. If a day fails, the error is logged and the
   remaining days continue.

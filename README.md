@@ -45,7 +45,7 @@ Runs are configured via `config.yaml`. Each top-level key names a run, with the 
 | `debug`         | `true` \| `false`                        | Enable debug logging                                                                    |
 | `just_cut`      | `true` \| `false`                        | Only download and cut the GRIB files, skipping feature extraction/clustering            |
 | `save_images`   | `true` \| `false`                        | Save TOBAC's input/output images, for visually checking detection quality               |
-| `workers`       | integer (default `12`)                   | Number of parallel processes used by data extraction, TOBAC and reasoning (one per day) |
+| `workers`       | integer (default `12`)                   | Parallel processes used by data extraction, TOBAC, reasoning and translation            |
 
 ## Current pipeline
 ```mermaid
