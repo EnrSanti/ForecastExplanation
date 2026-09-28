@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from pathlib import Path
+
 from .utils import haversine
 
 logger = logging.getLogger("ForecastExplanation")
@@ -12,7 +14,7 @@ logger = logging.getLogger("ForecastExplanation")
 def detect_winds(
     data: xr.Dataset,
     cities: list[tuple[str, float | int, float | int]],
-    output_path: str,
+    output_path: Path,
     heights: list[str],
     city_radius: float = 3.0,
 ) -> None:
@@ -88,7 +90,7 @@ def detect_clouds(
     seg_data: xr.Dataset,
     feat_data: xr.Dataset,
     cities: list[tuple[str, float | int, float | int]],
-    output_path: str,
+    output_path: Path,
     heights: list[str],
     city_radius: float = 3.0,
 ) -> None:

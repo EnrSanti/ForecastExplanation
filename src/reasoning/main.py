@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import date
 from pathlib import Path
 
@@ -20,6 +21,7 @@ def reason(
     output_dir: Path,
     region: Region,
     force: bool = False,
+    workers: int = 12,
 ) -> None:
     """
     Perform reasoning on the input data (nc format) and save the results to the output path (text format).
@@ -31,78 +33,108 @@ def reason(
         output_dir (Path): Path to the directory where processed output will be written.
         region (Region): The specific geographic region to be used.
         force (bool, optional): If True, forces the processing of all dates. Defaults to False.
+        workers (int, optional): Number of parallel worker processes. Defaults to 12.
     """
     logger.info("Starting reasoning")
 
-    for target_date in tqdm(dates, desc="Reasoning"):
-        day_input_dir = input_dir / target_date.strftime("%Y-%m-%d")
-        day_output_dir = output_dir / target_date.strftime("%Y-%m-%d") / "reasoning"
+    with ProcessPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(
+                _reason_single_day,
+                target_date,
+                input_dir,
+                output_dir,
+                region,
+                force=force,
+            ): target_date
+            for target_date in dates
+        }
 
-        if not force and day_output_dir.exists() and any(day_output_dir.iterdir()):
-            logger.debug(
-                f"Reasoning already exists for {target_date.strftime('%Y-%m-%d')}. Skipping."
-            )
-            continue
+        for future in tqdm(as_completed(futures), total=len(dates), desc="Reasoning"):
+            target_date = futures[future]
+            try:
+                future.result()
+            except Exception:
+                logger.exception(f"Reasoning failed for {target_date}")
 
-        day_output_dir.mkdir(parents=True, exist_ok=True)
-        logger.debug(f"Processing reasoning for {target_date.strftime('%Y-%m-%d')}")
+    logger.info("Reasoning completed.")
 
-        with (
-            xr.open_dataset(day_input_dir / "segmentation.nc") as seg_ds,
-            xr.open_dataset(day_input_dir / "features.nc") as feat_ds,
-        ):
-            heights = get_heights(feat_ds)
-            radius = region.city_radius
 
-            detect_winds(
-                feat_ds,
-                region.get_cities(),
-                day_output_dir / "winds.txt",
-                heights,
-                radius,
-            )
+def _reason_single_day(
+    target_date: date,
+    input_dir: Path,
+    output_dir: Path,
+    region: Region,
+    force: bool = False,
+) -> None:
+    day_input_dir = input_dir / target_date.strftime("%Y-%m-%d")
+    day_output_dir = output_dir / target_date.strftime("%Y-%m-%d") / "reasoning"
 
-            detect_clouds(
-                seg_ds,
-                feat_ds,
-                region.get_cities(),
-                day_output_dir / "cloud.txt",
-                heights,
-                radius,
-            )
+    if not force and day_output_dir.exists() and any(day_output_dir.iterdir()):
+        logger.debug(
+            f"Reasoning already exists for {target_date.strftime('%Y-%m-%d')}. Skipping."
+        )
+        return
 
-            # Heat
-            detect_phenomenon(
-                feat_ds,
-                region.get_cities(),
-                day_output_dir / "heat.txt",
-                heights,
-                "temp",
-                radius,
-            )
-            detect_phenomenon_fronts(
-                seg_ds,
-                feat_ds,
-                region.get_cities(),
-                day_output_dir / "heat_fronts.txt",
-                heights,
-                "temp",
-            )
+    day_output_dir.mkdir(parents=True, exist_ok=True)
+    logger.debug(f"Processing reasoning for {target_date.strftime('%Y-%m-%d')}")
 
-            # Humidity
-            detect_phenomenon(
-                feat_ds,
-                region.get_cities(),
-                day_output_dir / "humidity.txt",
-                heights,
-                "humidity",
-                radius,
-            )
-            detect_phenomenon_fronts(
-                seg_ds,
-                feat_ds,
-                region.get_cities(),
-                day_output_dir / "humidity_fronts.txt",
-                heights,
-                "humidity",
-            )
+    with (
+        xr.open_dataset(day_input_dir / "segmentation.nc") as seg_ds,
+        xr.open_dataset(day_input_dir / "features.nc") as feat_ds,
+    ):
+        heights = get_heights(feat_ds)
+        radius = region.city_radius
+
+        detect_winds(
+            feat_ds,
+            region.get_cities(),
+            day_output_dir / "winds.txt",
+            heights,
+            radius,
+        )
+
+        detect_clouds(
+            seg_ds,
+            feat_ds,
+            region.get_cities(),
+            day_output_dir / "cloud.txt",
+            heights,
+            radius,
+        )
+
+        # Heat
+        detect_phenomenon(
+            feat_ds,
+            region.get_cities(),
+            day_output_dir / "heat.txt",
+            heights,
+            "temp",
+            radius,
+        )
+        detect_phenomenon_fronts(
+            seg_ds,
+            feat_ds,
+            region.get_cities(),
+            day_output_dir / "heat_fronts.txt",
+            heights,
+            "temp",
+        )
+
+        # Humidity
+        detect_phenomenon(
+            feat_ds,
+            region.get_cities(),
+            day_output_dir / "humidity.txt",
+            heights,
+            "humidity",
+            radius,
+        )
+        detect_phenomenon_fronts(
+            seg_ds,
+            feat_ds,
+            region.get_cities(),
+            day_output_dir / "humidity_fronts.txt",
+            heights,
+            "humidity",
+        )

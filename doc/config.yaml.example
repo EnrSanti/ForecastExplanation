@@ -19,3 +19,4 @@ run_custom_path_and_region:
   debug: true
   just_cut: false
   save_images: true
+  workers: 12

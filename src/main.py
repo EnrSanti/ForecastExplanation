@@ -148,6 +148,7 @@ def main() -> None:
             if args.save_images
             else run_config.get("save_images", False)
         )
+        workers = run_config.get("workers", 12)
         output_path = Path(run_config.get("output_path", Path("runs") / run_name))
 
         if debug:
@@ -181,6 +182,7 @@ def main() -> None:
                 force_redo=force > 3,
                 just_cut=just_cut,
                 create_images=save_images,
+                workers=workers,
             )
             if just_cut:
                 logger.info(f"{run_name} finished just cut.")
@@ -198,8 +200,16 @@ def main() -> None:
                 region=region,
                 force=force > 2,
                 save_images=save_images,
+                workers=workers,
             )
-            reasoning.reason(dates, output_path, output_path, region, force=force > 1)
+            reasoning.reason(
+                dates,
+                output_path,
+                output_path,
+                region,
+                force=force > 1,
+                workers=workers,
+            )
             ground_truth.generate_gt(dates, output_path, force=force > 1)
 
             translate_output_path = output_path / "translated"
