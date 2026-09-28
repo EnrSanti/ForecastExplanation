@@ -1,7 +1,10 @@
 import logging
 from abc import ABC, abstractmethod
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import date
 from pathlib import Path
+
+from tqdm import tqdm
 
 from region import Region
 
@@ -18,6 +21,7 @@ class BaseTranslator(ABC):
         output_folder: str | Path,
         region: Region,
         force: bool = False,
+        workers: int = 12,
     ) -> None:
         """
         Translates the reasoning files for each requested date.
@@ -28,31 +32,63 @@ class BaseTranslator(ABC):
             output_folder: The root folder where translated files should be saved.
             region: The region the run was configured with (and its resolved cities).
             force: If True, re-translates a day even if its output file already exists.
+            workers: Number of parallel worker processes.
         """
+        logger.info("Starting translation")
         input_path = Path(input_folder)
         output_path = Path(output_folder)
         output_path.mkdir(parents=True, exist_ok=True)
 
-        ext = self.extension.strip(".") or "txt"
+        with ProcessPoolExecutor(max_workers=workers) as executor:
+            futures = {
+                executor.submit(
+                    self._translate_single_day,
+                    target_date,
+                    input_path,
+                    output_path,
+                    region,
+                    force=force,
+                ): target_date
+                for target_date in dates
+            }
 
-        for target_date in dates:
-            date_str = target_date.strftime("%Y-%m-%d")
-            item = input_path / date_str
+            for future in tqdm(
+                as_completed(futures), total=len(dates), desc="Translation"
+            ):
+                target_date = futures[future]
+                try:
+                    future.result()
+                except Exception:
+                    logger.exception(f"Translation failed for {target_date}")
 
-            if not item.is_dir():
-                logger.warning(
-                    f"No data found for {date_str} in {input_path}. Skipping translation."
-                )
-                continue
-
-            output_file = output_path / f"{date_str}.{ext}"
-
-            if not force and output_file.exists():
-                continue
-
-            result_bytes = self.translate_day(item, target_date, region)
-            output_file.write_bytes(result_bytes)
         self.merge_into_dataset(dates, output_path)
+        logger.info("Translation completed.")
+
+    def _translate_single_day(
+        self,
+        target_date: date,
+        input_path: Path,
+        output_path: Path,
+        region: Region,
+        force: bool = False,
+    ) -> None:
+        date_str = target_date.strftime("%Y-%m-%d")
+        item = input_path / date_str
+
+        if not item.is_dir():
+            logger.warning(
+                f"No data found for {date_str} in {input_path}. Skipping translation."
+            )
+            return
+
+        ext = self.extension.strip(".") or "txt"
+        output_file = output_path / f"{date_str}.{ext}"
+
+        if not force and output_file.exists():
+            return
+
+        result_bytes = self.translate_day(item, target_date, region)
+        output_file.write_bytes(result_bytes)
 
     @abstractmethod
     def translate_day(
