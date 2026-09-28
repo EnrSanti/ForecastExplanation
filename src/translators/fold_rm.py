@@ -1,7 +1,6 @@
 import csv
 import io
 import json
-import logging
 import math
 from collections import Counter, defaultdict
 from datetime import date
@@ -629,7 +628,7 @@ class FoldRmTranslator(BaseTranslator):
 
     def merge_into_dataset(self, dates: list[date], input_folder: Path):
         if not dates:
-            logger.error("No dates provided.")
+            self.logger.error("No dates provided.")
             return
 
         input_path = Path(input_folder)
@@ -653,12 +652,12 @@ class FoldRmTranslator(BaseTranslator):
                 df = pd.read_csv(file_path)
                 dfs.append(df)
             else:
-                logger.warning(f"File not found for date {file_path.name}")
+                self.logger.warning(f"File not found for date {file_path.name}")
 
         # Merge and save if there's data
         if dfs:
             merged_df = pd.concat(dfs, ignore_index=True)
             merged_df.to_csv(output_path, index=False)
-            logger.info(f"Successfully merged {len(dfs)} files into: {output_path}")
+            self.logger.info(f"Successfully merged {len(dfs)} files into: {output_path}")
         else:
-            logger.error("No matching CSV files found for the given dates.")
+            self.logger.error("No matching CSV files found for the given dates.")
