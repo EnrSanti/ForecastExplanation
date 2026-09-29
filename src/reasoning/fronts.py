@@ -26,10 +26,18 @@ def detect_phenomenon(
     """
     lats = data.latitude.values
     lons = data.longitude.values
+    timestamps = pd.to_datetime(data.time.values).strftime("%Y-%m-%d %H:%M:%S")
     records = []
 
     # Map phenomenon for output column name if needed
     col_name = "temperature" if phenomenon == "temp" else phenomenon
+
+    # Read each variable once instead of once per city/time step
+    arrays = {
+        v: data[v].transpose("time", ...).values
+        for h in heights
+        if (v := f"raw_{phenomenon}_at_{h}") in data
+    }
 
     for city in cities:
         _, city_lat, city_lon = city
@@ -45,12 +53,8 @@ def detect_phenomenon(
             if raw_var not in data:
                 continue
 
-            for t_idx in range(data.sizes["time"]):
-                timestamp = pd.to_datetime(data.time.values[t_idx]).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
-
-                val_data = data[raw_var].isel(time=t_idx).values
+            for t_idx, timestamp in enumerate(timestamps):
+                val_data = arrays[raw_var][t_idx]
                 val_mean = _safe_nanmean(val_data[mask])
 
                 records.append(
@@ -107,18 +111,23 @@ def detect_phenomenon_fronts(
         if seg_var not in seg_data or raw_var not in feat_data:
             continue
 
-        seg_da = seg_data[seg_var]
-        raw_da = feat_data[raw_var]
-        raw_time_set = set(raw_da.time.values)
+        seg_da = seg_data[seg_var].transpose("time", ...)
+        raw_da = feat_data[raw_var].transpose("time", ...)
+        seg_arr = seg_da.values
+        raw_arr = raw_da.values
+        raw_index = {t: i for i, t in enumerate(raw_da.time.values)}
+        seg_timestamps = pd.to_datetime(seg_da.time.values).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
 
-        for t in seg_da.time.values:
-            if t not in raw_time_set:
+        for seg_idx, t in enumerate(seg_da.time.values):
+            if t not in raw_index:
                 continue
 
-            timestamp = pd.to_datetime(t).strftime("%Y-%m-%d %H:%M:%S")
+            timestamp = seg_timestamps[seg_idx]
 
-            seg_frame = seg_da.sel(time=t).values
-            val_frame = raw_da.sel(time=t).values
+            seg_frame = seg_arr[seg_idx]
+            val_frame = raw_arr[raw_index[t]]
 
             # Find unique front IDs (excluding 0, which is background, and nans)
             front_ids = np.unique(seg_frame[~np.isnan(seg_frame)])

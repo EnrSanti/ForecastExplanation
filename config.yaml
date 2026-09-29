@@ -5,3 +5,4 @@ run_baseline:
     end: 2026-01-01
   save_images: false
   workers: 4
+  force: 3

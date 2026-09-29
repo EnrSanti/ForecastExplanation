@@ -13,6 +13,8 @@ from region import Region
 
 from .translator import BaseTranslator
 
+# logger = logging.getLogger("ForecastExplanation")
+
 _PIOGGIA_ENUM = {
     None: 0,
     False: 0,
@@ -101,7 +103,9 @@ def _lookup_enum(enum: dict, value, city: str, field: str) -> int:
 
 
 def _time_label(timestamp) -> str:
-    return pd.to_datetime(timestamp).strftime("%H%M")
+    # return pd.to_datetime(timestamp).strftime("%H%M")
+    # this saves around 6 minutes out of 7 for a one year run
+    return timestamp[11:13] + timestamp[14:16]
 
 
 def _height_label(height) -> str:
@@ -624,7 +628,7 @@ class FoldRmTranslator(BaseTranslator):
 
     def merge_into_dataset(self, dates: list[date], input_folder: Path):
         if not dates:
-            print("No dates provided.")
+            self.logger.error("No dates provided.")
             return
 
         input_path = Path(input_folder)
@@ -648,12 +652,12 @@ class FoldRmTranslator(BaseTranslator):
                 df = pd.read_csv(file_path)
                 dfs.append(df)
             else:
-                print(f"Warning: File not found for date {file_path.name}")
+                self.logger.warning(f"File not found for date {file_path.name}")
 
         # Merge and save if there's data
         if dfs:
             merged_df = pd.concat(dfs, ignore_index=True)
             merged_df.to_csv(output_path, index=False)
-            print(f"Successfully merged {len(dfs)} files into: {output_path}")
+            self.logger.info(f"Successfully merged {len(dfs)} files into: {output_path}")
         else:
-            print("No matching CSV files found for the given dates.")
+            self.logger.error("No matching CSV files found for the given dates.")
