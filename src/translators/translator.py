@@ -13,6 +13,7 @@ logger = logging.getLogger("ForecastExplanation")
 
 class BaseTranslator(ABC):
     extension: str = ""
+    logger = logger
 
     def translate(
         self,
