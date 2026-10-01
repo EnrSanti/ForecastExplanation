@@ -158,7 +158,8 @@ fold_rm  (optional)
     fold_rm:
       strategy: one_vs_rest   # or multiclass
       ratio: 0.7              # FOLD-RM exception ratio
-      test_ratio: 0.3         # held-out fraction (stratified split)
+      split: date             # hold out whole days; row = stratified by row
+      test_ratio: 0.3         # held-out fraction of days (or rows)
       seed: 42
       gpu: false              # fitGPU, needs the `gpu` extra (cupy)
 

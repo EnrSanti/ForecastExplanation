@@ -241,6 +241,7 @@ def main() -> None:
                     output_path / "fold_rm",
                     strategy=fold_rm_config.get("strategy", "one_vs_rest"),
                     ratio=fold_rm_config.get("ratio", 0.7),
+                    split=fold_rm_config.get("split", "date"),
                     test_ratio=fold_rm_config.get("test_ratio", 0.3),
                     seed=fold_rm_config.get("seed", 42),
                     gpu=fold_rm_config.get("gpu", False),

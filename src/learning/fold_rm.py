@@ -1,3 +1,4 @@
+import csv
 import json
 import logging
 import random
@@ -11,6 +12,7 @@ from .strategies import STRATEGIES, majority_label
 logger = logging.getLogger("ForecastExplanation")
 
 METRICS_FILE = "metrics.json"
+SPLITS = ("date", "row")
 
 
 def stratified_split(
@@ -34,6 +36,45 @@ def stratified_split(
     return train, test
 
 
+def date_split(
+    data: list[list], dates: list[str], test_ratio: float, seed: int
+) -> tuple[list[list], list[list]]:
+    """Holds out whole days, so rows of the same day (one per location, sharing
+    the same weather situation) never end up on both sides of the split."""
+    if not 0 < test_ratio < 1:
+        raise ValueError("test_ratio must be between 0 and 1.")
+
+    days = sorted(set(dates))
+    random.Random(seed).shuffle(days)
+    test_days = set(days[: round(len(days) * test_ratio)])
+
+    train, test = [], []
+    for row, day in zip(data, dates):
+        (test if day in test_days else train).append(row)
+    return train, test
+
+
+def _read_column(path: Path, column: str) -> list[str]:
+    with open(path, newline="") as f:
+        return [row[column] for row in csv.DictReader(f)]
+
+
+def per_class_scores(Y_hat: list, Y: list) -> dict[str, dict]:
+    """Precision/recall/support of every label, so a model that never predicts
+    its minority class can't hide behind the majority class's accuracy."""
+    result = {}
+    for label in sorted(set(Y) | set(Y_hat)):
+        tp = sum(1 for y, yh in zip(Y, Y_hat) if y == yh == label)
+        predicted = Y_hat.count(label)
+        support = Y.count(label)
+        result[label] = {
+            "precision": round(tp / predicted, 4) if predicted else 0.0,
+            "recall": round(tp / support, 4) if support else 0.0,
+            "support": support,
+        }
+    return result
+
+
 def _train_target(
     Classifier,
     dataset_csv: Path,
@@ -42,6 +83,7 @@ def _train_target(
     target_dir: Path,
     strategy: str,
     ratio: float,
+    split: str,
     test_ratio: float,
     seed: int,
     gpu: bool,
@@ -55,7 +97,18 @@ def _train_target(
     data = loader.load_data(str(dataset_csv))
     attrs = loader.attrs  # features + label
 
-    train, test = stratified_split(data, test_ratio, seed)
+    if split == "date" and schema.get("date"):
+        dates = _read_column(dataset_csv, schema["date"])
+        if len(dates) != len(data):
+            raise ValueError(f"{dataset_csv}: {len(dates)} dates for {len(data)} rows")
+        train, test = date_split(data, dates, test_ratio, seed)
+    else:
+        if split == "date":
+            logger.warning(
+                f"FOLD-RM {target}: no date column in {dataset_csv.name}, "
+                "falling back to a stratified row split"
+            )
+        train, test = stratified_split(data, test_ratio, seed)
     logger.info(f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows")
     if not test:
         logger.warning(f"FOLD-RM {target}: too few rows for a test split, skipping")
@@ -74,8 +127,10 @@ def _train_target(
         Y = [d[-1] for d in task_test]
         # uncovered examples fall back to the majority label of the training set
         default = majority_label(task_train)
-        Y_hat = [default if y is None else y for y in model.predict(task_test)]
+        raw = model.predict(task_test)
+        Y_hat = [default if y is None else y for y in raw]
         acc, p, r, f1 = scores(Y_hat, Y, weighted=True)
+        classes = per_class_scores(Y_hat, Y)
 
         (target_dir / f"{task}.lp").write_text(model.get_asp(simple=True) + "\n")
         save_model(model, target_dir / f"{task}.pkl")
@@ -87,13 +142,16 @@ def _train_target(
             "precision": round(p, 4),
             "recall": round(r, 4),
             "f1": round(f1, 4),
+            "per_class": classes,
+            "uncovered": raw.count(None),
             "n_rules": len(model.rules),
             "fit_seconds": round(fit_seconds, 2),
         }
+        recalls = " ".join(f"{k}:{v['recall']}" for k, v in classes.items())
         logger.debug(
             f"FOLD-RM {target} {task}: acc {result['accuracy']} "
             f"(baseline {result['majority_baseline']}) f1 {result['f1']} "
-            f"rules {result['n_rules']}"
+            f"recall {recalls} rules {result['n_rules']}"
         )
         results.append(result)
     return results
@@ -106,6 +164,7 @@ def train_fold_rm(
     *,
     strategy: str = "one_vs_rest",
     ratio: float = 0.7,
+    split: str = "date",
     test_ratio: float = 0.3,
     seed: int = 42,
     gpu: bool = False,
@@ -125,12 +184,16 @@ def train_fold_rm(
         output_dir: Root folder for the learned models.
         strategy: Key of STRATEGIES ("one_vs_rest" or "multiclass").
         ratio: FOLD-RM exception ratio hyperparameter.
-        test_ratio: Fraction of rows held out for testing.
-        seed: Seed for the stratified split.
+        split: "date" holds out whole days (falls back to "row" when the
+            dataset has no date column); "row" is a per-label stratified split.
+        test_ratio: Fraction of days (or rows) held out for testing.
+        seed: Seed for the split.
         gpu: Use CUDatILP's CUDA training (fitGPU).
         force: Retrain targets whose metrics already exist.
         verbose: Print CUDatILP's per-phase timing breakdown to stdout.
     """
+    if split not in SPLITS:
+        raise ValueError(f"Unknown split {split!r}, expected one of {list(SPLITS)}")
     if strategy not in STRATEGIES:
         raise ValueError(
             f"Unknown strategy {strategy!r}, expected one of {list(STRATEGIES)}"
@@ -157,6 +220,7 @@ def train_fold_rm(
             target_dir,
             strategy,
             ratio,
+            split,
             test_ratio,
             seed,
             gpu,
@@ -166,6 +230,7 @@ def train_fold_rm(
             "dataset": str(dataset_csv),
             "strategy": strategy,
             "ratio": ratio,
+            "split": split,
             "test_ratio": test_ratio,
             "seed": seed,
             "gpu": gpu,
