@@ -90,7 +90,7 @@ def _train_target(
             "n_rules": len(model.rules),
             "fit_seconds": round(fit_seconds, 2),
         }
-        logger.info(
+        logger.debug(
             f"FOLD-RM {target} {task}: acc {result['accuracy']} "
             f"(baseline {result['majority_baseline']}) f1 {result['f1']} "
             f"rules {result['n_rules']}"
