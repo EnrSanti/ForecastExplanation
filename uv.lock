@@ -466,6 +466,23 @@ nvtx = [
 ]
 
 [[package]]
+name = "cupy-cuda12x"
+version = "14.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cuda-pathfinder" },
+    { name = "numpy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/d3/f6639af54f5872d1ef0c523601c7fe76d28783e71a3e8533e096c9ca1d43/cupy_cuda12x-14.2.0-cp314-cp314-manylinux2014_aarch64.whl", hash = "sha256:ed317136439af4780f217eda0b82f25180084eb16c44854e1bc9e055f96fd429", size = 146942115, upload-time = "2026-08-20T02:40:28.484Z" },
+    { url = "https://files.pythonhosted.org/packages/04/5e/e6134253265fefc0a35356adcebc4e3ffa81f6c9a2a74f8f9e2de32b3018/cupy_cuda12x-14.2.0-cp314-cp314-manylinux2014_x86_64.whl", hash = "sha256:db802e4b9a85ed84fd3e84790586c06e808ee45e0214cd4e80734c09fcf93073", size = 135091580, upload-time = "2026-08-20T02:40:33.351Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/98/4d3215440b7a0d8661295050653760b57f32c933f1ef1c81841b7329209e/cupy_cuda12x-14.2.0-cp314-cp314-win_amd64.whl", hash = "sha256:5f08fc1d651d2446c1d18ad94f1a710224fab36d46634d4aa356423926964591", size = 99344061, upload-time = "2026-08-20T02:40:37.459Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/e9/8ed4adeb8c64f188b9ea6fba3be62fb7999584308bdf7ec6c5e17f77b99c/cupy_cuda12x-14.2.0-cp314-cp314t-manylinux2014_aarch64.whl", hash = "sha256:9dd33f9cfc7aefbd935879bf50e95db539721a0702bdb05be3c74bd46a85ba29", size = 147438535, upload-time = "2026-08-20T02:40:42.11Z" },
+    { url = "https://files.pythonhosted.org/packages/5a/c9/73227968a5b01ac31eaf1d5c58b4318e4b83654ed6dac3c310c7b2075c36/cupy_cuda12x-14.2.0-cp314-cp314t-manylinux2014_x86_64.whl", hash = "sha256:8cbbd48c9cfd6b78d0a833ebbafda3e1b057c38d6acc3c6e54de0735a7364e27", size = 135455541, upload-time = "2026-08-20T02:40:46.804Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/3d/26127dd01e08ed645a70b4084ef6dde93e6a75b0a84fddc3ac6b11b05bf7/cupy_cuda12x-14.2.0-cp314-cp314t-win_amd64.whl", hash = "sha256:d14b651ed835079f8a5e273936e02eda690be7d30f2658e5f48f328322fd9d7b", size = 100242434, upload-time = "2026-08-20T02:40:51.04Z" },
+]
+
+[[package]]
 name = "cycler"
 version = "0.12.1"
 source = { registry = "https://pypi.org/simple" }
@@ -633,6 +650,11 @@ dependencies = [
     { name = "xarray" },
 ]
 
+[package.optional-dependencies]
+gpu = [
+    { name = "cupy-cuda12x" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "ruff" },
@@ -644,6 +666,7 @@ requires-dist = [
     { name = "cartopy", specifier = "==0.26.0" },
     { name = "cdsapi", specifier = ">=0.7.7" },
     { name = "cfgrib", specifier = ">=0.9.15.1" },
+    { name = "cupy-cuda12x", marker = "extra == 'gpu'", specifier = ">=13.6.0" },
     { name = "eccodes", specifier = ">=2.48.0" },
     { name = "matplotlib", specifier = "==3.11.2" },
     { name = "numba", specifier = ">=0.67.0" },
@@ -662,6 +685,7 @@ requires-dist = [
     { name = "tqdm", specifier = "==4.70.1" },
     { name = "xarray", specifier = ">=2026.7.0" },
 ]
+provides-extras = ["gpu"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "ruff", specifier = ">=0.16.9" }]
