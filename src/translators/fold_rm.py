@@ -56,6 +56,7 @@ HEIGHT_GROUPS_ORDER = ["low", "medium", "high"]
 TIME_GROUPS_ORDER = ["early_morning", "morning", "afternoon", "evening"]
 
 LABEL_COLUMNS = ["prev_pioggia", "prev_cloud"]
+DATE_COLUMN = "date"
 
 CARDINAL_TO_DEG = {
     "N": 0,
@@ -378,22 +379,22 @@ class FoldRmTranslator(BaseTranslator):
     extension = "csv"
 
     @staticmethod
-    def schema(header: list[str]) -> dict[str, list[str]]:
+    def schema(header: list[str]) -> dict:
         """Splits a dataset header into label, feature (header order),
-        categorical and numeric columns."""
+        categorical and numeric columns, plus the date column if present."""
         categorical = set(_categorical_columns())
-        labels = [c for c in LABEL_COLUMNS if c in header]
+        non_features = set(LABEL_COLUMNS) | {DATE_COLUMN}
+        features = [c for c in header if c not in non_features]
         return {
-            "labels": labels,
-            "features": [c for c in header if c not in LABEL_COLUMNS],
-            "categorical": [c for c in header if c in categorical],
-            "numeric": [
-                c for c in header if c not in categorical and c not in LABEL_COLUMNS
-            ],
+            "labels": [c for c in LABEL_COLUMNS if c in header],
+            "date": DATE_COLUMN if DATE_COLUMN in header else None,
+            "features": features,
+            "categorical": [c for c in features if c in categorical],
+            "numeric": [c for c in features if c not in categorical],
         }
 
     @classmethod
-    def schema_from_csv(cls, path: Path) -> dict[str, list[str]]:
+    def schema_from_csv(cls, path: Path) -> dict:
         with open(path, newline="") as f:
             header = next(csv.reader(f))
         return cls.schema(header)
@@ -681,6 +682,7 @@ class FoldRmTranslator(BaseTranslator):
             file_path = input_path / f"{d.strftime(date_format)}.{ext}"
             if file_path.exists():
                 df = pd.read_csv(file_path)
+                df.insert(0, DATE_COLUMN, d.isoformat())
                 dfs.append(df)
             else:
                 self.logger.warning(f"File not found for date {file_path.name}")
@@ -689,7 +691,7 @@ class FoldRmTranslator(BaseTranslator):
         if dfs:
             merged_df = pd.concat(dfs, ignore_index=True)
             merged_df.to_csv(output_path, index=False)
-            self.logger.info(
+            self.logger.debug(
                 f"Successfully merged {len(dfs)} files into: {output_path}"
             )
             return output_path
