@@ -17,7 +17,7 @@ Task = tuple[str, list[Row], list[Row]]
 
 def majority_label(data: list[Row]) -> str:
     labels = [d[-1] for d in data]
-    return max(set(labels), key=labels.count)
+    return max(sorted(set(labels)), key=labels.count)
 
 
 class Strategy(ABC):

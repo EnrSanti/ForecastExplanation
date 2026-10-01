@@ -4,7 +4,7 @@ from pathlib import Path
 CUDATILP_ROOT = Path(__file__).resolve().parent / "CUDatILP"
 
 if str(CUDATILP_ROOT) not in sys.path:
-    sys.path.insert(0, str(CUDATILP_ROOT))
+    sys.path.append(str(CUDATILP_ROOT))
 
 
 def load_classifier_cls():

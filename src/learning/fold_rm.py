@@ -75,6 +75,22 @@ def per_class_scores(Y_hat: list, Y: list) -> dict[str, dict]:
     return result
 
 
+def _warn_if_stale(target: str, metrics_path: Path, current: dict) -> None:
+    try:
+        stored = json.loads(metrics_path.read_text())
+    except OSError, json.JSONDecodeError:
+        logger.warning(
+            f"FOLD-RM {target}: unreadable {metrics_path}, use -f to retrain"
+        )
+        return
+    changed = [k for k, v in current.items() if stored.get(k) != v]
+    if changed:
+        logger.warning(
+            f"FOLD-RM {target}: cached models differ from the current run in "
+            f"{', '.join(changed)}, use -f to retrain"
+        )
+
+
 def _train_target(
     Classifier,
     dataset_csv: Path,
@@ -203,12 +219,23 @@ def train_fold_rm(
     output_dir = Path(output_dir)
     Classifier = load_classifier_cls()
 
+    current = {
+        "dataset": str(dataset_csv),
+        "strategy": strategy,
+        "ratio": ratio,
+        "split": split,
+        "test_ratio": test_ratio,
+        "seed": seed,
+        "gpu": gpu,
+    }
+
     logger.info("Starting FOLD-RM training")
     for target in schema["labels"]:
         target_dir = output_dir / target
         metrics_path = target_dir / METRICS_FILE
         if not force and metrics_path.exists():
             logger.info(f"FOLD-RM {target}: already trained, skipping")
+            _warn_if_stale(target, metrics_path, current)
             continue
         target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -226,15 +253,6 @@ def train_fold_rm(
             gpu,
             verbose,
         )
-        metrics = {
-            "dataset": str(dataset_csv),
-            "strategy": strategy,
-            "ratio": ratio,
-            "split": split,
-            "test_ratio": test_ratio,
-            "seed": seed,
-            "gpu": gpu,
-            "tasks": results,
-        }
+        metrics = {**current, "tasks": results}
         metrics_path.write_text(json.dumps(metrics, indent=2))
     logger.info("FOLD-RM training completed.")
