@@ -14,9 +14,15 @@ run_custom_path_and_region:
   dates:
     - 2009-01-04
   clean: 0
-  force: 4
+  force: 5
   clustering: true
   debug: true
   just_cut: false
   save_images: true
   workers: 12
+  fold_rm:
+    strategy: one_vs_rest
+    ratio: 0.7
+    test_ratio: 0.3
+    seed: 42
+    gpu: false

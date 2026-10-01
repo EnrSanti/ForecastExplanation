@@ -23,7 +23,7 @@ class BaseTranslator(ABC):
         region: Region,
         force: bool = False,
         workers: int = 12,
-    ) -> None:
+    ) -> Path | None:
         """
         Translates the reasoning files for each requested date.
 
@@ -34,6 +34,9 @@ class BaseTranslator(ABC):
             region: The region the run was configured with (and its resolved cities).
             force: If True, re-translates a day even if its output file already exists.
             workers: Number of parallel worker processes.
+
+        Returns:
+            The path of the merged dataset, or None if nothing was merged.
         """
         logger.info("Starting translation")
         input_path = Path(input_folder)
@@ -62,8 +65,9 @@ class BaseTranslator(ABC):
                 except Exception:
                     logger.exception(f"Translation failed for {target_date}")
 
-        self.merge_into_dataset(dates, output_path)
+        merged = self.merge_into_dataset(dates, output_path)
         logger.info("Translation completed.")
+        return merged
 
     def _translate_single_day(
         self,
@@ -108,11 +112,14 @@ class BaseTranslator(ABC):
         """
 
     @abstractmethod
-    def merge_into_dataset(self, dates: list[date], input_folder: Path):
+    def merge_into_dataset(self, dates: list[date], input_folder: Path) -> Path | None:
         """
         Merges the per-day translated files into a single combined dataset file.
 
         Args:
             dates: The dates whose translated files should be merged.
             input_folder: The folder containing the per-day translated files.
+
+        Returns:
+            The path of the merged dataset, or None if nothing was merged.
         """

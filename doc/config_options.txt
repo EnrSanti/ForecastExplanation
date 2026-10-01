@@ -23,8 +23,10 @@ TOP-LEVEL STRUCTURE
     debug: true/false
     just_cut: true/false
     save_images: true/false
+    skip_learning: true/false
     workers: N
     output_path: path/to/output
+    fold_rm: {...}
 
 Multiple run blocks can coexist in the same file and will be
 executed sequentially.
@@ -69,6 +71,7 @@ dates  (required)
       - 2009-01-02                           # Single date
       - start: 2009-01-05                   # Range with start and end (inclusive)
         end: 2009-01-08
+        step: 1                              # Optional, days between dates
 
 ------
 
@@ -77,13 +80,13 @@ force  (optional, default: 0)
   Acts as a counter — higher values rerun more stages:
 
     force: 0   No forced recomputation (use cached results).
-    force: 1   Re-run translation only.
-    force: 2   Re-run reasoning, ground truth generation, and translation.
-    force: 3   Re-run feature extraction + reasoning + ground truth + translation.
-    force: 4   Re-run everything: data extraction, feature extraction,
-               reasoning, ground truth, and translation.
+    force: 1   Re-run FOLD-RM training.
+    force: 2   + translation.
+    force: 3   + reasoning and ground truth.
+    force: 4   + feature extraction.
+    force: 5   + data extraction (everything).
 
-  Equivalent CLI flag: -f (repeat for higher levels, e.g. -ffff = force 4).
+  Equivalent CLI flag: -f (repeat for higher levels, e.g. -fffff = force 5).
 
 ------
 
@@ -103,8 +106,6 @@ clustering  (optional, default: false)
   Clustered data is used as input for feature detection.
   If false, discrete (non-clustered) data is used instead.
 
-    clustering: true
-
   Equivalent CLI flag: --clustering.
 
 ------
@@ -113,81 +114,52 @@ debug  (optional, default: false)
   If true, sets logging level to DEBUG for all modules, producing
   verbose output useful for troubleshooting.
 
-    debug: true
-
   Equivalent CLI flag: -d / --debug.
 
 ------
 
 just_cut  (optional, default: false)
-  If true, the pipeline only downloads and cuts the GRIB files
-  for the specified region and dates, then stops. Feature
-  extraction, clustering, and reasoning are all skipped.
-  No images are generated.
-
-    just_cut: true
+  If true, only download and cut the GRIB files, then stop.
 
   Equivalent CLI flag: -jc / --just-cut.
 
 ------
 
 save_images  (optional, default: false)
-  If true, visualisation images of the tracking results are
-  generated and saved alongside the output data.
-
-    save_images: true
+  If true, save visualisation images of the tracking results.
 
   Equivalent CLI flag: --save-images.
 
 ------
 
-workers  (optional, default: 12)
-  Number of parallel worker processes used by the multi-process
-  stages (data extraction, TOBAC feature detection, reasoning,
-  translation).
-  Each worker processes one day at a time; the same value is used
-  for all stages. If a day fails, the error is logged and the
-  remaining days continue.
+skip_learning  (optional, default: false)
+  If true, stop after translation without training FOLD-RM.
 
-    workers: 12
+  Equivalent CLI flag: --skip-learning.
+
+------
+
+workers  (optional, default: 12)
+  Parallel worker processes, one day each, used by every per-day
+  stage. A failed day is logged and the others continue.
 
 ------
 
 output_path  (optional, default: "runs/<run_name>")
-  Custom path for all outputs of this run (data, features,
-  reasoning results, images). Defaults to a folder named after
-  the run inside the "runs/" directory.
+  Folder for all outputs of this run.
 
-    output_path: path/to/my/output/dir
+------
 
+fold_rm  (optional)
+  FOLD-RM (CUDatILP) training on the translated dataset. One model set
+  per label (prev_pioggia, prev_cloud), written to <output_path>/fold_rm/.
 
-------------------------------------------------------
-FULL EXAMPLE
-------------------------------------------------------
-
-run_baseline:
-  region: FVG
-  dates:
-    - 2009-01-02
-
-run_custom:
-  region:
-    bounds: [-3, 3, 42.7, 45.8]
-    radius: 3.0
-    cities:
-      CustomCity:
-        lat: 46.1
-        lon: 13.0
-  dates:
-    - 2009-01-04
-  force: 4
-  clean: 0
-  clustering: true
-  debug: true
-  just_cut: false
-  save_images: true
-  workers: 12
-  output_path: runs/my_custom_run
+    fold_rm:
+      strategy: one_vs_rest   # or multiclass
+      ratio: 0.7              # FOLD-RM exception ratio
+      test_ratio: 0.3         # held-out fraction (stratified split)
+      seed: 42
+      gpu: false              # fitGPU, needs the `gpu` extra (cupy)
 
 
 ------------------------------------------------------
@@ -197,3 +169,4 @@ NOTES
 - CLI flags always override the corresponding config.yaml option
   when both are provided.
 - The config file path itself can be changed with --config <path>.
+- See config.yaml.example for a full example.
