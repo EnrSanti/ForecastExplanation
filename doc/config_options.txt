@@ -112,7 +112,8 @@ clustering  (optional, default: false)
 
 debug  (optional, default: false)
   If true, sets logging level to DEBUG for all modules, producing
-  verbose output useful for troubleshooting.
+  verbose output useful for troubleshooting. Also prints CUDatILP's
+  per-phase FOLD-RM training timings.
 
   Equivalent CLI flag: -d / --debug.
 

@@ -45,6 +45,7 @@ def _train_target(
     test_ratio: float,
     seed: int,
     gpu: bool,
+    verbose: bool,
 ) -> list[dict]:
     # load_data reads columns in CSV order but names them after `attrs`, so
     # the features must be passed in header order
@@ -56,15 +57,18 @@ def _train_target(
 
     train, test = stratified_split(data, test_ratio, seed)
     logger.info(f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows")
+    if not test:
+        logger.warning(f"FOLD-RM {target}: too few rows for a test split, skipping")
+        return []
 
     results = []
     for task, task_train, task_test in STRATEGIES[strategy]().tasks(train, test):
         model = Classifier(attrs=attrs, numeric=list(schema["numeric"]), label=target)
         start = timer()
         if gpu:
-            model.fitGPU(task_train, ratio=ratio)
+            model.fitGPU(task_train, ratio=ratio, verbose=verbose)
         else:
-            model.fit(task_train, ratio=ratio)
+            model.fit(task_train, ratio=ratio, verbose=verbose)
         fit_seconds = timer() - start
 
         Y = [d[-1] for d in task_test]
@@ -106,6 +110,7 @@ def train_fold_rm(
     seed: int = 42,
     gpu: bool = False,
     force: bool = False,
+    verbose: bool = False,
 ) -> None:
     """
     Trains FOLD-RM models for every label in `schema` on the merged dataset.
@@ -124,6 +129,7 @@ def train_fold_rm(
         seed: Seed for the stratified split.
         gpu: Use CUDatILP's CUDA training (fitGPU).
         force: Retrain targets whose metrics already exist.
+        verbose: Print CUDatILP's per-phase timing breakdown to stdout.
     """
     if strategy not in STRATEGIES:
         raise ValueError(
@@ -154,6 +160,7 @@ def train_fold_rm(
             test_ratio,
             seed,
             gpu,
+            verbose,
         )
         metrics = {
             "dataset": str(dataset_csv),

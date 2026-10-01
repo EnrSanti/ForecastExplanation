@@ -245,6 +245,7 @@ def main() -> None:
                     seed=fold_rm_config.get("seed", 42),
                     gpu=fold_rm_config.get("gpu", False),
                     force=force > 0,
+                    verbose=debug,
                 )
 
             logger.info(f"--- Finished {run_name} ---\n\n")
