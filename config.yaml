@@ -5,4 +5,12 @@ run_baseline:
     end: 2026-01-01
   save_images: false
   workers: 4
-  force: 3
+  force: 4
+  fold_rm:
+    strategy: one_vs_rest
+    ratio: 0.7
+    split: date
+    test_ratio: 0.3
+    seed: 42
+    gpu: false
+

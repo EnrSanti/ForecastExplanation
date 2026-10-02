@@ -7,7 +7,7 @@ dependencies = [
     "cartopy==0.26.0",
     "cdsapi>=0.7.7",
     "cfgrib>=0.9.15.1",
-    "eccodes>=2.48.0",
+    "eccodes==2.49.0",
     "matplotlib==3.11.2",
     "numba>=0.67.0",
     "numpy==2.5.3",
@@ -26,7 +26,18 @@ dependencies = [
     "xarray>=2026.7.0",
 ]
 
+[project.optional-dependencies]
+gpu = [
+    "cupy-cuda12x>=13.6.0",
+]
+
 [dependency-groups]
 dev = [
     "ruff>=0.16.9",
 ]
+
+[tool.ruff]
+extend-exclude = ["src/learning/CUDatILP"]
+
+[tool.black]
+extend-exclude = "src/learning/CUDatILP"
