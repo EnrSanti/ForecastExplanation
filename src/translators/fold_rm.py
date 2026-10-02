@@ -55,6 +55,9 @@ LEVEL_GROUP_COUNT = Counter(LEVEL_GROUP_MAP.values())
 HEIGHT_GROUPS_ORDER = ["low", "medium", "high"]
 TIME_GROUPS_ORDER = ["early_morning", "morning", "afternoon", "evening"]
 
+LABEL_COLUMNS = ["prev_pioggia", "prev_cloud"]
+DATE_COLUMN = "date"
+
 CARDINAL_TO_DEG = {
     "N": 0,
     "NE": 45,
@@ -364,8 +367,37 @@ def average_by_height_and_time_fronts(
     return res
 
 
+def _categorical_columns() -> list[str]:
+    return ["location"] + [
+        col
+        for prefix in ("wind_direction", "humidity_fronts", "temperature_fronts")
+        for col in _column_group(prefix, TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
+    ]
+
+
 class FoldRmTranslator(BaseTranslator):
     extension = "csv"
+
+    @staticmethod
+    def schema(header: list[str]) -> dict:
+        """Splits a dataset header into label, feature (header order),
+        categorical and numeric columns, plus the date column if present."""
+        categorical = set(_categorical_columns())
+        non_features = set(LABEL_COLUMNS) | {DATE_COLUMN}
+        features = [c for c in header if c not in non_features]
+        return {
+            "labels": [c for c in LABEL_COLUMNS if c in header],
+            "date": DATE_COLUMN if DATE_COLUMN in header else None,
+            "features": features,
+            "categorical": [c for c in features if c in categorical],
+            "numeric": [c for c in features if c not in categorical],
+        }
+
+    @classmethod
+    def schema_from_csv(cls, path: Path) -> dict:
+        with open(path, newline="") as f:
+            header = next(csv.reader(f))
+        return cls.schema(header)
 
     def translate_day(
         self, day_input_folder: Path, target_date: date, region: Region
@@ -626,10 +658,10 @@ class FoldRmTranslator(BaseTranslator):
         writer.writerows(rows)
         return buffer.getvalue().encode("utf-8")
 
-    def merge_into_dataset(self, dates: list[date], input_folder: Path):
+    def merge_into_dataset(self, dates: list[date], input_folder: Path) -> Path | None:
         if not dates:
             self.logger.error("No dates provided.")
-            return
+            return None
 
         input_path = Path(input_folder)
 
@@ -650,6 +682,7 @@ class FoldRmTranslator(BaseTranslator):
             file_path = input_path / f"{d.strftime(date_format)}.{ext}"
             if file_path.exists():
                 df = pd.read_csv(file_path)
+                df.insert(0, DATE_COLUMN, d.isoformat())
                 dfs.append(df)
             else:
                 self.logger.warning(f"File not found for date {file_path.name}")
@@ -658,6 +691,9 @@ class FoldRmTranslator(BaseTranslator):
         if dfs:
             merged_df = pd.concat(dfs, ignore_index=True)
             merged_df.to_csv(output_path, index=False)
-            self.logger.info(f"Successfully merged {len(dfs)} files into: {output_path}")
-        else:
-            self.logger.error("No matching CSV files found for the given dates.")
+            self.logger.debug(
+                f"Successfully merged {len(dfs)} files into: {output_path}"
+            )
+            return output_path
+        self.logger.error("No matching CSV files found for the given dates.")
+        return None

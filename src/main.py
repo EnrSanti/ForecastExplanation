@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import data_extraction
 import features_detection
 import ground_truth
+import learning
 import reasoning
 import translators
 from region import Region
@@ -43,7 +44,7 @@ def parse_args_and_config() -> tuple[argparse.Namespace, dict]:
         dest="force",
         action="count",
         default=0,
-        help="-f forces translation, -ff forces reasoning & ground truth, -fff forces feature extraction, -ffff forces data extraction",
+        help="-f forces FOLD-RM training, -ff translation, -fff reasoning & ground truth, -ffff feature extraction, -fffff data extraction",
     )
     parser.add_argument(
         "--clustering", action="store_true", help="Toggle clustering in data extraction"
@@ -59,6 +60,11 @@ def parse_args_and_config() -> tuple[argparse.Namespace, dict]:
         "--just-cut",
         action="store_true",
         help="Just download and cut the GRIB files, skipping feature extraction and clustering, no images generated",
+    )
+    parser.add_argument(
+        "--skip-learning",
+        action="store_true",
+        help="Skip FOLD-RM training after translation",
     )
     parser.add_argument(
         "--save-images",
@@ -148,6 +154,12 @@ def main() -> None:
             if args.save_images
             else run_config.get("save_images", False)
         )
+        skip_learning = (
+            args.skip_learning
+            if args.skip_learning
+            else run_config.get("skip_learning", False)
+        )
+        fold_rm_config = run_config.get("fold_rm", {})
         workers = run_config.get("workers", 12)
         output_path = Path(run_config.get("output_path", Path("runs") / run_name))
 
@@ -179,7 +191,7 @@ def main() -> None:
                 output_path=output_path,
                 clean_level=clean,
                 clustering=clustering,
-                force_redo=force > 3,
+                force_redo=force > 4,
                 just_cut=just_cut,
                 create_images=save_images,
                 workers=workers,
@@ -198,7 +210,7 @@ def main() -> None:
                 input_dir=input_dir,
                 output_dir=output_path,
                 region=region,
-                force=force > 2,
+                force=force > 3,
                 save_images=save_images,
                 workers=workers,
             )
@@ -207,20 +219,35 @@ def main() -> None:
                 output_path,
                 output_path,
                 region,
-                force=force > 1,
+                force=force > 2,
                 workers=workers,
             )
-            ground_truth.generate_gt(dates, output_path, force=force > 1)
+            ground_truth.generate_gt(dates, output_path, force=force > 2)
 
             translate_output_path = output_path / "translated"
-            translators.FoldRmTranslator().translate(
+            dataset_csv = translators.FoldRmTranslator().translate(
                 dates,
                 output_path,
                 translate_output_path,
                 region,
-                force=force > 0,
+                force=force > 1,
                 workers=workers,
             )
+
+            if dataset_csv and not skip_learning:
+                learning.train_fold_rm(
+                    dataset_csv,
+                    translators.FoldRmTranslator.schema_from_csv(dataset_csv),
+                    output_path / "fold_rm",
+                    strategy=fold_rm_config.get("strategy", "one_vs_rest"),
+                    ratio=fold_rm_config.get("ratio", 0.7),
+                    split=fold_rm_config.get("split", "date"),
+                    test_ratio=fold_rm_config.get("test_ratio", 0.3),
+                    seed=fold_rm_config.get("seed", 42),
+                    gpu=fold_rm_config.get("gpu", False),
+                    force=force > 0,
+                    verbose=debug,
+                )
 
             logger.info(f"--- Finished {run_name} ---\n\n")
         except Exception:

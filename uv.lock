@@ -466,6 +466,23 @@ nvtx = [
 ]
 
 [[package]]
+name = "cupy-cuda12x"
+version = "14.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cuda-pathfinder" },
+    { name = "numpy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/d3/f6639af54f5872d1ef0c523601c7fe76d28783e71a3e8533e096c9ca1d43/cupy_cuda12x-14.2.0-cp314-cp314-manylinux2014_aarch64.whl", hash = "sha256:ed317136439af4780f217eda0b82f25180084eb16c44854e1bc9e055f96fd429", size = 146942115, upload-time = "2026-08-20T02:40:28.484Z" },
+    { url = "https://files.pythonhosted.org/packages/04/5e/e6134253265fefc0a35356adcebc4e3ffa81f6c9a2a74f8f9e2de32b3018/cupy_cuda12x-14.2.0-cp314-cp314-manylinux2014_x86_64.whl", hash = "sha256:db802e4b9a85ed84fd3e84790586c06e808ee45e0214cd4e80734c09fcf93073", size = 135091580, upload-time = "2026-08-20T02:40:33.351Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/98/4d3215440b7a0d8661295050653760b57f32c933f1ef1c81841b7329209e/cupy_cuda12x-14.2.0-cp314-cp314-win_amd64.whl", hash = "sha256:5f08fc1d651d2446c1d18ad94f1a710224fab36d46634d4aa356423926964591", size = 99344061, upload-time = "2026-08-20T02:40:37.459Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/e9/8ed4adeb8c64f188b9ea6fba3be62fb7999584308bdf7ec6c5e17f77b99c/cupy_cuda12x-14.2.0-cp314-cp314t-manylinux2014_aarch64.whl", hash = "sha256:9dd33f9cfc7aefbd935879bf50e95db539721a0702bdb05be3c74bd46a85ba29", size = 147438535, upload-time = "2026-08-20T02:40:42.11Z" },
+    { url = "https://files.pythonhosted.org/packages/5a/c9/73227968a5b01ac31eaf1d5c58b4318e4b83654ed6dac3c310c7b2075c36/cupy_cuda12x-14.2.0-cp314-cp314t-manylinux2014_x86_64.whl", hash = "sha256:8cbbd48c9cfd6b78d0a833ebbafda3e1b057c38d6acc3c6e54de0735a7364e27", size = 135455541, upload-time = "2026-08-20T02:40:46.804Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/3d/26127dd01e08ed645a70b4084ef6dde93e6a75b0a84fddc3ac6b11b05bf7/cupy_cuda12x-14.2.0-cp314-cp314t-win_amd64.whl", hash = "sha256:d14b651ed835079f8a5e273936e02eda690be7d30f2658e5f48f328322fd9d7b", size = 100242434, upload-time = "2026-08-20T02:40:51.04Z" },
+]
+
+[[package]]
 name = "cycler"
 version = "0.12.1"
 source = { registry = "https://pypi.org/simple" }
@@ -499,43 +516,18 @@ array = [
 
 [[package]]
 name = "eccodes"
-version = "2.48.0"
+version = "2.49.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "cffi" },
-    { name = "eccodeslib", marker = "sys_platform != 'win32'" },
     { name = "findlibs" },
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/04/37/4778efab858e247a30c01f00dfa84d4d9067c43425ece0250b7b6127c4e8/eccodes-2.48.0.tar.gz", hash = "sha256:7ea659eb15044f6ac809636ca1712cd026cdbfad5a189f4c55d86a8711ab1a9d", size = 2467700, upload-time = "2026-08-25T17:39:33.624Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/36/ce/db9db881864db6ea13a0a3b7f2ecb6773870323999fc30e1919ac447b320/eccodes-2.49.0.tar.gz", hash = "sha256:b6af2ebbba3722e32215b1058cc3c5694faf8f80579fe069a840bfcde58f35df", size = 2467699, upload-time = "2026-09-30T21:45:07.179Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1d/f8/8e28ab8e3d7d2881942e0c2c4538004e19c5349425e7f6dfd15259e37e51/eccodes-2.48.0-py3-none-any.whl", hash = "sha256:470eed1c5ba0aa9062a345ac0806cb887e5395263243b2d93c88e45002a035aa", size = 91621, upload-time = "2026-08-25T17:39:32.635Z" },
-]
-
-[[package]]
-name = "eccodeslib"
-version = "2.48.0.26"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "eckitlib" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/7a/27420329eb9fc11abaecd3a0ef375c1a709bfa24bf785b6d604484a8c7e7/eccodeslib-2.48.0.26-cp314-cp314-macosx_13_0_arm64.whl", hash = "sha256:27a3cc3d711dfa49968c61d7098e16f8ee939c1f3b2942892aebbffddd00c48d", size = 9097231, upload-time = "2026-07-17T13:58:56.049Z" },
-    { url = "https://files.pythonhosted.org/packages/34/5c/d07302687852b166be933ad99f7941845b16f90b2e1ca0ee08f7efe9b1fb/eccodeslib-2.48.0.26-cp314-cp314-macosx_13_0_x86_64.whl", hash = "sha256:bac6340aaecfd0cb21b8eae7b957f009c25912d468284c9821567edcaed950bc", size = 8911895, upload-time = "2026-07-17T13:21:52.004Z" },
-    { url = "https://files.pythonhosted.org/packages/f3/76/1b86868da7e9ffc563d54c4a8c874278ec686bbd551904a3c02b712ee3ad/eccodeslib-2.48.0.26-cp314-cp314-manylinux_2_28_aarch64.whl", hash = "sha256:3e18afbb2e3bb51288845401f1d37f93f4927389a0276ab2c0496fd099595ee0", size = 9303576, upload-time = "2026-07-17T13:17:27.668Z" },
-    { url = "https://files.pythonhosted.org/packages/86/5f/21e45a69b772d36b8aa6ddd02414c813c8e9420e56e3ead5070d1e7121f5/eccodeslib-2.48.0.26-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:b8806183d2d633f761e67bb33e430b8d2b5b1324439c8aa5581ee2b1a244dc73", size = 9092982, upload-time = "2026-07-17T13:29:50.111Z" },
-]
-
-[[package]]
-name = "eckitlib"
-version = "2.1.1.26"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/38/da477636044d4cb8ec936a6359355b48cb674ce30e37f356ef2901a75ddf/eckitlib-2.1.1.26-cp314-cp314-macosx_13_0_arm64.whl", hash = "sha256:6f0fd96207c35cb4241ed5b88b7708eea7fe6d74068ad6dc48f2486859528496", size = 2486594, upload-time = "2026-07-17T13:59:01.301Z" },
-    { url = "https://files.pythonhosted.org/packages/30/dc/aaeb8766288c5ff9870757a17c3a08228cad24f4b57d95210af9e5390114/eckitlib-2.1.1.26-cp314-cp314-macosx_13_0_x86_64.whl", hash = "sha256:3c4ac9cd84804ed67f09ff59792e551d8f91fb7a720657c0879c230d208ce861", size = 2623446, upload-time = "2026-07-17T13:21:57.204Z" },
-    { url = "https://files.pythonhosted.org/packages/47/7d/43da4ab8697bf261a19e30138907aeb4e5802f23241a42da63d603ec1cfa/eckitlib-2.1.1.26-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:7423149aa3742129f0929f85a8cc4bd637841ceb581d3eb9d564dc13e729e686", size = 7046375, upload-time = "2026-07-17T13:17:31.643Z" },
-    { url = "https://files.pythonhosted.org/packages/9c/61/1145f9a7d335a7836e8713917d1b7cdb9c58307f064343ee4ce8bee7a8c6/eckitlib-2.1.1.26-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:0e5c197940585c2c3cac6f7098830b1e6e8fda2a810977b1ede4f5677c8ea5a7", size = 7173537, upload-time = "2026-07-17T13:29:56.798Z" },
+    { url = "https://files.pythonhosted.org/packages/27/2d/e6513162116c673f669a7987ff72217d482ee63f405f20c61656e9078d95/eccodes-2.49.0-cp314-cp314-win_amd64.whl", hash = "sha256:c54c7cb75be1ba6e8b342a1149c3c1175d13eb8f51dd18893e6426348332e058", size = 7638094, upload-time = "2026-09-30T21:44:47.429Z" },
+    { url = "https://files.pythonhosted.org/packages/23/ac/6a1ebac067ab142ab5fe9592d6633164e7a3842f55bc5580f993e4a12911/eccodes-2.49.0-py3-none-any.whl", hash = "sha256:b2a51d05fc97a0739cf38c18e181e7b99706961330a5f1df6e538a4365ab3d84", size = 91621, upload-time = "2026-09-30T21:45:05.98Z" },
 ]
 
 [[package]]
@@ -633,6 +625,11 @@ dependencies = [
     { name = "xarray" },
 ]
 
+[package.optional-dependencies]
+gpu = [
+    { name = "cupy-cuda12x" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "ruff" },
@@ -644,7 +641,8 @@ requires-dist = [
     { name = "cartopy", specifier = "==0.26.0" },
     { name = "cdsapi", specifier = ">=0.7.7" },
     { name = "cfgrib", specifier = ">=0.9.15.1" },
-    { name = "eccodes", specifier = ">=2.48.0" },
+    { name = "cupy-cuda12x", marker = "extra == 'gpu'", specifier = ">=13.6.0" },
+    { name = "eccodes", specifier = "==2.49.0" },
     { name = "matplotlib", specifier = "==3.11.2" },
     { name = "numba", specifier = ">=0.67.0" },
     { name = "numpy", specifier = "==2.5.3" },
@@ -662,6 +660,7 @@ requires-dist = [
     { name = "tqdm", specifier = "==4.70.1" },
     { name = "xarray", specifier = ">=2026.7.0" },
 ]
+provides-extras = ["gpu"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "ruff", specifier = ">=0.16.9" }]
