@@ -80,14 +80,14 @@ def _warn_if_stale(target: str, metrics_path: Path, current: dict) -> None:
         stored = json.loads(metrics_path.read_text())
     except OSError, json.JSONDecodeError:
         logger.warning(
-            f"FOLD-RM {target}: unreadable {metrics_path}, use -f to retrain"
+            f"FOLD-RM {target}: unreadable {metrics_path}, use --force learning to retrain"
         )
         return
     changed = [k for k, v in current.items() if stored.get(k) != v]
     if changed:
         logger.warning(
             f"FOLD-RM {target}: cached models differ from the current run in "
-            f"{', '.join(changed)}, use -f to retrain"
+            f"{', '.join(changed)}, use --force learning to retrain"
         )
 
 

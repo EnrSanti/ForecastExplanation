@@ -71,7 +71,7 @@ def parse_dates(dates_entry: list | str | dict | None) -> list[date]:
                 parsed_dates.add(curr)
                 curr += timedelta(days=step)
         else:
-            raise ValueError(f"Unsupported dates entry: {item!r}")
+            raise TypeError(f"Unsupported dates entry: {item!r}")
 
     return sorted(parsed_dates)
 
@@ -149,7 +149,7 @@ def load_runs(
         raw = yaml.safe_load(f) or {}
 
     if not isinstance(raw, dict):
-        raise ValueError(f"{config_path}: expected a mapping of run names to runs")
+        raise TypeError(f"{config_path}: expected a mapping of run names to runs")
 
     run_keys = set(RunConfig.model_fields) & set(raw)
     if run_keys:

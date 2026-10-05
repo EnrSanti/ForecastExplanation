@@ -11,7 +11,8 @@ logger = logging.getLogger("ForecastExplanation")
 
 def generate_gt(
     target_dates: list[date], output_path: Path, force: bool = False
-) -> None:
+) -> list[date]:
+    ok = []
     for target_date in target_dates:
         output_path.mkdir(parents=True, exist_ok=True)
         if (
@@ -21,6 +22,7 @@ def generate_gt(
             logger.debug(
                 f"Ground truth already exists in {output_path} for {target_date.strftime('%Y-%m-%d')}. Skipping generation."
             )
+            ok.append(target_date)
             continue
         try:
             if Path("./xmls").exists() and target_date >= date(2021, 1, 2):  # todo
@@ -31,8 +33,11 @@ def generate_gt(
                 )
                 res = text_extract(target_date - timedelta(days=1))
             save_to_file(res, output_path, target_date)
+            ok.append(target_date)
         except Exception:
             logger.exception(f"Error generating ground truth for date {target_date}")
+
+    return ok
 
 
 def save_to_file(data: dict, output_path: Path, target_date: date) -> None:

@@ -1,6 +1,5 @@
 import logging
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from contextlib import nullcontext
 from datetime import date
 from pathlib import Path
 
@@ -44,13 +43,14 @@ def run_tobac(
     force: bool = False,
     save_images: bool = False,
     workers: int = 12,
-) -> None:
+) -> list[date]:
     """
     Executes TOBAC tracking across the specified list of dates and weather phenomena.
     """
 
     logger.info("Starting TOBAC.")
     output_dir.mkdir(parents=True, exist_ok=True)
+    ok = []
     with ProcessPoolExecutor(max_workers=workers) as executor:
         futures = {
             executor.submit(
@@ -71,10 +71,12 @@ def run_tobac(
             target_date = futures[future]
             try:
                 future.result()
+                ok.append(target_date)
             except Exception:
                 logger.exception(f"TOBAC failed for {target_date}")
 
     logger.info("TOBAC runs completed.")
+    return sorted(ok)
 
 
 def _run_tobac_single_day(
@@ -96,11 +98,10 @@ def _run_tobac_single_day(
         return
 
     features_nc = day_input_dir / "features.nc"
-    with (
-        xr.open_dataset(features_nc, engine="h5netcdf")
-        if features_nc.exists()
-        else nullcontext()
-    ) as feat_ds:
+    if not features_nc.exists():
+        raise FileNotFoundError(f"Missing TOBAC input {features_nc}")
+
+    with xr.open_dataset(features_nc, engine="h5netcdf") as feat_ds:
         temp_tra_df, temp_seg_ds = _run_tobac_single_day_single_phenomenon(
             feat_ds,
             day_output_dir,
@@ -141,7 +142,7 @@ def _run_tobac_single_day(
 
 
 def _run_tobac_single_day_single_phenomenon(
-    feat_ds: xr.Dataset | None,
+    feat_ds: xr.Dataset,
     day_output_dir: Path,
     region: Region,
     phenomenon: WeatherPhenomenon,
@@ -157,8 +158,6 @@ def _run_tobac_single_day_single_phenomenon(
     logger.debug(f"Processing {phenomenon.value} for {day_output_dir}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
-        if feat_ds is None:
-            continue
         folder_key = f"{phenomenon.value}{suffix}"
         if folder_key not in feat_ds:
             logger.warning(
@@ -289,12 +288,9 @@ def _run_tobac_single_day_single_phenomenon(
 
 
 def _create_output_features_nc(
-    feat_ds: xr.Dataset | None, day_output_dir: Path, region: Region
+    feat_ds: xr.Dataset, day_output_dir: Path, region: Region
 ) -> None:
     output_features_nc = day_output_dir / "features.nc"
-
-    if feat_ds is None:
-        return
 
     tmp_ds = xr.Dataset()
     vars_to_extract = [
