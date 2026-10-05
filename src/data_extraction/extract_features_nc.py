@@ -195,7 +195,7 @@ def build_feature_dataarrays(
     being xr.DataArray of shape (time, y, x) with normalized [0, 1] values
     ready for tobac consumption.
     """
-    with xr.open_dataset(input_path, decode_cf=False) as ds:
+    with xr.open_dataset(input_path, engine="h5netcdf", decode_cf=False) as ds:
         if "dtype" in ds["step"].attrs:
             del ds["step"].attrs["dtype"]
         ds = xr.decode_cf(ds)
