@@ -1,10 +1,8 @@
 import argparse
 import logging
 import sys
-from datetime import date, datetime, timedelta
 from pathlib import Path
 
-import yaml
 from dotenv import load_dotenv
 
 import data_extraction
@@ -13,7 +11,7 @@ import ground_truth
 import learning
 import reasoning
 import translators
-from region import Region
+from config import CUT, RunConfig, Stage, load_runs
 
 logging.basicConfig(
     level=logging.ERROR,
@@ -23,236 +21,146 @@ logging.basicConfig(
 logger = logging.getLogger("ForecastExplanation")
 
 
-def parse_args_and_config() -> tuple[argparse.Namespace, dict]:
-    load_dotenv()
+def parse_args() -> argparse.Namespace:
+    stages = [s.value for s in Stage]
     parser = argparse.ArgumentParser(description="ForecastExplanation Pipeline")
     parser.add_argument(
         "--config",
-        type=str,
-        help="Path to config YAML file containing dates",
-        default="config.yaml",
+        type=Path,
+        default=Path("config.yaml"),
+        help="Path to the config YAML file (default: config.yaml)",
     )
     parser.add_argument(
-        "-c",
-        dest="clean",
-        action="count",
-        default=0,
-        help="Clean tmp folders: -cc to delete all",
+        "--force",
+        choices=stages,
+        help="Recompute this stage and every stage after it, ignoring cached results",
     )
     parser.add_argument(
-        "-f",
-        dest="force",
-        action="count",
-        default=0,
-        help="-f forces FOLD-RM training, -ff translation, -fff reasoning & ground truth, -ffff feature extraction, -fffff data extraction",
+        "--stop-after",
+        choices=[CUT, *stages],
+        help="Last stage to run ('cut' = only download and cut the GRIB files)",
     )
     parser.add_argument(
-        "--clustering", action="store_true", help="Toggle clustering in data extraction"
+        "--clean",
+        nargs="+",
+        choices=["grib", "cut", "extracted"],
+        help="Artefacts to delete after the run",
+    )
+    parser.add_argument(
+        "--clustering",
+        action=argparse.BooleanOptionalAction,
+        help="Run TOBAC on clustered data instead of the discrete one",
+    )
+    parser.add_argument(
+        "--save-images",
+        action=argparse.BooleanOptionalAction,
+        help="Generate visualization images of the tracking results",
     )
     parser.add_argument(
         "-d",
         "--debug",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
         help="Enable debug logging for the application",
     )
-    parser.add_argument(
-        "-jc",
-        "--just-cut",
-        action="store_true",
-        help="Just download and cut the GRIB files, skipping feature extraction and clustering, no images generated",
+    parser.add_argument("--workers", type=int, help="Parallel worker processes")
+    return parser.parse_args()
+
+
+def run_pipeline(cfg: RunConfig) -> None:
+    region = cfg.build_region()
+    output_path = cfg.output_path
+
+    data_extraction.extract(
+        cfg.dates,
+        region,
+        output_path=output_path,
+        clustering=cfg.clustering,
+        force_redo=cfg.forces(Stage.DATA),
+        just_cut=cfg.stop_after == CUT,
+        create_images=cfg.save_images,
+        workers=cfg.workers,
     )
-    parser.add_argument(
-        "--skip-learning",
-        action="store_true",
-        help="Skip FOLD-RM training after translation",
+    if not cfg.runs(Stage.FEATURES):
+        return
+
+    input_dir = output_path / (
+        data_extraction.CLUSTERED_DATA_DIR
+        if cfg.clustering
+        else data_extraction.DISCRETE_DATA_DIR
     )
-    parser.add_argument(
-        "--save-images",
-        action="store_true",
-        help="Generate visualization images of the tracking results",
+    features_detection.run_tobac(
+        cfg.dates,
+        input_dir=input_dir,
+        output_dir=output_path,
+        region=region,
+        force=cfg.forces(Stage.FEATURES),
+        save_images=cfg.save_images,
+        workers=cfg.workers,
     )
+    if not cfg.runs(Stage.REASONING):
+        return
 
-    args, _ = parser.parse_known_args()
+    reasoning.reason(
+        cfg.dates,
+        output_path,
+        output_path,
+        region,
+        force=cfg.forces(Stage.REASONING),
+        workers=cfg.workers,
+    )
+    ground_truth.generate_gt(cfg.dates, output_path, force=cfg.forces(Stage.REASONING))
+    if not cfg.runs(Stage.TRANSLATION):
+        return
 
-    config_path = Path(args.config)
-    if config_path.exists():
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f) or {}
-    else:
-        config = {}
+    dataset_csv = translators.FoldRmTranslator().translate(
+        cfg.dates,
+        output_path,
+        output_path / "translated",
+        region,
+        force=cfg.forces(Stage.TRANSLATION),
+        workers=cfg.workers,
+    )
+    if not cfg.runs(Stage.LEARNING) or not dataset_csv:
+        return
 
-    return args, config
-
-
-def _parse_date_value(value: datetime | date | str) -> date:
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, date):
-        return value
-    if isinstance(value, str):
-        return date.fromisoformat(value)
-
-    raise ValueError(f"Unsupported date value: {value!r}")
-
-
-def parse_dates(dates_entry: list | str | dict | None) -> list[date]:
-    """
-    Parses a date configuration entry, which can be a single date item or a list of items.
-    """
-
-    if not dates_entry:
-        return []
-
-    if not isinstance(dates_entry, list):
-        dates_entry = [dates_entry]
-
-    parsed_dates = set()
-
-    for item in dates_entry:
-        if isinstance(item, (datetime, date, str)):
-            parsed_dates.add(_parse_date_value(item))
-        elif isinstance(item, dict):
-            start = _parse_date_value(item.get("start"))
-            end = _parse_date_value(item.get("end"))
-
-            curr = start
-            step = item.get("step", 1)
-            while curr <= end:
-                parsed_dates.add(curr)
-                curr += timedelta(days=step)
-
-    return sorted(parsed_dates)
+    learning.train_fold_rm(
+        dataset_csv,
+        translators.FoldRmTranslator.schema_from_csv(dataset_csv),
+        output_path / "fold_rm",
+        **cfg.fold_rm.model_dump(),
+        force=cfg.forces(Stage.LEARNING),
+        verbose=cfg.debug,
+    )
 
 
 def main() -> None:
-    args, config = parse_args_and_config()
+    load_dotenv()
+    args = parse_args()
+    cli_overrides = {
+        k: v for k, v in vars(args).items() if k != "config" and v is not None
+    }
 
-    if "dates" in config or "region" in config:
-        runs = {"default_run": config}
-    else:
-        runs = config
-
-    if not runs:
-        logger.error("No runs found in config.")
+    try:
+        runs = load_runs(args.config, cli_overrides)
+    except ValueError as e:
+        logger.error(e)
         sys.exit(1)
 
-    for run_name, run_config in runs.items():
+    for run_name, cfg in runs.items():
+        level = logging.DEBUG if cfg.debug else logging.INFO
+        for name in ("ForecastExplanation", "data_extraction", "features_detection"):
+            logging.getLogger(name).setLevel(level)
+
         logger.info(f" --- Starting {run_name} ---")
-
-        raw_dates = run_config.get("dates", [])
-        dates = parse_dates(raw_dates)
-
-        clean = args.clean if args.clean else run_config.get("clean", 0)
-        force = args.force if args.force else run_config.get("force", 0)
-        clustering = (
-            args.clustering if args.clustering else run_config.get("clustering", False)
-        )
-        debug = args.debug if args.debug else run_config.get("debug", False)
-        just_cut = args.just_cut if args.just_cut else run_config.get("just_cut", False)
-        save_images = (
-            args.save_images
-            if args.save_images
-            else run_config.get("save_images", False)
-        )
-        skip_learning = (
-            args.skip_learning
-            if args.skip_learning
-            else run_config.get("skip_learning", False)
-        )
-        fold_rm_config = run_config.get("fold_rm", {})
-        workers = run_config.get("workers", 12)
-        output_path = Path(run_config.get("output_path", Path("runs") / run_name))
-
-        if debug:
-            logger.setLevel(logging.DEBUG)
-            logging.getLogger("data_extraction").setLevel(logging.DEBUG)
-            logging.getLogger("features_detection").setLevel(logging.DEBUG)
-        else:
-            logger.setLevel(logging.INFO)
-            logging.getLogger("data_extraction").setLevel(logging.INFO)
-            logging.getLogger("features_detection").setLevel(logging.INFO)
-
-        if not dates:
-            logger.error(f"No dates provided for {run_name}.")
-            continue
-
         try:
-            region = Region.from_config(
-                run_config.get("region", "FVG"), cities=run_config.get("cities", None)
-            )
-        except ValueError as e:
-            logger.error(f"Region error in {run_name}: {e}")
-            continue
-
-        try:
-            data_extraction.extract(
-                dates,
-                region,
-                output_path=output_path,
-                clean_level=clean,
-                clustering=clustering,
-                force_redo=force > 4,
-                just_cut=just_cut,
-                create_images=save_images,
-                workers=workers,
-            )
-            if just_cut:
-                logger.info(f"{run_name} finished just cut.")
-                continue
-
-            input_dir = (
-                output_path / data_extraction.CLUSTERED_DATA_DIR
-                if clustering
-                else output_path / data_extraction.DISCRETE_DATA_DIR
-            )
-            features_detection.run_tobac(
-                dates,
-                input_dir=input_dir,
-                output_dir=output_path,
-                region=region,
-                force=force > 3,
-                save_images=save_images,
-                workers=workers,
-            )
-            reasoning.reason(
-                dates,
-                output_path,
-                output_path,
-                region,
-                force=force > 2,
-                workers=workers,
-            )
-            ground_truth.generate_gt(dates, output_path, force=force > 2)
-
-            translate_output_path = output_path / "translated"
-            dataset_csv = translators.FoldRmTranslator().translate(
-                dates,
-                output_path,
-                translate_output_path,
-                region,
-                force=force > 1,
-                workers=workers,
-            )
-
-            if dataset_csv and not skip_learning:
-                learning.train_fold_rm(
-                    dataset_csv,
-                    translators.FoldRmTranslator.schema_from_csv(dataset_csv),
-                    output_path / "fold_rm",
-                    strategy=fold_rm_config.get("strategy", "one_vs_rest"),
-                    ratio=fold_rm_config.get("ratio", 0.7),
-                    split=fold_rm_config.get("split", "date"),
-                    test_ratio=fold_rm_config.get("test_ratio", 0.3),
-                    seed=fold_rm_config.get("seed", 42),
-                    gpu=fold_rm_config.get("gpu", False),
-                    force=force > 0,
-                    verbose=debug,
-                )
-
-            logger.info(f"--- Finished {run_name} ---\n\n")
+            run_pipeline(cfg)
         except Exception:
             logger.exception(f"Error running {run_name}")
             continue
+
+        if cfg.clean:
+            data_extraction.clean_artifacts(cfg.dates, cfg.output_path, cfg.clean)
+        logger.info(f"--- Finished {run_name} ---\n\n")
 
 
 if __name__ == "__main__":

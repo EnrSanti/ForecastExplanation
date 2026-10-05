@@ -1,3 +1,9 @@
+# Options shared by every run, each run can override them
+defaults:
+  workers: 12
+  fold_rm:
+    seed: 42
+
 run_baseline:
   region: FVG
   dates:
@@ -13,17 +19,19 @@ run_custom_path_and_region:
         lon: 0.0
   dates:
     - 2009-01-04
-  clean: 0
-  force: 5
+    - start: 2009-01-10
+      end: 2009-01-20
+      step: 2
+  output_path: runs/custom
+  force: data             # recompute everything
+  stop_after: learning
+  clean: [cut]
   clustering: true
   debug: true
-  just_cut: false
   save_images: true
-  workers: 12
   fold_rm:
     strategy: one_vs_rest
     ratio: 0.7
     split: date
     test_ratio: 0.3
-    seed: 42
     gpu: false

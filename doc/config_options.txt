@@ -2,41 +2,55 @@
   ForecastExplanation — config.yaml Options Guide
 ====================================================
 
-The config.yaml file defines one or more "runs" to execute.
+The config.yaml file defines one or more named "runs" to execute.
 Each top-level key is a run name (e.g. "run_baseline"), and its
-value is the configuration for that run.
+value is the configuration for that run. Runs are executed sequentially.
 
-If the file contains "dates" or "region" at the top level, the
-whole file is treated as a single anonymous run.
+The optional top-level "defaults" block is merged into every run and a run's own options override it .
 
 
 ------------------------------------------------------
 TOP-LEVEL STRUCTURE
 ------------------------------------------------------
 
-  run_name:           # Arbitrary name for the run (used for output folder)
+  defaults:           # Optional, any run option
+    workers: 12
+
+  run_name:           # Arbitrary name for the run
     region: ...
+    cities: {...}
     dates: [...]
-    force: N
-    clean: N
-    clustering: true/false
-    debug: true/false
-    just_cut: true/false
-    save_images: true/false
-    skip_learning: true/false
-    workers: N
     output_path: path/to/output
+    workers: N
+    clustering: true/false
+    save_images: true/false
+    debug: true/false
+    force: <stage>
+    stop_after: <stage> | cut
+    clean: [grib, cut, extracted]
     fold_rm: {...}
 
-Multiple run blocks can coexist in the same file and will be
-executed sequentially.
+
+------------------------------------------------------
+PIPELINE STAGES
+------------------------------------------------------
+
+Stages run in this order; "force" and "stop_after" refer to them:
+
+    data         download + cut GRIBs, build feature maps (+ clustering)
+    features     TOBAC feature detection and tracking
+    reasoning    fronts/segments reasoning and ground truth generation
+    translation  FOLD-RM dataset generation
+    learning     FOLD-RM training
+
+Every stage skips days that are already done, unless forced.
 
 
 ------------------------------------------------------
 OPTIONS
 ------------------------------------------------------
 
-region  (required)
+region  (optional, default: FVG)
   The geographic area to process. Can be specified in three ways:
 
   a) Preset string:
@@ -57,8 +71,8 @@ region  (required)
              lon: 13.0
        Custom cities override the built-in city list for this run.
        Only cities whose lat/lon fall within the bounds are used.
-       The 'radius' parameter (optional, default 3.0) defines the 
-       search radius in kilometers around each city for calculating 
+       The 'radius' parameter (optional, default 20.0) defines the
+       search radius in kilometers around each city for calculating
        mean feature values.
 
 ------
@@ -75,79 +89,75 @@ dates  (required)
 
 ------
 
-force  (optional, default: 0)
-  Controls how aggressively cached/existing results are recomputed.
-  Acts as a counter — higher values rerun more stages:
-
-    force: 0   No forced recomputation (use cached results).
-    force: 1   Re-run FOLD-RM training.
-    force: 2   + translation.
-    force: 3   + reasoning and ground truth.
-    force: 4   + feature extraction.
-    force: 5   + data extraction (everything).
-
-  Equivalent CLI flag: -f (repeat for higher levels, e.g. -fffff = force 5).
-
-------
-
-clean  (optional, default: 0)
-  Controls cleanup of temporary folders before running.
-
-    clean: 0   No cleanup.
-    clean: 1   Light cleanup of tmp folders.
-    clean: 2   Delete all temporary data.
-
-  Equivalent CLI flag: -c / -cc.
-
-------
-
-clustering  (optional, default: false)
-  If true, enables clustering during data extraction.
-  Clustered data is used as input for feature detection.
-  If false, discrete (non-clustered) data is used instead.
-
-  Equivalent CLI flag: --clustering.
-
-------
-
-debug  (optional, default: false)
-  If true, sets logging level to DEBUG for all modules, producing
-  verbose output useful for troubleshooting. Also prints CUDatILP's
-  per-phase FOLD-RM training timings.
-
-  Equivalent CLI flag: -d / --debug.
-
-------
-
-just_cut  (optional, default: false)
-  If true, only download and cut the GRIB files, then stop.
-
-  Equivalent CLI flag: -jc / --just-cut.
-
-------
-
-save_images  (optional, default: false)
-  If true, save visualisation images of the tracking results.
-
-  Equivalent CLI flag: --save-images.
-
-------
-
-skip_learning  (optional, default: false)
-  If true, stop after translation without training FOLD-RM.
-
-  Equivalent CLI flag: --skip-learning.
+output_path  (optional, default: "runs/<run_name>")
+  Folder for all outputs of this run.
 
 ------
 
 workers  (optional, default: 12)
-  Parallel worker processes, one day each, used by every per-day
-  stage. A failed day is logged and the others continue.
+  Parallel worker processes.
+
+  CLI: --workers N
 
 ------
 
-output_path  (optional, default: "runs/<run_name>")
-  Folder for all outputs of this run.
+force  (optional, default: none)
+  Recompute the given stage and every stage after it.
+
+    force: learning      retrain FOLD-RM only
+    force: translation   + regenerate the dataset
+    force: reasoning     + reasoning and ground truth
+    force: features      + TOBAC
+    force: data          everything (downloaded GRIBs are still reused)
+
+  CLI: --force <stage>
+
+------
+
+stop_after  (optional, default: learning)
+  Last stage to run.
+
+    stop_after: cut           only download and cut the GRIBs
+    stop_after: translation   build the dataset, skip training
+
+  CLI: --stop-after <stage|cut>
+
+------
+
+clean  (optional, default: [])
+  Intermediate data to delete for this run's dates once the run
+  completes successfully (nothing is deleted if the run fails):
+
+    grib        downloaded GRIBs in tmp_data/original_CERRA. This
+                folder is shared by every run, so other runs will
+                have to download those days again.
+    cut         region-cut NetCDFs (<output_path>/tmp_data/CERRA_cut)
+    extracted   feature maps (<output_path>/tmp_data/extracted_data
+                and clustered_data)
+
+  CLI: --clean grib cut ...
+
+------
+
+clustering  (optional, default: false)
+  If true, enables clustering during data extraction and runs TOBAC
+  on the clustered data instead of the discrete one.
+
+  CLI: --clustering / --no-clustering
+
+------
+
+save_images  (optional, default: false)
+  If true, save TOBAC's input/output images and the region legends.
+
+  CLI: --save-images / --no-save-images
+
+------
+
+debug  (optional, default: false)
+  If true, sets logging level to DEBUG.
+
+  CLI: -d / --debug / --no-debug
 
 ------
 
@@ -157,9 +167,9 @@ fold_rm  (optional)
 
     fold_rm:
       strategy: one_vs_rest   # or multiclass
-      ratio: 0.7              # FOLD-RM exception ratio
+      ratio: 0.7              # FOLD-RM exception ratio, (0, 1]
       split: date             # hold out whole days; row = stratified by row
-      test_ratio: 0.3         # held-out fraction of days (or rows)
+      test_ratio: 0.3         # held-out fraction of days (or rows), (0, 1)
       seed: 42
       gpu: false              # fitGPU, needs the `gpu` extra (cupy)
 
@@ -168,7 +178,7 @@ fold_rm  (optional)
 NOTES
 ------------------------------------------------------
 
-- CLI flags always override the corresponding config.yaml option
-  when both are provided.
+- CLI flags override the config file for every run, and can also
+  turn options off (e.g. --no-clustering).
 - The config file path itself can be changed with --config <path>.
 - See config.yaml.example for a full example.

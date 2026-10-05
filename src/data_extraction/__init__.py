@@ -59,7 +59,7 @@ CLUSTERED_DATA_DIR: str = "tmp_data/clustered_data"
 LEVELS = [1000, 925, 850, 700, 500, 300]
 FOLDERS = {l: f"_at_{l:04d}m" for l in LEVELS}
 
-from .main import extract
+from .main import clean_artifacts, extract
 
 __all__: list[str] = [
     "CLUSTERED_DATA_DIR",
@@ -68,5 +68,6 @@ __all__: list[str] = [
     "RAW_DATA_DIR",
     "LimitValues",
     "Region",
+    "clean_artifacts",
     "extract",
 ]
