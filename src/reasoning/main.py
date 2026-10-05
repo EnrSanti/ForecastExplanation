@@ -80,8 +80,8 @@ def _reason_single_day(
     logger.debug(f"Processing reasoning for {target_date.strftime('%Y-%m-%d')}")
 
     with (
-        xr.open_dataset(day_input_dir / "segmentation.nc") as seg_ds,
-        xr.open_dataset(day_input_dir / "features.nc") as feat_ds,
+        xr.open_dataset(day_input_dir / "segmentation.nc", engine="h5netcdf") as seg_ds,
+        xr.open_dataset(day_input_dir / "features.nc", engine="h5netcdf") as feat_ds,
     ):
         heights = get_heights(feat_ds)
         radius = region.city_radius

@@ -8,6 +8,8 @@ dependencies = [
     "cdsapi>=0.7.7",
     "cfgrib>=0.9.15.1",
     "eccodes==2.49.0",
+    "h5netcdf>=1.8.1",
+    "h5py>=3.16.0",
     "matplotlib==3.11.2",
     "numba>=0.67.0",
     "numpy==2.5.3",

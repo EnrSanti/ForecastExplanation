@@ -86,7 +86,7 @@ def extract_day_worker(
 
     if ((starting_step == 3 or force_redo) and clustering) and not just_cut:
         clustered_dir.mkdir(parents=True, exist_ok=True)
-        with xr.open_dataset(features_nc_path) as features_ds:
+        with xr.open_dataset(features_nc_path, engine="h5netcdf") as features_ds:
             feature_data = {str(name): da for name, da in features_ds.data_vars.items()}
         clustered_data = cluster_xarray(feature_data)
         clustered_data.to_netcdf(clustered_dir / "features.nc")

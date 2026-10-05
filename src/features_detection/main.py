@@ -1,5 +1,6 @@
 import logging
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from contextlib import nullcontext
 from datetime import date
 from pathlib import Path
 
@@ -94,32 +95,38 @@ def _run_tobac_single_day(
         )
         return
 
-    temp_tra_df, temp_seg_ds = _run_tobac_single_day_single_phenomenon(
-        day_input_dir,
-        day_output_dir,
-        region,
-        WeatherPhenomenon.TEMPERATURE,
-        WeatherPhenomenonTobacParams.TEMPERATURE,
-        save_images,
-    )
-    hum_tra_df, hum_seg_ds = _run_tobac_single_day_single_phenomenon(
-        day_input_dir,
-        day_output_dir,
-        region,
-        WeatherPhenomenon.HUMIDITY,
-        WeatherPhenomenonTobacParams.HUMIDITY,
-        save_images,
-    )
-    cld_tra_df, cld_seg_ds = _run_tobac_single_day_single_phenomenon(
-        day_input_dir,
-        day_output_dir,
-        region,
-        WeatherPhenomenon.CLOUDS,
-        WeatherPhenomenonTobacParams.CLOUDS,
-        save_images,
-    )
+    features_nc = day_input_dir / "features.nc"
+    with (
+        xr.open_dataset(features_nc, engine="h5netcdf")
+        if features_nc.exists()
+        else nullcontext()
+    ) as feat_ds:
+        temp_tra_df, temp_seg_ds = _run_tobac_single_day_single_phenomenon(
+            feat_ds,
+            day_output_dir,
+            region,
+            WeatherPhenomenon.TEMPERATURE,
+            WeatherPhenomenonTobacParams.TEMPERATURE,
+            save_images,
+        )
+        hum_tra_df, hum_seg_ds = _run_tobac_single_day_single_phenomenon(
+            feat_ds,
+            day_output_dir,
+            region,
+            WeatherPhenomenon.HUMIDITY,
+            WeatherPhenomenonTobacParams.HUMIDITY,
+            save_images,
+        )
+        cld_tra_df, cld_seg_ds = _run_tobac_single_day_single_phenomenon(
+            feat_ds,
+            day_output_dir,
+            region,
+            WeatherPhenomenon.CLOUDS,
+            WeatherPhenomenonTobacParams.CLOUDS,
+            save_images,
+        )
 
-    _create_output_features_nc(day_input_dir, day_output_dir, region)
+        _create_output_features_nc(feat_ds, day_output_dir, region)
 
     dfs = [df for df in [temp_tra_df, hum_tra_df, cld_tra_df] if not df.empty]
     results_tra = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
@@ -134,7 +141,7 @@ def _run_tobac_single_day(
 
 
 def _run_tobac_single_day_single_phenomenon(
-    day_input_dir: Path,
+    feat_ds: xr.Dataset | None,
     day_output_dir: Path,
     region: Region,
     phenomenon: WeatherPhenomenon,
@@ -147,20 +154,19 @@ def _run_tobac_single_day_single_phenomenon(
     trajectories_list = []
     segmentations_list = []
 
-    logger.debug(f"Processing {phenomenon.value} for {day_input_dir}")
+    logger.debug(f"Processing {phenomenon.value} for {day_output_dir}")
 
     for suffix in FOLDERS_HEIGHT_SUFF:
-        features_nc = day_input_dir / "features.nc"
-
-        if not features_nc.exists():
+        if feat_ds is None:
             continue
-        with xr.open_dataset(features_nc) as ds:
-            folder_key = f"{phenomenon.value}{suffix}"
-            if folder_key not in ds:
-                logger.warning(f"Folder {folder_key} not found in {features_nc}")
-                continue
+        folder_key = f"{phenomenon.value}{suffix}"
+        if folder_key not in feat_ds:
+            logger.warning(
+                f"Folder {folder_key} not found in {feat_ds.encoding.get('source')}"
+            )
+            continue
 
-            da = ds[folder_key].load()
+        da = feat_ds[folder_key].load()
         datetimes = [pd.Timestamp(t) for t in da.time.values]
 
         referenced_data = build_referenced_data_from_xarray(
@@ -283,35 +289,33 @@ def _run_tobac_single_day_single_phenomenon(
 
 
 def _create_output_features_nc(
-    day_input_dir: Path, day_output_dir: Path, region: Region
+    feat_ds: xr.Dataset | None, day_output_dir: Path, region: Region
 ) -> None:
-    input_features_nc = day_input_dir / "features.nc"
     output_features_nc = day_output_dir / "features.nc"
 
-    if not input_features_nc.exists():
+    if feat_ds is None:
         return
 
     tmp_ds = xr.Dataset()
-    with xr.open_dataset(input_features_nc) as feat_ds:
-        vars_to_extract = [
-            v
-            for v in feat_ds.data_vars
-            if any(prefix in str(v) for prefix in RAW_FEATURES_VARS)
-        ]
+    vars_to_extract = [
+        v
+        for v in feat_ds.data_vars
+        if any(prefix in str(v) for prefix in RAW_FEATURES_VARS)
+    ]
 
-        if vars_to_extract:
-            extracted_ds = feat_ds[vars_to_extract].load()
+    if vars_to_extract:
+        extracted_ds = feat_ds[vars_to_extract].load()
 
-            da = feat_ds[vars_to_extract[0]]
-            datetimes = [pd.Timestamp(t) for t in da.time.values]
-            ref_data = build_referenced_data_from_xarray(
-                da, datetimes, region_bounds=region.value
-            )
-            dxy, _ = get_grid_spacings(ref_data)
-            extracted_ds.attrs["dxy"] = float(dxy)
+        da = feat_ds[vars_to_extract[0]]
+        datetimes = [pd.Timestamp(t) for t in da.time.values]
+        ref_data = build_referenced_data_from_xarray(
+            da, datetimes, region_bounds=region.value
+        )
+        dxy, _ = get_grid_spacings(ref_data)
+        extracted_ds.attrs["dxy"] = float(dxy)
 
-            tmp_ds = xr.merge([tmp_ds, extracted_ds], compat="override", join="outer")
-            tmp_ds.attrs["dxy"] = float(dxy)
+        tmp_ds = xr.merge([tmp_ds, extracted_ds], compat="override", join="outer")
+        tmp_ds.attrs["dxy"] = float(dxy)
 
     if tmp_ds.data_vars:
         tmp_ds.to_netcdf(output_features_nc)

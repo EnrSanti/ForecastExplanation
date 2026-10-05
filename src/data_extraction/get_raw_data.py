@@ -71,7 +71,6 @@ def extract_nc(
     grib_file = f"{base_name}.grib"
     grib_path = input_dir / grib_file
     output_path = output_dir / (base_name + "_" + region.name + "_cut.nc")
-
     if not output_path.exists() or force_redo:
         download_grib_if_needed(target_date, grib_path)
 
