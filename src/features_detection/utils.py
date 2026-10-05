@@ -14,6 +14,19 @@ from features_detection.constants import (
 logger = logging.getLogger(__name__)
 
 
+def to_compressed_netcdf(ds: xr.Dataset, path) -> None:
+    encoding = {
+        name: {
+            "zlib": True,
+            "complevel": 1,
+            "chunksizes": (1,) * (var.ndim - 2) + var.shape[-2:],
+        }
+        for name, var in ds.data_vars.items()
+        if var.ndim >= 2 and var.dtype.kind in "fiu"
+    }
+    ds.to_netcdf(path, encoding=encoding)
+
+
 def get_grid_spacings(
     referenced_data: xr.DataArray,
     default_dxy: float = DEFAULT_DXY,
