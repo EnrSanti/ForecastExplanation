@@ -16,10 +16,7 @@ def load_classifier_cls():
     try:
         from src.common.foldrm import Classifier
     except ImportError as e:
-        raise RuntimeError(
-            f"Could not import CUDatILP Classifier ({e}). "
-            "Run `git submodule update --init`."
-        ) from e
+        raise RuntimeError(f"Could not import CUDatILP Classifier ({e})") from e
     return Classifier
 
 

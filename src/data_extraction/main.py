@@ -48,7 +48,6 @@ def extract_day_worker(
     target_date: date,
     region: Region,
     base_path: Path,
-    clean_level: int = 0,
     clustering: bool = True,
     force_redo: bool = False,
     just_cut: bool = False,
@@ -96,13 +95,27 @@ def extract_day_worker(
             f"Feature maps already exist for {target_date.strftime('%Y-%m-%d')}, skipping."
         )
 
-    if clean_level >= 1:
-        shutil.rmtree(raw_data_dir, ignore_errors=True)
-    if clean_level >= 2:
-        shutil.rmtree(cut_data_dir, ignore_errors=True)
-    if clean_level >= 3:
-        shutil.rmtree(discrete_data_dir, ignore_errors=True)
-        shutil.rmtree(clustered_dir, ignore_errors=True)
+
+def clean_artifacts(dates: list[date], output_path: Path, targets: list[str]) -> None:
+    if "grib" in targets:
+        logger.debug(
+            f"Deleting GRIBs from the shared '{RAW_DATA_DIR}', other runs will re-download them."
+        )
+
+    for target_date in dates:
+        day = target_date.strftime("%Y-%m-%d")
+        dirs = []
+        if "grib" in targets:
+            dirs.append(Path(RAW_DATA_DIR) / day)
+        if "cut" in targets:
+            dirs.append(output_path / CUT_DATA_DIR / day)
+        if "extracted" in targets:
+            dirs.append(output_path / DISCRETE_DATA_DIR / day)
+            dirs.append(output_path / CLUSTERED_DATA_DIR / day)
+        for d in dirs:
+            shutil.rmtree(d, ignore_errors=True)
+
+    logger.info(f"Cleaned {', '.join(targets)}")
 
 
 def save_tobac_input_images(feature_data: xr.Dataset, output_dir: Path) -> None:
@@ -168,7 +181,6 @@ def extract_day(
     dates: list[date],
     region: Region,
     base_path: Path,
-    clean_level: int = 0,
     clustering: bool = True,
     force_redo: bool = False,
     just_cut: bool = False,
@@ -184,7 +196,6 @@ def extract_day(
                 target_date,
                 region,
                 base_path,
-                clean_level,
                 clustering,
                 force_redo,
                 just_cut,
@@ -209,7 +220,6 @@ def extract(
     dates: list[date],
     region: Region,
     output_path: Path,
-    clean_level: int = 0,
     clustering: bool = True,
     force_redo: bool = False,
     just_cut: bool = False,
@@ -221,17 +231,14 @@ def extract(
     Path(RAW_DATA_DIR).mkdir(parents=True, exist_ok=True)
     (output_path / CUT_DATA_DIR).mkdir(parents=True, exist_ok=True)
     (output_path / DISCRETE_DATA_DIR).mkdir(parents=True, exist_ok=True)
-    if create_images:
+    if create_images and not just_cut:
         (output_path / "legends").mkdir(parents=True, exist_ok=True)
-
-    if create_images:
         create_one_time_images(region, output_path / "legends")
 
     extract_day(
         dates,
         region,
         output_path,
-        clean_level,
         clustering,
         force_redo,
         just_cut,

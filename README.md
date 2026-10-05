@@ -35,6 +35,7 @@ A CDS API key is required for CERRA GRIB downloads — see the [CDS API setup gu
 Use the file `config.yaml` to set up a run for a specific region.
 Runs are configured via `config.yaml`. Each top-level key names a run, with the following options set per region/date combination:
 
+%% todo update this
 | Key             | Type                                     | Description                                                                             |
 |-----------------|------------------------------------------|-----------------------------------------------------------------------------------------|
 | `region.bounds` | `[LONG_MIN, LONG_MAX, LAT_MIN, LAT_MAX]` | Geographical bounding box to extract and process                                        |

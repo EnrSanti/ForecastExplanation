@@ -16,5 +16,6 @@ dependencies:
   - tqdm
   - pyarrow
   - pyyaml
+  - pydantic
   - python-dotenv
   - pymupdf
