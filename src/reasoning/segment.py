@@ -59,8 +59,7 @@ def detect_winds(
             if ws_var not in data or wd_var not in data:
                 missing = [v for v in [ws_var, wd_var] if v not in data]
                 logger.warning(
-                    f"Skipping {city_name} at height {h}: "
-                    f"missing variable(s) {missing}"
+                    f"Skipping {city_name} at height {h}: missing variable(s) {missing}"
                 )
                 continue
 

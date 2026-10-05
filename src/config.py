@@ -18,7 +18,6 @@ from region import Region
 
 
 class Stage(StrEnum):
-
     DATA = "data"
     FEATURES = "features"
     REASONING = "reasoning"
