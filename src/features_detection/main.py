@@ -29,6 +29,7 @@ from features_detection.features import (
 from features_detection.utils import (
     build_referenced_data_from_xarray,
     get_grid_spacings,
+    to_compressed_netcdf,
 )
 from region import Region
 
@@ -138,7 +139,7 @@ def _run_tobac_single_day(
     del temp_seg_ds, hum_seg_ds, cld_seg_ds
 
     xr.Dataset.from_dataframe(results_tra).to_netcdf(day_output_dir / "trajectories.nc")
-    results_seg_ds.to_netcdf(day_output_dir / "segmentation.nc")
+    to_compressed_netcdf(results_seg_ds, day_output_dir / "segmentation.nc")
 
 
 def _run_tobac_single_day_single_phenomenon(
@@ -314,4 +315,4 @@ def _create_output_features_nc(
         tmp_ds.attrs["dxy"] = float(dxy)
 
     if tmp_ds.data_vars:
-        tmp_ds.to_netcdf(output_features_nc)
+        to_compressed_netcdf(tmp_ds, output_features_nc)

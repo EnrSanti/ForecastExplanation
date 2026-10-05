@@ -16,6 +16,19 @@ logging.getLogger("ecmwf.datastores").setLevel(logging.WARNING)
 logging.getLogger("cdsapi").setLevel(logging.WARNING)
 
 
+def to_compressed_netcdf(ds: xr.Dataset, path: Path) -> None:
+    encoding = {
+        name: {
+            "zlib": True,
+            "complevel": 1,
+            "chunksizes": (1,) * (var.ndim - 2) + var.shape[-2:],
+        }
+        for name, var in ds.data_vars.items()
+        if var.ndim >= 2 and var.dtype.kind in "fiu"
+    }
+    ds.to_netcdf(path, encoding=encoding)
+
+
 def cut_grib_long_lat(grib_path: Path, coordinates: list[float]) -> xr.Dataset:
     with xr.open_dataset(
         grib_path,
@@ -76,7 +89,7 @@ def extract_nc(
 
         logger.debug(f"CUTTING GRIB: {grib_path} -> {output_path}")
         ds = cut_grib_long_lat(grib_path, region.value)
-        ds.to_netcdf(output_path)
+        to_compressed_netcdf(ds, output_path)
         ds.close()
 
     else:

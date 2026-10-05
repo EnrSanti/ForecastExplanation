@@ -23,7 +23,7 @@ from .extract_features_nc import (
     build_feature_dataarrays,
     create_one_time_images,
 )
-from .get_raw_data import extract_nc
+from .get_raw_data import extract_nc, to_compressed_netcdf
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ def extract_day_worker(
     if (starting_step == 2 or force_redo) and not just_cut:
         discrete_data_dir.mkdir(parents=True, exist_ok=True)
         feature_data = build_feature_dataarrays(nc_file)
-        feature_data.to_netcdf(features_nc_path)
+        to_compressed_netcdf(feature_data, features_nc_path)
         if create_images:
             save_tobac_input_images(feature_data, discrete_data_dir)
         starting_step = 3
@@ -88,7 +88,7 @@ def extract_day_worker(
         with xr.open_dataset(features_nc_path, engine="h5netcdf") as features_ds:
             feature_data = {str(name): da for name, da in features_ds.data_vars.items()}
         clustered_data = cluster_xarray(feature_data)
-        clustered_data.to_netcdf(clustered_dir / "features.nc")
+        to_compressed_netcdf(clustered_data, clustered_dir / "features.nc")
 
     if starting_step == 4:
         logger.debug(
