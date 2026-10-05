@@ -17,5 +17,6 @@ dependencies:
   - pyarrow
   - pyyaml
   - pydantic
+  - h5netcdf
   - python-dotenv
   - pymupdf
