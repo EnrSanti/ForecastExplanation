@@ -106,7 +106,10 @@ class RunConfig(BaseModel):
     @field_validator("dates", mode="before")
     @classmethod
     def _parse_dates(cls, value: Any) -> list[date]:
-        dates = parse_dates(value)
+        try:
+            dates = parse_dates(value)
+        except TypeError as e:  # pydantic only reports ValueErrors as field errors
+            raise ValueError(e) from e
         if not dates:
             raise ValueError("at least one date is required")
         return dates
