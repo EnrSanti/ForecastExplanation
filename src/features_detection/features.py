@@ -122,13 +122,19 @@ def segment_features(
             segments_all.append((itime, None, None))
             continue
 
-        segment_labels, segments = tobac.segmentation_2D(
-            f,
-            temp_da,
-            dxy=dxy,
-            threshold=threshold,
-            target=target,
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                category=UserWarning,
+                message="As of v1.6.0, segmentation with time length 1",
+            )
+            segment_labels, segments = tobac.segmentation_2D(
+                f,
+                temp_da,
+                dxy=dxy,
+                threshold=threshold,
+                target=target,
+            )
         segments_all.append((itime, segment_labels, segments))
 
     return segments_all
