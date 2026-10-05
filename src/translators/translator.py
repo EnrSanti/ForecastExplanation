@@ -23,7 +23,7 @@ class BaseTranslator(ABC):
         region: Region,
         force: bool = False,
         workers: int = 12,
-    ) -> Path | None:
+    ) -> tuple[Path | None, list[date]]:
         """
         Translates the reasoning files for each requested date.
 
@@ -36,13 +36,15 @@ class BaseTranslator(ABC):
             workers: Number of parallel worker processes.
 
         Returns:
-            The path of the merged dataset, or None if nothing was merged.
+            The path of the merged dataset (None if nothing was merged) and the
+            days translated without errors, the only ones merged into it.
         """
         logger.info("Starting translation")
         input_path = Path(input_folder)
         output_path = Path(output_folder)
         output_path.mkdir(parents=True, exist_ok=True)
 
+        ok = []
         with ProcessPoolExecutor(max_workers=workers) as executor:
             futures = {
                 executor.submit(
@@ -62,12 +64,14 @@ class BaseTranslator(ABC):
                 target_date = futures[future]
                 try:
                     future.result()
+                    ok.append(target_date)
                 except Exception:
                     logger.exception(f"Translation failed for {target_date}")
 
-        merged = self.merge_into_dataset(dates, output_path)
+        ok.sort()
+        merged = self.merge_into_dataset(ok, output_path)
         logger.info("Translation completed.")
-        return merged
+        return merged, ok
 
     def _translate_single_day(
         self,

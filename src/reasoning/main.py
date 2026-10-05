@@ -22,7 +22,7 @@ def reason(
     region: Region,
     force: bool = False,
     workers: int = 12,
-) -> None:
+) -> list[date]:
     """
     Perform reasoning on the input data (nc format) and save the results to the output path (text format).
     Converts raw data to reasoning data, ready to be converted to ASP formats.
@@ -34,9 +34,13 @@ def reason(
         region (Region): The specific geographic region to be used.
         force (bool, optional): If True, forces the processing of all dates. Defaults to False.
         workers (int, optional): Number of parallel worker processes. Defaults to 12.
+
+    Returns:
+        list[date]: The days processed without errors.
     """
     logger.info("Starting reasoning")
 
+    ok = []
     with ProcessPoolExecutor(max_workers=workers) as executor:
         futures = {
             executor.submit(
@@ -54,10 +58,12 @@ def reason(
             target_date = futures[future]
             try:
                 future.result()
+                ok.append(target_date)
             except Exception:
                 logger.exception(f"Reasoning failed for {target_date}")
 
     logger.info("Reasoning completed.")
+    return sorted(ok)
 
 
 def _reason_single_day(

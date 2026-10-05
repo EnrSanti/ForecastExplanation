@@ -1,6 +1,7 @@
 import argparse
 import logging
 import sys
+from datetime import date
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -66,11 +67,20 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def run_pipeline(cfg: RunConfig) -> None:
+def _keep(
+    stage: Stage, days: list[date], ok: list[date], failed: dict[date, Stage]
+) -> list[date]:
+    for day in set(days) - set(ok):
+        failed[day] = stage
+    return ok
+
+
+def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
     region = cfg.build_region()
     output_path = cfg.output_path
+    failed: dict[date, Stage] = {}
 
-    data_extraction.extract(
+    days = data_extraction.extract(
         cfg.dates,
         region,
         output_path=output_path,
@@ -80,16 +90,17 @@ def run_pipeline(cfg: RunConfig) -> None:
         create_images=cfg.save_images,
         workers=cfg.workers,
     )
-    if not cfg.runs(Stage.FEATURES):
-        return
+    days = _keep(Stage.DATA, cfg.dates, days, failed)
+    if not days or not cfg.runs(Stage.FEATURES):
+        return days, failed
 
     input_dir = output_path / (
         data_extraction.CLUSTERED_DATA_DIR
         if cfg.clustering
         else data_extraction.DISCRETE_DATA_DIR
     )
-    features_detection.run_tobac(
-        cfg.dates,
+    ok = features_detection.run_tobac(
+        days,
         input_dir=input_dir,
         output_dir=output_path,
         region=region,
@@ -97,31 +108,35 @@ def run_pipeline(cfg: RunConfig) -> None:
         save_images=cfg.save_images,
         workers=cfg.workers,
     )
-    if not cfg.runs(Stage.REASONING):
-        return
+    days = _keep(Stage.FEATURES, days, ok, failed)
+    if not days or not cfg.runs(Stage.REASONING):
+        return days, failed
 
-    reasoning.reason(
-        cfg.dates,
+    ok = reasoning.reason(
+        days,
         output_path,
         output_path,
         region,
         force=cfg.forces(Stage.REASONING),
         workers=cfg.workers,
     )
-    ground_truth.generate_gt(cfg.dates, output_path, force=cfg.forces(Stage.REASONING))
-    if not cfg.runs(Stage.TRANSLATION):
-        return
+    days = _keep(Stage.REASONING, days, ok, failed)
+    ok = ground_truth.generate_gt(days, output_path, force=cfg.forces(Stage.REASONING))
+    days = _keep(Stage.REASONING, days, ok, failed)
+    if not days or not cfg.runs(Stage.TRANSLATION):
+        return days, failed
 
-    dataset_csv = translators.FoldRmTranslator().translate(
-        cfg.dates,
+    dataset_csv, ok = translators.FoldRmTranslator().translate(
+        days,
         output_path,
         output_path / "translated",
         region,
         force=cfg.forces(Stage.TRANSLATION),
         workers=cfg.workers,
     )
-    if not cfg.runs(Stage.LEARNING) or not dataset_csv:
-        return
+    days = _keep(Stage.TRANSLATION, days, ok, failed)
+    if not dataset_csv or not cfg.runs(Stage.LEARNING):
+        return days, failed
 
     learning.train_fold_rm(
         dataset_csv,
@@ -131,6 +146,7 @@ def run_pipeline(cfg: RunConfig) -> None:
         force=cfg.forces(Stage.LEARNING),
         verbose=cfg.debug,
     )
+    return days, failed
 
 
 def main() -> None:
@@ -153,13 +169,18 @@ def main() -> None:
 
         logger.info(f" --- Starting {run_name} ---")
         try:
-            run_pipeline(cfg)
+            days, failed = run_pipeline(cfg)
         except Exception:
             logger.exception(f"Error running {run_name}")
             continue
 
-        if cfg.clean:
-            data_extraction.clean_artifacts(cfg.dates, cfg.output_path, cfg.clean)
+        if failed:
+            summary = ", ".join(f"{d} ({s.value})" for d, s in sorted(failed.items()))
+            logger.warning(f"{len(failed)} day(s) failed: {summary}")
+        if not days:
+            logger.error(f"No day of {run_name} completed.")
+        elif cfg.clean:
+            data_extraction.clean_artifacts(days, cfg.output_path, cfg.clean)
         logger.info(f"--- Finished {run_name} ---\n\n")
 
 

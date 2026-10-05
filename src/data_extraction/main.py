@@ -186,9 +186,10 @@ def extract_day(
     just_cut: bool = False,
     create_images: bool = False,
     workers: int = 12,
-) -> None:
+) -> list[date]:
     logger.info("Starting data extraction...")
 
+    ok = []
     with ProcessPoolExecutor(max_workers=workers) as executor:
         futures = {
             executor.submit(
@@ -210,10 +211,12 @@ def extract_day(
             target_date = futures[future]
             try:
                 future.result()
+                ok.append(target_date)
             except Exception:
                 logger.exception(f"Extract failed for {target_date}")
 
     logger.info("Data extraction completed.")
+    return sorted(ok)
 
 
 def extract(
@@ -225,7 +228,7 @@ def extract(
     just_cut: bool = False,
     create_images: bool = False,
     workers: int = 12,
-) -> None:
+) -> list[date]:
     output_path.mkdir(parents=True, exist_ok=True)
     (output_path / CLUSTERED_DATA_DIR).mkdir(parents=True, exist_ok=True)
     Path(RAW_DATA_DIR).mkdir(parents=True, exist_ok=True)
@@ -235,7 +238,7 @@ def extract(
         (output_path / "legends").mkdir(parents=True, exist_ok=True)
         create_one_time_images(region, output_path / "legends")
 
-    extract_day(
+    return extract_day(
         dates,
         region,
         output_path,
