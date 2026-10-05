@@ -158,7 +158,7 @@ def main() -> None:
 
     try:
         runs = load_runs(args.config, cli_overrides)
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
         logger.error(e)
         sys.exit(1)
 
