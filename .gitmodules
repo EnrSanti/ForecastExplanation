@@ -1,4 +1,4 @@
 [submodule "src/learning/CUDatILP"]
 	path = src/learning/CUDatILP
 	url = https://github.com/EnrSanti/CUDatILP
-	branch = beeter-integration-for-other-projects
+	branch = bg_rules_and_opt
