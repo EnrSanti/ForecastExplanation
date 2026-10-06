@@ -166,12 +166,23 @@ fold_rm  (optional)
   per label (prev_pioggia, prev_cloud), written to <output_path>/fold_rm/.
 
     fold_rm:
-      strategy: one_vs_rest   # or multiclass
+      strategy: one_vs_rest   # or multiclass, ordinal
       ratio: 0.7              # FOLD-RM exception ratio, (0, 1]
       split: date             # hold out whole days; row = stratified by row
       test_ratio: 0.3         # held-out fraction of days (or rows), (0, 1)
       seed: 42
+      min_support: 0          # drop rules holding for fewer training rows
       gpu: false              # fitGPU, needs the `gpu` extra (cupy)
+
+  Strategies:
+    one_vs_rest  one FOLD-RM model per class ("class_<c>_vs_rest")
+    multiclass   a single FOLD-RM model over all the classes
+    ordinal      one model per class boundary, "ge_<c>" = the label is at
+                 least c (classes ordered by their code).
+
+  metrics.json holds per-model scores under "tasks" and, under "combined",
+  the merged prediction over the original classes: accuracy, macro F1,
+  balanced accuracy, per-class scores and the confusion matrix.
 
 
 ------------------------------------------------------

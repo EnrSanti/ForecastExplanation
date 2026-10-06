@@ -302,6 +302,9 @@ def _create_output_features_nc(
 
     if vars_to_extract:
         extracted_ds = feat_ds[vars_to_extract].load()
+        for v in feat_ds.data_vars:
+            if str(v).startswith("cloud_at_"):
+                extracted_ds[f"raw_{v}"] = feat_ds[v].load() * 100
 
         da = feat_ds[vars_to_extract[0]]
         datetimes = [pd.Timestamp(t) for t in da.time.values]

@@ -6,7 +6,7 @@ from collections import defaultdict
 from pathlib import Path
 from timeit import default_timer as timer
 
-from .cudatilp import load_classifier_cls, save_model, scores
+from .cudatilp import fit_target, load_classifier_cls, prune_rules, save_model, scores
 from .strategies import STRATEGIES, majority_label
 
 logger = logging.getLogger("ForecastExplanation")
@@ -61,7 +61,9 @@ def _read_column(path: Path, column: str) -> list[str]:
 
 def per_class_scores(Y_hat: list, Y: list) -> dict[str, dict]:
     """Precision/recall/support of every label, so a model that never predicts
-    its minority class can't hide behind the majority class's accuracy."""
+    its minority class can't hide behind the majority class's accuracy.
+    `baseline_precision` is the label's share of the rows: the precision of
+    guessing it without looking at the features."""
     result = {}
     for label in sorted(set(Y) | set(Y_hat)):
         tp = sum(1 for y, yh in zip(Y, Y_hat) if y == yh == label)
@@ -69,10 +71,40 @@ def per_class_scores(Y_hat: list, Y: list) -> dict[str, dict]:
         support = Y.count(label)
         result[label] = {
             "precision": round(tp / predicted, 4) if predicted else 0.0,
+            "baseline_precision": round(support / len(Y), 4),
             "recall": round(tp / support, 4) if support else 0.0,
             "support": support,
         }
     return result
+
+
+def combined_scores(Y_hat: list, Y: list, default: str) -> dict:
+    """Scores of the merged prediction over the original classes. Macro F1 and
+    balanced accuracy average over the classes present in the test set, so
+    every class weighs the same however rare it is."""
+    classes = per_class_scores(Y_hat, Y)
+    present = [v for k, v in classes.items() if v["support"]]
+    f1 = [
+        (
+            2 * v["precision"] * v["recall"] / (v["precision"] + v["recall"])
+            if v["precision"] + v["recall"]
+            else 0.0
+        )
+        for v in present
+    ]
+    labels = sorted(set(Y) | set(Y_hat), key=float)
+    return {
+        "accuracy": round(sum(y == yh for y, yh in zip(Y, Y_hat)) / len(Y), 4),
+        "majority_baseline": round(Y.count(default) / len(Y), 4),
+        "macro_f1": round(sum(f1) / len(f1), 4),
+        "balanced_accuracy": round(sum(v["recall"] for v in present) / len(present), 4),
+        "per_class": classes,
+        # confusion[true][predicted]
+        "confusion": {
+            t: {p: sum(y == t and yh == p for y, yh in zip(Y, Y_hat)) for p in labels}
+            for t in labels
+        },
+    }
 
 
 def _warn_if_stale(target: str, metrics_path: Path, current: dict) -> None:
@@ -102,9 +134,10 @@ def _train_target(
     split: str,
     test_ratio: float,
     seed: int,
+    min_support: int,
     gpu: bool,
     verbose: bool,
-) -> list[dict]:
+) -> tuple[list[dict], dict | None]:
     # load_data reads columns in CSV order but names them after `attrs`, so
     # the features must be passed in header order
     loader = Classifier(
@@ -128,22 +161,36 @@ def _train_target(
     logger.info(f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows")
     if not test:
         logger.warning(f"FOLD-RM {target}: too few rows for a test split, skipping")
-        return []
+        return [], None
 
+    framing = STRATEGIES[strategy]()
     results = []
-    for task, task_train, task_test in STRATEGIES[strategy]().tasks(train, test):
+    raw_on_test = {}
+    for task, task_train, task_test in framing.tasks(train, test):
         model = Classifier(attrs=attrs, numeric=list(schema["numeric"]), label=target)
+        positive = framing.target_of(task)
         start = timer()
-        if gpu:
+        if positive:
+            if gpu:
+                logger.warning(f"FOLD-RM {target} {task}: trained on CPU, ignoring gpu")
+            fit_target(model, task_train, positive, ratio)
+        elif gpu:
             model.fitGPU(task_train, ratio=ratio, verbose=verbose)
         else:
             model.fit(task_train, ratio=ratio, verbose=verbose)
+        prune_rules(model, task_train, min_support)
         fit_seconds = timer() - start
 
         Y = [d[-1] for d in task_test]
-        # uncovered examples fall back to the majority label of the training set
-        default = majority_label(task_train)
+        # uncovered examples fall back to the majority label of the training
+        # set, or to the other side of the task when rules target one label
+        if positive:
+            other = {d[-1] for d in task_train} - {positive}
+            default = other.pop() if other else positive
+        else:
+            default = majority_label(task_train)
         raw = model.predict(task_test)
+        raw_on_test[task] = raw
         Y_hat = [default if y is None else y for y in raw]
         acc, p, r, f1 = scores(Y_hat, Y, weighted=True)
         classes = per_class_scores(Y_hat, Y)
@@ -170,7 +217,19 @@ def _train_target(
             f"recall {recalls} rules {result['n_rules']}"
         )
         results.append(result)
-    return results
+
+    Y = [d[-1] for d in test]
+    default = majority_label(train)
+    combined = combined_scores(
+        framing.combine(raw_on_test, train, len(test)), Y, default
+    )
+    combined["n_rules"] = sum(r["n_rules"] for r in results)
+    logger.info(
+        f"FOLD-RM {target}: acc {combined['accuracy']} (baseline "
+        f"{combined['majority_baseline']}) macro F1 {combined['macro_f1']} "
+        f"balanced acc {combined['balanced_accuracy']} rules {combined['n_rules']}"
+    )
+    return results, combined
 
 
 def train_fold_rm(
@@ -183,6 +242,7 @@ def train_fold_rm(
     split: str = "date",
     test_ratio: float = 0.3,
     seed: int = 42,
+    min_support: int = 0,
     gpu: bool = False,
     force: bool = False,
     verbose: bool = False,
@@ -198,12 +258,14 @@ def train_fold_rm(
         dataset_csv: The merged dataset produced by the translator.
         schema: {"labels", "features", "categorical", "numeric"} as given by FoldRmTranslator.schema.
         output_dir: Root folder for the learned models.
-        strategy: Key of STRATEGIES ("one_vs_rest" or "multiclass").
+        strategy: Key of STRATEGIES ("one_vs_rest", "multiclass" or "ordinal").
         ratio: FOLD-RM exception ratio hyperparameter.
         split: "date" holds out whole days (falls back to "row" when the
             dataset has no date column); "row" is a per-label stratified split.
         test_ratio: Fraction of days (or rows) held out for testing.
         seed: Seed for the split.
+        min_support: Drop the rules holding for fewer training rows of their
+            own label (0 keeps every rule).
         gpu: Use CUDatILP's CUDA training (fitGPU).
         force: Retrain targets whose metrics already exist.
         verbose: Print CUDatILP's per-phase timing breakdown to stdout.
@@ -226,6 +288,7 @@ def train_fold_rm(
         "split": split,
         "test_ratio": test_ratio,
         "seed": seed,
+        "min_support": min_support,
         "gpu": gpu,
     }
 
@@ -238,8 +301,11 @@ def train_fold_rm(
             _warn_if_stale(target, metrics_path, current)
             continue
         target_dir.mkdir(parents=True, exist_ok=True)
+        # models of a previous strategy would sit next to the new ones
+        for stale in [*target_dir.glob("*.lp"), *target_dir.glob("*.pkl")]:
+            stale.unlink()
 
-        results = _train_target(
+        results, combined = _train_target(
             Classifier,
             dataset_csv,
             schema,
@@ -250,9 +316,10 @@ def train_fold_rm(
             split,
             test_ratio,
             seed,
+            min_support,
             gpu,
             verbose,
         )
-        metrics = {**current, "tasks": results}
+        metrics = {**current, "combined": combined, "tasks": results}
         metrics_path.write_text(json.dumps(metrics, indent=2))
     logger.info("FOLD-RM training completed.")

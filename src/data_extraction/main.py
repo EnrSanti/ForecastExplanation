@@ -55,7 +55,6 @@ def extract_day_worker(
 ) -> None:
     logger.debug(f"Extracting data for {target_date.strftime('%Y-%m-%d')}")
     clustered_dir = base_path / CLUSTERED_DATA_DIR / target_date.strftime("%Y-%m-%d")
-    # raw data can be shared between runs
     raw_data_dir = Path(RAW_DATA_DIR) / target_date.strftime("%Y-%m-%d")
     cut_data_dir = base_path / CUT_DATA_DIR / target_date.strftime("%Y-%m-%d")
     discrete_data_dir = base_path / DISCRETE_DATA_DIR / target_date.strftime("%Y-%m-%d")

@@ -108,6 +108,15 @@ def _reason_single_day(
             heights,
             radius,
         )
+        # CERRA cloud cover around each city using raw data
+        detect_phenomenon(
+            feat_ds,
+            region.get_cities(),
+            day_output_dir / "cloud_cover.txt",
+            heights,
+            "cloud",
+            radius,
+        )
 
         # Heat
         detect_phenomenon(

@@ -78,11 +78,12 @@ def parse_dates(dates_entry: list | str | dict | None) -> list[date]:
 class FoldRmConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    strategy: Literal["one_vs_rest", "multiclass"] = "one_vs_rest"
+    strategy: Literal["one_vs_rest", "multiclass", "ordinal"] = "one_vs_rest"
     ratio: float = Field(0.7, gt=0, le=1)
     split: Literal["date", "row"] = "date"
     test_ratio: float = Field(0.3, gt=0, lt=1)
     seed: int = 42
+    min_support: int = Field(0, ge=0)
     gpu: bool = False
 
 
