@@ -85,6 +85,7 @@ class FoldRmConfig(BaseModel):
     seed: int = 42
     min_support: int = Field(0, ge=0)
     gpu: bool = False
+    output: str = "fold_rm"
 
 
 class RunConfig(BaseModel):

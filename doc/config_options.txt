@@ -173,6 +173,11 @@ fold_rm  (optional)
       seed: 42
       min_support: 0          # drop rules holding for fewer training rows
       gpu: false              # fitGPU, needs the `gpu` extra (cupy)
+      output: fold_rm         # models folder inside output_path
+
+  Runs that share an output_path share its data (nothing is extracted
+  or downloaded twice) but need a different "output" each, or they
+  overwrite each other's models.
 
   Strategies:
     one_vs_rest  one FOLD-RM model per class ("class_<c>_vs_rest")

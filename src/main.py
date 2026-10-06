@@ -141,8 +141,8 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
     learning.train_fold_rm(
         dataset_csv,
         translators.FoldRmTranslator.schema_from_csv(dataset_csv),
-        output_path / "fold_rm",
-        **cfg.fold_rm.model_dump(),
+        output_path / cfg.fold_rm.output,
+        **cfg.fold_rm.model_dump(exclude={"output"}),
         force=cfg.forces(Stage.LEARNING),
         verbose=cfg.debug,
     )

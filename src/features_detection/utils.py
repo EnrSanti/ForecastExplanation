@@ -18,11 +18,10 @@ def to_compressed_netcdf(ds: xr.Dataset, path) -> None:
     encoding = {
         name: {
             "zlib": True,
-            "complevel": 1,
-            "chunksizes": (1,) * (var.ndim - 2) + var.shape[-2:],
+            "complevel": 4,
         }
         for name, var in ds.data_vars.items()
-        if var.ndim >= 2 and var.dtype.kind in "fiu"
+        if var.dtype.kind in "fiu"
     }
     ds.to_netcdf(path, encoding=encoding)
 
