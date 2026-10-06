@@ -135,6 +135,7 @@ def _train_target(
     test_ratio: float,
     seed: int,
     min_support: int,
+    min_exception_support: int,
     gpu: bool,
     verbose: bool,
 ) -> tuple[list[dict], dict | None]:
@@ -178,7 +179,7 @@ def _train_target(
             model.fitGPU(task_train, ratio=ratio, verbose=verbose)
         else:
             model.fit(task_train, ratio=ratio, verbose=verbose)
-        prune_rules(model, task_train, min_support)
+        prune_rules(model, task_train, min_support, min_exception_support)
         fit_seconds = timer() - start
 
         Y = [d[-1] for d in task_test]
@@ -243,6 +244,7 @@ def train_fold_rm(
     test_ratio: float = 0.3,
     seed: int = 42,
     min_support: int = 0,
+    min_exception_support: int = 0,
     gpu: bool = False,
     force: bool = False,
     verbose: bool = False,
@@ -266,6 +268,8 @@ def train_fold_rm(
         seed: Seed for the split.
         min_support: Drop the rules holding for fewer training rows of their
             own label (0 keeps every rule).
+        min_exception_support: Drop the exceptions correcting fewer training
+            rows (0 keeps every exception).
         gpu: Use CUDatILP's CUDA training (fitGPU).
         force: Retrain targets whose metrics already exist.
         verbose: Print CUDatILP's per-phase timing breakdown to stdout.
@@ -289,6 +293,7 @@ def train_fold_rm(
         "test_ratio": test_ratio,
         "seed": seed,
         "min_support": min_support,
+        "min_exception_support": min_exception_support,
         "gpu": gpu,
     }
 
@@ -317,6 +322,7 @@ def train_fold_rm(
             test_ratio,
             seed,
             min_support,
+            min_exception_support,
             gpu,
             verbose,
         )
