@@ -464,6 +464,35 @@ def daily_predictors(
     return by_city, region
 
 
+ROUNDING_STEPS: list[tuple[tuple[str, ...], float | None]] = [
+    (("size_cloud", "humidity_fronts_area", "temperature_fronts_area"), 100),  # km2
+    (("temperature", "lapse"), 1),  # K
+    (("cloud_mid_hours",), None),  # a count
+    (("humidity", "rh", "region_rh", "cloud", "coverage_clouds", "region_cloud"), 1),  # %
+    (("wind_speed", "south", "moist_flux", "region_south"), 0.1),  # m/s
+]
+
+
+def _rounding_step(column: str) -> float | None:
+    for prefixes, step in ROUNDING_STEPS:
+        if column.startswith(prefixes):
+            return step
+    return None
+
+
+def round_features(header: list[str], row: list) -> list:
+    out = []
+    for column, value in zip(header, row):
+        step = _rounding_step(column)
+        if step is None or isinstance(value, str) or pd.isna(value):
+            out.append(value)
+        elif step < 1:
+            out.append(round(value, 1))
+        else:
+            out.append(int(round(value / step) * step))
+    return out
+
+
 def _get_frames_number(t, h):
     """
     Returns the number of frames (hours) in a given time and height group.
@@ -852,7 +881,7 @@ class FoldRmTranslator(BaseTranslator):
             ]
             row += [daily[city][c] for c in DAILY_COLUMNS]
             row += [region_daily[c] for c in REGION_COLUMNS]
-            rows.append(row)
+            rows.append(round_features(header, row))
 
         buffer = io.StringIO()
         writer = csv.writer(buffer)
