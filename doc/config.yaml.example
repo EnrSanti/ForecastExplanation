@@ -30,8 +30,9 @@ run_custom_path_and_region:
   debug: true
   save_images: true
   fold_rm:
-    strategy: one_vs_rest
-    ratio: 0.7
+    strategy: ordinal
+    ratio: 0.5
     split: date
     test_ratio: 0.3
+    min_support: 10
     gpu: false

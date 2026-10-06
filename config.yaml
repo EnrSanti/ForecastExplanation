@@ -1,16 +1,19 @@
-run_baseline:
+learning_test:
   region: FVG
   dates:
-    start: 2025-01-01
-    end: 2026-01-01
+    - start: 2024-01-01
+      end: 2024-10-31
+    - start: 2024-12-01
+      end: 2026-06-30
   save_images: false
-  workers: 4
-  force: 4
+  workers: 12
+  force: features
   fold_rm:
-    strategy: one_vs_rest
-    ratio: 0.7
+    strategy: ordinal
+    ratio: 0.5
     split: date
     test_ratio: 0.3
     seed: 42
+    min_support: 10
     gpu: false
 

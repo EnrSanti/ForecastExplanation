@@ -296,6 +296,174 @@ def average_by_height_and_time_vector(
     return result
 
 
+def total_cloud_by_time(
+    lookup: dict,
+    cities: list[str],
+    times: list[str],
+    heights: list[str],
+    round_ndigits: int = 2,
+) -> dict:
+    """
+    Column cloud cover per (city, time_group) under maximum overlap: the
+    hourly max over the levels, averaged within the time group. The whole
+    day is keyed as the time group "day".
+    """
+    buckets: dict[tuple, list] = defaultdict(list)
+    for city in cities:
+        for t in times:
+            vals = [lookup.get((city, t, h)) for h in heights]
+            vals = [v for v in vals if v is not None and not pd.isna(v)]
+            if not vals:
+                continue
+            buckets[(city, _hour_group(t))].append(max(vals))
+            buckets[(city, "day")].append(max(vals))
+    return {k: round(sum(v) / len(v), round_ndigits) for k, v in buckets.items()}
+
+
+DAILY_COLUMNS = [
+    "rh925_max",
+    "rh850_max",
+    "rh700_max",
+    "sat850_hours",
+    "sat700_hours",
+    "sat_column_hours",
+    "south850_mean",
+    "south850_max",
+    "south700_mean",
+    "moist_flux850_mean",
+    "moist_flux850_max",
+    "lapse_850_500",
+    "cloud_low_day",
+    "cloud_medium_day",
+    "cloud_high_day",
+    "cloud_mid_max",
+    "cloud_mid_hours",
+    "cloud_850_max",
+]
+REGION_COLUMNS = [
+    "region_rh850",
+    "region_rh700",
+    "region_sat700_hours",
+    "region_south850",
+    "region_cloud_mid",
+]
+
+
+def daily_predictors(
+    humidity: dict,
+    temperature: dict,
+    wind_speed: dict,
+    wind_dir: dict,
+    cloud_cover: dict,
+    cities: list[str],
+    round_ndigits: int = 2,
+) -> tuple[dict, dict]:
+    """
+    Whole-day rain/cloud predictors per city, from the hourly city means
+    keyed (city, "HHMM", level):
+      - saturation: max RH and hours with RH >= 90% (850/700 hPa, and the
+        whole 925-700 hPa column)
+      - southerly flow (wind blowing from the south is positive), alone and
+        times the 850 hPa RH, i.e. the moist inflow against the Alps
+      - stability: mean 850-500 hPa temperature difference
+      - CERRA cloud cover per level group and of the mid levels (700/500)
+    Returns ({city: {column: value}}, {column: value}) where the second one
+    averages a few of them over the cities, as the regional context of the
+    day.
+    """
+
+    def hourly(lookup, city, level):
+        out = {}
+        for h in range(24):
+            v = lookup.get((city, f"{h:02d}00", level))
+            if isinstance(v, (int, float)) and not pd.isna(v):
+                out[h] = float(v)
+        return out
+
+    def south(city, level):
+        speed, direction = hourly(wind_speed, city, level), hourly(
+            wind_dir, city, level
+        )
+        return {
+            h: -speed[h] * math.cos(math.radians(direction[h]))
+            for h in speed
+            if h in direction
+        }
+
+    def stat(values, how):
+        values = list(values)
+        if not values:
+            return ""
+        return round(how(values), round_ndigits)
+
+    def mean(values):
+        return sum(values) / len(values)
+
+    by_city = {}
+    pooled = defaultdict(list)  # hourly values of every city, for the region
+    for city in cities:
+        rh = {lvl: hourly(humidity, city, lvl) for lvl in ("0925", "0850", "0700")}
+        cc = {lvl: hourly(cloud_cover, city, lvl) for lvl in LEVEL_GROUP_MAP}
+        s850, s700 = south(city, "0850"), south(city, "0700")
+        t850, t500 = hourly(temperature, city, "0850"), hourly(
+            temperature, city, "0500"
+        )
+        flux = [max(s850[h], 0) * rh["0850"][h] / 100 for h in s850 if h in rh["0850"]]
+        column = [
+            h
+            for h in rh["0850"]
+            if rh["0850"][h] >= 90
+            and rh["0925"].get(h, 0) >= 90
+            and rh["0700"].get(h, 0) >= 85
+        ]
+        mid = [
+            (cc["0700"][h] + cc["0500"][h]) / 2 for h in cc["0700"] if h in cc["0500"]
+        ]
+        groups = {
+            g: [
+                v
+                for lvl, g2 in LEVEL_GROUP_MAP.items()
+                if g2 == g
+                for v in cc[lvl].values()
+            ]
+            for g in HEIGHT_GROUPS_ORDER
+        }
+        by_city[city] = {
+            "rh925_max": stat(rh["0925"].values(), max),
+            "rh850_max": stat(rh["0850"].values(), max),
+            "rh700_max": stat(rh["0700"].values(), max),
+            "sat850_hours": sum(v >= 90 for v in rh["0850"].values()),
+            "sat700_hours": sum(v >= 90 for v in rh["0700"].values()),
+            "sat_column_hours": len(column),
+            "south850_mean": stat(s850.values(), mean),
+            "south850_max": stat(s850.values(), max),
+            "south700_mean": stat(s700.values(), mean),
+            "moist_flux850_mean": stat(flux, mean),
+            "moist_flux850_max": stat(flux, max),
+            "lapse_850_500": stat((t850[h] - t500[h] for h in t850 if h in t500), mean),
+            "cloud_low_day": stat(groups["low"], mean),
+            "cloud_medium_day": stat(groups["medium"], mean),
+            "cloud_high_day": stat(groups["high"], mean),
+            "cloud_mid_max": stat(mid, max),
+            "cloud_mid_hours": sum(v >= 80 for v in mid),
+            "cloud_850_max": stat(cc["0850"].values(), max),
+        }
+        pooled["rh850"] += rh["0850"].values()
+        pooled["rh700"] += rh["0700"].values()
+        pooled["s850"] += s850.values()
+        pooled["mid"] += mid
+
+    region = {
+        "region_rh850": stat(pooled["rh850"], mean),
+        "region_rh700": stat(pooled["rh700"], mean),
+        # hours of the average city with a saturated 700 hPa level
+        "region_sat700_hours": stat((24 * (v >= 90) for v in pooled["rh700"]), mean),
+        "region_south850": stat(pooled["s850"], mean),
+        "region_cloud_mid": stat(pooled["mid"], mean),
+    }
+    return by_city, region
+
+
 def _get_frames_number(t, h):
     """
     Returns the number of frames (hours) in a given time and height group.
@@ -428,6 +596,14 @@ class FoldRmTranslator(BaseTranslator):
             city_coords,
         )
 
+        cloud_cover_df = _attach_city(
+            _read_tsv_or_empty(
+                reasoning_dir / "cloud_cover.txt",
+                ["timestamp", "height", "lat", "lon", "cloud"],
+            ),
+            city_coords,
+        )
+
         humidity_fronts_df = _read_tsv_or_empty(
             reasoning_dir / "humidity_fronts.txt",
             [
@@ -509,6 +685,10 @@ class FoldRmTranslator(BaseTranslator):
             humidity_df, "humidity", round_ndigits=1
         )
 
+        cloud_cover, cloud_cover_t, cloud_cover_h = _pivot(
+            cloud_cover_df, "cloud", round_ndigits=1
+        )
+
         # --- group hours -> early_morning/morning/afternoon/evening and
         # levels -> low/medium/high, averaging within each group ---
         wind_grouped = average_by_height_and_time_vector(
@@ -524,6 +704,15 @@ class FoldRmTranslator(BaseTranslator):
         )
         humidity_grouped = average_by_height_and_time(
             humidity, cities, humidity_t, humidity_h
+        )
+        cloud_cover_grouped = average_by_height_and_time(
+            cloud_cover, cities, cloud_cover_t, cloud_cover_h
+        )
+        cloud_total = total_cloud_by_time(
+            cloud_cover, cities, cloud_cover_t, cloud_cover_h
+        )
+        daily, region_daily = daily_predictors(
+            humidity, temperature, wind_speed, wind_dir, cloud_cover, cities
         )
         humidity_front_grouped = average_by_height_and_time_fronts(
             humidity_front_data, humidity_fronts_t, humidity_fronts_h
@@ -567,6 +756,9 @@ class FoldRmTranslator(BaseTranslator):
         header += _column_group(
             "temperature_fronts_outside_temp", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
         )
+        header += _column_group("cloud_cover", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
+        header += [f"cloud_total_{tg}" for tg in [*TIME_GROUPS_ORDER, "day"]]
+        header += DAILY_COLUMNS + REGION_COLUMNS
 
         rows = []
         for city in cities:
@@ -650,6 +842,16 @@ class FoldRmTranslator(BaseTranslator):
                 for tg in TIME_GROUPS_ORDER
                 for hg in HEIGHT_GROUPS_ORDER
             ]
+            row += [
+                cloud_cover_grouped.get((city, tg, hg), "")
+                for tg in TIME_GROUPS_ORDER
+                for hg in HEIGHT_GROUPS_ORDER
+            ]
+            row += [
+                cloud_total.get((city, tg), "") for tg in [*TIME_GROUPS_ORDER, "day"]
+            ]
+            row += [daily[city][c] for c in DAILY_COLUMNS]
+            row += [region_daily[c] for c in REGION_COLUMNS]
             rows.append(row)
 
         buffer = io.StringIO()

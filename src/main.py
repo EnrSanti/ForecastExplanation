@@ -102,7 +102,7 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
     ok = features_detection.run_tobac(
         days,
         input_dir=input_dir,
-        output_dir=output_path,
+        output_dir=output_path / "days_data",
         region=region,
         force=cfg.forces(Stage.FEATURES),
         save_images=cfg.save_images,
@@ -114,21 +114,21 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
 
     ok = reasoning.reason(
         days,
-        output_path,
-        output_path,
+        output_path / "days_data",
+        output_path / "days_data",
         region,
         force=cfg.forces(Stage.REASONING),
         workers=cfg.workers,
     )
     days = _keep(Stage.REASONING, days, ok, failed)
-    ok = ground_truth.generate_gt(days, output_path, force=cfg.forces(Stage.REASONING))
+    ok = ground_truth.generate_gt(days, output_path / "days_data", force=cfg.forces(Stage.REASONING))
     days = _keep(Stage.REASONING, days, ok, failed)
     if not days or not cfg.runs(Stage.TRANSLATION):
         return days, failed
 
     dataset_csv, ok = translators.FoldRmTranslator().translate(
         days,
-        output_path,
+        output_path / "days_data",
         output_path / "translated",
         region,
         force=cfg.forces(Stage.TRANSLATION),
