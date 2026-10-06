@@ -58,17 +58,43 @@ def fit_target(model, data: list[list], target: str, ratio: float) -> None:
     model.rules = rules
 
 
-def prune_rules(model, data: list[list], min_support: int) -> None:
-    """Drops the rules that hold for fewer than `min_support` training rows
-    of their own head label: they explain a handful of days and mostly fit
-    noise."""
+def _prune_exceptions(rule, rows, min_support, label, asserts_label=True):
     from src.algos.algo import evaluate
 
-    if min_support <= 0:
-        return
-    model.rules = [
-        r
-        for r in model.rules
-        if sum(1 for d in data if d[-1] == r[0][2] and evaluate(r, d)) >= min_support
-    ]
+    head, items, ab, flag = rule
+    if not ab:
+        return rule
+    body = [d for d in rows if all(evaluate(i, d) for i in items)]
+    kept = []
+    for exception in ab:
+        exception = _prune_exceptions(
+            exception, body, min_support, label, not asserts_label
+        )
+        fixed = sum(
+            1
+            for d in body
+            if evaluate(exception, d) and (d[-1] == label) != asserts_label
+        )
+        if fixed >= min_support:
+            kept.append(exception)
+    return head, items, kept, flag
+
+
+def prune_rules(
+    model, data: list[list], min_support: int, min_exception_support: int = 0
+) -> None:
+    from src.algos.algo import evaluate
+
+    if min_exception_support > 0:
+        model.rules = [
+            _prune_exceptions(r, data, min_exception_support, r[0][2])
+            for r in model.rules
+        ]
+    if min_support > 0:
+        model.rules = [
+            r
+            for r in model.rules
+            if sum(1 for d in data if d[-1] == r[0][2] and evaluate(r, d))
+            >= min_support
+        ]
     model.asp_rules = None  # asp() caches the decoded rules
