@@ -89,6 +89,7 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
         just_cut=cfg.stop_after == CUT,
         create_images=cfg.save_images,
         workers=cfg.workers,
+        delete_grib="grib" in (cfg.clean or []),
     )
     days = _keep(Stage.DATA, cfg.dates, days, failed)
     if not days or not cfg.runs(Stage.FEATURES):
