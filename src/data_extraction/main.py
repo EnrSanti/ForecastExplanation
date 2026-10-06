@@ -2,6 +2,7 @@ import logging
 import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import date
+from itertools import groupby
 from pathlib import Path
 
 import cv2
@@ -23,13 +24,13 @@ from .extract_features_nc import (
     build_feature_dataarrays,
     create_one_time_images,
 )
-from .get_raw_data import extract_nc, to_compressed_netcdf
+from .get_raw_data import cut_month, cut_path, to_compressed_netcdf
 
 logger = logging.getLogger(__name__)
 
 
 def find_starting_step(
-    clustered_dir: Path, raw_data_dir: Path, cut_data_dir: Path, discrete_data_dir: Path
+    clustered_dir: Path, cut_data_dir: Path, discrete_data_dir: Path
 ) -> int:
     """Find the starting step for the data extraction process."""
     if clustered_dir.exists() and any(clustered_dir.iterdir()):
@@ -38,8 +39,6 @@ def find_starting_step(
         return 3  # Feature maps saved
     if cut_data_dir.exists() and any(cut_data_dir.iterdir()):
         return 2  # GRIB cut
-    if raw_data_dir.exists() and any(raw_data_dir.iterdir()):
-        return 1  # GRIB downloaded
 
     return 0  # No data
 
@@ -55,23 +54,17 @@ def extract_day_worker(
 ) -> None:
     logger.debug(f"Extracting data for {target_date.strftime('%Y-%m-%d')}")
     clustered_dir = base_path / CLUSTERED_DATA_DIR / target_date.strftime("%Y-%m-%d")
-    raw_data_dir = Path(RAW_DATA_DIR) / target_date.strftime("%Y-%m-%d")
     cut_data_dir = base_path / CUT_DATA_DIR / target_date.strftime("%Y-%m-%d")
     discrete_data_dir = base_path / DISCRETE_DATA_DIR / target_date.strftime("%Y-%m-%d")
     features_nc_path = discrete_data_dir / "features.nc"
 
-    starting_step = find_starting_step(
-        clustered_dir, raw_data_dir, cut_data_dir, discrete_data_dir
-    )
+    starting_step = find_starting_step(clustered_dir, cut_data_dir, discrete_data_dir)
     nc_file = ""
 
-    if starting_step in [0, 1, 2] or force_redo:
-        raw_data_dir.mkdir(parents=True, exist_ok=True)
-        cut_data_dir.mkdir(parents=True, exist_ok=True)
-        # this skips 0 1 automatically if already done
-        nc_file = extract_nc(
-            target_date, region, raw_data_dir, cut_data_dir, force_redo
-        )
+    if starting_step in [0, 2] or force_redo:
+        nc_file = cut_path(target_date, region, base_path)
+        if not nc_file.exists():
+            raise FileNotFoundError(f"Missing cut file: {nc_file}")
         starting_step = 2
 
     if (starting_step == 2 or force_redo) and not just_cut:
@@ -218,6 +211,34 @@ def extract_day(
     return sorted(ok)
 
 
+def CERRA_dowload(
+    dates: list[date],
+    region: Region,
+    output_path: Path,
+    force_redo: bool,
+    delete_grib: bool,
+) -> list[date]:
+    """Downloads and cuts the CERRA data for the specified dates and region, saving the results to the output path."""
+    months = [
+        list(month_dates)
+        for _, month_dates in groupby(sorted(dates), key=lambda d: (d.year, d.month))
+    ]
+    cut_ok = []
+    for month_dates in tqdm(months, desc="Download+cut (monthly)"):
+        try:
+            cut_ok += cut_month(
+                month_dates,
+                region,
+                Path(RAW_DATA_DIR),
+                output_path,
+                force_redo,
+                delete_grib,
+            )
+        except Exception:
+            logger.exception(f"Download/cut failed for {month_dates[0]:%Y-%m}")
+    return sorted(cut_ok)
+
+
 def extract(
     dates: list[date],
     region: Region,
@@ -227,6 +248,7 @@ def extract(
     just_cut: bool = False,
     create_images: bool = False,
     workers: int = 12,
+    delete_grib: bool = False,
 ) -> list[date]:
     output_path.mkdir(parents=True, exist_ok=True)
     (output_path / CLUSTERED_DATA_DIR).mkdir(parents=True, exist_ok=True)
@@ -237,8 +259,13 @@ def extract(
         (output_path / "legends").mkdir(parents=True, exist_ok=True)
         create_one_time_images(region, output_path / "legends")
 
+    cut_ok = CERRA_dowload(dates, region, output_path, force_redo, delete_grib)
+
+    if just_cut:
+        return cut_ok
+
     return extract_day(
-        dates,
+        cut_ok,
         region,
         output_path,
         clustering,
