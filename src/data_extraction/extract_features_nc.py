@@ -164,7 +164,6 @@ def save_borders_png(output_base: Path, coordinates: Region) -> None:
 
 
 def create_legends(output_base: Path) -> None:
-
     for key, props in LEGEND_SPECS.items():
         for lvl in LEVELS:
             vmin, vmax = props["limits"][lvl]

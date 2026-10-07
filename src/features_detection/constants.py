@@ -1,7 +1,7 @@
 from enum import Enum
 
 LEVELS = [1000, 925, 850, 700, 500, 300]
-FOLDERS_HEIGHT_SUFF = [f"_at_{l:04d}m" for l in LEVELS]
+FOLDERS_HEIGHT_SUFF = [f"_at_{lev:04d}m" for lev in LEVELS]
 
 # Keyed by pressure-level suffix (matches FOLDERS_HEIGHT_SUFF); the comment
 # gives the approximate real-world altitude for each level.
