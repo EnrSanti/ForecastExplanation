@@ -122,7 +122,9 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
         workers=cfg.workers,
     )
     days = _keep(Stage.REASONING, days, ok, failed)
-    ok = ground_truth.generate_gt(days, output_path / "days_data", force=cfg.forces(Stage.REASONING))
+    ok = ground_truth.generate_gt(
+        days, output_path / "days_data", force=cfg.forces(Stage.REASONING)
+    )
     days = _keep(Stage.REASONING, days, ok, failed)
     if not days or not cfg.runs(Stage.TRANSLATION):
         return days, failed

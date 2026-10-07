@@ -381,8 +381,9 @@ def daily_predictors(
         return out
 
     def south(city, level):
-        speed, direction = hourly(wind_speed, city, level), hourly(
-            wind_dir, city, level
+        speed, direction = (
+            hourly(wind_speed, city, level),
+            hourly(wind_dir, city, level),
         )
         return {
             h: -speed[h] * math.cos(math.radians(direction[h]))
@@ -405,8 +406,9 @@ def daily_predictors(
         rh = {lvl: hourly(humidity, city, lvl) for lvl in ("0925", "0850", "0700")}
         cc = {lvl: hourly(cloud_cover, city, lvl) for lvl in LEVEL_GROUP_MAP}
         s850, s700 = south(city, "0850"), south(city, "0700")
-        t850, t500 = hourly(temperature, city, "0850"), hourly(
-            temperature, city, "0500"
+        t850, t500 = (
+            hourly(temperature, city, "0850"),
+            hourly(temperature, city, "0500"),
         )
         flux = [max(s850[h], 0) * rh["0850"][h] / 100 for h in s850 if h in rh["0850"]]
         column = [
@@ -468,7 +470,10 @@ ROUNDING_STEPS: list[tuple[tuple[str, ...], float | None]] = [
     (("size_cloud", "humidity_fronts_area", "temperature_fronts_area"), 100),  # km2
     (("temperature", "lapse"), 1),  # K
     (("cloud_mid_hours",), None),  # a count
-    (("humidity", "rh", "region_rh", "cloud", "coverage_clouds", "region_cloud"), 1),  # %
+    (
+        ("humidity", "rh", "region_rh", "cloud", "coverage_clouds", "region_cloud"),
+        1,
+    ),  # %
     (("wind_speed", "south", "moist_flux", "region_south"), 0.1),  # m/s
 ]
 

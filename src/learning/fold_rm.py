@@ -60,10 +60,7 @@ def _read_column(path: Path, column: str) -> list[str]:
 
 
 def per_class_scores(Y_hat: list, Y: list) -> dict[str, dict]:
-    """Precision/recall/support of every label, so a model that never predicts
-    its minority class can't hide behind the majority class's accuracy.
-    `baseline_precision` is the label's share of the rows: the precision of
-    guessing it without looking at the features."""
+    """Precision/recall/support of every label"""
     result = {}
     for label in sorted(set(Y) | set(Y_hat)):
         tp = sum(1 for y, yh in zip(Y, Y_hat) if y == yh == label)
@@ -79,9 +76,7 @@ def per_class_scores(Y_hat: list, Y: list) -> dict[str, dict]:
 
 
 def combined_scores(Y_hat: list, Y: list, default: str) -> dict:
-    """Scores of the merged prediction over the original classes. Macro F1 and
-    balanced accuracy average over the classes present in the test set, so
-    every class weighs the same however rare it is."""
+    """Scores of the merged prediction over the original classes."""
     classes = per_class_scores(Y_hat, Y)
     present = [v for k, v in classes.items() if v["support"]]
     f1 = [
