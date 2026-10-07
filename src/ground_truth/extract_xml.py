@@ -59,7 +59,7 @@ def xml_extract(target_date: date) -> dict:
     for zone_el in deadline.findall("zone/zona"):
         name = zone_el.get("nome")
 
-        if not name in A_ZONES:
+        if name not in A_ZONES:
             continue
 
         data = _element_to_dict(zone_el)
