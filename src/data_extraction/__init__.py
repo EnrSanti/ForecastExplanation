@@ -57,7 +57,7 @@ DISCRETE_DATA_DIR: str = "tmp_data/extracted_data"
 CLUSTERED_DATA_DIR: str = "tmp_data/clustered_data"
 
 LEVELS = [1000, 925, 850, 700, 500, 300]
-FOLDERS = {l: f"_at_{l:04d}m" for l in LEVELS}
+FOLDERS = {lev: f"_at_{lev:04d}m" for lev in LEVELS}
 
 from .main import clean_artifacts, extract
 
