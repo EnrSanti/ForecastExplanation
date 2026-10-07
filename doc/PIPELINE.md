@@ -253,33 +253,28 @@ One row per city. Per-hour, per-level values are grouped before being written ou
 `early_morning` (00–06), `morning` (07–12), `afternoon` (13–18), `evening` (19–23), and pressure levels into
 `low` (1000/0925/0850), `medium` (0700/0500), `high` (0300). Columns are structured as `{feature}_{time_group}_{height_group}`:
 
-| Column group                        | Description                                                                  |
-|-------------------------------------|------------------------------------------------------------------------------|
-| `prev_pioggia`                      | Encoded rain forecast (`rain_enum`)                                          |
-| `prev_cloud`                        | Encoded sky forecast (`cloud_enum`)                                          |
-| `month`                             | Month of the target date                                                     |
-| `location`                          | City slug                                                                    |
-| `wind_direction_*`                  | Resultant vector wind direction, compass octave, per time/height group       |
-| `wind_speed_*`                      | Resultant vector wind speed (m/s), per time/height group                     |
-| `coverage_clouds_*`                 | Cloud coverage (%), averaged per time/height group                           |
-| `size_cloud_*`                      | Cloud segment area (km²), averaged per time/height group                     |
-| `temperature_*`                     | Temperature (K), averaged per time/height group                              |
-| `humidity_*`                        | Relative humidity (%), averaged per time/height group                        |
-| `humidity_fronts_*`                 | Humidity front frequency (`present`/`partially_present`/`absent`)            |
-| `humidity_fronts_area_*`            | Average humidity front area (km²)                                            |
-| `humidity_fronts_inside_hum_*`      | Average humidity inside humidity fronts (%)                                  |
-| `humidity_fronts_outside_hum_*`     | Average humidity outside humidity fronts, background only (%)                |
-| `temperature_fronts_*`              | Temperature front frequency (`present`/`partially_present`/`absent`)         |
-| `temperature_fronts_area_*`         | Average temperature front area (km²)                                         |
-| `temperature_fronts_inside_temp_*`  | Average temperature inside temperature fronts (K)                            |
-| `temperature_fronts_outside_temp_*` | Average temperature outside temperature fronts, background only (K)          |
-| `cloud_cover_*`                     | CERRA cloud cover (%), averaged per time/height group                        |
-| `cloud_total_*`                     | Column cloud cover (%, hourly max over the levels), per time group and `day` |
-
-Whole-day predictors per city, from the hourly city means:
-
-| Column                                                | Description                                                                                                                   |
+| Column group                                          | Description                                                                                                                   |
 |-------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| `prev_pioggia`                                        | Encoded rain forecast (`rain_enum`)                                                                                           |
+| `prev_cloud`                                          | Encoded sky forecast (`cloud_enum`)                                                                                           |
+| `month`                                               | Month of the target date                                                                                                      |
+| `location`                                            | City slug                                                                                                                     |
+| `wind_direction_*`                                    | Resultant vector wind direction, compass octave, per time/height group                                                        |
+| `wind_speed_*`                                        | Resultant vector wind speed (m/s), per time/height group                                                                      |
+| `coverage_clouds_*`                                   | Cloud coverage (%), averaged per time/height group                                                                            |
+| `size_cloud_*`                                        | Cloud segment area (km²), averaged per time/height group                                                                      |
+| `temperature_*`                                       | Temperature (K), averaged per time/height group                                                                               |
+| `humidity_*`                                          | Relative humidity (%), averaged per time/height group                                                                         |
+| `humidity_fronts_*`                                   | Humidity front frequency (`present`/`partially_present`/`absent`)                                                             |
+| `humidity_fronts_area_*`                              | Average humidity front area (km²)                                                                                             |
+| `humidity_fronts_inside_hum_*`                        | Average humidity inside humidity fronts (%)                                                                                   |
+| `humidity_fronts_outside_hum_*`                       | Average humidity outside humidity fronts, background only (%)                                                                 |
+| `temperature_fronts_*`                                | Temperature front frequency (`present`/`partially_present`/`absent`)                                                          |
+| `temperature_fronts_area_*`                           | Average temperature front area (km²)                                                                                          |
+| `temperature_fronts_inside_temp_*`                    | Average temperature inside temperature fronts (K)                                                                             |
+| `temperature_fronts_outside_temp_*`                   | Average temperature outside temperature fronts, background only (K)                                                           |
+| `cloud_cover_*`                                       | CERRA cloud cover (%), averaged per time/height group                                                                         |
+| `cloud_total_*`                                       | Column cloud cover (%, hourly max over the levels), per time group and `day`                                                  |
 | `rh925_max`, `rh850_max`, `rh700_max`                 | Max relative humidity (%) at 925/850/700 hPa                                                                                  |
 | `sat850_hours`, `sat700_hours`                        | Hours with RH >= 90% at 850/700 hPa                                                                                           |
 | `sat_column_hours`                                    | Hours with RH >= 90% at 925 and 850 hPa and >= 85% at 700 hPa                                                                 |
