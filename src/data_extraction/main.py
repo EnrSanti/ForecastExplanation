@@ -214,10 +214,6 @@ def extract(
     delete_grib: bool = False,
 ) -> list[date]:
     output_path.mkdir(parents=True, exist_ok=True)
-    (output_path / CLUSTERED_DATA_DIR).mkdir(parents=True, exist_ok=True)
-    Path(RAW_DATA_DIR).mkdir(parents=True, exist_ok=True)
-    (output_path / CUT_DATA_DIR).mkdir(parents=True, exist_ok=True)
-    (output_path / DISCRETE_DATA_DIR).mkdir(parents=True, exist_ok=True)
     if create_images and not just_cut:
         (output_path / "legends").mkdir(parents=True, exist_ok=True)
         create_one_time_images(region, output_path / "legends")
