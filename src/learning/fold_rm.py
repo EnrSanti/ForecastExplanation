@@ -239,6 +239,7 @@ def train_fold_rm(
     seed: int = 42,
     min_support: int = 0,
     min_exception_support: int = 0,
+    exclude_features: dict[str, list[str]] | None = None,
     gpu: bool = False,
     force: bool = False,
     verbose: bool = False,
@@ -264,6 +265,8 @@ def train_fold_rm(
             own label (0 keeps every rule).
         min_exception_support: Drop the exceptions correcting fewer training
             rows (0 keeps every exception).
+        exclude_features: target -> feature column prefixes left out of its
+            models (e.g. the cloud amounts for prev_cloud).
         gpu: Use CUDatILP's CUDA training (fitGPU).
         force: Retrain targets whose metrics already exist.
         verbose: Print CUDatILP's per-phase timing breakdown to stdout.
@@ -293,11 +296,21 @@ def train_fold_rm(
 
     logger.info("Starting FOLD-RM training")
     for target in schema["labels"]:
+        excluded = tuple((exclude_features or {}).get(target, []))
+        target_schema = {
+            **schema,
+            "features": [c for c in schema["features"] if not c.startswith(excluded)],
+            "numeric": [c for c in schema["numeric"] if not c.startswith(excluded)],
+        }
+        target_current = {
+            **current,
+            **({"exclude_features": list(excluded)} if excluded else {}),
+        }
         target_dir = output_dir / target
         metrics_path = target_dir / METRICS_FILE
         if not force and metrics_path.exists():
             logger.info(f"FOLD-RM {target}: already trained, skipping")
-            _warn_if_stale(target, metrics_path, current)
+            _warn_if_stale(target, metrics_path, target_current)
             continue
         target_dir.mkdir(parents=True, exist_ok=True)
         # drop models of a previous strategy
@@ -307,7 +320,7 @@ def train_fold_rm(
         results, combined = _train_target(
             Classifier,
             dataset_csv,
-            schema,
+            target_schema,
             target,
             target_dir,
             strategy,
@@ -320,6 +333,6 @@ def train_fold_rm(
             gpu,
             verbose,
         )
-        metrics = {**current, "combined": combined, "tasks": results}
+        metrics = {**target_current, "combined": combined, "tasks": results}
         metrics_path.write_text(json.dumps(metrics, indent=2))
     logger.info("FOLD-RM training completed.")
