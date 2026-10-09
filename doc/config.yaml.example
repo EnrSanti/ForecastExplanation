@@ -31,8 +31,9 @@ run_custom_path_and_region:
   save_images: true
   fold_rm:
     strategy: ordinal
-    ratio: 0.5
+    ratio: 1.0
     split: date
     test_ratio: 0.3
     min_support: 10
+    min_exception_support: 80
     gpu: false
