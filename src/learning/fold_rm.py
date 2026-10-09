@@ -178,8 +178,7 @@ def _train_target(
         fit_seconds = timer() - start
 
         Y = [d[-1] for d in task_test]
-        # uncovered examples fall back to the majority label of the training
-        # set, or to the other side of the task when rules target one label
+        # uncovered rows: the other label of the task, or the majority
         if positive:
             other = {d[-1] for d in task_train} - {positive}
             default = other.pop() if other else positive
@@ -301,7 +300,7 @@ def train_fold_rm(
             _warn_if_stale(target, metrics_path, current)
             continue
         target_dir.mkdir(parents=True, exist_ok=True)
-        # models of a previous strategy would sit next to the new ones
+        # drop models of a previous strategy
         for stale in [*target_dir.glob("*.lp"), *target_dir.glob("*.pkl")]:
             stale.unlink()
 
