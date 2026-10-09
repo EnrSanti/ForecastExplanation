@@ -21,8 +21,6 @@ from features_detection.constants import (
 logger = logging.getLogger(__name__)
 logging.getLogger("trackpy").setLevel(logging.WARNING)
 
-DEBUG = False  # Set to True to display search radius circles
-
 
 def detect_features(
     data_norm: xr.DataArray,

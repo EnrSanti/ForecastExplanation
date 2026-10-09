@@ -26,7 +26,7 @@ TOP-LEVEL STRUCTURE
     save_images: true/false
     debug: true/false
     force: <stage>
-    stop_after: <stage> | cut
+    stop_after: <stage>
     clean: [grib, cut, extracted]
     fold_rm: {...}
 
@@ -37,7 +37,8 @@ PIPELINE STAGES
 
 Stages run in this order; "force" and "stop_after" refer to them:
 
-    data         download + cut GRIBs, build feature maps (+ clustering)
+    data         download + cut GRIBs
+    extraction   build feature maps from the cuts (+ clustering)
     features     TOBAC feature detection and tracking
     reasoning    fronts/segments reasoning and ground truth generation
     translation  FOLD-RM dataset generation
@@ -108,6 +109,7 @@ force  (optional, default: none)
     force: translation   + regenerate the dataset
     force: reasoning     + reasoning and ground truth
     force: features      + TOBAC
+    force: extraction    + feature maps (tmp_data except CERRA_cut)
     force: data          everything (downloaded GRIBs are still reused)
 
   CLI: --force <stage>
@@ -117,10 +119,10 @@ force  (optional, default: none)
 stop_after  (optional, default: learning)
   Last stage to run.
 
-    stop_after: cut           only download and cut the GRIBs
+    stop_after: data          only download and cut the GRIBs
     stop_after: translation   build the dataset, skip training
 
-  CLI: --stop-after <stage|cut>
+  CLI: --stop-after <stage>
 
 ------
 

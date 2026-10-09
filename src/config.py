@@ -19,6 +19,7 @@ from region import Region
 
 class Stage(StrEnum):
     DATA = "data"
+    EXTRACTION = "extraction"
     FEATURES = "features"
     REASONING = "reasoning"
     TRANSLATION = "translation"
@@ -29,7 +30,6 @@ class Stage(StrEnum):
         return list(Stage).index(self)
 
 
-CUT = "cut"
 CleanTarget = Literal["grib", "cut", "extracted"]
 
 
@@ -101,7 +101,7 @@ class RunConfig(BaseModel):
     save_images: bool = False
     debug: bool = False
     force: Stage | None = None
-    stop_after: Stage | Literal["cut"] = Stage.LEARNING
+    stop_after: Stage = Stage.LEARNING
     clean: list[CleanTarget] = []
     fold_rm: FoldRmConfig = FoldRmConfig()
 
@@ -130,8 +130,6 @@ class RunConfig(BaseModel):
 
     def runs(self, stage: Stage) -> bool:
         """True if `stage` is reached before the run stops (see `stop_after`)."""
-        if self.stop_after == CUT:
-            return stage == Stage.DATA
         return stage.order <= self.stop_after.order
 
 

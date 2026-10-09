@@ -19,13 +19,8 @@ def haversine(
 
 
 def get_heights(data: xr.Dataset) -> list[str]:
-    heights = set()
-    for var in data.data_vars:
-        if "wind_direction_at_" in str(var):
-            heights.add(str(var).split("wind_direction_at_")[1])
-    sorted_heights = sorted(
-        heights,
-        key=lambda x: int(x.replace("m", "")) if x.replace("m", "").isdigit() else x,
+    """Level suffixes ("0300m", ...) present in the data, ascending."""
+    prefix = "wind_direction_at_"
+    return sorted(
+        str(v).removeprefix(prefix) for v in data.data_vars if str(v).startswith(prefix)
     )
-
-    return sorted_heights
