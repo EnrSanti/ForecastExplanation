@@ -10,10 +10,7 @@ logger = logging.getLogger("ForecastExplanation")
 
 
 def generate_gt(
-    target_dates: list[date],
-    output_path: Path,
-    force: bool = False,
-    bulletin_offset: int = 1,
+    target_dates: list[date], output_path: Path, force: bool = False
 ) -> list[date]:
     ok = []
     for target_date in target_dates:
@@ -28,14 +25,13 @@ def generate_gt(
             ok.append(target_date)
             continue
         try:
-            bulletin_date = target_date - timedelta(days=bulletin_offset)
-            if Path("./xmls").exists() and bulletin_date >= date(2021, 1, 1):  # todo
-                res = xml_extract(bulletin_date)
+            if Path("./xmls").exists() and target_date >= date(2021, 1, 2):  # todo
+                res = xml_extract(target_date - timedelta(days=1))
             else:
                 logger.warning(
                     "XML files not found. Falling back to pdf text extraction."
                 )
-                res = text_extract(bulletin_date)
+                res = text_extract(target_date - timedelta(days=1))
             save_to_file(res, output_path, target_date)
             ok.append(target_date)
         except Exception:
