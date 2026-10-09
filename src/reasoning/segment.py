@@ -106,8 +106,8 @@ def detect_clouds(
     %covered is the % of the {city_radius}km radius around the city that is covered by the cloud
     """
     if "dxy" not in feat_data.attrs:
-        logger.warning("Missing dxy attribute, falling back to 2500m")
-        dxy_m = 2500.0
+        logger.warning("Missing dxy attribute, falling back to 5500m")
+        dxy_m = 5500.0
     else:
         dxy_m = float(feat_data.attrs["dxy"])
     area_per_pixel_km2 = (dxy_m / 1000.0) ** 2
