@@ -17,7 +17,6 @@ from features_detection.constants import (
     DEFAULT_SMOOTH,
     DEFAULT_V_MAX_AT_HEIGHT,
     FOLDERS_HEIGHT_SUFF,
-    FRONT_PHENOMENA,
     RAW_FEATURES_VARS,
     WeatherPhenomenon,
     WeatherPhenomenonTobacParams,
@@ -128,29 +127,16 @@ def _run_tobac_single_day(
             WeatherPhenomenonTobacParams.CLOUDS,
             save_images,
         )
-        front_results = [
-            _run_tobac_single_day_single_phenomenon(
-                feat_ds,
-                day_output_dir,
-                region,
-                phenomenon,
-                WeatherPhenomenonTobacParams[phenomenon.name],
-                save_images,
-            )
-            for phenomenon in FRONT_PHENOMENA
-        ]
 
         _create_output_features_nc(feat_ds, day_output_dir, region)
 
-    tra_dfs = [temp_tra_df, hum_tra_df, cld_tra_df] + [r[0] for r in front_results]
-    dfs = [df for df in tra_dfs if not df.empty]
+    dfs = [df for df in [temp_tra_df, hum_tra_df, cld_tra_df] if not df.empty]
     results_tra = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
     del temp_tra_df, hum_tra_df, cld_tra_df
 
-    seg_dss = [temp_seg_ds, hum_seg_ds, cld_seg_ds] + [r[1] for r in front_results]
-    dss = [ds for ds in seg_dss if ds.data_vars]
+    dss = [ds for ds in [temp_seg_ds, hum_seg_ds, cld_seg_ds] if ds.data_vars]
     results_seg_ds = xr.merge(dss, compat="override", join="outer")
-    del temp_seg_ds, hum_seg_ds, cld_seg_ds, front_results
+    del temp_seg_ds, hum_seg_ds, cld_seg_ds
 
     xr.Dataset.from_dataframe(results_tra).to_netcdf(day_output_dir / "trajectories.nc")
     to_compressed_netcdf(results_seg_ds, day_output_dir / "segmentation.nc")
@@ -172,12 +158,8 @@ def _run_tobac_single_day_single_phenomenon(
 
     logger.debug(f"Processing {phenomenon.value} for {day_output_dir}")
 
-    if phenomenon_params is None:
-        phenomenon_params = WeatherPhenomenonTobacParams[phenomenon.name]
-    field = phenomenon_params.value.get("field", phenomenon.value)
-
-    for suffix in phenomenon_params.value.get("levels", FOLDERS_HEIGHT_SUFF):
-        folder_key = f"{field}{suffix}"
+    for suffix in FOLDERS_HEIGHT_SUFF:
+        folder_key = f"{phenomenon.value}{suffix}"
         if folder_key not in feat_ds:
             logger.warning(
                 f"Folder {folder_key} not found in {feat_ds.encoding.get('source')}"
@@ -191,6 +173,9 @@ def _run_tobac_single_day_single_phenomenon(
             da, datetimes, region_bounds=region.value
         )
         dxy, dt = get_grid_spacings(referenced_data)
+
+        if phenomenon_params is None:
+            phenomenon_params = WeatherPhenomenonTobacParams[phenomenon.name]
 
         detection_params = phenomenon_params.value
 
@@ -238,7 +223,7 @@ def _run_tobac_single_day_single_phenomenon(
         if save_images:
             from features_detection.plotting import generate_all_plots
 
-            height_output_dir = day_output_dir / f"{phenomenon.value}{suffix}"
+            height_output_dir = day_output_dir / folder_key
             generate_all_plots(
                 da=da,
                 output_dir=height_output_dir,

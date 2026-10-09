@@ -27,16 +27,9 @@ class WeatherPhenomenon(Enum):
     HUMIDITY = "humidity"
     CLOUDS = "cloud"
     WIND = "winds"
-    FRONT = "front"
-    WARM_ADVECTION = "warmadv"
-    THETA_E_FALL = "tefall"
-    THETA_E_RISE = "terise"
 
 
 # Parameters scaled for native 95x76 grid (from old 800x915 pixel grid)
-FRONT_LEVELS_SUFF = ["_at_0850m", "_at_0700m", "_at_0500m"]
-
-
 class WeatherPhenomenonTobacParams(Enum):
     TEMPERATURE = {  # noqa: RUF012
         "min_blob_size": 200,
@@ -66,50 +59,6 @@ class WeatherPhenomenonTobacParams(Enum):
         "threshold": 0.5,
         "cmap": "viridis",
     }
-
-    FRONT = {  # noqa: RUF012
-        "levels": FRONT_LEVELS_SUFF,
-        "min_blob_size": 20,
-        "target": "maximum",
-        "smooth": 2,
-        "threshold": 0.5,
-        "cmap": "magma",
-    }
-    WARM_ADVECTION = {  # noqa: RUF012
-        "field": "tadv",
-        "levels": FRONT_LEVELS_SUFF,
-        "min_blob_size": 20,
-        "target": "maximum",
-        "smooth": 2,
-        "threshold": 0.6,
-        "cmap": "RdBu_r",
-    }
-    THETA_E_FALL = {  # noqa: RUF012
-        "field": "te_change",
-        "levels": FRONT_LEVELS_SUFF,
-        "min_blob_size": 20,
-        "target": "minimum",
-        "smooth": 2,
-        "threshold": 0.35,
-        "cmap": "RdBu_r",
-    }
-    THETA_E_RISE = {  # noqa: RUF012
-        "field": "te_change",
-        "levels": FRONT_LEVELS_SUFF,
-        "min_blob_size": 20,
-        "target": "maximum",
-        "smooth": 2,
-        "threshold": 0.65,
-        "cmap": "RdBu_r",
-    }
-
-
-FRONT_PHENOMENA = [
-    WeatherPhenomenon.FRONT,
-    WeatherPhenomenon.WARM_ADVECTION,
-    WeatherPhenomenon.THETA_E_FALL,
-    WeatherPhenomenon.THETA_E_RISE,
-]
 
 
 RAW_FEATURES_VARS = [
