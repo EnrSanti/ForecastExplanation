@@ -518,10 +518,10 @@ def fronts_by_city(
         for city in cities:
             inside = sub[np.array([city in m for m in members], dtype=bool)]
             hours = inside["timestamp"].nunique()
-            value = inside["value"].mean() if len(inside) else 0.0
+            value = inside["value"].mean() if len(inside) else float("nan")
             out[city][f"{prefix}_hours_{g}"] = int(hours)
             out[city][f"{prefix}_value_{g}"] = (
-                0.0 if pd.isna(value) else round(float(value), 2)
+                "" if pd.isna(value) else round(float(value), 2)
             )
             out[city][f"region_{prefix}_area_{g}"] = region_area
     return out
