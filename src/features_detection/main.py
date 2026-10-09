@@ -18,6 +18,7 @@ from features_detection.constants import (
     DEFAULT_V_MAX_AT_HEIGHT,
     FOLDERS_HEIGHT_SUFF,
     RAW_FEATURES_VARS,
+    TOBAC_PHENOMENA,
     WeatherPhenomenon,
     WeatherPhenomenonTobacParams,
 )
@@ -103,40 +104,18 @@ def _run_tobac_single_day(
         raise FileNotFoundError(f"Missing TOBAC input {features_nc}")
 
     with xr.open_dataset(features_nc, engine="h5netcdf") as feat_ds:
-        temp_tra_df, temp_seg_ds = _run_tobac_single_day_single_phenomenon(
-            feat_ds,
-            day_output_dir,
-            region,
-            WeatherPhenomenon.TEMPERATURE,
-            WeatherPhenomenonTobacParams.TEMPERATURE,
-            save_images,
-        )
-        hum_tra_df, hum_seg_ds = _run_tobac_single_day_single_phenomenon(
-            feat_ds,
-            day_output_dir,
-            region,
-            WeatherPhenomenon.HUMIDITY,
-            WeatherPhenomenonTobacParams.HUMIDITY,
-            save_images,
-        )
-        cld_tra_df, cld_seg_ds = _run_tobac_single_day_single_phenomenon(
-            feat_ds,
-            day_output_dir,
-            region,
-            WeatherPhenomenon.CLOUDS,
-            WeatherPhenomenonTobacParams.CLOUDS,
-            save_images,
-        )
+        results = [
+            _run_tobac_single_day_single_phenomenon(
+                feat_ds, day_output_dir, region, phenomenon, save_images
+            )
+            for phenomenon in TOBAC_PHENOMENA
+        ]
+        _create_output_features_nc(feat_ds, day_output_dir)
 
-        _create_output_features_nc(feat_ds, day_output_dir, region)
-
-    dfs = [df for df in [temp_tra_df, hum_tra_df, cld_tra_df] if not df.empty]
+    dfs = [df for df, _ in results if not df.empty]
     results_tra = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
-    del temp_tra_df, hum_tra_df, cld_tra_df
-
-    dss = [ds for ds in [temp_seg_ds, hum_seg_ds, cld_seg_ds] if ds.data_vars]
+    dss = [ds for _, ds in results if ds.data_vars]
     results_seg_ds = xr.merge(dss, compat="override", join="outer")
-    del temp_seg_ds, hum_seg_ds, cld_seg_ds
 
     xr.Dataset.from_dataframe(results_tra).to_netcdf(day_output_dir / "trajectories.nc")
     to_compressed_netcdf(results_seg_ds, day_output_dir / "segmentation.nc")
@@ -147,7 +126,6 @@ def _run_tobac_single_day_single_phenomenon(
     day_output_dir: Path,
     region: Region,
     phenomenon: WeatherPhenomenon,
-    phenomenon_params: WeatherPhenomenonTobacParams | None = None,
     save_images: bool = False,
 ) -> tuple[pd.DataFrame, xr.Dataset]:
     """
@@ -155,6 +133,7 @@ def _run_tobac_single_day_single_phenomenon(
     """
     trajectories_list = []
     segmentations_list = []
+    detection_params = WeatherPhenomenonTobacParams[phenomenon.name].value
 
     logger.debug(f"Processing {phenomenon.value} for {day_output_dir}")
 
@@ -169,15 +148,8 @@ def _run_tobac_single_day_single_phenomenon(
         da = feat_ds[folder_key].load()
         datetimes = [pd.Timestamp(t) for t in da.time.values]
 
-        referenced_data = build_referenced_data_from_xarray(
-            da, datetimes, region_bounds=region.value
-        )
+        referenced_data = build_referenced_data_from_xarray(da, datetimes)
         dxy, dt = get_grid_spacings(referenced_data)
-
-        if phenomenon_params is None:
-            phenomenon_params = WeatherPhenomenonTobacParams[phenomenon.name]
-
-        detection_params = phenomenon_params.value
 
         min_blob_size = int(detection_params.get("min_blob_size", 100))
         target = str(detection_params.get("target", "maximum"))
@@ -216,9 +188,7 @@ def _run_tobac_single_day_single_phenomenon(
 
         if x := [s[1] for s in segments_all if s[1] is not None]:
             seg_da = xr.concat(x, dim="time")
-            seg_da = seg_da.rename(f"{phenomenon.value}{suffix}")
-            segmentations_list.append(seg_da)
-            del x
+            segmentations_list.append(seg_da.rename(folder_key))
 
         if save_images:
             from features_detection.plotting import generate_all_plots
@@ -246,30 +216,18 @@ def _run_tobac_single_day_single_phenomenon(
                 ],
                 errors="ignore",
             )
-            tmp["height"] = f"{phenomenon.value}{suffix}"
+            tmp["height"] = folder_key
             tmp["height"] = tmp["height"].astype("category")
             trajectories_list.append(tmp)
 
-        del trajectories
-        del segments_all
-
     if segmentations_list:
         segmentation_ds = xr.merge(segmentations_list, compat="override", join="outer")
-        del segmentations_list
     else:
         segmentation_ds = xr.Dataset()
 
     if trajectories_list:
-        valid_dfs = [df for df in trajectories_list if not df.empty]
-        if valid_dfs:
-            trajectories_df = pd.concat(valid_dfs, ignore_index=True)
-        else:
-            trajectories_df = None
-        del trajectories_list
+        trajectories_df = pd.concat(trajectories_list, ignore_index=True)
     else:
-        trajectories_df = None
-
-    if trajectories_df is None:
         trajectories_df = pd.DataFrame(
             columns=[
                 "hdim_1",
@@ -288,34 +246,19 @@ def _run_tobac_single_day_single_phenomenon(
     return trajectories_df, segmentation_ds
 
 
-def _create_output_features_nc(
-    feat_ds: xr.Dataset, day_output_dir: Path, region: Region
-) -> None:
-    output_features_nc = day_output_dir / "features.nc"
-
-    tmp_ds = xr.Dataset()
-    vars_to_extract = [
+def _create_output_features_nc(feat_ds: xr.Dataset, day_output_dir: Path) -> None:
+    """Raw fields for reasoning (wind, raw_*, cloud cover in %) with dxy."""
+    raw_vars = [
         v
         for v in feat_ds.data_vars
         if any(prefix in str(v) for prefix in RAW_FEATURES_VARS)
     ]
+    out = feat_ds[raw_vars].load()
+    for v in feat_ds.data_vars:
+        if str(v).startswith("cloud_at_"):
+            out[f"raw_{v}"] = feat_ds[v].load() * 100
 
-    if vars_to_extract:
-        extracted_ds = feat_ds[vars_to_extract].load()
-        for v in feat_ds.data_vars:
-            if str(v).startswith("cloud_at_"):
-                extracted_ds[f"raw_{v}"] = feat_ds[v].load() * 100
-
-        da = feat_ds[vars_to_extract[0]]
-        datetimes = [pd.Timestamp(t) for t in da.time.values]
-        ref_data = build_referenced_data_from_xarray(
-            da, datetimes, region_bounds=region.value
-        )
-        dxy, _ = get_grid_spacings(ref_data)
-        extracted_ds.attrs["dxy"] = float(dxy)
-
-        tmp_ds = xr.merge([tmp_ds, extracted_ds], compat="override", join="outer")
-        tmp_ds.attrs["dxy"] = float(dxy)
-
-    if tmp_ds.data_vars:
-        to_compressed_netcdf(tmp_ds, output_features_nc)
+    da = feat_ds[raw_vars[0]]
+    ref_data = build_referenced_data_from_xarray(da, list(da.time.values))
+    out.attrs["dxy"] = get_grid_spacings(ref_data)[0]
+    to_compressed_netcdf(out, day_output_dir / "features.nc")

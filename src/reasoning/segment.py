@@ -19,16 +19,10 @@ def detect_winds(
 ) -> None:
     """
     writes a txt table with:
-    timestamp, height, lat, lon, wind_direction, wind_speed
+    timestamp, height, city, wind_direction, wind_speed
 
-    lat and lon are of the city
-    wind_speed and wind_direction are means of a {city_radius}km radius around the city
-    Args:
-        data: xarray.Dataset
-        cities: list of (name, lat, lon)
-        heights: list of heights to consider
-        output_path: path to the output file
-        city_radius: radius in km to consider around the city
+    wind_speed is the mean and wind_direction the direction of the mean wind
+    vector within {city_radius}km of the city
     """
     lats = data.latitude.values
     lons = data.longitude.values
@@ -105,22 +99,14 @@ def detect_clouds(
     city is the city that is covered
     %covered is the % of the {city_radius}km radius around the city that is covered by the cloud
     """
-    if "dxy" not in feat_data.attrs:
-        logger.warning("Missing dxy attribute, falling back to 5500m")
-        dxy_m = 5500.0
-    else:
-        dxy_m = float(feat_data.attrs["dxy"])
-    area_per_pixel_km2 = (dxy_m / 1000.0) ** 2
+    area_per_pixel_km2 = (float(feat_data.attrs["dxy"]) / 1000.0) ** 2
 
     lats = seg_data.latitude.values
     lons = seg_data.longitude.values
 
-    # Pre-calculate city_radius radius mask for each city
     city_masks = {}
-    for city in cities:
-        city_name, city_lat, city_lon = city
-        dist = haversine(city_lat, city_lon, lats, lons)
-        mask = dist <= city_radius
+    for city_name, city_lat, city_lon in cities:
+        mask = haversine(city_lat, city_lon, lats, lons) <= city_radius
         if np.any(mask):
             city_masks[city_name] = mask
 
@@ -150,7 +136,6 @@ def detect_clouds(
                 pixel_count = np.sum(cloud_mask)
                 tot_area = pixel_count * area_per_pixel_km2
 
-                # Check intersection with each city's 3km mask
                 for city_name, city_mask in city_masks.items():
                     intersection_pixels = np.sum(cloud_mask & city_mask)
                     if intersection_pixels > 0:
@@ -170,14 +155,6 @@ def detect_clouds(
                             }
                         )
 
-    df = pd.DataFrame(records)
-    if not df.empty:
-        # Ensure correct column order
-        cols = ["timestamp", "height", "cloud_id", "tot area", "city", "%covered"]
-        df = df[cols]
-    else:
-        df = pd.DataFrame(
-            columns=["timestamp", "height", "cloud_id", "tot area", "city", "%covered"]
-        )
-
+    columns = ["timestamp", "height", "cloud_id", "tot area", "city", "%covered"]
+    df = pd.DataFrame(records, columns=columns)
     df.to_csv(output_path, sep="\t", index=False, float_format="%.2f")

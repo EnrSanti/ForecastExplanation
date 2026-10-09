@@ -15,7 +15,6 @@ from . import (
     CLUSTERED_DATA_DIR,
     CUT_DATA_DIR,
     DISCRETE_DATA_DIR,
-    FOLDERS,
     RAW_DATA_DIR,
     Region,
 )
@@ -48,8 +47,7 @@ def extract_day_worker(
     region: Region,
     base_path: Path,
     clustering: bool = True,
-    force_redo: bool = False,
-    just_cut: bool = False,
+    force: bool = False,
     create_images: bool = False,
 ) -> None:
     logger.debug(f"Extracting data for {target_date.strftime('%Y-%m-%d')}")
@@ -57,17 +55,16 @@ def extract_day_worker(
     cut_data_dir = base_path / CUT_DATA_DIR / target_date.strftime("%Y-%m-%d")
     discrete_data_dir = base_path / DISCRETE_DATA_DIR / target_date.strftime("%Y-%m-%d")
     features_nc_path = discrete_data_dir / "features.nc"
+    if force:
+        shutil.rmtree(discrete_data_dir, ignore_errors=True)
+        shutil.rmtree(clustered_dir, ignore_errors=True)
 
     starting_step = find_starting_step(clustered_dir, cut_data_dir, discrete_data_dir)
-    nc_file = ""
 
-    if starting_step in [0, 2] or force_redo:
+    if starting_step in [0, 2]:
         nc_file = cut_path(target_date, region, base_path)
         if not nc_file.exists():
             raise FileNotFoundError(f"Missing cut file: {nc_file}")
-        starting_step = 2
-
-    if (starting_step == 2 or force_redo) and not just_cut:
         discrete_data_dir.mkdir(parents=True, exist_ok=True)
         feature_data = build_feature_dataarrays(nc_file)
         to_compressed_netcdf(feature_data, features_nc_path)
@@ -75,7 +72,7 @@ def extract_day_worker(
             save_tobac_input_images(feature_data, discrete_data_dir)
         starting_step = 3
 
-    if ((starting_step == 3 or force_redo) and clustering) and not just_cut:
+    if starting_step == 3 and clustering:
         clustered_dir.mkdir(parents=True, exist_ok=True)
         with xr.open_dataset(features_nc_path, engine="h5netcdf") as features_ds:
             feature_data = {str(name): da for name, da in features_ds.data_vars.items()}
@@ -112,59 +109,26 @@ def clean_artifacts(dates: list[date], output_path: Path, targets: list[str]) ->
 
 def save_tobac_input_images(feature_data: xr.Dataset, output_dir: Path) -> None:
     """
-    Renders each (variable, level, time) slice in feature_data to a raw
-    grayscale PNG — written directly from normalized pixel values, not
-    through a matplotlib colormap, since downstream code (convert_frames_to_
-    grayscale) just converts back to grayscale anyway; skipping the colour
-    round-trip avoids the precision loss that introduces.
-
-    Layout matches what the rest of the pipeline expects to read back in
-    (FOLDERS_HEIGHT_SUFF, extract_keys/extract_times):
-        output_dir/<variable><level_suffix>/<variable>_<YYYYMMDD_HHMM>.png
-
-    Assumes feature_data has dims (time, level, y, x) with level values
-    matching LEVEL_TO_SUFFIX's keys — adjust the dim name / mapping if
-    build_feature_dataarrays uses something different.
-
-    Normalization is per (variable, level), computed across all of that
-    variable+level's time steps for the day — not per individual frame — so
-    a flat/no-signal frame comes out uniformly dark against the day's real
-    range instead of being stretched to fill [0, 255] on its own and looking
-    spuriously bright (the cause of the earlier "whole image reads as one
-    cloud" bug).
+    One grayscale PNG per (variable, time):
+        output_dir/<variable>/<variable>_<YYYYMMDD_HHMM>.png
+    scaled over the whole day of the variable, so a flat frame stays dark
+    instead of being stretched to [0, 255].
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    for var_name in feature_data.data_vars:
-        da = feature_data[var_name]
+    for var_name, da in feature_data.data_vars.items():
+        var_dir = output_dir / str(var_name)
+        var_dir.mkdir(parents=True, exist_ok=True)
 
-        has_level = "level" in da.dims
-        levels = da["level"].values if has_level else [None]
+        vmin = float(da.min())
+        vmax = float(da.max())
+        vrange = vmax - vmin if vmax > vmin else 1.0
 
-        for level in levels:
-            level_da = da.sel(level=level) if has_level else da
-            suffix = (
-                FOLDERS.get(int(level), f"_at_{level}") if level is not None else ""
-            )
-            var_dir = output_dir / f"{var_name}{suffix}"
-            var_dir.mkdir(parents=True, exist_ok=True)
-
-            vmin = float(level_da.min())
-            vmax = float(level_da.max())
-            vrange = (
-                vmax - vmin if vmax > vmin else 1.0
-            )  # guard against a fully flat day
-
-            for t in range(level_da.sizes["time"]):
-                frame = level_da.isel(time=t)
-                ts = pd.to_datetime(frame["time"].values)
-
-                norm = (
-                    ((frame.values - vmin) / vrange * 255).clip(0, 255).astype(np.uint8)
-                )
-
-                fname = f"{var_name}_{ts.strftime('%Y%m%d_%H%M')}.png"
-                cv2.imwrite(str(var_dir / fname), norm)
+        for t in range(da.sizes["time"]):
+            frame = da.isel(time=t)
+            ts = pd.to_datetime(frame["time"].values)
+            norm = ((frame.values - vmin) / vrange * 255).clip(0, 255).astype(np.uint8)
+            cv2.imwrite(str(var_dir / f"{var_name}_{ts:%Y%m%d_%H%M}.png"), norm)
 
     logger.info(f"Saved TOBAC input images to '{output_dir}'.")
 
@@ -174,8 +138,7 @@ def extract_day(
     region: Region,
     base_path: Path,
     clustering: bool = True,
-    force_redo: bool = False,
-    just_cut: bool = False,
+    force: bool = False,
     create_images: bool = False,
     workers: int = 12,
 ) -> list[date]:
@@ -190,8 +153,7 @@ def extract_day(
                 region,
                 base_path,
                 clustering,
-                force_redo,
-                just_cut,
+                force,
                 create_images,
             ): target_date
             for target_date in dates
@@ -211,7 +173,7 @@ def extract_day(
     return sorted(ok)
 
 
-def CERRA_dowload(
+def cerra_download(
     dates: list[date],
     region: Region,
     output_path: Path,
@@ -244,7 +206,8 @@ def extract(
     region: Region,
     output_path: Path,
     clustering: bool = True,
-    force_redo: bool = False,
+    force_cut: bool = False,
+    force_extract: bool = False,
     just_cut: bool = False,
     create_images: bool = False,
     workers: int = 12,
@@ -259,7 +222,7 @@ def extract(
         (output_path / "legends").mkdir(parents=True, exist_ok=True)
         create_one_time_images(region, output_path / "legends")
 
-    cut_ok = CERRA_dowload(dates, region, output_path, force_redo, delete_grib)
+    cut_ok = cerra_download(dates, region, output_path, force_cut, delete_grib)
 
     if just_cut:
         return cut_ok
@@ -269,8 +232,7 @@ def extract(
         region,
         output_path,
         clustering,
-        force_redo,
-        just_cut,
+        force_extract,
         create_images=create_images,
         workers=workers,
     )

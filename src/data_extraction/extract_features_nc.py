@@ -2,7 +2,6 @@ import logging
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -17,85 +16,36 @@ from . import FOLDERS, FRONT_LEVELS, LEVELS, LimitValues, Region
 
 logger = logging.getLogger(__name__)
 
-REQUIRED_VARIABLES = ["ccl", "t", "u", "v", "r"]
-
-FrameCallback = Callable[[Any, str, str], None]
-CsvCallback = Callable[[str, str, str], None]
-
 
 @dataclass(frozen=True)
 class FeatureSpec:
-    var: str | tuple[str, ...]
-    cmap: str
+    var: str
+    # None: raw values only (raw_<prefix>_at_<level>)
     limits: dict[int, tuple[int | float, int | float]] | None
     prefix: str
     min_range: dict[int, float] | None = None
     change_hours: int | None = None
     levels: list[int] = field(kw_only=True)
 
-    @property
-    def folder_key(self) -> str:
-        return self.prefix
-
 
 FEATURE_SPECS: dict[str, FeatureSpec] = {
-    "cloud": FeatureSpec(
-        "ccl",
-        "viridis",
-        LimitValues.CLOUD,
-        "cloud",
-        levels=LEVELS,
-    ),
+    "cloud": FeatureSpec("ccl", LimitValues.CLOUD, "cloud", levels=LEVELS),
     "temp": FeatureSpec(
         "t",
-        "OrRd",
         LimitValues.TEMP,
         "temp",
         min_range=LimitValues.TEMP_MIN_RANGE,
         levels=LEVELS,
     ),
-    "humidity": FeatureSpec(
-        ("r", "rhum"),
-        "YlGnBu",
-        LimitValues.HUMIDITY,
-        "humidity",
-        levels=LEVELS,
-    ),
-    "wind": FeatureSpec(
-        "wind_speed",
-        "viridis",
-        LimitValues.WIND_SPEED,
-        "wind",
-        levels=LEVELS,
-    ),
+    "humidity": FeatureSpec("r", LimitValues.HUMIDITY, "humidity", levels=LEVELS),
+    "wind": FeatureSpec("wind_speed", LimitValues.WIND_SPEED, "wind", levels=LEVELS),
     "wind_direction": FeatureSpec(
-        "wind_direction",
-        "viridis",
-        LimitValues.WIND_SPEED,
-        "wind_direction",
-        levels=LEVELS,
+        "wind_direction", LimitValues.WIND_SPEED, "wind_direction", levels=LEVELS
     ),
-    "front": FeatureSpec(
-        "front",
-        "magma",
-        None,
-        "front",
-        levels=FRONT_LEVELS,
-    ),
-    "tadv": FeatureSpec(
-        "tadv",
-        "RdBu_r",
-        None,
-        "tadv",
-        levels=FRONT_LEVELS,
-    ),
+    "front": FeatureSpec("front", None, "front", levels=FRONT_LEVELS),
+    "tadv": FeatureSpec("tadv", None, "tadv", levels=FRONT_LEVELS),
     "te_change": FeatureSpec(
-        "theta_e",
-        "RdBu_r",
-        None,
-        "te_change",
-        change_hours=3,
-        levels=FRONT_LEVELS,
+        "theta_e", None, "te_change", change_hours=3, levels=FRONT_LEVELS
     ),
 }
 
@@ -124,14 +74,6 @@ LEGEND_SPECS = {
         "label": "Relative humidity [%]",
     },
 }
-
-
-def _resolve_var(ds: xr.Dataset, var: str | tuple[str, ...]) -> xr.DataArray:
-    names = (var,) if isinstance(var, str) else var
-    for name in names:
-        if name in ds:
-            return ds[name]
-    raise KeyError(names)
 
 
 def _with_wind_speed(ds: xr.Dataset) -> xr.Dataset:
@@ -166,7 +108,7 @@ def _with_front_fields(ds: xr.Dataset) -> xr.Dataset:
     """Adds theta_e (K), front = |grad theta_e| (K/100 km) and
     tadv = temperature advection (K/h)."""
     t = ds["t"].transpose(..., "y", "x")
-    rh = _resolve_var(ds, ("r", "rhum")).transpose(*t.dims)
+    rh = ds["r"].transpose(*t.dims)
     p = ds["isobaricInhPa"].broadcast_like(t).transpose(*t.dims)
     tc = t - 273.15
     e = rh.clip(1, 100) / 100 * 6.112 * np.exp(17.67 * tc / (tc + 243.5))
@@ -262,15 +204,19 @@ def create_legends(output_base: Path) -> None:
             plt.close(fig)
 
 
-def build_feature_dataarrays(
-    input_path: Path,
-) -> xr.Dataset:
-    """
-    Extract per-variable, per-level, time-series DataArrays from the NC file.
+def _drop_coords(da: xr.DataArray) -> xr.DataArray:
+    return da.drop_vars(
+        ["valid_time", "step", "isobaricInhPa", "number", "surface"],
+        errors="ignore",
+    )
 
-    Returns a dict keyed by folder name (e.g. "cloud_at_100m") with values
-    being xr.DataArray of shape (time, y, x) with normalized [0, 1] values
-    ready for tobac consumption.
+
+def build_feature_dataarrays(input_path: Path) -> xr.Dataset:
+    """
+    Per-variable, per-level (time, y, x) fields from the cut NC file, named
+    <prefix>_at_<level>m: normalized to [0, 1] for tobac (wind in m/s and
+    degrees), plus raw_<prefix>_at_<level>m physical values for RAW_PREFIXES
+    and for the specs without limits.
     """
     with xr.open_dataset(input_path, engine="h5netcdf", decode_cf=False) as ds:
         if "dtype" in ds["step"].attrs:
@@ -281,11 +227,9 @@ def build_feature_dataarrays(
 
         result = {}
         for spec in FEATURE_SPECS.values():
-            field = _resolve_var(ds, spec.var)
-            folders = {k: spec.folder_key + v for k, v in FOLDERS.items()}
-
             for lvl in spec.levels:
-                level_field = field.sel(isobaricInhPa=lvl)
+                level_field = ds[spec.var].sel(isobaricInhPa=lvl)
+                name = spec.prefix + FOLDERS[lvl]
 
                 frames = []
                 times = []
@@ -310,12 +254,11 @@ def build_feature_dataarrays(
                     change = stacked - stacked.shift(time=spec.change_hours)
                     stacked = change.fillna(0.0)
 
+                if spec.limits is None or spec.prefix in RAW_PREFIXES:
+                    result[f"raw_{name}"] = _drop_coords(stacked)
                 if spec.limits is None:
-                    result[f"raw_{folders[lvl]}"] = stacked.drop_vars(
-                        ["valid_time", "step", "isobaricInhPa", "number", "surface"],
-                        errors="ignore",
-                    )
                     continue
+
                 if "wind" in spec.prefix:
                     normalized = stacked.fillna(0.0)
                 elif spec.min_range is not None:
@@ -325,23 +268,8 @@ def build_feature_dataarrays(
                     normalized = ((stacked - vmin) / vrange).fillna(0.0)
                 else:
                     vmin, vmax = spec.limits[lvl]
-                    normalized = (stacked - vmin) / (vmax - vmin)
-                    normalized = normalized.clip(0, 1)
-
+                    normalized = ((stacked - vmin) / (vmax - vmin)).clip(0, 1)
                     normalized = normalized.fillna(0.0)
-
-                normalized = normalized.drop_vars(
-                    ["valid_time", "step", "isobaricInhPa", "number", "surface"],
-                    errors="ignore",
-                )
-
-                result[folders[lvl]] = normalized
-
-                if spec.prefix in RAW_PREFIXES:
-                    raw = stacked.drop_vars(
-                        ["valid_time", "step", "isobaricInhPa", "number", "surface"],
-                        errors="ignore",
-                    )
-                    result[f"raw_{folders[lvl]}"] = raw
+                result[name] = _drop_coords(normalized)
 
     return xr.Dataset(result)

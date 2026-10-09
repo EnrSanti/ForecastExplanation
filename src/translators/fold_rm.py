@@ -13,8 +13,6 @@ from region import Region
 
 from .translator import BaseTranslator
 
-# logger = logging.getLogger("ForecastExplanation")
-
 _PIOGGIA_ENUM = {
     None: 0,
     False: 0,
@@ -36,12 +34,7 @@ _CLOUD_ENUM = {
     "sole, nebbia, nubi basse": 5,
 }
 
-SUM_CLOUDS = True
-
-
-# --- Grouping definitions (fixed order, so every day's CSV has the same
-# column set regardless of which groups actually had data that day — same
-# rationale as the earlier missing-hour backfill). ---
+# fixed order, so every day's CSV has the same columns
 LEVEL_GROUP_MAP = {
     "1000": "low",
     "0925": "low",
@@ -56,17 +49,6 @@ TIME_GROUPS_ORDER = ["early_morning", "morning", "afternoon", "evening"]
 
 LABEL_COLUMNS = ["prev_pioggia", "prev_cloud"]
 DATE_COLUMN = "date"
-
-CARDINAL_TO_DEG = {
-    "N": 0,
-    "NE": 45,
-    "E": 90,
-    "SE": 135,
-    "S": 180,
-    "SW": 225,
-    "W": 270,
-    "NW": 315,
-}
 
 
 def _slugify_city(city: str) -> str:
@@ -86,8 +68,7 @@ def _lookup_enum(enum: dict, value, city: str, field: str) -> int:
 
 
 def _time_label(timestamp) -> str:
-    # return pd.to_datetime(timestamp).strftime("%H%M")
-    # this saves around 6 minutes out of 7 for a one year run
+    # string slicing: much faster than pd.to_datetime
     return timestamp[11:13] + timestamp[14:16]
 
 
@@ -140,8 +121,20 @@ def _pivot(
     return lookup, times, heights
 
 
-def _column_group(prefix: str, times: list[str], heights: list[str]) -> list[str]:
-    return [f"{prefix}_{t}_{h}" for t in times for h in heights]
+def _column_group(prefix: str) -> list[str]:
+    return [f"{prefix}_{t}_{h}" for t in TIME_GROUPS_ORDER for h in HEIGHT_GROUPS_ORDER]
+
+
+def _grouped_cells(values: dict, city: str, default) -> list:
+    return [
+        values.get((city, t, h), default)
+        for t in TIME_GROUPS_ORDER
+        for h in HEIGHT_GROUPS_ORDER
+    ]
+
+
+def _is_number(value) -> bool:
+    return isinstance(value, (int, float)) and not pd.isna(value)
 
 
 def get_compass_direction(degrees: float) -> str | float:
@@ -183,7 +176,7 @@ def average_by_height_and_time(
 
     result = {}
     for key, vals in buckets.items():
-        nums = [v for v in vals if isinstance(v, (int, float)) and not pd.isna(v)]
+        nums = [v for v in vals if _is_number(v)]
         result[key] = round(sum(nums) / len(nums), round_ndigits) if nums else None
 
     return result
@@ -207,8 +200,7 @@ def average_by_height_and_time_vector(
     averaged vector — not two independent scalar/circular means.
 
     Returns a dict keyed the same way as average_by_height_and_time,
-    with each value a dict: {"speed": float, "direction": str} (or
-    None if there's no valid data for that group).
+    with each value a dict: {"speed": float, "direction": str}.
     """
     buckets: dict[tuple, list] = {}
     for city in cities:
@@ -219,16 +211,7 @@ def average_by_height_and_time_vector(
                 key = (city, t, h)
                 speed = speed_lookup.get(key)
                 direction = dir_lookup.get(key)
-                if (
-                    speed is None
-                    or speed == ""
-                    or direction is None
-                    or direction == ""
-                    or not isinstance(speed, (int, float))
-                    or pd.isna(speed)
-                    or not isinstance(direction, (int, float))
-                    or pd.isna(direction)
-                ):
+                if not (_is_number(speed) and _is_number(direction)):
                     continue
                 buckets.setdefault((city, time_group, height_group), []).append(
                     (speed, direction)
@@ -238,10 +221,6 @@ def average_by_height_and_time_vector(
     for key, vals in buckets.items():
         u = [speed * math.sin(math.radians(d)) for speed, d in vals]
         v = [speed * math.cos(math.radians(d)) for speed, d in vals]
-        if not u:
-            result[key] = None
-            continue
-
         u_mean = sum(u) / len(u)
         v_mean = sum(v) / len(v)
 
@@ -267,7 +246,7 @@ def total_cloud_by_time(
     for city in cities:
         for t in times:
             vals = [lookup.get((city, t, h)) for h in heights]
-            vals = [v for v in vals if v is not None and not pd.isna(v)]
+            vals = [v for v in vals if _is_number(v)]
             if not vals:
                 continue
             buckets[(city, _hour_group(t))].append(max(vals))
@@ -342,7 +321,7 @@ def daily_predictors(
         out = {}
         for h in range(24):
             v = lookup.get((city, f"{h:02d}00", level))
-            if isinstance(v, (int, float)) and not pd.isna(v):
+            if _is_number(v):
                 out[h] = float(v)
         return out
 
@@ -572,13 +551,23 @@ def threshold_by_city(
     return out
 
 
+FRONT_COLUMNS = [
+    c
+    for p, groups in (FRONT_FILES | THRESHOLD_FILES).values()
+    for c in _front_columns(p, groups)
+]
+
+
 def _categorical_columns() -> list[str]:
-    return ["location"] + [
-        col
-        for col in _column_group(
-            "wind_direction", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
-        )
-    ]
+    return ["location", *_column_group("wind_direction")]
+
+
+def _city_table(path: Path, column: str, cities: list) -> pd.DataFrame:
+    """A lat/lon-keyed reasoning table with the city name attached."""
+    return _attach_city(
+        _read_tsv_or_empty(path, ["timestamp", "height", "lat", "lon", column]),
+        cities,
+    )
 
 
 class FoldRmTranslator(BaseTranslator):
@@ -618,58 +607,27 @@ class FoldRmTranslator(BaseTranslator):
             reasoning_dir / "winds.txt",
             ["timestamp", "height", "city", "wind_direction", "wind_speed"],
         )
-        cloud_df = pd.read_csv(reasoning_dir / "cloud.txt", sep="\t")
-        heat_df = _attach_city(
-            _read_tsv_or_empty(
-                reasoning_dir / "heat.txt",
-                ["timestamp", "height", "lat", "lon", "temperature"],
-            ),
-            city_coords,
+        cloud_df = pd.read_csv(reasoning_dir / "cloud.txt", sep="	")
+        heat_df = _city_table(reasoning_dir / "heat.txt", "temperature", city_coords)
+        humidity_df = _city_table(
+            reasoning_dir / "humidity.txt", "humidity", city_coords
         )
-        humidity_df = _attach_city(
-            _read_tsv_or_empty(
-                reasoning_dir / "humidity.txt",
-                ["timestamp", "height", "lat", "lon", "humidity"],
-            ),
-            city_coords,
-        )
-
-        cloud_cover_df = _attach_city(
-            _read_tsv_or_empty(
-                reasoning_dir / "cloud_cover.txt",
-                ["timestamp", "height", "lat", "lon", "cloud"],
-            ),
-            city_coords,
+        cloud_cover_df = _city_table(
+            reasoning_dir / "cloud_cover.txt", "cloud", city_coords
         )
 
         fronts: dict[str, dict] = {city: {} for city in cities}
-        for file_name, (prefix, groups) in FRONT_FILES.items():
-            fronts_df = _read_tsv_or_empty(
-                reasoning_dir / file_name,
-                ["timestamp", "height", "front_id", "area", "cities"],
-            )
-            for city, columns in fronts_by_city(
-                fronts_df, prefix, groups, cities
-            ).items():
-                fronts[city].update(columns)
-        for file_name, (prefix, groups) in THRESHOLD_FILES.items():
-            threshold_df = _read_tsv_or_empty(
-                reasoning_dir / file_name,
-                ["timestamp", "height", "city", "value", "past", "area"],
-            )
-            for city, columns in threshold_by_city(
-                threshold_df, prefix, groups, cities
-            ).items():
-                fronts[city].update(columns)
+        for files, by_city, columns in (
+            (FRONT_FILES, fronts_by_city, ["timestamp", "height", "area", "cities"]),
+            (THRESHOLD_FILES, threshold_by_city, ["timestamp", "height", "city"]),
+        ):
+            for file_name, (prefix, groups) in files.items():
+                df = _read_tsv_or_empty(reasoning_dir / file_name, columns)
+                for city, values in by_city(df, prefix, groups, cities).items():
+                    fronts[city].update(values)
 
-        if SUM_CLOUDS:
-            cloud_df = (
-                cloud_df.groupby(["timestamp", "height", "city"]).sum().reset_index()
-            )
-        else:
-            cloud_df = cloud_df.sort_values("%covered").drop_duplicates(
-                ["timestamp", "height", "city"], keep="last"
-            )
+        # several clouds over a city in the same hour add up
+        cloud_df = cloud_df.groupby(["timestamp", "height", "city"]).sum().reset_index()
 
         wind_dir, _, _ = _pivot(winds_df, "wind_direction")
         wind_speed, wind_speed_t, wind_speed_h = _pivot(
@@ -679,52 +637,55 @@ class FoldRmTranslator(BaseTranslator):
         coverage, cloud_t, cloud_h = _pivot(cloud_df, "%covered")
         size, _, _ = _pivot(cloud_df, "tot area")
 
-        # cloud_df only has rows for hours where TOBAC actually detected a
-        # cloud, so cloud_t can be missing whole hours — and a city with
-        # zero detections all day wouldn't appear in cloud_df at all. Force
-        # the full 24-hour range and explicitly backfill coverage/size with
-        # 0 for every (city, hour, height) combo that wasn't detected, so
-        # every day's CSV has the same, stable column set regardless of
-        # what TOBAC actually found.
+        # cloud.txt only has the hours where tobac found a cloud: hours with
+        # no cloud anywhere count as 0 coverage / size
         all_hours = [f"{h:02d}00" for h in range(24)]
-        missing_hours = sorted(set(all_hours) - set(cloud_t))
-
-        month = target_date.month
-
-        if missing_hours:
+        for missing_hour in sorted(set(all_hours) - set(cloud_t)):
             for city in cities:
-                for missing_hour in missing_hours:
-                    for h in cloud_h:
-                        coverage.setdefault((city, missing_hour, h), 0)
-                        size.setdefault((city, missing_hour, h), 0)
-
+                for h in cloud_h:
+                    coverage.setdefault((city, missing_hour, h), 0)
+                    size.setdefault((city, missing_hour, h), 0)
         cloud_t = all_hours
 
         temperature, temp_t, temp_h = _pivot(heat_df, "temperature", round_ndigits=1)
         humidity, humidity_t, humidity_h = _pivot(
             humidity_df, "humidity", round_ndigits=1
         )
-
         cloud_cover, cloud_cover_t, cloud_cover_h = _pivot(
             cloud_cover_df, "cloud", round_ndigits=1
         )
 
-        # --- group hours -> early_morning/morning/afternoon/evening and
-        # levels -> low/medium/high, averaging within each group ---
         wind_grouped = average_by_height_and_time_vector(
             wind_speed, wind_dir, cities, wind_speed_t, wind_speed_h
         )
-
-        coverage_grouped = average_by_height_and_time(
-            coverage, cities, cloud_t, cloud_h
-        )
-        size_grouped = average_by_height_and_time(size, cities, cloud_t, cloud_h)
-        temperature_grouped = average_by_height_and_time(
-            temperature, cities, temp_t, temp_h
-        )
-        humidity_grouped = average_by_height_and_time(
-            humidity, cities, humidity_t, humidity_h
-        )
+        grouped = [
+            (
+                "wind_direction",
+                {k: v["direction"] for k, v in wind_grouped.items()},
+                "",
+            ),
+            ("wind_speed", {k: v["speed"] for k, v in wind_grouped.items()}, ""),
+            (
+                "coverage_clouds",
+                average_by_height_and_time(coverage, cities, cloud_t, cloud_h),
+                0,
+            ),
+            (
+                "size_cloud",
+                average_by_height_and_time(size, cities, cloud_t, cloud_h),
+                0,
+            ),
+            (
+                "temperature",
+                average_by_height_and_time(temperature, cities, temp_t, temp_h),
+                "",
+            ),
+            (
+                "humidity",
+                average_by_height_and_time(humidity, cities, humidity_t, humidity_h),
+                "",
+            ),
+        ]
         cloud_cover_grouped = average_by_height_and_time(
             cloud_cover, cities, cloud_cover_t, cloud_cover_h
         )
@@ -734,25 +695,14 @@ class FoldRmTranslator(BaseTranslator):
         daily, region_daily = daily_predictors(
             humidity, temperature, wind_speed, wind_dir, cloud_cover, cities
         )
-        header = ["prev_pioggia", "prev_cloud", "month", "location"]
+        total_groups = [*TIME_GROUPS_ORDER, "day"]
 
-        header += _column_group(
-            "wind_direction", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
-        )
-        header += _column_group("wind_speed", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
-        header += _column_group(
-            "coverage_clouds", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER
-        )
-        header += _column_group("size_cloud", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
-        header += _column_group("temperature", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
-        header += _column_group("humidity", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
-        header += [
-            c
-            for p, groups in (FRONT_FILES | THRESHOLD_FILES).values()
-            for c in _front_columns(p, groups)
-        ]
-        header += _column_group("cloud_cover", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
-        header += [f"cloud_total_{tg}" for tg in [*TIME_GROUPS_ORDER, "day"]]
+        header = [*LABEL_COLUMNS, "month", "location"]
+        for name, _, _ in grouped:
+            header += _column_group(name)
+        header += FRONT_COLUMNS
+        header += _column_group("cloud_cover")
+        header += [f"cloud_total_{tg}" for tg in total_groups]
         header += DAILY_COLUMNS + REGION_COLUMNS
 
         rows = []
@@ -764,52 +714,12 @@ class FoldRmTranslator(BaseTranslator):
             cloud = _lookup_enum(
                 _CLOUD_ENUM, gt_entry.get("CIELO_DESCRIZIONE"), city, "CIELO"
             )
-            slug = _slugify_city(city)
-            row = [f"{pioggia}", f"{cloud}", month, slug]
-
-            row += [
-                wind_grouped.get((city, tg, hg), {}).get("direction", "")
-                for tg in TIME_GROUPS_ORDER
-                for hg in HEIGHT_GROUPS_ORDER
-            ]
-            row += [
-                wind_grouped.get((city, tg, hg), {}).get("speed", "")
-                for tg in TIME_GROUPS_ORDER
-                for hg in HEIGHT_GROUPS_ORDER
-            ]
-            row += [
-                coverage_grouped.get((city, tg, hg), 0)
-                for tg in TIME_GROUPS_ORDER
-                for hg in HEIGHT_GROUPS_ORDER
-            ]
-            row += [
-                size_grouped.get((city, tg, hg), 0)
-                for tg in TIME_GROUPS_ORDER
-                for hg in HEIGHT_GROUPS_ORDER
-            ]
-            row += [
-                temperature_grouped.get((city, tg, hg), "")
-                for tg in TIME_GROUPS_ORDER
-                for hg in HEIGHT_GROUPS_ORDER
-            ]
-            row += [
-                humidity_grouped.get((city, tg, hg), "")
-                for tg in TIME_GROUPS_ORDER
-                for hg in HEIGHT_GROUPS_ORDER
-            ]
-            row += [
-                fronts[city][c]
-                for p, groups in (FRONT_FILES | THRESHOLD_FILES).values()
-                for c in _front_columns(p, groups)
-            ]
-            row += [
-                cloud_cover_grouped.get((city, tg, hg), "")
-                for tg in TIME_GROUPS_ORDER
-                for hg in HEIGHT_GROUPS_ORDER
-            ]
-            row += [
-                cloud_total.get((city, tg), "") for tg in [*TIME_GROUPS_ORDER, "day"]
-            ]
+            row = [f"{pioggia}", f"{cloud}", target_date.month, _slugify_city(city)]
+            for _, values, default in grouped:
+                row += _grouped_cells(values, city, default)
+            row += [fronts[city][c] for c in FRONT_COLUMNS]
+            row += _grouped_cells(cloud_cover_grouped, city, "")
+            row += [cloud_total.get((city, tg), "") for tg in total_groups]
             row += [daily[city][c] for c in DAILY_COLUMNS]
             row += [region_daily[c] for c in REGION_COLUMNS]
             rows.append(round_features(header, row))

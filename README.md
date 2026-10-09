@@ -44,7 +44,8 @@ Runs are configured via `config.yaml`. Each top-level key names a run, with the 
 | `clean`         | `true` \| `false`                        | Remove downloaded `.GRIB` files after processing                                        |
 | `clustering`    | `true` \| `false`                        | Run TOBAC on clustered images instead of raw ones                                       |
 | `debug`         | `true` \| `false`                        | Enable debug logging                                                                    |
-| `just_cut`      | `true` \| `false`                        | Only download and cut the GRIB files, skipping feature extraction/clustering            |
+| `force`         | stage name                               | Recompute this stage and the following ones (`extraction`: rebuild the feature maps)    |
+| `stop_after`    | stage name                               | Last stage to run (`data`: only download and cut the GRIB files)                        |
 | `save_images`   | `true` \| `false`                        | Save TOBAC's input/output images, for visually checking detection quality               |
 | `workers`       | integer (default `12`)                   | Parallel processes used by data extraction, TOBAC, reasoning and translation            |
 

@@ -12,7 +12,7 @@ import ground_truth
 import learning
 import reasoning
 import translators
-from config import CUT, RunConfig, Stage, load_runs
+from config import RunConfig, Stage, load_runs
 
 logging.basicConfig(
     level=logging.ERROR,
@@ -38,8 +38,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--stop-after",
-        choices=[CUT, *stages],
-        help="Last stage to run ('cut' = only download and cut the GRIB files)",
+        choices=stages,
+        help="Last stage to run",
     )
     parser.add_argument(
         "--clean",
@@ -85,8 +85,9 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
         region,
         output_path=output_path,
         clustering=cfg.clustering,
-        force_redo=cfg.forces(Stage.DATA),
-        just_cut=cfg.stop_after == CUT,
+        force_cut=cfg.forces(Stage.DATA),
+        force_extract=cfg.forces(Stage.EXTRACTION),
+        just_cut=not cfg.runs(Stage.EXTRACTION),
         create_images=cfg.save_images,
         workers=cfg.workers,
         delete_grib="grib" in (cfg.clean or []),
