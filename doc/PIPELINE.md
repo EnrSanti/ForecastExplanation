@@ -43,6 +43,12 @@ outputs.
 | `raw_humidity_at_{h}`   | Un-normalized relative humidity (%)                 |
 | `wind_at_{h}`           | Wind speed (m/s, not normalized)                    |
 | `wind_direction_at_{h}` | Wind direction (degrees, meteorological convention) |
+| `front_at_{h}`          | Normalized theta-e gradient [0–1] (850/700/500 hPa) |
+| `tadv_at_{h}`           | Normalized temperature advection [0–1], 0.5 = none  |
+| `te_change_at_{h}`      | Normalized 3 h theta-e change [0–1], 0.5 = none     |
+| `raw_front_at_{h}`      | Theta-e gradient (K/100 km)                         |
+| `raw_tadv_at_{h}`       | Temperature advection (K/h)                         |
+| `raw_te_change_at_{h}`  | 3 h theta-e change (K)                              |
 
 ---
 
@@ -66,6 +72,10 @@ separate output files.
 | `temp_at_{h}`     | Integer front/blob IDs from TOBAC (0 = background) |
 | `humidity_at_{h}` | Integer front/blob IDs from TOBAC (0 = background) |
 | `cloud_at_{h}`    | Integer front/blob IDs from TOBAC (0 = background) |
+| `front_at_{h}`    | Frontal zones (`front_at`, maximum), 850/700/500   |
+| `warmadv_at_{h}`  | Warm advection (`tadv_at`, maximum)                |
+| `tefall_at_{h}`   | Theta-e falling (`te_change_at`, minimum)          |
+| `terise_at_{h}`   | Theta-e rising (`te_change_at`, maximum)           |
 
 > Note: some height levels may be absent if TOBAC detected no valid features at that altitude.
 
@@ -73,7 +83,7 @@ separate output files.
 
 **Path:** `{run}/{date}/features.nc`
 **Dimensions:** `time × y × x` (e.g. `24 × 76 × 63`)
-**Attributes:** `dxy` — grid spacing in meters (e.g. `2500.0`)
+**Attributes:** `dxy` — grid spacing in meters, from latitude/longitude (≈ `5490.0`)
 
 | Variable                | Description                         |
 |-------------------------|-------------------------------------|
@@ -82,6 +92,9 @@ separate output files.
 | `raw_cloud_at_{h}`      | Cloud cover (%)                     |
 | `wind_at_{h}`           | Wind speed (m/s)                    |
 | `wind_direction_at_{h}` | Wind direction (degrees)            |
+| `raw_front_at_{h}`      | Theta-e gradient (K/100 km)         |
+| `raw_tadv_at_{h}`       | Temperature advection (K/h)         |
+| `raw_te_change_at_{h}`  | 3 h theta-e change (K)              |
 
 ### Output 3 — Trajectories
 
@@ -209,6 +222,11 @@ Humidity fronts detected by TOBAC, with their physical humidity and city members
 | `humidity_inside`    | Mean relative humidity inside the front (%)                    |
 | `humidity_outside`   | Mean relative humidity outside all fronts, background only (%) |
 
+#### `front_fronts.txt`, `warmadv_fronts.txt`, `tefall_fronts.txt`, `terise_fronts.txt`
+
+Same columns as `heat_fronts.txt`, for the front segments of Step 2; the values (`{name}_inside`, `{name}_outside`)
+come from `raw_front`, `raw_tadv` and `raw_te_change`.
+
 ---
 
 ## Step 4 — Ground Truth Generation
@@ -244,6 +262,7 @@ suitable for downstream ML models. Currently the only translator is `FoldRmTrans
 - `{run}/{date}/reasoning/cloud_cover.txt` (from Step 3)
 - `{run}/{date}/reasoning/heat_fronts.txt` (from Step 3)
 - `{run}/{date}/reasoning/humidity_fronts.txt` (from Step 3)
+- `{run}/{date}/reasoning/{front,warmadv,tefall,terise}_fronts.txt` (from Step 3)
 
 ### Output
 
@@ -265,14 +284,9 @@ One row per city. Per-hour, per-level values are grouped before being written ou
 | `size_cloud_*`                                        | Cloud segment area (km²), averaged per time/height group                                                                      |
 | `temperature_*`                                       | Temperature (K), averaged per time/height group                                                                               |
 | `humidity_*`                                          | Relative humidity (%), averaged per time/height group                                                                         |
-| `humidity_fronts_*`                                   | Humidity front frequency (`present`/`partially_present`/`absent`)                                                             |
-| `humidity_fronts_area_*`                              | Average humidity front area (km²)                                                                                             |
-| `humidity_fronts_inside_hum_*`                        | Average humidity inside humidity fronts (%)                                                                                   |
-| `humidity_fronts_outside_hum_*`                       | Average humidity outside humidity fronts, background only (%)                                                                 |
-| `temperature_fronts_*`                                | Temperature front frequency (`present`/`partially_present`/`absent`)                                                          |
-| `temperature_fronts_area_*`                           | Average temperature front area (km²)                                                                                          |
-| `temperature_fronts_inside_temp_*`                    | Average temperature inside temperature fronts (K)                                                                             |
-| `temperature_fronts_outside_temp_*`                   | Average temperature outside temperature fronts, background only (K)                                                           |
+| `{f}_hours_{g}`                                       | Hours the city is inside a segment of `f` at a level of group `g`                                                             |
+| `{f}_value_{g}`                                       | Mean value inside the segments containing the city (0 if none)                                                                |
+| `region_{f}_area_{g}`                                 | Largest total segment area (km²) of an hour and level, same for every row of the day                                          |
 | `cloud_cover_*`                                       | CERRA cloud cover (%), averaged per time/height group                                                                         |
 | `cloud_total_*`                                       | Column cloud cover (%, hourly max over the levels), per time group and `day`                                                  |
 | `rh925_max`, `rh850_max`, `rh700_max`                 | Max relative humidity (%) at 925/850/700 hPa                                                                                  |
@@ -284,7 +298,13 @@ One row per city. Per-hour, per-level values are grouped before being written ou
 | `cloud_low_day`, `cloud_medium_day`, `cloud_high_day` | Daily mean cloud cover (%) per height group                                                                                   |
 | `cloud_mid_max`, `cloud_mid_hours`                    | Max 700/500 hPa cloud cover (%) and hours with it >= 80%                                                                      |
 | `cloud_850_max`                                       | Max 850 hPa cloud cover (%)                                                                                                   |
-| `region_*`                                            | `rh850`, `rh700`, `sat700_hours`, `south850`, `cloud_mid` pooled over all the cities: the same value for every row of the day |
+| `te850_mean`                                          | Mean 850 hPa theta-e (K)                                                                                                      |
+| `te850_drop6h`, `te850_rise6h`, `t850_drop6h`         | Largest 6 h theta-e drop / rise and temperature drop at 850 hPa (K)                                                           |
+| `instab_te850_500`                                    | Max theta-e 850 − 500 hPa (K), > 0 unstable                                                                                   |
+| `region_*`                                            | `rh850`, `rh700`, `sat700_hours`, `south850`, `cloud_mid`, `te850_tend` pooled over all the cities, same for every row of the day |
+
+`f` is one of `humidity_fronts` (RH < 60%), `temperature_fronts` (warmest areas), with `g` in low/medium/high, or
+`front`, `warmadv`, `tefall`, `terise`, with `g` in low (850) / medium (700/500).
 
 After all requested dates are translated, the per-day CSVs are concatenated into a single merged dataset at
 `{run}/translated/{min_date}_{max_date}.csv`.

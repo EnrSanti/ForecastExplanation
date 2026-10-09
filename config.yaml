@@ -1,59 +1,20 @@
-# Every run shares output_path, so the data is extracted/downloaded once (by
-# the first run) and the other runs only train, each into its own
-# fold_rm.output folder.
-defaults:
+best:
   region: FVG
   dates:
     - start: 2023-01-01
       end: 2023-04-30
     - start: 2024-01-01
       end: 2026-06-30
-  output_path: runs/learning_test
+  force: features
   save_images: false
   workers: 12
   fold_rm:
     strategy: ordinal
-    ratio: 0.5
+    ratio: 1.0
     split: date
     test_ratio: 0.3
     seed: 42
     min_support: 10
+    min_exception_support: 80
     gpu: false
-
-# best setting from the cross-validation; regenerates the shared dataset
-ordinal:
-  force: reasoning
-  fold_rm:
-    output: fold_rm/ordinal
-
-# more general rules, fewer of them
-ordinal_general:
-  fold_rm:
-    ratio: 1.0
-    min_support: 40
-    output: fold_rm/ordinal_general
-
-# no rule pruning
-ordinal_no_pruning:
-  fold_rm:
-    min_support: 0
-    output: fold_rm/ordinal_no_pruning
-
-# same model, different held-out days: how much the scores move with the split
-ordinal_seed7:
-  fold_rm:
-    seed: 7
-    output: fold_rm/ordinal_seed7
-
-ordinal_seed123:
-  fold_rm:
-    seed: 123
-    output: fold_rm/ordinal_seed123
-
-# the original setup, as reference
-one_vs_rest:
-  fold_rm:
-    strategy: one_vs_rest
-    ratio: 0.7
-    min_support: 0
-    output: fold_rm/one_vs_rest
+    output: fold_rm/best
