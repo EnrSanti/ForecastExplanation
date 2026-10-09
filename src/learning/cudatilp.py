@@ -33,14 +33,7 @@ def scores(Y_hat: list, Y: list, weighted: bool = False):
 
 
 def fit_target(model, data: list[list], target: str, ratio: float) -> None:
-    """
-    FOLD-R style training: rules are learned only for `target` and every
-    other row is left to the default (the model predicts None for it).
-
-    FOLD-RM instead takes the most frequent label as head each round, so on
-    a binary task it mostly describes the majority side and leaves the
-    interesting class as a catch-all `month>X ; month=<X` default.
-    """
+    """FOLD-R style: rules only for `target`, other rows predict None."""
     from src.algos.algo import cover, learn_rule
 
     pos = [d for d in data if d[-1] == target]
@@ -97,4 +90,4 @@ def prune_rules(
             if sum(1 for d in data if d[-1] == r[0][2] and evaluate(r, d))
             >= min_support
         ]
-    model.asp_rules = None  # asp() caches the decoded rules
+    model.asp_rules = None  # asp() cache

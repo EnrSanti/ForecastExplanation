@@ -5,13 +5,8 @@ FOLD-RM is a one-vs-rest covering loop that takes the most frequent label as
 positive each round. On noisy, imbalanced multi-class targets (prev_cloud has
 5 classes, majority ~28%) `gain()` rejects nearly every literal and the loop
 stops after a couple of rules, leaving most test rows uncovered. Training one
-binary model per class works much better than that, and an ordinal chain of
-"label >= class" models better still: both targets are ordered scales
-(rain intensity, sky cover) and most mistakes are between neighbouring
-classes.
-
-Every strategy also merges its models back into one of the original classes
-per row (`combine`), which is the prediction the rules have to explain.
+binary model per class works much better, an ordinal chain of
+"label >= class" models better still (both targets are ordered scales).
 """
 
 from abc import ABC, abstractmethod
@@ -29,8 +24,7 @@ def majority_label(data: list[Row]) -> str:
 
 class Strategy(ABC):
     def target_of(self, task: str) -> str | None:
-        """The label `task`'s rules are learned for (see cudatilp.fit_target),
-        or None to let FOLD-RM pick the head of each rule."""
+        """Label the rules of `task` are learned for, None = FOLD-RM picks."""
         return None
 
     @abstractmethod
@@ -41,8 +35,8 @@ class Strategy(ABC):
     def combine(
         self, predictions: dict[str, list], train: list[Row], n: int
     ) -> list[str]:
-        """Merges each task's raw predictions (None = no rule fired) on the
-        same `n` rows into one original class per row."""
+        """Merges the tasks' predictions (None = no rule fired) into one
+        original class per row."""
 
 
 class OneVsRest(Strategy):
@@ -62,7 +56,6 @@ class OneVsRest(Strategy):
     def combine(
         self, predictions: dict[str, list], train: list[Row], n: int
     ) -> list[str]:
-        # several positives: the most frequent class wins; none: the majority
         prior = Counter(d[-1] for d in train)
         default = majority_label(train)
         votes = {
@@ -88,14 +81,8 @@ class Multiclass(Strategy):
 
 
 class Ordinal(Strategy):
-    """
-    One model per class boundary, classes ordered by their numeric code:
-    model `ge_<c>` learns rules for "the label is at least c" (head
-    'ge_<c>', every other row is 'lt_<c>'). A row climbs
-    the chain until the first model that doesn't fire, so its prediction is
-    explained by the rules that fired on the way up plus the absence of a
-    rule for the next class.
-    """
+    """`ge_<c>` models "label >= c"; a row takes the class below the first
+    model that doesn't fire."""
 
     def target_of(self, task: str) -> str:
         return task
