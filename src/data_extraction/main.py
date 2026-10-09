@@ -186,7 +186,7 @@ def cerra_download(
         for _, month_dates in groupby(sorted(dates), key=lambda d: (d.year, d.month))
     ]
     cut_ok = []
-    for month_dates in tqdm(months, desc="Download+cut (monthly)"):
+    for month_dates in tqdm(months, desc="Download and cut"):
         try:
             cut_ok += cut_month(
                 month_dates,
