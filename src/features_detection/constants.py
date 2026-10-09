@@ -13,9 +13,8 @@ DEFAULT_V_MAX_AT_HEIGHT = {
     "_at_0500m": 45,  # ~5500m
     "_at_0300m": 70,  # ~9000m
 }
-DEFAULT_DXY = 2500
+DEFAULT_DXY = 5500
 DEFAULT_DT = 3600
-# DEFAULT_V_MAX = 70 #deprecated it changes with the levels
 DEFAULT_GAP_FRAMES = 1
 DEFAULT_MIN_DISTANCE = 1000
 DEFAULT_SMOOTH = 2
@@ -28,9 +27,16 @@ class WeatherPhenomenon(Enum):
     HUMIDITY = "humidity"
     CLOUDS = "cloud"
     WIND = "winds"
+    FRONT = "front"
+    WARM_ADVECTION = "warmadv"
+    THETA_E_FALL = "tefall"
+    THETA_E_RISE = "terise"
 
 
 # Parameters scaled for native 95x76 grid (from old 800x915 pixel grid)
+FRONT_LEVELS_SUFF = ["_at_0850m", "_at_0700m", "_at_0500m"]
+
+
 class WeatherPhenomenonTobacParams(Enum):
     TEMPERATURE = {  # noqa: RUF012
         "min_blob_size": 200,
@@ -61,5 +67,56 @@ class WeatherPhenomenonTobacParams(Enum):
         "cmap": "viridis",
     }
 
+    FRONT = {  # noqa: RUF012
+        "levels": FRONT_LEVELS_SUFF,
+        "min_blob_size": 20,
+        "target": "maximum",
+        "smooth": 2,
+        "threshold": 0.5,
+        "cmap": "magma",
+    }
+    WARM_ADVECTION = {  # noqa: RUF012
+        "field": "tadv",
+        "levels": FRONT_LEVELS_SUFF,
+        "min_blob_size": 20,
+        "target": "maximum",
+        "smooth": 2,
+        "threshold": 0.6,
+        "cmap": "RdBu_r",
+    }
+    THETA_E_FALL = {  # noqa: RUF012
+        "field": "te_change",
+        "levels": FRONT_LEVELS_SUFF,
+        "min_blob_size": 20,
+        "target": "minimum",
+        "smooth": 2,
+        "threshold": 0.35,
+        "cmap": "RdBu_r",
+    }
+    THETA_E_RISE = {  # noqa: RUF012
+        "field": "te_change",
+        "levels": FRONT_LEVELS_SUFF,
+        "min_blob_size": 20,
+        "target": "maximum",
+        "smooth": 2,
+        "threshold": 0.65,
+        "cmap": "RdBu_r",
+    }
 
-RAW_FEATURES_VARS = ["wind", "raw_temp", "raw_humidity"]
+
+FRONT_PHENOMENA = [
+    WeatherPhenomenon.FRONT,
+    WeatherPhenomenon.WARM_ADVECTION,
+    WeatherPhenomenon.THETA_E_FALL,
+    WeatherPhenomenon.THETA_E_RISE,
+]
+
+
+RAW_FEATURES_VARS = [
+    "wind",
+    "raw_temp",
+    "raw_humidity",
+    "raw_front",
+    "raw_tadv",
+    "raw_te_change",
+]
