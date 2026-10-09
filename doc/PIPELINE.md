@@ -43,9 +43,6 @@ outputs.
 | `raw_humidity_at_{h}`   | Un-normalized relative humidity (%)                 |
 | `wind_at_{h}`           | Wind speed (m/s, not normalized)                    |
 | `wind_direction_at_{h}` | Wind direction (degrees, meteorological convention) |
-| `front_at_{h}`          | Normalized theta-e gradient [0–1] (850/700/500 hPa) |
-| `tadv_at_{h}`           | Normalized temperature advection [0–1], 0.5 = none  |
-| `te_change_at_{h}`      | Normalized 3 h theta-e change [0–1], 0.5 = none     |
 | `raw_front_at_{h}`      | Theta-e gradient (K/100 km)                         |
 | `raw_tadv_at_{h}`       | Temperature advection (K/h)                         |
 | `raw_te_change_at_{h}`  | 3 h theta-e change (K)                              |
@@ -72,10 +69,6 @@ separate output files.
 | `temp_at_{h}`     | Integer front/blob IDs from TOBAC (0 = background) |
 | `humidity_at_{h}` | Integer front/blob IDs from TOBAC (0 = background) |
 | `cloud_at_{h}`    | Integer front/blob IDs from TOBAC (0 = background) |
-| `front_at_{h}`    | Frontal zones (`front_at`, maximum), 850/700/500   |
-| `warmadv_at_{h}`  | Warm advection (`tadv_at`, maximum)                |
-| `tefall_at_{h}`   | Theta-e falling (`te_change_at`, minimum)          |
-| `terise_at_{h}`   | Theta-e rising (`te_change_at`, maximum)           |
 
 > Note: some height levels may be absent if TOBAC detected no valid features at that altitude.
 
@@ -224,8 +217,18 @@ Humidity fronts detected by TOBAC, with their physical humidity and city members
 
 #### `front_fronts.txt`, `warmadv_fronts.txt`, `tefall_fronts.txt`, `terise_fronts.txt`
 
-Same columns as `heat_fronts.txt`, for the front segments of Step 2; the values (`{name}_inside`, `{name}_outside`)
-come from `raw_front`, `raw_tadv` and `raw_te_change`.
+No TOBAC: per city (mean within `city_radius`), height (850/700/500) and hour, from `raw_front`, `raw_tadv` and
+`raw_te_change`. Thresholds in `reasoning/main.py` (`FRONT_PHENOMENA`): front 7/5/3 K/100 km, warmadv 0.3 K/h,
+tefall / terise -/+ 1.95/1.65/1.5 K.
+
+| Column      | Description                                  |
+|-------------|----------------------------------------------|
+| `timestamp` | Datetime                                     |
+| `height`    | Pressure level (`0850`, `0700`, `0500`)      |
+| `city`      | City name                                    |
+| `{field}`   | Mean value around the city                   |
+| `past`      | 1 if the city mean is past the threshold     |
+| `area`      | Area of the region past the threshold (km²) |
 
 ---
 
@@ -284,9 +287,9 @@ One row per city. Per-hour, per-level values are grouped before being written ou
 | `size_cloud_*`                                        | Cloud segment area (km²), averaged per time/height group                                                                      |
 | `temperature_*`                                       | Temperature (K), averaged per time/height group                                                                               |
 | `humidity_*`                                          | Relative humidity (%), averaged per time/height group                                                                         |
-| `{f}_hours_{g}`                                       | Hours the city is inside a segment of `f` at a level of group `g`                                                             |
-| `{f}_value_{g}`                                       | Mean value inside the segments containing the city (0 if none)                                                                |
-| `region_{f}_area_{g}`                                 | Largest total segment area (km²) of an hour and level, same for every row of the day                                          |
+| `{f}_hours_{g}`                                       | Hours the city is inside a segment of `f` (or past its threshold) at a level of group `g`                                     |
+| `{f}_value_{g}`                                       | Mean value in those hours (0 if none)                                                                                         |
+| `region_{f}_area_{g}`                                 | Largest total segment (or past-threshold) area (km²) of an hour and level, same for every row of the day                     |
 | `cloud_cover_*`                                       | CERRA cloud cover (%), averaged per time/height group                                                                         |
 | `cloud_total_*`                                       | Column cloud cover (%, hourly max over the levels), per time group and `day`                                                  |
 | `rh925_max`, `rh850_max`, `rh700_max`                 | Max relative humidity (%) at 925/850/700 hPa                                                                                  |
@@ -304,7 +307,7 @@ One row per city. Per-hour, per-level values are grouped before being written ou
 | `region_*`                                            | `rh850`, `rh700`, `sat700_hours`, `south850`, `cloud_mid`, `te850_tend` pooled over all the cities, same for every row of the day |
 
 `f` is one of `humidity_fronts` (RH < 60%), `temperature_fronts` (warmest areas), with `g` in low/medium/high, or
-`front`, `warmadv`, `tefall`, `terise`, with `g` in low (850) / medium (700/500).
+`front`, `warmadv`, `tefall`, `terise` (thresholds, no segments), with `g` in low (850) / medium (700/500).
 
 After all requested dates are translated, the per-day CSVs are concatenated into a single merged dataset at
 `{run}/translated/{min_date}_{max_date}.csv`.

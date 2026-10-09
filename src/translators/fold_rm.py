@@ -501,6 +501,8 @@ def round_features(header: list[str], row: list) -> list:
 FRONT_FILES = {
     "humidity_fronts.txt": ("humidity_fronts", HEIGHT_GROUPS_ORDER),
     "heat_fronts.txt": ("temperature_fronts", HEIGHT_GROUPS_ORDER),
+}
+THRESHOLD_FILES = {
     "front_fronts.txt": ("front", ["low", "medium"]),
     "warmadv_fronts.txt": ("warmadv", ["low", "medium"]),
     "tefall_fronts.txt": ("tefall", ["low", "medium"]),
@@ -542,6 +544,30 @@ def fronts_by_city(
             out[city][f"{prefix}_value_{g}"] = (
                 0.0 if pd.isna(value) else round(float(value), 2)
             )
+            out[city][f"region_{prefix}_area_{g}"] = region_area
+    return out
+
+
+def threshold_by_city(
+    df: pd.DataFrame, prefix: str, groups: list[str], cities: list[str]
+) -> dict:
+    """Per city and level group: hours the city mean is past the threshold,
+    mean value then, and the largest regional area (km2) past it."""
+    if df.empty:
+        df = pd.DataFrame(columns=["timestamp", "height", "city", "past", "area"])
+    value_col = df.columns[3]
+    group = np.array([LEVEL_GROUP_MAP[_height_label(h)] for h in df["height"]])
+
+    out: dict[str, dict] = {city: {} for city in cities}
+    for g in groups:
+        sub = df[group == g]
+        region_area = int(sub["area"].max()) if len(sub) else 0
+        past = sub[sub["past"] == 1]
+        for city in cities:
+            inside = past[past["city"] == city]
+            value = inside[value_col].mean() if len(inside) else 0.0
+            out[city][f"{prefix}_hours_{g}"] = int(inside["timestamp"].nunique())
+            out[city][f"{prefix}_value_{g}"] = round(float(value), 2)
             out[city][f"region_{prefix}_area_{g}"] = region_area
     return out
 
@@ -624,6 +650,15 @@ class FoldRmTranslator(BaseTranslator):
             )
             for city, columns in fronts_by_city(
                 fronts_df, prefix, groups, cities
+            ).items():
+                fronts[city].update(columns)
+        for file_name, (prefix, groups) in THRESHOLD_FILES.items():
+            threshold_df = _read_tsv_or_empty(
+                reasoning_dir / file_name,
+                ["timestamp", "height", "city", "value", "past", "area"],
+            )
+            for city, columns in threshold_by_city(
+                threshold_df, prefix, groups, cities
             ).items():
                 fronts[city].update(columns)
 
@@ -712,7 +747,9 @@ class FoldRmTranslator(BaseTranslator):
         header += _column_group("temperature", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
         header += _column_group("humidity", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
         header += [
-            c for p, groups in FRONT_FILES.values() for c in _front_columns(p, groups)
+            c
+            for p, groups in (FRONT_FILES | THRESHOLD_FILES).values()
+            for c in _front_columns(p, groups)
         ]
         header += _column_group("cloud_cover", TIME_GROUPS_ORDER, HEIGHT_GROUPS_ORDER)
         header += [f"cloud_total_{tg}" for tg in [*TIME_GROUPS_ORDER, "day"]]
@@ -762,7 +799,7 @@ class FoldRmTranslator(BaseTranslator):
             ]
             row += [
                 fronts[city][c]
-                for p, groups in FRONT_FILES.values()
+                for p, groups in (FRONT_FILES | THRESHOLD_FILES).values()
                 for c in _front_columns(p, groups)
             ]
             row += [

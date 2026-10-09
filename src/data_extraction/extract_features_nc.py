@@ -27,7 +27,7 @@ CsvCallback = Callable[[str, str, str], None]
 class FeatureSpec:
     var: str | tuple[str, ...]
     cmap: str
-    limits: dict[int, tuple[int | float, int | float]]
+    limits: dict[int, tuple[int | float, int | float]] | None
     prefix: str
     min_range: dict[int, float] | None = None
     change_hours: int | None = None
@@ -78,28 +78,28 @@ FEATURE_SPECS: dict[str, FeatureSpec] = {
     "front": FeatureSpec(
         "front",
         "magma",
-        LimitValues.FRONT,
+        None,
         "front",
         levels=FRONT_LEVELS,
     ),
     "tadv": FeatureSpec(
         "tadv",
         "RdBu_r",
-        LimitValues.TEMP_ADVECTION,
+        None,
         "tadv",
         levels=FRONT_LEVELS,
     ),
     "te_change": FeatureSpec(
         "theta_e",
         "RdBu_r",
-        LimitValues.THETA_E_CHANGE,
+        None,
         "te_change",
         change_hours=3,
         levels=FRONT_LEVELS,
     ),
 }
 
-RAW_PREFIXES = ["temp", "humidity", "front", "tadv", "te_change"]
+RAW_PREFIXES = ["temp", "humidity"]
 FRONT_SMOOTH_PX = 4  # ~22 km on the 5.5 km CERRA grid
 
 LEGEND_SPECS = {
@@ -310,6 +310,12 @@ def build_feature_dataarrays(
                     change = stacked - stacked.shift(time=spec.change_hours)
                     stacked = change.fillna(0.0)
 
+                if spec.limits is None:
+                    result[f"raw_{folders[lvl]}"] = stacked.drop_vars(
+                        ["valid_time", "step", "isobaricInhPa", "number", "surface"],
+                        errors="ignore",
+                    )
+                    continue
                 if "wind" in spec.prefix:
                     normalized = stacked.fillna(0.0)
                 elif spec.min_range is not None:

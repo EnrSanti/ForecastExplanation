@@ -78,14 +78,12 @@ def detect_phenomenon_fronts(
     output_path: str,
     heights: list[str],
     phenomenon: str,
-    field: str | None = None,
 ) -> None:
     """
     writes a txt table with:
     timestamp, height, front_id (from tobac), front area,
      list of cities inside the area, average {phenomenon} inside the
      front, average {phenomenon} outside all fronts (background only)
-    values from raw_{field}, field defaulting to the phenomenon
     """
     dxy_m = float(feat_data.attrs["dxy"])
     area_per_pixel_km2 = (dxy_m / 1000.0) ** 2
@@ -108,7 +106,7 @@ def detect_phenomenon_fronts(
 
     for h in heights:
         seg_var = f"{phenomenon}_at_{h}"
-        raw_var = f"raw_{field or phenomenon}_at_{h}"
+        raw_var = f"raw_{phenomenon}_at_{h}"
 
         if seg_var not in seg_data or raw_var not in feat_data:
             continue
@@ -166,6 +164,58 @@ def detect_phenomenon_fronts(
                         "cities": cities_str,
                         f"{col_name}_inside": avg_val_inside,
                         f"{col_name}_outside": avg_val_outside,
+                    }
+                )
+
+    df = pd.DataFrame(records)
+    df.to_csv(output_path, sep="\t", index=False, float_format="%.6f")
+
+
+def detect_threshold(
+    data: xr.Dataset,
+    cities: list[tuple[str, float | int, float | int]],
+    output_path: str,
+    field: str,
+    thresholds: dict[str, float],
+    sign: int = 1,
+    city_radius: float = 3.0,
+) -> None:
+    """
+    writes a txt table with:
+    timestamp, height, city, mean raw_{field} in a {city_radius}km radius,
+    past (city mean beyond the threshold), area (km2 of the region beyond it)
+
+    beyond = sign * value > threshold of the height
+    """
+    area_per_pixel_km2 = (float(data.attrs["dxy"]) / 1000.0) ** 2
+    lats = data.latitude.values
+    lons = data.longitude.values
+    timestamps = pd.to_datetime(data.time.values).strftime("%Y-%m-%d %H:%M:%S")
+    masks = {
+        name: haversine(lat, lon, lats, lons) <= city_radius
+        for name, lat, lon in cities
+    }
+
+    records = []
+    for h, threshold in thresholds.items():
+        raw_var = f"raw_{field}_at_{h}"
+        if raw_var not in data:
+            continue
+        arr = data[raw_var].transpose("time", ...).values
+        areas = (sign * arr > threshold).sum(axis=(1, 2)) * area_per_pixel_km2
+        for name, mask in masks.items():
+            if not np.any(mask):
+                continue
+            values = arr[:, mask].mean(axis=1)
+            for t_idx, timestamp in enumerate(timestamps):
+                records.append(
+                    {
+                        "timestamp": timestamp,
+                        "height": h.replace("m", ""),
+                        "city": name,
+                        field: values[t_idx],
+                        "past": int(sign * values[t_idx] > threshold),
+                        "area": int(areas[t_idx]),
                     }
                 )
 

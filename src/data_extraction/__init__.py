@@ -50,24 +50,6 @@ class LimitValues:
         300: (0, 100),
     }
 
-    FRONT: ClassVar[dict[int, tuple[float, float]]] = {
-        850: (0, 14),
-        700: (0, 10),
-        500: (0, 6),
-    }
-
-    # temperature advection (K/h)
-    TEMP_ADVECTION: ClassVar[dict[int, tuple[float, float]]] = {
-        lvl: (-1.5, 1.5) for lvl in (850, 700, 500)
-    }
-
-    # 3 h theta-e change (K)
-    THETA_E_CHANGE: ClassVar[dict[int, tuple[float, float]]] = {
-        850: (-6.5, 6.5),
-        700: (-5.5, 5.5),
-        500: (-5.0, 5.0),
-    }
-
 
 RAW_DATA_DIR: str = "tmp_data/original_CERRA"
 CUT_DATA_DIR: str = "tmp_data/CERRA_cut"

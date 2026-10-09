@@ -8,18 +8,18 @@ from tqdm import tqdm
 
 from region import Region
 
-from .fronts import detect_phenomenon, detect_phenomenon_fronts
+from .fronts import detect_phenomenon, detect_phenomenon_fronts, detect_threshold
 from .segment import detect_clouds, detect_winds
 from .utils import get_heights
 
 logger = logging.getLogger("ForecastExplanation")
 
-# (tobac phenomenon, raw field)
+# (name, raw field, sign, threshold per height): beyond = sign * value > threshold
 FRONT_PHENOMENA = [
-    ("front", "front"),
-    ("warmadv", "tadv"),
-    ("tefall", "te_change"),
-    ("terise", "te_change"),
+    ("front", "front", 1, {"0850m": 7.0, "0700m": 5.0, "0500m": 3.0}),
+    ("warmadv", "tadv", 1, {"0850m": 0.3, "0700m": 0.3, "0500m": 0.3}),
+    ("tefall", "te_change", -1, {"0850m": 1.95, "0700m": 1.65, "0500m": 1.5}),
+    ("terise", "te_change", 1, {"0850m": 1.95, "0700m": 1.65, "0500m": 1.5}),
 ]
 
 
@@ -163,13 +163,13 @@ def _reason_single_day(
         )
 
         # Fronts
-        for phenomenon, field in FRONT_PHENOMENA:
-            detect_phenomenon_fronts(
-                seg_ds,
+        for phenomenon, field, sign, thresholds in FRONT_PHENOMENA:
+            detect_threshold(
                 feat_ds,
                 region.get_cities(),
                 day_output_dir / f"{phenomenon}_fronts.txt",
-                heights,
-                phenomenon,
                 field,
+                thresholds,
+                sign,
+                radius,
             )
