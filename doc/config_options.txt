@@ -175,8 +175,15 @@ fold_rm  (optional)
       seed: 42
       min_support: 0          # drop rules holding for fewer training rows
       min_exception_support: 0  # drop exceptions correcting fewer training rows
+      exclude_features: {}    # target -> column prefixes left out of its models
       gpu: false              # fitGPU, needs the `gpu` extra (cupy)
       output: fold_rm         # models folder inside output_path
+
+  exclude_features keeps outcome-restating columns out of a target, e.g.
+  the cloud amounts for prev_cloud:
+
+      exclude_features:
+        prev_cloud: [coverage_clouds, size_cloud, cloud_, region_cloud]
 
   Runs that share an output_path share its data (nothing is extracted
   or downloaded twice) but need a different "output" each, or they

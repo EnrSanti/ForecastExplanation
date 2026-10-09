@@ -85,6 +85,8 @@ class FoldRmConfig(BaseModel):
     seed: int = 42
     min_support: int = Field(0, ge=0)
     min_exception_support: int = Field(0, ge=0)
+    # target -> feature column prefixes left out of its models
+    exclude_features: dict[str, list[str]] = {}
     gpu: bool = False
     output: str = "fold_rm"
 
