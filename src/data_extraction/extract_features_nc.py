@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Callable, Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -11,8 +11,9 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from cartopy.io import shapereader
+from scipy.ndimage import gaussian_filter
 
-from . import FOLDERS, LEVELS, LimitValues, Region
+from . import FOLDERS, FRONT_LEVELS, LEVELS, LimitValues, Region
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,8 @@ class FeatureSpec:
     limits: dict[int, tuple[int | float, int | float]]
     prefix: str
     min_range: dict[int, float] | None = None
+    change_hours: int | None = None
+    levels: list[int] = field(kw_only=True)
 
     @property
     def folder_key(self) -> str:
@@ -41,6 +44,7 @@ FEATURE_SPECS: dict[str, FeatureSpec] = {
         "viridis",
         LimitValues.CLOUD,
         "cloud",
+        levels=LEVELS,
     ),
     "temp": FeatureSpec(
         "t",
@@ -48,26 +52,55 @@ FEATURE_SPECS: dict[str, FeatureSpec] = {
         LimitValues.TEMP,
         "temp",
         min_range=LimitValues.TEMP_MIN_RANGE,
+        levels=LEVELS,
     ),
     "humidity": FeatureSpec(
         ("r", "rhum"),
         "YlGnBu",
         LimitValues.HUMIDITY,
         "humidity",
+        levels=LEVELS,
     ),
     "wind": FeatureSpec(
         "wind_speed",
         "viridis",
         LimitValues.WIND_SPEED,
         "wind",
+        levels=LEVELS,
     ),
     "wind_direction": FeatureSpec(
         "wind_direction",
         "viridis",
         LimitValues.WIND_SPEED,
         "wind_direction",
+        levels=LEVELS,
+    ),
+    "front": FeatureSpec(
+        "front",
+        "magma",
+        LimitValues.FRONT,
+        "front",
+        levels=FRONT_LEVELS,
+    ),
+    "tadv": FeatureSpec(
+        "tadv",
+        "RdBu_r",
+        LimitValues.TEMP_ADVECTION,
+        "tadv",
+        levels=FRONT_LEVELS,
+    ),
+    "te_change": FeatureSpec(
+        "theta_e",
+        "RdBu_r",
+        LimitValues.THETA_E_CHANGE,
+        "te_change",
+        change_hours=3,
+        levels=FRONT_LEVELS,
     ),
 }
+
+RAW_PREFIXES = ["temp", "humidity", "front", "tadv", "te_change"]
+FRONT_SMOOTH_PX = 4  # ~22 km on the 5.5 km CERRA grid
 
 LEGEND_SPECS = {
     "cloud": {
@@ -105,6 +138,52 @@ def _with_wind_speed(ds: xr.Dataset) -> xr.Dataset:
     ws = np.sqrt(ds["u"] ** 2 + ds["v"] ** 2)
     wd = (270 - np.arctan2(ds["v"], ds["u"]) * 180 / np.pi) % 360
     return ds.assign(wind_speed=ws, wind_direction=wd)
+
+
+def _smooth_frames(arr: np.ndarray) -> np.ndarray:
+    """Gaussian smoothing over the last two (y, x) axes."""
+    sigma = (0,) * (arr.ndim - 2) + (FRONT_SMOOTH_PX, FRONT_SMOOTH_PX)
+    return gaussian_filter(arr, sigma, mode="mirror")
+
+
+def _gradient(lat: np.ndarray, lon: np.ndarray) -> Callable:
+    """d/dx, d/dy (per metre) on the lat/lon grid."""
+    # non usiamo np.gradient perché x y cambiano dimensione in metri
+    x = 6.371e6 * np.cos(np.radians(lat.mean())) * np.radians(lon)
+    y = 6.371e6 * np.radians(lat)
+    xj, xi = np.gradient(x)
+    yj, yi = np.gradient(y)
+    det = xi * yj - xj * yi
+
+    def grad(f: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        fj, fi = np.gradient(f, axis=(-2, -1))
+        return (fi * yj - fj * yi) / det, (fj * xi - fi * xj) / det
+
+    return grad
+
+
+def _with_front_fields(ds: xr.Dataset) -> xr.Dataset:
+    """Adds theta_e (K), front = |grad theta_e| (K/100 km) and
+    tadv = temperature advection (K/h)."""
+    t = ds["t"].transpose(..., "y", "x")
+    rh = _resolve_var(ds, ("r", "rhum")).transpose(*t.dims)
+    p = ds["isobaricInhPa"].broadcast_like(t).transpose(*t.dims)
+    tc = t - 273.15
+    e = rh.clip(1, 100) / 100 * 6.112 * np.exp(17.67 * tc / (tc + 243.5))
+    mixing = 0.622 * e / (p - e)
+    theta_e = t * (1000.0 / p) ** 0.2854 * np.exp(2.5e6 * mixing / (1004.0 * t))
+
+    grad = _gradient(ds["latitude"].values, ds["longitude"].values)
+    te = _smooth_frames(theta_e.values)
+    gx, gy = grad(te)
+    tx, ty = grad(_smooth_frames(t.values))
+    u = ds["u"].transpose(*t.dims).values
+    v = ds["v"].transpose(*t.dims).values
+    return ds.assign(
+        theta_e=(t.dims, te),
+        front=(t.dims, np.hypot(gx, gy) * 1e5),
+        tadv=(t.dims, -(u * tx + v * ty) * 3600),
+    )
 
 
 def _valid_times(coord_var: xr.DataArray) -> Iterator[tuple[int, int, pd.Timestamp]]:
@@ -198,13 +277,14 @@ def build_feature_dataarrays(
             del ds["step"].attrs["dtype"]
         ds = xr.decode_cf(ds)
         ds = _with_wind_speed(ds)
+        ds = _with_front_fields(ds)
 
         result = {}
         for spec in FEATURE_SPECS.values():
             field = _resolve_var(ds, spec.var)
             folders = {k: spec.folder_key + v for k, v in FOLDERS.items()}
 
-            for lvl in LEVELS:
+            for lvl in spec.levels:
                 level_field = field.sel(isobaricInhPa=lvl)
 
                 frames = []
@@ -226,6 +306,9 @@ def build_feature_dataarrays(
                     compat="override",
                 )
                 stacked = stacked.sortby("time")
+                if spec.change_hours:
+                    change = stacked - stacked.shift(time=spec.change_hours)
+                    stacked = change.fillna(0.0)
 
                 if "wind" in spec.prefix:
                     normalized = stacked.fillna(0.0)
@@ -248,7 +331,7 @@ def build_feature_dataarrays(
 
                 result[folders[lvl]] = normalized
 
-                if spec.prefix in ["temp", "humidity"]:
+                if spec.prefix in RAW_PREFIXES:
                     raw = stacked.drop_vars(
                         ["valid_time", "step", "isobaricInhPa", "number", "surface"],
                         errors="ignore",
