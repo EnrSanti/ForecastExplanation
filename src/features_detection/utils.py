@@ -34,16 +34,39 @@ def get_grid_spacings(
     """
     Determines grid spacing dxy and dt dynamically from DataArray,
     falling back to provided defaults when unit dimensions are missing or 1.
+    x/y are pixel indices, so dxy comes from latitude/longitude when present.
     """
     try:
         dxy, dt = tobac.get_spacings(referenced_data)
-        if dxy is None or dxy <= 1.0:
-            dxy = default_dxy
-        if dt is None or dt <= 0:
-            dt = default_dt
-        return float(dxy), float(dt)
     except Exception:  # noqa: BLE001
-        return default_dxy, default_dt
+        dxy, dt = None, None
+    if dxy is None or dxy <= 1.0:
+        dxy = latlon_spacing(referenced_data) or default_dxy
+    if dt is None or dt <= 0:
+        dt = default_dt
+    return float(dxy), float(dt)
+
+
+def latlon_spacing(da: xr.DataArray) -> float | None:
+    """Mean distance (m) between neighbouring grid points, or None."""
+    import numpy as np
+
+    if "latitude" not in da.coords or "longitude" not in da.coords:
+        return None
+    lat = np.radians(da["latitude"].values)
+    lon = np.radians(da["longitude"].values)
+
+    def dist(lat1, lon1, lat2, lon2):
+        a = (
+            np.sin((lat2 - lat1) / 2) ** 2
+            + np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2) ** 2
+        )
+        return 2 * 6.371e6 * np.arcsin(np.sqrt(a))
+
+    dx = dist(lat[:, :-1], lon[:, :-1], lat[:, 1:], lon[:, 1:])
+    dy = dist(lat[:-1, :], lon[:-1, :], lat[1:, :], lon[1:, :])
+    spacing = float(np.nanmean(np.concatenate([dx.ravel(), dy.ravel()])))
+    return spacing if np.isfinite(spacing) and spacing > 1.0 else None
 
 
 def build_referenced_data_from_xarray(
