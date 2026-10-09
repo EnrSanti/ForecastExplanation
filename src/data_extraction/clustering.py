@@ -7,39 +7,28 @@ from sklearn.cluster import KMeans
 logger = logging.getLogger(__name__)
 
 
-def cluster_xarray(
-    data_dict: dict[str, xr.DataArray],
-    num_clusters_map: dict[str, int] | None = None,
-) -> xr.Dataset:
+# clusters per variable
+NUM_CLUSTERS = {"temp": 5, "cloud": 3, "hum": 5}
+
+
+def cluster_xarray(data_dict: dict[str, xr.DataArray]) -> xr.Dataset:
     """
     Cluster normalized xarray DataArrays using 1D KMeans on physical values.
 
     Parameters
     ----------
     data_dict : maps folder name -> DataArray (time, y, x) with values in [0, 1].
-    num_clusters_map : override for number of clusters per variable type
 
     Returns
     -------
     Same structure with values quantized to K evenly spaced levels in [0, 1]
     """
 
-    if num_clusters_map is None:
-        num_clusters_map = {}
-
     result = {}
     for folder_name, da in data_dict.items():
         name = folder_name.lower()
-        if name.startswith("raw_") or "wind" in name:
-            result[folder_name] = da
-            continue
-        if "temp" in name:
-            k = num_clusters_map.get("temp", 5)
-        elif "cloud" in name:
-            k = num_clusters_map.get("cloud", 3)
-        elif "hum" in name:
-            k = num_clusters_map.get("humidity", 5)
-        else:
+        k = next((v for key, v in NUM_CLUSTERS.items() if key in name), None)
+        if name.startswith("raw_") or "wind" in name or k is None:
             result[folder_name] = da
             continue
 

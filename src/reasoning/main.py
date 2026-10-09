@@ -14,6 +14,9 @@ from .utils import get_heights
 
 logger = logging.getLogger("ForecastExplanation")
 
+# (output file, raw field)
+RAW_TABLES = [("cloud_cover", "cloud"), ("heat", "temp"), ("humidity", "humidity")]
+
 # (name, raw field, sign, threshold per height): beyond = sign * value > threshold
 FRONT_PHENOMENA = [
     ("front", "front", 1, {"0850m": 7.0, "0700m": 5.0, "0500m": 3.0}),
@@ -98,75 +101,40 @@ def _reason_single_day(
         xr.open_dataset(day_input_dir / "features.nc", engine="h5netcdf") as feat_ds,
     ):
         heights = get_heights(feat_ds)
+        cities = region.get_cities()
         radius = region.city_radius
 
-        detect_winds(
-            feat_ds,
-            region.get_cities(),
-            day_output_dir / "winds.txt",
-            heights,
-            radius,
-        )
-
+        detect_winds(feat_ds, cities, day_output_dir / "winds.txt", heights, radius)
         detect_clouds(
-            seg_ds,
-            feat_ds,
-            region.get_cities(),
-            day_output_dir / "cloud.txt",
-            heights,
-            radius,
-        )
-        # CERRA cloud cover around each city using raw data
-        detect_phenomenon(
-            feat_ds,
-            region.get_cities(),
-            day_output_dir / "cloud_cover.txt",
-            heights,
-            "cloud",
-            radius,
+            seg_ds, feat_ds, cities, day_output_dir / "cloud.txt", heights, radius
         )
 
-        # Heat
-        detect_phenomenon(
-            feat_ds,
-            region.get_cities(),
-            day_output_dir / "heat.txt",
-            heights,
-            "temp",
-            radius,
-        )
-        detect_phenomenon_fronts(
-            seg_ds,
-            feat_ds,
-            region.get_cities(),
-            day_output_dir / "heat_fronts.txt",
-            heights,
-            "temp",
-        )
+        # mean raw values around each city
+        for name, phenomenon in RAW_TABLES:
+            detect_phenomenon(
+                feat_ds,
+                cities,
+                day_output_dir / f"{name}.txt",
+                heights,
+                phenomenon,
+                radius,
+            )
 
-        # Humidity
-        detect_phenomenon(
-            feat_ds,
-            region.get_cities(),
-            day_output_dir / "humidity.txt",
-            heights,
-            "humidity",
-            radius,
-        )
-        detect_phenomenon_fronts(
-            seg_ds,
-            feat_ds,
-            region.get_cities(),
-            day_output_dir / "humidity_fronts.txt",
-            heights,
-            "humidity",
-        )
+        # tobac segments of the warmest / driest areas
+        for name, phenomenon in (("heat", "temp"), ("humidity", "humidity")):
+            detect_phenomenon_fronts(
+                seg_ds,
+                feat_ds,
+                cities,
+                day_output_dir / f"{name}_fronts.txt",
+                heights,
+                phenomenon,
+            )
 
-        # Fronts
         for phenomenon, field, sign, thresholds in FRONT_PHENOMENA:
             detect_threshold(
                 feat_ds,
-                region.get_cities(),
+                cities,
                 day_output_dir / f"{phenomenon}_fronts.txt",
                 field,
                 thresholds,
