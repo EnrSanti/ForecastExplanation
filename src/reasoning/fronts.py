@@ -78,12 +78,14 @@ def detect_phenomenon_fronts(
     output_path: str,
     heights: list[str],
     phenomenon: str,
+    field: str | None = None,
 ) -> None:
     """
     writes a txt table with:
     timestamp, height, front_id (from tobac), front area,
      list of cities inside the area, average {phenomenon} inside the
      front, average {phenomenon} outside all fronts (background only)
+    values from raw_{field}, field defaulting to the phenomenon
     """
     dxy_m = float(feat_data.attrs["dxy"])
     area_per_pixel_km2 = (dxy_m / 1000.0) ** 2
@@ -106,7 +108,7 @@ def detect_phenomenon_fronts(
 
     for h in heights:
         seg_var = f"{phenomenon}_at_{h}"
-        raw_var = f"raw_{phenomenon}_at_{h}"
+        raw_var = f"raw_{field or phenomenon}_at_{h}"
 
         if seg_var not in seg_data or raw_var not in feat_data:
             continue

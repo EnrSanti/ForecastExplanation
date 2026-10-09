@@ -14,6 +14,14 @@ from .utils import get_heights
 
 logger = logging.getLogger("ForecastExplanation")
 
+# (tobac phenomenon, raw field)
+FRONT_PHENOMENA = [
+    ("front", "front"),
+    ("warmadv", "tadv"),
+    ("tefall", "te_change"),
+    ("terise", "te_change"),
+]
+
 
 def reason(
     dates: list[date],
@@ -153,3 +161,15 @@ def _reason_single_day(
             heights,
             "humidity",
         )
+
+        # Fronts
+        for phenomenon, field in FRONT_PHENOMENA:
+            detect_phenomenon_fronts(
+                seg_ds,
+                feat_ds,
+                region.get_cities(),
+                day_output_dir / f"{phenomenon}_fronts.txt",
+                heights,
+                phenomenon,
+                field,
+            )
