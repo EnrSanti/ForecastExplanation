@@ -288,7 +288,7 @@ One row per city. Per-hour, per-level values are grouped before being written ou
 | `temperature_*`                                       | Temperature (K), averaged per time/height group                                                                               |
 | `humidity_*`                                          | Relative humidity (%), averaged per time/height group                                                                         |
 | `{f}_hours_{g}`                                       | Hours the city is inside a segment of `f` (or past its threshold) at a level of group `g`                                     |
-| `{f}_value_{g}`                                       | Mean value in those hours (0 if none; empty for the segment `f`s, where 0 would read as driest/coldest)                       |
+| `{f}_value_{g}`                                       | Mean value in those hours (0 if none); segment `f`s: segment minus background, % RH < 0 or K > 0 (0 if in none)               |
 | `region_{f}_area_{g}`                                 | Largest total segment (or past-threshold) area (km²) of an hour and level, same for every row of the day                     |
 | `cloud_cover_*`                                       | CERRA cloud cover (%), averaged per time/height group                                                                         |
 | `cloud_total_*`                                       | Column cloud cover (%, hourly max over the levels), per time group and `day`                                                  |

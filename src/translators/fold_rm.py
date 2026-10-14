@@ -446,6 +446,7 @@ ROUNDING_STEPS: list[tuple[tuple[str, ...], float | None]] = [
     (("front_", "warmadv_", "tefall_", "terise_"), 0.1),  # K/100km, K/h, K
     (("te850_mean", "instab"), 1),  # K
     (("te850_", "t850_", "region_te850"), 0.1),  # K
+    (("temperature_fronts_value",), 0.1),  # K, warm-front contrast of 1-6 K
     (("temperature", "lapse"), 1),  # K
     (("cloud_mid_hours",), None),  # a count
     (
@@ -500,13 +501,15 @@ def _front_columns(prefix: str, groups: list[str]) -> list[str]:
 def fronts_by_city(
     df: pd.DataFrame, prefix: str, groups: list[str], cities: list[str]
 ) -> dict:
-    """Per city and level group: hours inside a front, mean value inside it,
-    and the largest regional front area (km2) of an hour and level."""
+    """Per city and level group: hours inside a front, mean contrast of the
+    front with the background (inside - outside, 0 if in none), and the
+    largest regional front area (km2) of an hour and level."""
     value_col = next((c for c in df.columns if c.endswith("_inside")), None)
     if value_col is None or df.empty:
         df = pd.DataFrame(columns=["timestamp", "height", "area", "cities", "value"])
     else:
-        df = df.rename(columns={value_col: "value"})
+        outside_col = value_col.removesuffix("_inside") + "_outside"
+        df = df.assign(value=df[value_col] - df[outside_col])
     group = [LEVEL_GROUP_MAP[_height_label(h)] for h in df["height"]]
 
     out: dict[str, dict] = {city: {} for city in cities}
@@ -518,10 +521,10 @@ def fronts_by_city(
         for city in cities:
             inside = sub[np.array([city in m for m in members], dtype=bool)]
             hours = inside["timestamp"].nunique()
-            value = inside["value"].mean() if len(inside) else float("nan")
+            value = inside["value"].mean() if len(inside) else 0.0
             out[city][f"{prefix}_hours_{g}"] = int(hours)
             out[city][f"{prefix}_value_{g}"] = (
-                "" if pd.isna(value) else round(float(value), 2)
+                0.0 if pd.isna(value) else round(float(value), 2)
             )
             out[city][f"region_{prefix}_area_{g}"] = region_area
     return out
