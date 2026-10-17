@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 resolution-markers = [
     "platform_machine == 'ARM64' and sys_platform == 'win32'",
@@ -670,7 +670,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "requests", specifier = ">=2.34.2" },
     { name = "scipy", specifier = ">=1.18.1" },
-    { name = "tobac", specifier = "==1.6.3" },
+    { name = "tobac", specifier = "==1.6.4" },
     { name = "torch", specifier = "==2.14.0" },
     { name = "tqdm", specifier = "==4.70.1" },
     { name = "xarray", specifier = ">=2026.7.0" },
@@ -2019,7 +2019,7 @@ wheels = [
 
 [[package]]
 name = "tobac"
-version = "1.6.3"
+version = "1.6.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cartopy" },
@@ -2034,9 +2034,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b4/11/9c7de954a94e5835194b9947fef467f3d3c181ca84bff52ffd2b0b73b464/tobac-1.6.3.tar.gz", hash = "sha256:d865b5cd6d5365865bb6cf3796d9fcfc76c4bc07eea5793518c2b0ea5ceb119e", size = 152664, upload-time = "2026-02-06T02:34:20.664Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/97/99/d1edb18221c054845cace78b7ddb8550075aecc11022251048d17b59cf93/tobac-1.6.4.tar.gz", hash = "sha256:ade3ed38ddca8518e3a9f62403b2e0c8c120d77a94310390bead01041f43d56d", size = 166261, upload-time = "2026-10-13T19:33:08.521Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/fd/562df23cde4ab88b4e872620c2b8c45acf4c72497e649455fc8f1a7bf336/tobac-1.6.3-py3-none-any.whl", hash = "sha256:eecb230e46f57cfadb6752686c30423908bc3331199784c286c21f861928ab0e", size = 171836, upload-time = "2026-02-06T02:34:19.39Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/00/e8755f68ab1345fa4517fb4d766a9d90dd58541c28b6e8105bec4c998df3/tobac-1.6.4-py3-none-any.whl", hash = "sha256:e084331afbb8eaa9be2b5df8255d896d9a5d894baf031f278e8508a27383ee58", size = 187394, upload-time = "2026-10-13T19:33:07.024Z" },
 ]
 
 [[package]]

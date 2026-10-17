@@ -11,7 +11,7 @@ dependencies:
   - numba=0.67.0
   - ecmwf-datastores-client
   - py-opencv=5.0.0
-  - tobac=1.6.3
+  - tobac=1.6.4
   - cfgrib=0.9.15.1
   - tqdm
   - pyarrow

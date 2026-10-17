@@ -169,9 +169,7 @@ def _run_tobac_single_day_single_phenomenon(
         v_max_at_height = DEFAULT_V_MAX_AT_HEIGHT.get(suffix, 60)
         trajectories = track_features(
             features_weighted_points,
-            referenced_data,
             dt=dt,
-            dxy=dxy,
             v_max=v_max_at_height,
             memory=DEFAULT_GAP_FRAMES,
         )

@@ -60,14 +60,14 @@ def detect_features(
 
 def track_features(
     features_weighted_points: pd.DataFrame,
-    referenced_data: xr.DataArray,
     v_max: float,
     dt: float = DEFAULT_DT,
-    dxy: float = DEFAULT_DXY,
     memory: int = DEFAULT_GAP_FRAMES,
     method_linking: str = "predict",
 ) -> pd.DataFrame:
     """Links detected features into trajectories across time frames."""
+    if features_weighted_points.empty:
+        return pd.DataFrame()
     try:
         with warnings.catch_warnings():
             warnings.filterwarnings(
@@ -75,19 +75,19 @@ def track_features(
                 category=UserWarning,
                 message="Could not generate velocity field for prediction: no tracks",
             )
-            trajectories = tobac.linking_trackpy(
+            trajectories = tobac.tracking.linking_trackpy_latlon(
                 features_weighted_points,
-                referenced_data,
                 dt=dt,
-                dxy=dxy,
                 v_max=v_max,
+                latitude_name="latitude",
+                longitude_name="longitude",
                 memory=memory,
                 method_linking=method_linking,
             )
         return trajectories
     except Exception as e:  # noqa: BLE001
         logger.warning(
-            f"tobac.linking_trackpy failed ({type(e).__name__}: {e}); returning no trajectories"
+            f"tobac.linking_trackpy_latlon failed ({type(e).__name__}: {e}); returning no trajectories"
         )
         return pd.DataFrame()
 
@@ -120,19 +120,14 @@ def segment_features(
             segments_all.append((itime, None, None))
             continue
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                category=UserWarning,
-                message="As of v1.6.0, segmentation with time length 1",
-            )
-            segment_labels, segments = tobac.segmentation_2D(
-                f,
-                temp_da,
-                dxy=dxy,
-                threshold=threshold,
-                target=target,
-            )
+        segment_labels, segments = tobac.segmentation_2D(
+            f,
+            temp_da,
+            dxy=dxy,
+            threshold=threshold,
+            target=target,
+            suppress_warnings=True,
+        )
         segments_all.append((itime, segment_labels, segments))
 
     return segments_all
