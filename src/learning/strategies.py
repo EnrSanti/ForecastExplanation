@@ -112,8 +112,21 @@ class Ordinal(Strategy):
         return out
 
 
+class OrdinalCount(Ordinal):
+    """The `ge_<c>` models of Ordinal; a row takes the class at the number of
+    models that fire, so a `ge_<c>` firing above a lower model that doesn't
+    still counts."""
+
+    def combine(
+        self, predictions: dict[str, list], train: list[Row], n: int
+    ) -> list[str]:
+        chain = [predictions[f"ge_{c}"] for c in self.classes[1:]]
+        return [self.classes[sum(p[i] is not None for p in chain)] for i in range(n)]
+
+
 STRATEGIES: dict[str, type[Strategy]] = {
     "one_vs_rest": OneVsRest,
     "multiclass": Multiclass,
     "ordinal": Ordinal,
+    "ordinal_count": OrdinalCount,
 }

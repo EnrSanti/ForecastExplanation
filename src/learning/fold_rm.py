@@ -6,7 +6,9 @@ from collections import defaultdict
 from pathlib import Path
 from timeit import default_timer as timer
 
-from .cudatilp import fit_target, load_classifier_cls, prune_rules, save_model, scores
+from cleaning import BaseCleaner, FoldRmCleaner
+
+from .cudatilp import fit_target, load_classifier_cls, save_model, scores
 from .strategies import STRATEGIES, majority_label
 
 logger = logging.getLogger("ForecastExplanation")
@@ -129,8 +131,7 @@ def _train_target(
     split: str,
     test_ratio: float,
     seed: int,
-    min_support: int,
-    min_exception_support: int,
+    cleaner: BaseCleaner,
     gpu: bool,
     verbose: bool,
 ) -> tuple[list[dict], dict | None]:
@@ -174,7 +175,7 @@ def _train_target(
             model.fitGPU(task_train, ratio=ratio, verbose=verbose)
         else:
             model.fit(task_train, ratio=ratio, verbose=verbose)
-        prune_rules(model, task_train, min_support, min_exception_support)
+        cleaner.clean(model, task_train)
         fit_seconds = timer() - start
 
         Y = [d[-1] for d in task_test]
@@ -237,8 +238,7 @@ def train_fold_rm(
     split: str = "date",
     test_ratio: float = 0.3,
     seed: int = 42,
-    min_support: int = 0,
-    min_exception_support: int = 0,
+    cleaning: dict | None = None,
     exclude_features: dict[str, list[str]] | None = None,
     gpu: bool = False,
     force: bool = False,
@@ -247,24 +247,20 @@ def train_fold_rm(
     """
     Trains FOLD-RM models for every label in `schema` on the merged dataset.
 
-    Each target excludes all label columns from its features, so one label
-    never leaks into another. Rules (.lp), pickled models and metrics.json are
-    written to `output_dir/<target>/`.
-
     Args:
         dataset_csv: The merged dataset produced by the translator.
         schema: {"labels", "features", "categorical", "numeric"} as given by FoldRmTranslator.schema.
         output_dir: Root folder for the learned models.
-        strategy: Key of STRATEGIES ("one_vs_rest", "multiclass" or "ordinal").
+        strategy: Key of STRATEGIES ("one_vs_rest", "multiclass", "ordinal"
+            or "ordinal_count").
         ratio: FOLD-RM exception ratio hyperparameter.
         split: "date" holds out whole days (falls back to "row" when the
             dataset has no date column); "row" is a per-label stratified split.
         test_ratio: Fraction of days (or rows) held out for testing.
         seed: Seed for the split.
-        min_support: Drop the rules holding for fewer training rows of their
-            own label (0 keeps every rule).
-        min_exception_support: Drop the exceptions correcting fewer training
-            rows (0 keeps every exception).
+        cleaning: Options of cleaning.FoldRmCleaner (min_support,
+            min_exception_support, mdl_lambda, snap), applied to every model
+            on its training rows; None keeps the rules as learned.
         exclude_features: target -> feature column prefixes left out of its
             models (e.g. the cloud amounts for prev_cloud).
         gpu: Use CUDatILP's CUDA training (fitGPU).
@@ -281,6 +277,8 @@ def train_fold_rm(
     dataset_csv = Path(dataset_csv)
     output_dir = Path(output_dir)
     Classifier = load_classifier_cls()
+    cleaning = cleaning or {}
+    cleaner = FoldRmCleaner(**cleaning)
 
     current = {
         "dataset": str(dataset_csv),
@@ -289,10 +287,15 @@ def train_fold_rm(
         "split": split,
         "test_ratio": test_ratio,
         "seed": seed,
-        "min_support": min_support,
-        "min_exception_support": min_exception_support,
+        "min_support": cleaning.get("min_support", 0),
+        "min_exception_support": cleaning.get("min_exception_support", 0),
         "gpu": gpu,
     }
+    # only when used, so the metrics.json of older runs stay comparable
+    if cleaning.get("mdl_lambda") is not None:
+        current["mdl_lambda"] = cleaning["mdl_lambda"]
+    if cleaning.get("snap"):
+        current["snap"] = True
 
     logger.info("Starting FOLD-RM training")
     for target in schema["labels"]:
@@ -328,8 +331,7 @@ def train_fold_rm(
             split,
             test_ratio,
             seed,
-            min_support,
-            min_exception_support,
+            cleaner,
             gpu,
             verbose,
         )
