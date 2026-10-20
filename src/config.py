@@ -94,7 +94,7 @@ class FoldRmConfig(BaseModel):
     strategy: Literal["one_vs_rest", "multiclass", "ordinal", "ordinal_count"] = (
         "one_vs_rest"
     )
-    ratio: float = Field(0.7, gt=0, le=1)
+    ratio: float = Field(0.7, gt=0)
     split: Literal["date", "row"] = "date"
     test_ratio: float = Field(0.3, gt=0, lt=1)
     seed: int = 42

@@ -169,7 +169,7 @@ fold_rm  (optional)
 
     fold_rm:
       strategy: one_vs_rest   # or multiclass, ordinal, ordinal_count
-      ratio: 0.7              # FOLD-RM exception ratio, (0, 1]
+      ratio: 0.7              # FOLD-RM exception ratio, > 0
       split: date             # hold out whole days; row = stratified by row
       test_ratio: 0.3         # held-out fraction of days (or rows), (0, 1)
       seed: 42
