@@ -10,13 +10,13 @@ defaults:
   output_path: runs/common
 
 best_ordinal_count:
-  force: reasoning
+  force: extraction
   fold_rm:
     strategy: ordinal_count
     ratio: 1.0
     split: date
     test_ratio: 0.3
-    seed: 42
+    seed: 52
     cleaning:
       min_support: 10
       min_exception_support: 40
@@ -35,7 +35,7 @@ best_ordinal:
     ratio: 1.0
     split: date
     test_ratio: 0.3
-    seed: 42
+    seed: 52
     cleaning:
       min_support: 10
       min_exception_support: 40
@@ -44,4 +44,38 @@ best_ordinal:
     exclude_features:
       prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
     output: ../best/ordinal
+    gpu: false
+
+
+best_one_vs_rest:
+  force: learning
+  fold_rm:
+    strategy: one_vs_rest
+    ratio: 1.0
+    split: date
+    test_ratio: 0.3
+    seed: 52
+    cleaning:
+      min_support: 40
+      min_exception_support: 80
+    exclude_features:
+      prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
+    output: ../best/one_vs_rest
+    gpu: false
+
+
+best_multiclass:
+  force: learning
+  fold_rm:
+    strategy: multiclass
+    ratio: 4.0
+    split: date
+    test_ratio: 0.3
+    seed: 52
+    cleaning:
+      min_support: 40
+      min_exception_support: 80
+    exclude_features:
+      prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
+    output: ../best/multiclass
     gpu: false
