@@ -1,19 +1,47 @@
-best:
-  region: FVG
+defaults:
+  region:
+    name: FVG
+    radius: 30
   dates:
     - start: 2023-01-01
-      end: 2023-04-30
-    - start: 2024-01-01
       end: 2026-06-30
   save_images: false
   workers: 12
+  output_path: runs/common
+
+best_ordinal_count:
+  force: reasoning
+  fold_rm:
+    strategy: ordinal_count
+    ratio: 1.0
+    split: date
+    test_ratio: 0.3
+    seed: 42
+    cleaning:
+      min_support: 10
+      min_exception_support: 40
+      mdl_lambda: 5
+      snap: true
+    exclude_features:
+      prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
+    gpu: false
+    output: ../best/ordinal_count
+    
+
+best_ordinal:
+  force: learning
   fold_rm:
     strategy: ordinal
     ratio: 1.0
     split: date
     test_ratio: 0.3
     seed: 42
-    min_support: 10
-    min_exception_support: 80
+    cleaning:
+      min_support: 10
+      min_exception_support: 40
+      mdl_lambda: 5
+      snap: true
+    exclude_features:
+      prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
+    output: ../best/ordinal
     gpu: false
-    output: fold_rm/best

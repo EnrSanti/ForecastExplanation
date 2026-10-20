@@ -312,3 +312,27 @@ One row per city. Per-hour, per-level values are grouped before being written ou
 After all requested dates are translated, the per-day CSVs are concatenated into a single merged dataset at
 `{run}/translated/{min_date}_{max_date}.csv`.
 
+---
+
+## Step 6 — Learning and Rule Cleaning
+
+Trains FOLD-RM (CUDatILP) models for each label on the merged dataset, after a train/test split
+(`fold_rm.split`: whole days, or stratified rows). The `fold_rm.strategy` turns each multi-class label into
+binary tasks (e.g. `ge_<c>` = "label >= c" for `ordinal` / `ordinal_count`), one model each. Every model is then
+cleaned on its training rows by `cleaning.FoldRmCleaner` (`fold_rm.cleaning`): support pruning, then optional MDL
+pruning and threshold snapping. Only after cleaning is the model scored on the test rows.
+
+### Input
+
+- `{run}/translated/{min_date}_{max_date}.csv` (from Step 5)
+
+### Output
+
+**Path:** `{run}/{fold_rm.output}/{label}/` (`fold_rm.output` defaults to `fold_rm`)
+
+| File           | Description                                                                                                                       |
+|----------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `{task}.lp`    | The cleaned rules of one task as ASP: `{label}(X,'{task}') :- ...` default rules, `ab{n}(X)` exceptions                           |
+| `{task}.pkl`   | The pickled CUDatILP model of the task                                                                                            |
+| `metrics.json` | The run settings (strategy, split, seed, cleaning options), per-task scores under `tasks`, and under `combined` the merged prediction over the original classes: accuracy, macro F1, balanced accuracy, per-class scores, confusion matrix, `n_rules` |
+

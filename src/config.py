@@ -75,20 +75,42 @@ def parse_dates(dates_entry: list | str | dict | None) -> list[date]:
     return sorted(parsed_dates)
 
 
+class CleaningConfig(BaseModel):
+    """Options of cleaning.clean_rules, applied to every learned model."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    min_support: int = Field(0, ge=0)
+    min_exception_support: int = Field(0, ge=0)
+    # MDL pruning, lambda per 1000 minority-side training rows (None = off)
+    mdl_lambda: float | None = Field(None, ge=0)
+    # thresholds to round values of their unit
+    snap: bool = False
+
+
 class FoldRmConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    strategy: Literal["one_vs_rest", "multiclass", "ordinal"] = "one_vs_rest"
+    strategy: Literal["one_vs_rest", "multiclass", "ordinal", "ordinal_count"] = (
+        "one_vs_rest"
+    )
     ratio: float = Field(0.7, gt=0, le=1)
     split: Literal["date", "row"] = "date"
     test_ratio: float = Field(0.3, gt=0, lt=1)
     seed: int = 42
-    min_support: int = Field(0, ge=0)
-    min_exception_support: int = Field(0, ge=0)
+    cleaning: CleaningConfig = CleaningConfig()
     # target -> feature column prefixes left out of its models
     exclude_features: dict[str, list[str]] = {}
     gpu: bool = False
     output: str = "fold_rm"
+
+    @model_validator(mode="after")
+    def _check_cleaning(self) -> FoldRmConfig:
+        # one head label per model, as only the ordinal strategies learn
+        uses_rules = self.cleaning.mdl_lambda is not None or self.cleaning.snap
+        if uses_rules and not self.strategy.startswith("ordinal"):
+            raise ValueError("cleaning.mdl_lambda / snap need an ordinal strategy")
+        return self
 
 
 class RunConfig(BaseModel):

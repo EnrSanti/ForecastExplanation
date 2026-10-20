@@ -42,7 +42,7 @@ Stages run in this order; "force" and "stop_after" refer to them:
     features     TOBAC feature detection and tracking
     reasoning    fronts/segments reasoning and ground truth generation
     translation  FOLD-RM dataset generation
-    learning     FOLD-RM training
+    learning     FOLD-RM training and rule cleaning
 
 Every stage skips days that are already done, unless forced.
 
@@ -168,13 +168,12 @@ fold_rm  (optional)
   per label (prev_pioggia, prev_cloud), written to <output_path>/fold_rm/.
 
     fold_rm:
-      strategy: one_vs_rest   # or multiclass, ordinal
+      strategy: one_vs_rest   # or multiclass, ordinal, ordinal_count
       ratio: 0.7              # FOLD-RM exception ratio, (0, 1]
       split: date             # hold out whole days; row = stratified by row
       test_ratio: 0.3         # held-out fraction of days (or rows), (0, 1)
       seed: 42
-      min_support: 0          # drop rules holding for fewer training rows
-      min_exception_support: 0  # drop exceptions correcting fewer training rows
+      cleaning: {}            # rule cleaning, see below (default: none)
       exclude_features: {}    # target -> column prefixes left out of its models
       gpu: false              # fitGPU, needs the `gpu` extra (cupy)
       output: fold_rm         # models folder inside output_path
@@ -190,10 +189,33 @@ fold_rm  (optional)
   overwrite each other's models.
 
   Strategies:
-    one_vs_rest  one FOLD-RM model per class ("class_<c>_vs_rest")
-    multiclass   a single FOLD-RM model over all the classes
-    ordinal      one model per class boundary, "ge_<c>" = the label is at
-                 least c (classes ordered by their code).
+    one_vs_rest    one FOLD-RM model per class ("class_<c>_vs_rest")
+    multiclass     a single FOLD-RM model over all the classes
+    ordinal        one model per class boundary, "ge_<c>" = the label is at
+                   least c (classes ordered by their code). A row takes
+                   the class below the first model that does not fire.
+    ordinal_count  the models of "ordinal"; a row takes the class at the
+                   number of models that fire (a ge_<c> firing above a
+                   lower model that does not still counts).
+
+  cleaning simplifies every learned model on its training rows, before
+  it is scored (package src/cleaning, FoldRmCleaner):
+
+      cleaning:
+        min_support: 0             # drop rules holding for fewer training rows
+        min_exception_support: 0   # drop exceptions correcting fewer training rows
+        mdl_lambda: null           # MDL pruning, null = off
+        snap: false                # thresholds to round values
+
+    mdl_lambda   rules, exceptions, conditions and interval bounds are
+                 deleted while training errors + lambda * conditions does
+                 not grow; lambda = mdl_lambda per 1000 rows of the model's
+                 minority side, so rare classes are not pruned away.
+    snap         each threshold moves to the round value of its unit
+                 (5 %, 1 K, 1 h, 0.5-1 m/s, 5000 km2) with the fewest
+                 training errors, within 2 steps.
+    mdl_lambda and snap need an ordinal strategy (one head label per
+    model). The order is: support pruning, MDL pruning, snap.
 
   metrics.json holds per-model scores under "tasks" and, under "combined",
   the merged prediction over the original classes: accuracy, macro F1,
