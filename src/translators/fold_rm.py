@@ -84,9 +84,7 @@ def _hour_group(time_label: str) -> str:
 def _pivot(df: pd.DataFrame, value_col: str, round_ndigits: int | None = None) -> dict:
     """(city, time label, height label) -> value."""
     keys = zip(
-        df["city"],
-        df["timestamp"].map(_time_label),
-        df["height"].map(_height_label),
+        df["city"], df["timestamp"].map(_time_label), df["height"].map(_height_label)
     )
     values = df[value_col]
     if round_ndigits is not None:

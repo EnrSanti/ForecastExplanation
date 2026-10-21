@@ -25,10 +25,7 @@ from features_detection.features import (
     segment_features,
     track_features,
 )
-from features_detection.utils import (
-    build_referenced_data_from_xarray,
-    grid_spacing,
-)
+from features_detection.utils import build_referenced_data_from_xarray, grid_spacing
 from region import Region
 
 logger = logging.getLogger(__name__)

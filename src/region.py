@@ -75,10 +75,7 @@ class Region:
 Region.FVG = Region("FVG", [11, 15, 44.5, 48])
 Region.ITALY = Region("ITALY", [10, 16, 42, 48])
 
-_PRESETS = {
-    "FVG": Region.FVG,
-    "ITALY": Region.ITALY,
-}
+_PRESETS = {"FVG": Region.FVG, "ITALY": Region.ITALY}
 
 CITIES = {
     "Prealpi Carniche": {"lat": 46.1906756, "lon": 12.5544384},

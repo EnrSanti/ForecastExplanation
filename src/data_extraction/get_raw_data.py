@@ -19,10 +19,7 @@ logging.getLogger("ecmwf.datastores").setLevel(logging.WARNING)
 
 def to_compressed_netcdf(ds: xr.Dataset, path: Path) -> None:
     encoding = {
-        name: {
-            "zlib": True,
-            "complevel": 4,
-        }
+        name: {"zlib": True, "complevel": 4}
         for name, var in ds.data_vars.items()
         if var.dtype.kind in "fiu"
     }
@@ -52,10 +49,7 @@ def cut_grib_long_lat(ds: xr.Dataset, coordinates: list[float]) -> xr.Dataset:
     x_min = max(0, int(x_indices.min()) - 1)
     x_max = min(ds.sizes["x"], int(x_indices.max()) + 2)
 
-    ds_sub = ds.isel(
-        y=slice(y_min, y_max),
-        x=slice(x_min, x_max),
-    )
+    ds_sub = ds.isel(y=slice(y_min, y_max), x=slice(x_min, x_max))
 
     if lon_min < 0 or lon_max < 0:
         ds_sub = ds_sub.assign_coords(
@@ -169,11 +163,7 @@ def download_month_grib(dates: list[date], grib_path: Path) -> None:
             "18:00",
             "21:00",
         ],
-        "leadtime_hour": [
-            "1",
-            "2",
-            "3",
-        ],
+        "leadtime_hour": ["1", "2", "3"],
         "data_format": "grib",
     }
 

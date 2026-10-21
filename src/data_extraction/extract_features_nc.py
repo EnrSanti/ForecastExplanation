@@ -166,9 +166,7 @@ def save_borders_png(output_base: Path, coordinates: Region) -> None:
     ax.add_feature(cfeature.BORDERS, linewidth=0.8, edgecolor="black")
 
     shpfilename = shapereader.natural_earth(
-        resolution="10m",
-        category="cultural",
-        name="admin_1_states_provinces",
+        resolution="10m", category="cultural", name="admin_1_states_provinces"
     )
     reader = shapereader.Reader(shpfilename)
     for record in reader.records():
@@ -215,8 +213,7 @@ def create_legends(output_base: Path) -> None:
 
 def _drop_coords(da: xr.DataArray) -> xr.DataArray:
     return da.drop_vars(
-        ["valid_time", "step", "isobaricInhPa", "number", "surface"],
-        errors="ignore",
+        ["valid_time", "step", "isobaricInhPa", "number", "surface"], errors="ignore"
     )
 
 

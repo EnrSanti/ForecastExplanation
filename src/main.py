@@ -36,11 +36,7 @@ def parse_args() -> argparse.Namespace:
         choices=stages,
         help="Recompute this stage and every stage after it, ignoring cached results",
     )
-    parser.add_argument(
-        "--stop-after",
-        choices=stages,
-        help="Last stage to run",
-    )
+    parser.add_argument("--stop-after", choices=stages, help="Last stage to run")
     parser.add_argument(
         "--clean",
         nargs="+",

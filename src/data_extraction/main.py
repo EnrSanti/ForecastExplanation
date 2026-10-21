@@ -13,17 +13,9 @@ from tqdm import tqdm
 
 from region import Region
 
-from . import (
-    CLUSTERED_DATA_DIR,
-    CUT_DATA_DIR,
-    DISCRETE_DATA_DIR,
-    RAW_DATA_DIR,
-)
+from . import CLUSTERED_DATA_DIR, CUT_DATA_DIR, DISCRETE_DATA_DIR, RAW_DATA_DIR
 from .clustering import cluster_xarray
-from .extract_features_nc import (
-    build_feature_dataarrays,
-    create_one_time_images,
-)
+from .extract_features_nc import build_feature_dataarrays, create_one_time_images
 from .get_raw_data import cut_month, cut_path, to_compressed_netcdf
 
 logger = logging.getLogger(__name__)

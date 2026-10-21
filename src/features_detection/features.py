@@ -51,10 +51,7 @@ def detect_features(
 
 
 def track_features(
-    features_weighted_points: pd.DataFrame,
-    v_max: float,
-    dt: float,
-    memory: int,
+    features_weighted_points: pd.DataFrame, v_max: float, dt: float, memory: int
 ) -> pd.DataFrame:
     """Links detected features into trajectories across time frames."""
     if features_weighted_points.empty:
