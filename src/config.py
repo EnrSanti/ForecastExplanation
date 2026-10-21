@@ -61,11 +61,21 @@ def parse_dates(dates_entry: list | str | dict | None) -> list[date]:
         if isinstance(item, (datetime, date, str)):
             parsed_dates.add(_parse_date_value(item))
         elif isinstance(item, dict):
+            unknown = set(item) - {"start", "end", "step"}
+            if unknown:
+                raise ValueError(f"Unknown date range keys {sorted(unknown)}")
             start = _parse_date_value(item.get("start"))
             end = _parse_date_value(item.get("end"))
+            if end < start:
+                raise ValueError(f"Date range ends before it starts: {item!r}")
 
             curr = start
             step = item.get("step", 1)
+            # a zero or fractional step would never move past `end`
+            if not isinstance(step, int) or isinstance(step, bool) or step < 1:
+                raise ValueError(
+                    f"Date range step must be a positive integer: {step!r}"
+                )
             while curr <= end:
                 parsed_dates.add(curr)
                 curr += timedelta(days=step)
@@ -142,7 +152,26 @@ class RunConfig(BaseModel):
 
     @model_validator(mode="after")
     def _check_region(self) -> RunConfig:
-        self.build_region()
+        if isinstance(self.region, dict):
+            unknown = set(self.region) - {"name", "bounds", "radius", "cities"}
+            if unknown:
+                raise ValueError(f"region: unknown keys {sorted(unknown)}")
+            if {"name", "bounds"} <= set(self.region):
+                raise ValueError("region: set either 'name' or 'bounds', not both")
+            if "cities" in self.region and self.cities is not None:
+                raise ValueError("cities: set either 'cities' or 'region.cities'")
+        try:
+            region = self.build_region()
+        except (KeyError, TypeError) as e:  # e.g. a city without lat/lon
+            raise ValueError(f"region: invalid value ({e!r})") from e
+        lon_min, lon_max, lat_min, lat_max = region.value
+        if lon_min >= lon_max or lat_min >= lat_max:
+            raise ValueError(
+                f"region: bounds must be [lon_min, lon_max, lat_min, lat_max], "
+                f"got {region.value}"
+            )
+        if region.city_radius <= 0:
+            raise ValueError(f"region: radius must be > 0, got {region.city_radius}")
         return self
 
     def build_region(self) -> Region:
@@ -158,11 +187,21 @@ class RunConfig(BaseModel):
 
 
 def _merge(base: dict, override: dict) -> dict:
-    merged = {**base, **override}
-    if isinstance(base.get("fold_rm"), dict) and isinstance(
-        override.get("fold_rm"), dict
-    ):
-        merged["fold_rm"] = {**base["fold_rm"], **override["fold_rm"]}
+    """Recursive merge, `override` wins. A run's cities replace the default ones,
+    and a region name or bounds replaces both the default name and bounds."""
+    merged = {**base}
+    for key, value in override.items():
+        base_value = merged.get(key)
+        if key == "cities" or not (
+            isinstance(value, dict) and isinstance(base_value, dict)
+        ):
+            merged[key] = value
+            continue
+        if key == "region" and {"name", "bounds"} & set(value):
+            base_value = {
+                k: v for k, v in base_value.items() if k not in ("name", "bounds")
+            }
+        merged[key] = _merge(base_value, value)
     return merged
 
 
