@@ -80,21 +80,42 @@ def per_class_scores(Y_hat: list, Y: list) -> dict[str, dict]:
 def combined_scores(Y_hat: list, Y: list, default: str) -> dict:
     """Scores of the merged prediction over the original classes."""
     classes = per_class_scores(Y_hat, Y)
-    present = [v for k, v in classes.items() if v["support"]]
-    f1 = [
+    present = [v for v in classes.values() if v["support"] > 0]
+
+    labels = sorted(set(Y) | set(Y_hat), key=float)
+    n = len(Y)
+
+    accuracy = sum(y == yh for y, yh in zip(Y, Y_hat)) / n if n else 0.0
+
+    # Macro-recall: average recall across classes with non-zero support.
+    recall = sum(v["recall"] for v in present) / len(present) if present else 0.0
+
+    # Macro-F1: average per-class F1, giving each class equal weight.
+    f1_scores = [
         (
             2 * v["precision"] * v["recall"] / (v["precision"] + v["recall"])
-            if v["precision"] + v["recall"]
+            if v["precision"] + v["recall"] > 0
             else 0.0
         )
         for v in present
     ]
-    labels = sorted(set(Y) | set(Y_hat), key=float)
+    macro_f1 = sum(f1_scores) / len(f1_scores) if f1_scores else 0.0
+
+    # Weighted precision: weight each class by its ground-truth support.
+    weighted_precision = (
+        sum(v["precision"] * v["support"] for v in present) / n if n else 0.0
+    )
+
+    # Weighted recall: weight each class by its ground-truth support.
+    weighted_recall = sum(v["recall"] * v["support"] for v in present) / n if n else 0.0
+
     return {
-        "accuracy": round(sum(y == yh for y, yh in zip(Y, Y_hat)) / len(Y), 4),
-        "majority_baseline": round(Y.count(default) / len(Y), 4),
-        "macro_f1": round(sum(f1) / len(f1), 4),
-        "balanced_accuracy": round(sum(v["recall"] for v in present) / len(present), 4),
+        "accuracy": round(accuracy, 4),
+        "majority_baseline": round(Y.count(default) / n, 4) if n else 0.0,
+        "recall": round(recall, 4),
+        "macro_f1": round(macro_f1, 4),
+        "weighted_precision": round(weighted_precision, 4),
+        "weighted_recall": round(weighted_recall, 4),
         "per_class": classes,
         # confusion[true][predicted]
         "confusion": {
@@ -223,7 +244,7 @@ def _train_target(
     logger.info(
         f"FOLD-RM {target}: acc {combined['accuracy']} (baseline "
         f"{combined['majority_baseline']}) macro F1 {combined['macro_f1']} "
-        f"balanced acc {combined['balanced_accuracy']} rules {combined['n_rules']}"
+        f"rules {combined['n_rules']}"
     )
     return results, combined
 
@@ -252,7 +273,7 @@ def train_fold_rm(
         schema: {"labels", "features", "categorical", "numeric"} as given by FoldRmTranslator.schema.
         output_dir: Root folder for the learned models.
         strategy: Key of STRATEGIES ("one_vs_rest", "multiclass", "ordinal"
-            or "ordinal_count").
+            or "ordinal_count", "multiclass_no_ig").
         ratio: FOLD-RM exception ratio hyperparameter.
         split: "date" holds out whole days (falls back to "row" when the
             dataset has no date column); "row" is a per-label stratified split.
@@ -276,7 +297,7 @@ def train_fold_rm(
 
     dataset_csv = Path(dataset_csv)
     output_dir = Path(output_dir)
-    Classifier = load_classifier_cls()
+    Classifiers = load_classifier_cls()
     cleaning = cleaning or {}
     cleaner = FoldRmCleaner(**cleaning)
 
@@ -321,7 +342,7 @@ def train_fold_rm(
             stale.unlink()
 
         results, combined = _train_target(
-            Classifier,
+            Classifiers[strategy],
             dataset_csv,
             target_schema,
             target,

@@ -80,6 +80,17 @@ class Multiclass(Strategy):
         return [default if p is None else p for p in predictions["multiclass"]]
 
 
+class Multiclass_no_ig(Strategy):
+    def tasks(self, train: list[Row], test: list[Row]) -> Iterable[Task]:
+        yield "multiclass_no_ig", train, test
+
+    def combine(
+        self, predictions: dict[str, list], train: list[Row], n: int
+    ) -> list[str]:
+        default = majority_label(train)
+        return [default if p is None else p for p in predictions["multiclass_no_ig"]]
+
+
 class Ordinal(Strategy):
     """`ge_<c>` models "label >= c"; a row takes the class below the first
     model that doesn't fire."""
@@ -129,4 +140,5 @@ STRATEGIES: dict[str, type[Strategy]] = {
     "multiclass": Multiclass,
     "ordinal": Ordinal,
     "ordinal_count": OrdinalCount,
+    "multiclass_no_ig": Multiclass_no_ig,
 }

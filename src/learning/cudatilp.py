@@ -15,9 +15,16 @@ def load_classifier_cls():
         )
     try:
         from src.common.foldrm import Classifier
+        from src.common.foldrm_no_ig import Classifier_no_ig
     except ImportError as e:
         raise RuntimeError(f"Could not import CUDatILP Classifier ({e})") from e
-    return Classifier
+    return {
+        "one_vs_rest": Classifier,
+        "multiclass": Classifier,
+        "ordinal": Classifier,
+        "ordinal_count": Classifier,
+        "multiclass_no_ig": Classifier_no_ig,
+    }
 
 
 def save_model(model, path: Path) -> None:
