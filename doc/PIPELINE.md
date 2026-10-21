@@ -70,7 +70,8 @@ separate output files.
 | `humidity_at_{h}` | Integer front/blob IDs from TOBAC (0 = background) |
 | `cloud_at_{h}`    | Integer front/blob IDs from TOBAC (0 = background) |
 
-> Note: some height levels may be absent if TOBAC detected no valid features at that altitude.
+> Note: every height level of the input has its masks. Hours where TOBAC found no feature at a level are NaN,
+> and a level with no feature all day is all background (0).
 
 ### Output 2 — Raw Features
 
@@ -122,10 +123,12 @@ produces tabular `.txt` reports.
 
 **Path:** `{run}/{date}/reasoning/`
 
+Per-city values are taken over the grid points within the city radius (`region.radius` in the config, 20 km by
+default). Cities with no grid point in their radius are left out of the per-city tables.
+
 #### `winds.txt`
 
-Mean wind within a 3 km radius of each city, per height and hour. Direction is the magnitude-weighted vector mean,
-reported as a compass octave.
+Mean wind around each city, per height and hour. Direction is the magnitude-weighted vector mean, in degrees.
 
 | Column           | Description                                 |
 |------------------|---------------------------------------------|
@@ -151,7 +154,7 @@ Coverage is the percentage of the city's radius covered by the cloud.
 
 #### `temp.txt`
 
-Mean temperature within a 3 km radius of each city, per height and hour.
+Mean temperature around each city, per height and hour.
 
 | Column        | Description          |
 |---------------|----------------------|
@@ -176,8 +179,7 @@ Temperature fronts detected by TOBAC, with their physical temperature and city m
 
 #### `cloud.txt`
 
-Mean CERRA cloud cover within a 3 km radius of each city, per height and hour, whether or not TOBAC segmented a
-cloud there.
+Mean CERRA cloud cover around each city, per height and hour, whether or not TOBAC segmented a cloud there.
 
 | Column      | Description         |
 |-------------|---------------------|
@@ -188,7 +190,7 @@ cloud there.
 
 #### `humidity.txt`
 
-Mean relative humidity within a 3 km radius of each city, per height and hour.
+Mean relative humidity around each city, per height and hour.
 
 | Column      | Description                |
 |-------------|----------------------------|
@@ -213,7 +215,7 @@ Humidity fronts detected by TOBAC, with their physical humidity and city members
 
 #### `front.txt`, `warmadv.txt`, `tefall.txt`, `terise.txt`
 
-No TOBAC: per city (mean within `city_radius`), height (850/700/500) and hour, from `raw_front`, `raw_tadv` and
+No TOBAC: per city (mean over its radius), height (850/700/500) and hour, from `raw_front`, `raw_tadv` and
 `raw_te_change`. Thresholds in `reasoning/main.py` (`FRONT_PHENOMENA`): front 7/5/3 K/100 km, warmadv 0.3 K/h,
 tefall / terise -/+ 1.95/1.65/1.5 K.
 
@@ -279,8 +281,8 @@ One row per city. Per-hour, per-level values are grouped before being written ou
 | `location`                                            | City slug                                                                                                                     |
 | `wind_direction_*`                                    | Resultant vector wind direction, compass octave, per time/height group                                                        |
 | `wind_speed_*`                                        | Resultant vector wind speed (m/s), per time/height group                                                                      |
-| `coverage_clouds_*`                                   | Cloud coverage (%), averaged per time/height group                                                                            |
-| `size_cloud_*`                                        | Cloud segment area (km²), averaged per time/height group                                                                      |
+| `coverage_clouds_*`                                   | % of the city's radius under TOBAC cloud segments, averaged per time/height group (0 where no segment)                        |
+| `size_cloud_*`                                        | Area (km²) of the TOBAC cloud segments over the city, averaged per time/height group (0 where none)                           |
 | `temperature_*`                                       | Temperature (K), averaged per time/height group                                                                               |
 | `humidity_*`                                          | Relative humidity (%), averaged per time/height group                                                                         |
 | `{f}_hours_{g}`                                       | Hours the city is inside a segment of `f` (or past its threshold) at a level of group `g`                                     |

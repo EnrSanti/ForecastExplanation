@@ -553,7 +553,11 @@ class FoldRmTranslator(BaseTranslator):
         wind_grouped = average_by_height_and_time_vector(wind_speed, wind_dir)
         # (column group, (city, time group, height group) -> value, default)
         grouped = [
-            ("wind_direction", {k: v["direction"] for k, v in wind_grouped.items()}, ""),
+            (
+                "wind_direction",
+                {k: v["direction"] for k, v in wind_grouped.items()},
+                "",
+            ),
             ("wind_speed", {k: v["speed"] for k, v in wind_grouped.items()}, ""),
             ("coverage_clouds", average_by_height_and_time(coverage), 0),
             ("size_cloud", average_by_height_and_time(size), 0),
