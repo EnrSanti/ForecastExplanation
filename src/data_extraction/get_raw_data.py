@@ -86,12 +86,12 @@ def cut_month(
     month_dir = raw_dir / month
     grib_path = month_dir / f"{month}.grib"
     try:
-        if grib_has_days(grib_path, todo):
-            logger.debug(f"GRIB already exists: {grib_path}")
+        available = grib_days(grib_path)
+        missing = [d for d in todo if d not in available]
+        if missing:
+            add_to_grib(missing, grib_path, keep=bool(available))
         else:
-            shutil.rmtree(month_dir, ignore_errors=True)
-            month_dir.mkdir(parents=True, exist_ok=True)
-            download_month_grib(todo, grib_path)
+            logger.debug(f"GRIB already exists: {grib_path}")
         cut_grib_days(grib_path, todo, region, base_path)
     finally:
         if delete_grib:
@@ -100,16 +100,32 @@ def cut_month(
     return [d for d in month_dates if cut_path(d, region, base_path).exists()]
 
 
-def grib_has_days(grib_path: Path, dates: list[date]) -> bool:
+def grib_days(grib_path: Path) -> set[date]:
     if not grib_path.exists():
-        return False
+        return set()
     try:
         with xr.open_dataset(grib_path, engine="cfgrib") as ds:
-            available = set(np.atleast_1d(ds.time.dt.date.values))
+            return set(np.atleast_1d(ds.time.dt.date.values))
     except Exception:
         logger.warning(f"Unreadable GRIB, re-downloading: {grib_path}", exc_info=True)
-        return False
-    return set(dates) <= available
+        return set()
+
+
+def add_to_grib(dates: list[date], grib_path: Path, keep: bool) -> None:
+    part_path = grib_path.with_name(grib_path.name + ".part")
+    grib_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        download_month_grib(dates, part_path)
+        if keep:
+            with open(grib_path, "ab") as grib, open(part_path, "rb") as part:
+                shutil.copyfileobj(part, grib)
+        else:
+            part_path.replace(grib_path)
+    finally:
+        part_path.unlink(missing_ok=True)
+    # cfgrib index of the old content
+    for index in grib_path.parent.glob(f"{grib_path.name}.*.idx"):
+        index.unlink()
 
 
 def cut_grib_days(
