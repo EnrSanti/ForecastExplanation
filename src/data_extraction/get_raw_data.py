@@ -8,7 +8,9 @@ import numpy as np
 import xarray as xr
 from ecmwf.datastores import Client
 
-from . import CUT_DATA_DIR, Region
+from region import Region
+
+from . import CUT_DATA_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -139,12 +141,11 @@ def download_month_grib(dates: list[date], grib_path: Path) -> None:
     logger.debug(f"Downloading GRIB for {month} ({len(dates)} days) to {grib_path}...")
     progress = logger.getEffectiveLevel() == logging.DEBUG
     client = Client(
-        key=os.getenv("ECMWF_API_KEY", None),
-        url=os.getenv("ECMWF_API_URL", None),
+        key=os.getenv("ECMWF_API_KEY"),
+        url=os.getenv("ECMWF_API_URL"),
         progress=progress,
     )
     if not client.check_authentication():
-        logger.critical("Failed to authenticate with ECMWF API.")
         raise RuntimeError("Failed to authenticate with ECMWF API.")
 
     base_request = {
@@ -176,18 +177,14 @@ def download_month_grib(dates: list[date], grib_path: Path) -> None:
         "data_format": "grib",
     }
 
-    try:
-        client.retrieve(
-            "reanalysis-cerra-pressure-levels",
-            {
-                **base_request,
-                "year": [dates[0].strftime("%Y")],
-                "month": [dates[0].strftime("%m")],
-                "day": [d.strftime("%d") for d in dates],
-            },
-            str(grib_path),
-        )
-        logger.debug(f"Download complete: {grib_path}")
-    except Exception as e:
-        logger.error(f"Failed to download GRIB for {month}: {e}")
-        raise
+    client.retrieve(
+        "reanalysis-cerra-pressure-levels",
+        {
+            **base_request,
+            "year": [dates[0].strftime("%Y")],
+            "month": [dates[0].strftime("%m")],
+            "day": [d.strftime("%d") for d in dates],
+        },
+        str(grib_path),
+    )
+    logger.debug(f"Download complete: {grib_path}")

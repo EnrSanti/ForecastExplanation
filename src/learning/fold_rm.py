@@ -225,16 +225,16 @@ def train_fold_rm(
     schema: dict[str, list[str]],
     output_dir: Path,
     *,
-    strategy: str = "one_vs_rest",
-    ratio: float = 0.7,
-    split: str = "date",
-    test_ratio: float = 0.3,
-    seed: int = 42,
+    strategy: str,
+    ratio: float,
+    split: str,
+    test_ratio: float,
+    seed: int,
     cleaning: dict,
     exclude_features: dict[str, list[str]],
-    gpu: bool = False,
-    force: bool = False,
-    verbose: bool = False,
+    gpu: bool,
+    force: bool,
+    verbose: bool,
 ) -> None:
     """
     Trains FOLD-RM models for every label in `schema` on the merged dataset.
@@ -269,14 +269,14 @@ def train_fold_rm(
         "split": split,
         "test_ratio": test_ratio,
         "seed": seed,
-        "min_support": cleaning.get("min_support", 0),
-        "min_exception_support": cleaning.get("min_exception_support", 0),
+        "min_support": cleaning["min_support"],
+        "min_exception_support": cleaning["min_exception_support"],
         "gpu": gpu,
     }
     # only when used, so the metrics.json of older runs stay comparable
-    if cleaning.get("mdl_lambda") is not None:
+    if cleaning["mdl_lambda"] is not None:
         current["mdl_lambda"] = cleaning["mdl_lambda"]
-    if cleaning.get("snap"):
+    if cleaning["snap"]:
         current["snap"] = True
 
     logger.info("Starting FOLD-RM training")

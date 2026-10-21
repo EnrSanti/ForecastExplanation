@@ -41,6 +41,7 @@ outputs.
 | `cloud_at_{h}`          | Normalized cloud cover [0–1] (for TOBAC)            |
 | `raw_temp_at_{h}`       | Un-normalized temperature (K)                       |
 | `raw_humidity_at_{h}`   | Un-normalized relative humidity (%)                 |
+| `raw_cloud_at_{h}`      | Cloud cover (%)                                     |
 | `wind_at_{h}`           | Wind speed (m/s, not normalized)                    |
 | `wind_direction_at_{h}` | Wind direction (degrees, meteorological convention) |
 | `raw_front_at_{h}`      | Theta-e gradient (K/100 km)                         |

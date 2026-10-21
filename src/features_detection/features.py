@@ -10,14 +10,6 @@ import xarray as xr
 
 matplotlib.use("Agg")
 
-from features_detection.constants import (
-    DEFAULT_DT,
-    DEFAULT_DXY,
-    DEFAULT_GAP_FRAMES,
-    DEFAULT_MIN_DISTANCE,
-    DEFAULT_SMOOTH,
-)
-
 logger = logging.getLogger(__name__)
 logging.getLogger("trackpy").setLevel(logging.WARNING)
 
@@ -26,10 +18,10 @@ def detect_features(
     data_norm: xr.DataArray,
     threshold: float,
     target: str,
-    smooth: float = DEFAULT_SMOOTH,
-    min_blob_size: int = 100,
-    min_distance: float = DEFAULT_MIN_DISTANCE,
-    dxy: float = DEFAULT_DXY,
+    smooth: float,
+    min_blob_size: int,
+    min_distance: float,
+    dxy: float,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Performs multithreshold feature detection on normalized DataArray.
@@ -61,9 +53,8 @@ def detect_features(
 def track_features(
     features_weighted_points: pd.DataFrame,
     v_max: float,
-    dt: float = DEFAULT_DT,
-    memory: int = DEFAULT_GAP_FRAMES,
-    method_linking: str = "predict",
+    dt: float,
+    memory: int,
 ) -> pd.DataFrame:
     """Links detected features into trajectories across time frames."""
     if features_weighted_points.empty:
@@ -82,7 +73,7 @@ def track_features(
                 latitude_name="latitude",
                 longitude_name="longitude",
                 memory=memory,
-                method_linking=method_linking,
+                method_linking="predict",
             )
         return trajectories
     except Exception as e:  # noqa: BLE001
@@ -97,8 +88,8 @@ def segment_features(
     data_norm: xr.DataArray,
     threshold: float,
     target: str,
-    smooth: float = DEFAULT_SMOOTH,
-    dxy: float = DEFAULT_DXY,
+    smooth: float,
+    dxy: float,
 ) -> list[tuple[int, xr.DataArray | None, xr.DataArray | None]]:
     """Performs 2D segmentation for each frame in data_norm."""
     segments_all = []
@@ -111,11 +102,7 @@ def segment_features(
         temp_da = data_norm.isel(time=[itime]).copy()
         temp_da.data = smoothed_frame[np.newaxis, ...]
 
-        f = (
-            features[features["frame"] == itime]
-            if features is not None
-            else pd.DataFrame()
-        )
+        f = features[features["frame"] == itime]
         if f.empty:
             segments_all.append((itime, None, None))
             continue

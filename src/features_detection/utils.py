@@ -4,32 +4,14 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from features_detection.constants import DEFAULT_DT, DEFAULT_DXY
-
 logger = logging.getLogger(__name__)
 
 
-def to_compressed_netcdf(ds: xr.Dataset, path) -> None:
-    encoding = {
-        name: {"zlib": True, "complevel": 4}
-        for name, var in ds.data_vars.items()
-        if var.dtype.kind in "fiu"
-    }
-    ds.to_netcdf(path, encoding=encoding)
-
-
-def get_grid_spacings(referenced_data: xr.DataArray) -> tuple[float, float]:
-    """dxy (m) from latitude/longitude (x/y are pixel indices), dt of the
-    hourly frames (s)."""
-    return float(latlon_spacing(referenced_data) or DEFAULT_DXY), float(DEFAULT_DT)
-
-
-def latlon_spacing(da: xr.DataArray) -> float | None:
-    """Mean distance (m) between neighbouring grid points, or None."""
-    if "latitude" not in da.coords or "longitude" not in da.coords:
-        return None
-    lat = np.radians(da["latitude"].values)
-    lon = np.radians(da["longitude"].values)
+def grid_spacing(data: xr.Dataset | xr.DataArray) -> float:
+    """Mean distance (m) between neighbouring grid points (x/y are pixel
+    indices, so it comes from latitude/longitude)."""
+    lat = np.radians(data["latitude"].values)
+    lon = np.radians(data["longitude"].values)
 
     def dist(lat1, lon1, lat2, lon2):
         a = (
@@ -40,8 +22,7 @@ def latlon_spacing(da: xr.DataArray) -> float | None:
 
     dx = dist(lat[:, :-1], lon[:, :-1], lat[:, 1:], lon[:, 1:])
     dy = dist(lat[:-1, :], lon[:-1, :], lat[1:, :], lon[1:, :])
-    spacing = float(np.nanmean(np.concatenate([dx.ravel(), dy.ravel()])))
-    return spacing if np.isfinite(spacing) and spacing > 1.0 else None
+    return float(np.nanmean(np.concatenate([dx.ravel(), dy.ravel()])))
 
 
 def build_referenced_data_from_xarray(da: xr.DataArray, times: list) -> xr.DataArray:
