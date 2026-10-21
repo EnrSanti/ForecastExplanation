@@ -509,7 +509,6 @@ class FoldRmTranslator(BaseTranslator):
 
     def translate_day(self, day_input_folder: Path, target_date: date) -> bytes:
         cities_gt = json.loads((day_input_folder / "gt.json").read_text())
-        cities = sorted(cities_gt)
 
         reasoning_dir = day_input_folder / "reasoning"
         winds_df = pd.read_csv(reasoning_dir / "winds.txt", sep="\t")
@@ -517,6 +516,15 @@ class FoldRmTranslator(BaseTranslator):
         temp_df = pd.read_csv(reasoning_dir / "temp.txt", sep="\t")
         humidity_df = pd.read_csv(reasoning_dir / "humidity.txt", sep="\t")
         cloud_cover_df = pd.read_csv(reasoning_dir / "cloud.txt", sep="\t")
+        featured = set().union(
+            *(df["city"] for df in (winds_df, temp_df, humidity_df, cloud_cover_df))
+        )
+        cities = sorted(set(cities_gt) & featured)
+        if not cities:
+            raise ValueError(
+                f"No city has both ground truth and features: "
+                f"{sorted(cities_gt)} vs {sorted(featured)}"
+            )
 
         fronts: dict[str, dict] = {city: {} for city in cities}
         for by_city, files, groups in FRONT_TABLES:

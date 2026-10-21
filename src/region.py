@@ -67,8 +67,9 @@ class Region:
         return lat_min <= lat <= lat_max and lon_min <= lon <= lon_max
 
     def _warn_outside(self) -> None:
-        """Warns about the cities get_cities drops, a radius that may hold no
-        grid point and the part of the region with no CERRA data."""
+        """Warns about the cities get_cities drops, the ones with no ground
+        truth, a radius that may hold no grid point and the part of the region
+        with no CERRA data."""
         cities_dict = self.cities if self.cities is not None else CITIES
         outside = [
             city
@@ -78,6 +79,13 @@ class Region:
         if outside:
             logger.warning(
                 f"Cities outside region {self.name} {self.value}, ignored: {outside}"
+            )
+
+        unlabelled = [city for city, _, _ in self.get_cities() if city not in CITIES]
+        if unlabelled:
+            logger.warning(
+                "Cities without ground truth (only the FVG bulletin zones have "
+                f"labels), not in the dataset: {unlabelled}"
             )
 
         if self.city_radius < _MIN_SAFE_RADIUS:
@@ -148,6 +156,7 @@ class Region:
         )
 
 
+# the FVG bulletin zones, the only cities with ground truth (gt.json keys)
 CITIES = {
     "Prealpi Carniche": {"lat": 46.1906756, "lon": 12.5544384},
     "Alpi Carniche": {"lat": 46.466194, "lon": 12.876158},
