@@ -126,6 +126,12 @@ class FoldRmConfig(BaseModel):
         return self
 
 
+def _is_city(info: Any) -> bool:
+    return isinstance(info, dict) and all(
+        isinstance(info.get(key), (int, float)) for key in ("lat", "lon")
+    )
+
+
 class RunConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -160,9 +166,17 @@ class RunConfig(BaseModel):
                 raise ValueError(f"region: unknown keys {sorted(unknown)}")
             if {"name", "bounds"} <= set(self.region):
                 raise ValueError("region: set either 'name' or 'bounds', not both")
+            cities = self.region.get("cities")
+            if cities is not None and not isinstance(cities, dict):
+                raise ValueError(
+                    f"region: cities must map each name to its lat and lon, got {cities!r}"
+                )
+            bad = [name for name, info in (cities or {}).items() if not _is_city(info)]
+            if bad:
+                raise ValueError(f"region: cities {bad} need a numeric lat and lon")
         try:
             self.build_region()
-        except (KeyError, TypeError) as e:  # e.g. a city without lat/lon
+        except (KeyError, TypeError) as e:  # e.g. radius: null
             raise ValueError(f"region: invalid value ({e!r})") from e
         return self
 
@@ -178,14 +192,18 @@ class RunConfig(BaseModel):
         return stage.order <= self.stop_after.order
 
 
+# replaced whole, not merged: keyed by data (cities, targets) or tuned together
+_REPLACED_KEYS = ("cities", "dates", "cleaning", "exclude_features")
+
+
 def _merge(base: dict, override: dict) -> dict:
-    """Recursive merge, `override` wins. A run's region cities and dates replace
-    the default ones, and a region name or bounds replaces both the default name
-    and bounds."""
+    """Recursive merge, `override` wins. A run's dates, region cities and
+    fold_rm cleaning and exclude_features replace the default ones, and a region
+    name or bounds replaces both the default name and bounds."""
     merged = {**base}
     for key, value in override.items():
         base_value = merged.get(key)
-        if key in ("cities", "dates") or not (
+        if key in _REPLACED_KEYS or not (
             isinstance(value, dict) and isinstance(base_value, dict)
         ):
             merged[key] = value
