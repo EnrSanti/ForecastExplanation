@@ -6,8 +6,8 @@ defaults:
     - start: 2023-01-01
       end: 2026-07-31
   save_images: false
-  workers: 8
-  output_path: /run/media/elius/Volume/FORECAST/runs/learning_test
+  workers: 12
+  output_path: ./runs/best
 
 best_ordinal_count:
   force: extraction
