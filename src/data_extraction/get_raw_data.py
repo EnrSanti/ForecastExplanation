@@ -73,19 +73,15 @@ def cut_month(
     force_redo: bool,
     delete_grib: bool,
 ) -> list[date]:
+    month = month_dates[0].strftime("%Y-%m")
+    month_dir = raw_dir / month
+    grib_path = month_dir / f"{month}.grib"
     todo = [
         d
         for d in month_dates
         if force_redo or not cut_path(d, region, base_path).exists()
     ]
-    if not todo:
-        logger.debug(f"ALREADY CUT: {month_dates[0].strftime('%Y-%m')}")
-        return month_dates
-
-    month = todo[0].strftime("%Y-%m")
-    month_dir = raw_dir / month
-    grib_path = month_dir / f"{month}.grib"
-    try:
+    if todo:
         available = grib_days(grib_path)
         missing = [d for d in todo if d not in available]
         if missing:
@@ -93,10 +89,12 @@ def cut_month(
         else:
             logger.debug(f"GRIB already exists: {grib_path}")
         cut_grib_days(grib_path, todo, region, base_path)
-    finally:
-        if delete_grib:
-            shutil.rmtree(month_dir, ignore_errors=True)
+    else:
+        logger.debug(f"ALREADY CUT: {month}")
 
+    # only reached once every day is cut: a failed download or cut keeps the GRIB
+    if delete_grib:
+        shutil.rmtree(month_dir, ignore_errors=True)
     return [d for d in month_dates if cut_path(d, region, base_path).exists()]
 
 
