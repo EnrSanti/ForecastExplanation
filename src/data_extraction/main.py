@@ -1,6 +1,6 @@
 import logging
 import shutil
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import as_completed
 from datetime import date
 from itertools import groupby
 from pathlib import Path
@@ -11,6 +11,7 @@ import pandas as pd
 import xarray as xr
 from tqdm import tqdm
 
+from log_config import worker_pool
 from region import Region
 
 from . import CLUSTERED_DATA_DIR, CUT_DATA_DIR, DISCRETE_DATA_DIR, RAW_DATA_DIR
@@ -115,7 +116,7 @@ def extract_day(
     logger.info("Starting data extraction...")
 
     ok = []
-    with ProcessPoolExecutor(max_workers=workers) as executor:
+    with worker_pool(workers) as executor:
         futures = {
             executor.submit(
                 extract_day_worker,

@@ -13,12 +13,9 @@ import learning
 import reasoning
 import translators
 from config import RunConfig, Stage, load_runs
+from log_config import LOG_FORMAT, setup_logging
 
-logging.basicConfig(
-    level=logging.ERROR,
-    format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
-    force=True,
-)
+logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT, force=True)
 logger = logging.getLogger("ForecastExplanation")
 
 
@@ -162,9 +159,7 @@ def main() -> None:
         sys.exit(1)
 
     for run_name, cfg in runs.items():
-        level = logging.DEBUG if cfg.debug else logging.INFO
-        for name in ("ForecastExplanation", "data_extraction", "features_detection"):
-            logging.getLogger(name).setLevel(level)
+        setup_logging(logging.DEBUG if cfg.debug else logging.INFO)
 
         logger.info(f" --- Starting {run_name} ---")
         try:

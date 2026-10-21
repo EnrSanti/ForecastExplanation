@@ -1,10 +1,12 @@
 import logging
 from abc import ABC, abstractmethod
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import as_completed
 from datetime import date
 from pathlib import Path
 
 from tqdm import tqdm
+
+from log_config import worker_pool
 
 logger = logging.getLogger("ForecastExplanation")
 
@@ -39,7 +41,7 @@ class BaseTranslator(ABC):
         output_folder.mkdir(parents=True, exist_ok=True)
 
         ok = []
-        with ProcessPoolExecutor(max_workers=workers) as executor:
+        with worker_pool(workers) as executor:
             futures = {
                 executor.submit(
                     self._translate_single_day,

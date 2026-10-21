@@ -1,5 +1,5 @@
 import logging
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import as_completed
 from datetime import date
 from pathlib import Path
 
@@ -26,6 +26,7 @@ from features_detection.features import (
     track_features,
 )
 from features_detection.utils import build_referenced_data_from_xarray, grid_spacing
+from log_config import worker_pool
 from region import Region
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ def run_tobac(
     logger.info("Starting TOBAC.")
     output_dir.mkdir(parents=True, exist_ok=True)
     ok = []
-    with ProcessPoolExecutor(max_workers=workers) as executor:
+    with worker_pool(workers) as executor:
         futures = {
             executor.submit(
                 _run_tobac_single_day,

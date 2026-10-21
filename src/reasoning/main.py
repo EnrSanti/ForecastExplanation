@@ -1,11 +1,12 @@
 import logging
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import as_completed
 from datetime import date
 from pathlib import Path
 
 import xarray as xr
 from tqdm import tqdm
 
+from log_config import worker_pool
 from region import Region
 
 from .fronts import detect_phenomenon, detect_phenomenon_fronts, detect_threshold
@@ -54,7 +55,7 @@ def reason(
     logger.info("Starting reasoning")
 
     ok = []
-    with ProcessPoolExecutor(max_workers=workers) as executor:
+    with worker_pool(workers) as executor:
         futures = {
             executor.submit(
                 _reason_single_day,
@@ -146,6 +147,10 @@ def _reason_single_day(
             for name, lat, lon in cities
             if (mask := haversine(lat, lon, lats, lons) <= region.city_radius).any()
         }
+        if not city_masks:
+            raise ValueError(
+                f"No city of {region} has a grid point within {region.city_radius} km"
+            )
 
         detect_winds(feat_ds, city_masks, day_output_dir / "winds.txt", heights)
         detect_clouds(
