@@ -12,7 +12,7 @@ logger = logging.getLogger("ForecastExplanation")
 
 
 class BaseTranslator(ABC):
-    extension: str = ""
+    extension: str  # output file extension, without the dot
     logger = logger
 
     def translate(
@@ -85,13 +85,9 @@ class BaseTranslator(ABC):
         item = input_path / date_str
 
         if not item.is_dir():
-            logger.warning(
-                f"No data found for {date_str} in {input_path}. Skipping translation."
-            )
-            return
+            raise FileNotFoundError(f"No data found for {date_str} in {input_path}")
 
-        ext = self.extension.strip(".") or "txt"
-        output_file = output_path / f"{date_str}.{ext}"
+        output_file = output_path / f"{date_str}.{self.extension}"
 
         if not force and output_file.exists():
             return

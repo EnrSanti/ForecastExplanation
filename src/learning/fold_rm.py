@@ -15,15 +15,11 @@ from .strategies import STRATEGIES, majority_label
 logger = logging.getLogger("ForecastExplanation")
 
 METRICS_FILE = "metrics.json"
-SPLITS = ("date", "row")
 
 
 def stratified_split(
         data: list[list], test_ratio: float, seed: int
 ) -> tuple[list[list], list[list]]:
-    if not 0 < test_ratio < 1:
-        raise ValueError("test_ratio must be between 0 and 1.")
-
     rng = random.Random(seed)
     by_label = defaultdict(list)
     for row in data:
@@ -44,9 +40,6 @@ def date_split(
 ) -> tuple[list[list], list[list]]:
     """Holds out whole days, so rows of the same day (one per location, sharing
     the same weather situation) never end up on both sides of the split."""
-    if not 0 < test_ratio < 1:
-        raise ValueError("test_ratio must be between 0 and 1.")
-
     days = sorted(set(dates))
     random.Random(seed).shuffle(days)
     test_days = set(days[: round(len(days) * test_ratio)])
@@ -150,13 +143,11 @@ def _train_target(
 
     elif split == "date":
         dates = _read_column(dataset_csv, DATE_COLUMN)
-        if len(dates) != len(data):
-            raise ValueError(f"{dataset_csv}: {len(dates)} dates for {len(data)} rows")
         train, test = date_split(data, dates, test_ratio, seed)
     elif split == "row":
         train, test = stratified_split(data, test_ratio, seed)
     else:
-        raise ValueError(f"Unknown split {split!r}, expected one of {list(SPLITS)}")
+        raise ValueError(f"Unknown split {split!r}")
     logger.info(f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows")
     if not test:
         logger.warning(f"FOLD-RM {target}: too few rows for a test split, skipping")
@@ -181,7 +172,6 @@ def _train_target(
         fit_seconds = timer() - start
 
         Y = [d[-1] for d in task_test]
-        # uncovered rows: the other label of the task, or the majority
         if positive:
             other = {d[-1] for d in task_train} - {positive}
             default = other.pop() if other else positive
@@ -199,7 +189,7 @@ def _train_target(
         result = {
             "task": task,
             "accuracy": round(acc, 4),
-            "majority_baseline": round(Y.count(default) / len(Y), 4) if Y else None,
+            "majority_baseline": round(Y.count(default) / len(Y), 4),
             "precision": round(p, 4),
             "recall": round(r, 4),
             "f1": round(f1, 4),
@@ -231,17 +221,17 @@ def _train_target(
 
 
 def train_fold_rm(
-        dataset_csv: str | Path,
+        dataset_csv: Path,
         schema: dict[str, list[str]],
-        output_dir: str | Path,
+        output_dir: Path,
         *,
         strategy: str = "one_vs_rest",
         ratio: float = 0.7,
         split: str = "date",
         test_ratio: float = 0.3,
         seed: int = 42,
-        cleaning: dict | None = None,
-        exclude_features: dict[str, list[str]] | None = None,
+        cleaning: dict,
+        exclude_features: dict[str, list[str]],
         gpu: bool = False,
         force: bool = False,
         verbose: bool = False,
@@ -262,24 +252,14 @@ def train_fold_rm(
         seed: Seed for the split.
         cleaning: Options of cleaning.FoldRmCleaner (min_support,
             min_exception_support, mdl_lambda, snap), applied to every model
-            on its training rows; None keeps the rules as learned.
+            on its training rows.
         exclude_features: target -> feature column prefixes left out of its
             models (e.g. the cloud amounts for prev_cloud).
         gpu: Use CUDatILP's CUDA training (fitGPU).
         force: Retrain targets whose metrics already exist.
         verbose: Print CUDatILP's per-phase timing breakdown to stdout.
     """
-    if split not in SPLITS:
-        raise ValueError(f"Unknown split {split!r}, expected one of {list(SPLITS)}")
-    if strategy not in STRATEGIES:
-        raise ValueError(
-            f"Unknown strategy {strategy!r}, expected one of {list(STRATEGIES)}"
-        )
-
-    dataset_csv = Path(dataset_csv)
-    output_dir = Path(output_dir)
     Classifier = load_classifier_cls()
-    cleaning = cleaning or {}
     cleaner = FoldRmCleaner(**cleaning)
 
     current = {
@@ -300,9 +280,8 @@ def train_fold_rm(
         current["snap"] = True
 
     logger.info("Starting FOLD-RM training")
-    print(schema)
     for target in schema["labels"]:
-        excluded = tuple((exclude_features or {}).get(target, []))
+        excluded = tuple(exclude_features.get(target, []))
         target_schema = {
             **schema,
             "features": [c for c in schema["features"] if not c.startswith(excluded)],

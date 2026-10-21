@@ -137,10 +137,8 @@ def _is_number(value) -> bool:
     return isinstance(value, (int, float)) and not pd.isna(value)
 
 
-def get_compass_direction(degrees: float) -> str | float:
+def get_compass_direction(degrees: float) -> str:
     """Convert a bearing in degrees to an 8-point compass label."""
-    if np.isnan(degrees):
-        return np.nan
     directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
     idx = int((degrees + 22.5) // 45) % 8
     return directions[idx]
@@ -168,18 +166,13 @@ def average_by_height_and_time(
         for t in times:
             time_group = _hour_group(t)
             for h in heights:
-                height_group = LEVEL_GROUP_MAP.get(h, h)
+                height_group = LEVEL_GROUP_MAP[h]
                 val = lookup.get((city, t, h))
-                if val is None or val == "":
+                if not _is_number(val):
                     continue
                 buckets.setdefault((city, time_group, height_group), []).append(val)
 
-    result = {}
-    for key, vals in buckets.items():
-        nums = [v for v in vals if _is_number(v)]
-        result[key] = round(sum(nums) / len(nums), round_ndigits) if nums else None
-
-    return result
+    return {k: round(sum(v) / len(v), round_ndigits) for k, v in buckets.items()}
 
 
 def average_by_height_and_time_vector(
@@ -207,7 +200,7 @@ def average_by_height_and_time_vector(
         for t in times:
             time_group = _hour_group(t)
             for h in heights:
-                height_group = LEVEL_GROUP_MAP.get(h, h)
+                height_group = LEVEL_GROUP_MAP[h]
                 key = (city, t, h)
                 speed = speed_lookup.get(key)
                 direction = dir_lookup.get(key)
@@ -504,12 +497,9 @@ def fronts_by_city(
     """Per city and level group: hours inside a front, mean contrast of the
     front with the background (inside - outside, 0 if in none), and the
     largest regional front area (km2) of an hour and level."""
-    value_col = next((c for c in df.columns if c.endswith("_inside")), None)
-    if value_col is None or df.empty:
-        df = pd.DataFrame(columns=["timestamp", "height", "area", "cities", "value"])
-    else:
-        outside_col = value_col.removesuffix("_inside") + "_outside"
-        df = df.assign(value=df[value_col] - df[outside_col])
+    value_col = next(c for c in df.columns if c.endswith("_inside"))
+    outside_col = value_col.removesuffix("_inside") + "_outside"
+    df = df.assign(value=df[value_col] - df[outside_col])
     group = [LEVEL_GROUP_MAP[_height_label(h)] for h in df["height"]]
 
     out: dict[str, dict] = {city: {} for city in cities}
@@ -535,8 +525,6 @@ def threshold_by_city(
 ) -> dict:
     """Per city and level group: hours the city mean is past the threshold,
     mean value then, and the largest regional area (km2) past it."""
-    if df.empty:
-        df = pd.DataFrame(columns=["timestamp", "height", "city", "past", "area"])
     value_col = df.columns[3]
     group = np.array([LEVEL_GROUP_MAP[_height_label(h)] for h in df["height"]])
 
@@ -584,7 +572,7 @@ class FoldRmTranslator(BaseTranslator):
         non_features = set(LABEL_COLUMNS) | {DATE_COLUMN}
         features = [c for c in header if c not in non_features]
         return {
-            "labels": [c for c in LABEL_COLUMNS if c in header],
+            "labels": list(LABEL_COLUMNS),
             "features": features,
             "categorical": [c for c in features if c in categorical],
             "numeric": [c for c in features if c not in categorical],
@@ -620,8 +608,17 @@ class FoldRmTranslator(BaseTranslator):
 
         fronts: dict[str, dict] = {city: {} for city in cities}
         for files, by_city, columns in (
-            (FRONT_FILES, fronts_by_city, ["timestamp", "height", "area", "cities"]),
-            (THRESHOLD_FILES, threshold_by_city, ["timestamp", "height", "city"]),
+            (
+                FRONT_FILES,
+                fronts_by_city,
+                ["timestamp", "height", "front_id", "area", "cities"]
+                + ["value_inside", "value_outside"],
+            ),
+            (
+                THRESHOLD_FILES,
+                threshold_by_city,
+                ["timestamp", "height", "city", "value", "past", "area"],
+            ),
         ):
             for file_name, (prefix, groups) in files.items():
                 df = _read_tsv_or_empty(reasoning_dir / file_name, columns)
@@ -737,38 +734,19 @@ class FoldRmTranslator(BaseTranslator):
             self.logger.error("No dates provided.")
             return None
 
-        input_path = Path(input_folder)
-
-        # Determine the smallest and biggest dates for the output filename
-        min_date = min(dates)
-        max_date = max(dates)
-
         date_format = "%Y-%m-%d"
-        ext = self.extension.strip(".") or "csv"
         output_filename = (
-            f"{min_date.strftime(date_format)}_{max_date.strftime(date_format)}.{ext}"
+            f"{min(dates).strftime(date_format)}_"
+            f"{max(dates).strftime(date_format)}.{self.extension}"
         )
-        output_path = input_path / output_filename
+        output_path = input_folder / output_filename
 
-        # Read and collect dataframes for each date file that exists
         dfs = []
         for d in sorted(dates):
-            file_path = input_path / f"{d.strftime(date_format)}.{ext}"
-            if file_path.exists():
-                df = pd.read_csv(file_path)
-                date_col = pd.DataFrame({DATE_COLUMN: d.isoformat()}, index=df.index)
-                df = pd.concat([date_col, df], axis=1)
-                dfs.append(df)
-            else:
-                self.logger.warning(f"File not found for date {file_path.name}")
+            df = pd.read_csv(input_folder / f"{d.strftime(date_format)}.{self.extension}")
+            date_col = pd.DataFrame({DATE_COLUMN: d.isoformat()}, index=df.index)
+            dfs.append(pd.concat([date_col, df], axis=1))
 
-        # Merge and save if there's data
-        if dfs:
-            merged_df = pd.concat(dfs, ignore_index=True)
-            merged_df.to_csv(output_path, index=False)
-            self.logger.debug(
-                f"Successfully merged {len(dfs)} files into: {output_path}"
-            )
-            return output_path
-        self.logger.error("No matching CSV files found for the given dates.")
-        return None
+        pd.concat(dfs, ignore_index=True).to_csv(output_path, index=False)
+        self.logger.debug(f"Successfully merged {len(dfs)} files into: {output_path}")
+        return output_path
