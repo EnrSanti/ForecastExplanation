@@ -43,6 +43,14 @@ class Region:
         cities: dict | None = None,
         city_radius: float = 20.0,
     ):
+        lon_min, lon_max, lat_min, lat_max = value
+        if lon_min >= lon_max or lat_min >= lat_max:
+            raise ValueError(
+                f"region: bounds must be [lon_min, lon_max, lat_min, lat_max], "
+                f"got {value}"
+            )
+        if city_radius <= 0:
+            raise ValueError(f"region: radius must be > 0, got {city_radius}")
         self.name = name
         self.value = value
         self.cities = cities

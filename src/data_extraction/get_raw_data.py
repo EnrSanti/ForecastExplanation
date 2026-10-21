@@ -28,7 +28,6 @@ def to_compressed_netcdf(ds: xr.Dataset, path: Path) -> None:
 
 def cut_grib_long_lat(ds: xr.Dataset, coordinates: list[float]) -> xr.Dataset:
     lon_min, lon_max, lat_min, lat_max = coordinates
-    lat_min, lat_max = min(lat_min, lat_max), max(lat_min, lat_max)
 
     lon = ds.longitude
     if lon_min < 0 or lon_max < 0:

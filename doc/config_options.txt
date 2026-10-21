@@ -18,7 +18,6 @@ TOP-LEVEL STRUCTURE
 
   run_name:           # Arbitrary name for the run
     region: ...
-    cities: {...}
     dates: [...]
     output_path: path/to/output
     workers: N

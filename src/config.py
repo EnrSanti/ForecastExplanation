@@ -127,7 +127,6 @@ class RunConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     region: str | list[float] | dict[str, Any] = "FVG"
-    cities: dict[str, dict[str, float]] | None = None
     dates: list[date]
     output_path: Path
     workers: PositiveInt = 12
@@ -158,24 +157,14 @@ class RunConfig(BaseModel):
                 raise ValueError(f"region: unknown keys {sorted(unknown)}")
             if {"name", "bounds"} <= set(self.region):
                 raise ValueError("region: set either 'name' or 'bounds', not both")
-            if "cities" in self.region and self.cities is not None:
-                raise ValueError("cities: set either 'cities' or 'region.cities'")
         try:
-            region = self.build_region()
+            self.build_region()
         except (KeyError, TypeError) as e:  # e.g. a city without lat/lon
             raise ValueError(f"region: invalid value ({e!r})") from e
-        lon_min, lon_max, lat_min, lat_max = region.value
-        if lon_min >= lon_max or lat_min >= lat_max:
-            raise ValueError(
-                f"region: bounds must be [lon_min, lon_max, lat_min, lat_max], "
-                f"got {region.value}"
-            )
-        if region.city_radius <= 0:
-            raise ValueError(f"region: radius must be > 0, got {region.city_radius}")
         return self
 
     def build_region(self) -> Region:
-        return Region.from_config(self.region, cities=self.cities)
+        return Region.from_config(self.region)
 
     def forces(self, stage: Stage) -> bool:
         """True if `stage` must be recomputed even when cached results exist."""
@@ -187,12 +176,13 @@ class RunConfig(BaseModel):
 
 
 def _merge(base: dict, override: dict) -> dict:
-    """Recursive merge, `override` wins. A run's cities replace the default ones,
-    and a region name or bounds replaces both the default name and bounds."""
+    """Recursive merge, `override` wins. A run's region cities and dates replace
+    the default ones, and a region name or bounds replaces both the default name
+    and bounds."""
     merged = {**base}
     for key, value in override.items():
         base_value = merged.get(key)
-        if key == "cities" or not (
+        if key in ("cities", "dates") or not (
             isinstance(value, dict) and isinstance(base_value, dict)
         ):
             merged[key] = value
