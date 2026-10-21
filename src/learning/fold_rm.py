@@ -6,6 +6,9 @@ from collections import defaultdict
 from pathlib import Path
 from timeit import default_timer as timer
 
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
 from cleaning import BaseCleaner, FoldRmCleaner
 from utils import DATE_COLUMN
 
@@ -48,6 +51,22 @@ def date_split(
     for row, day in zip(data, dates):
         (test if day in test_days else train).append(row)
     return train, test
+
+
+def homogeneous_split(
+    data: list[list], labels: pd.Series, test_ratio: float, seed: int
+) -> tuple[list[list], list[list]]:
+    try:
+        train_idx, test_idx = train_test_split(
+            range(len(data)),
+            train_size=1 - test_ratio,
+            stratify=labels,
+            random_state=seed,
+        )
+        return [data[i] for i in train_idx], [data[i] for i in test_idx]
+    except ValueError as e:
+        logger.warning(f"FOLD-RM: {e}, skipping")
+        return [], []
 
 
 def _read_column(path: Path, column: str) -> list[str]:
@@ -143,11 +162,8 @@ def _train_target(
     attrs = loader.attrs  # features + label
 
     if split == "homogeneous":
-        logger.warning(
-            f"FOLD-RM {target}: 'homogeneous' split is unsupported, using 'date' instead"
-        )
-        split = "date"
-
+        labels = pd.read_csv(dataset_csv, usecols=[target])[target]
+        train, test = homogeneous_split(data, labels, test_ratio, seed)
     elif split == "date":
         dates = _read_column(dataset_csv, DATE_COLUMN)
         train, test = date_split(data, dates, test_ratio, seed)
@@ -156,6 +172,7 @@ def _train_target(
     else:
         raise ValueError(f"Unknown split {split!r}")
     logger.info(f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows")
+
     if not train or not test:
         logger.warning(
             f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows, too few for a split, skipping"
@@ -255,8 +272,8 @@ def train_fold_rm(
         strategy: Key of STRATEGIES ("one_vs_rest", "multiclass", "ordinal"
             or "ordinal_count").
         ratio: FOLD-RM exception ratio hyperparameter.
-        split: "date" holds out whole days; "row" is a per-label stratified
-            split.
+        split: "homogeneous" is sklearn's per-label stratified split; "date"
+            holds out whole days; "row" is a per-label stratified split.
         test_ratio: Fraction of days (or rows) held out for testing.
         seed: Seed for the split.
         cleaning: Options of cleaning.FoldRmCleaner (min_support,
