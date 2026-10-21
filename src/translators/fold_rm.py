@@ -579,13 +579,12 @@ class FoldRmTranslator(BaseTranslator):
     @staticmethod
     def schema(header: list[str]) -> dict:
         """Splits a dataset header into label, feature (header order),
-        categorical and numeric columns, plus the date column if present."""
+        categorical and numeric columns."""
         categorical = set(_categorical_columns())
         non_features = set(LABEL_COLUMNS) | {DATE_COLUMN}
         features = [c for c in header if c not in non_features]
         return {
             "labels": [c for c in LABEL_COLUMNS if c in header],
-            "date": DATE_COLUMN if DATE_COLUMN in header else None,
             "features": features,
             "categorical": [c for c in features if c in categorical],
             "numeric": [c for c in features if c not in categorical],

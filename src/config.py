@@ -95,7 +95,7 @@ class FoldRmConfig(BaseModel):
         "one_vs_rest"
     )
     ratio: float = Field(0.7, gt=0)
-    split: Literal["date", "row"] = "date"
+    split: Literal["homogeneous", "date", "row"] = "homogeneous"
     test_ratio: float = Field(0.3, gt=0, lt=1)
     seed: int = 42
     cleaning: CleaningConfig = CleaningConfig()

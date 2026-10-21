@@ -7,6 +7,7 @@ from pathlib import Path
 from timeit import default_timer as timer
 
 from cleaning import BaseCleaner, FoldRmCleaner
+from translators.fold_rm import DATE_COLUMN
 
 from .cudatilp import fit_target, load_classifier_cls, save_model, scores
 from .strategies import STRATEGIES, majority_label
@@ -18,7 +19,7 @@ SPLITS = ("date", "row")
 
 
 def stratified_split(
-    data: list[list], test_ratio: float, seed: int
+        data: list[list], test_ratio: float, seed: int
 ) -> tuple[list[list], list[list]]:
     if not 0 < test_ratio < 1:
         raise ValueError("test_ratio must be between 0 and 1.")
@@ -39,7 +40,7 @@ def stratified_split(
 
 
 def date_split(
-    data: list[list], dates: list[str], test_ratio: float, seed: int
+        data: list[list], dates: list[str], test_ratio: float, seed: int
 ) -> tuple[list[list], list[list]]:
     """Holds out whole days, so rows of the same day (one per location, sharing
     the same weather situation) never end up on both sides of the split."""
@@ -121,40 +122,41 @@ def _warn_if_stale(target: str, metrics_path: Path, current: dict) -> None:
 
 
 def _train_target(
-    Classifier,
-    dataset_csv: Path,
-    schema: dict[str, list[str]],
-    target: str,
-    target_dir: Path,
-    strategy: str,
-    ratio: float,
-    split: str,
-    test_ratio: float,
-    seed: int,
-    cleaner: BaseCleaner,
-    gpu: bool,
-    verbose: bool,
+        Classifier,
+        dataset_csv: Path,
+        schema: dict[str, list[str]],
+        target: str,
+        target_dir: Path,
+        strategy: str,
+        ratio: float,
+        split: str,
+        test_ratio: float,
+        seed: int,
+        cleaner: BaseCleaner,
+        gpu: bool,
+        verbose: bool,
 ) -> tuple[list[dict], dict | None]:
-    # load_data reads columns in CSV order but names them after `attrs`, so
-    # the features must be passed in header order
     loader = Classifier(
         attrs=list(schema["features"]), numeric=list(schema["numeric"]), label=target
     )
     data = loader.load_data(str(dataset_csv))
     attrs = loader.attrs  # features + label
 
-    if split == "date" and schema.get("date"):
-        dates = _read_column(dataset_csv, schema["date"])
+    if split == "homogeneous":
+        logger.warning(
+            f"FOLD-RM {target}: 'homogeneous' split is unsupported, using 'date' instead"
+        )
+        split = "date"
+
+    elif split == "date":
+        dates = _read_column(dataset_csv, DATE_COLUMN)
         if len(dates) != len(data):
             raise ValueError(f"{dataset_csv}: {len(dates)} dates for {len(data)} rows")
         train, test = date_split(data, dates, test_ratio, seed)
-    else:
-        if split == "date":
-            logger.warning(
-                f"FOLD-RM {target}: no date column in {dataset_csv.name}, "
-                "falling back to a stratified row split"
-            )
+    elif split == "row":
         train, test = stratified_split(data, test_ratio, seed)
+    else:
+        raise ValueError(f"Unknown split {split!r}, expected one of {list(SPLITS)}")
     logger.info(f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows")
     if not test:
         logger.warning(f"FOLD-RM {target}: too few rows for a test split, skipping")
@@ -229,20 +231,20 @@ def _train_target(
 
 
 def train_fold_rm(
-    dataset_csv: str | Path,
-    schema: dict[str, list[str]],
-    output_dir: str | Path,
-    *,
-    strategy: str = "one_vs_rest",
-    ratio: float = 0.7,
-    split: str = "date",
-    test_ratio: float = 0.3,
-    seed: int = 42,
-    cleaning: dict | None = None,
-    exclude_features: dict[str, list[str]] | None = None,
-    gpu: bool = False,
-    force: bool = False,
-    verbose: bool = False,
+        dataset_csv: str | Path,
+        schema: dict[str, list[str]],
+        output_dir: str | Path,
+        *,
+        strategy: str = "one_vs_rest",
+        ratio: float = 0.7,
+        split: str = "date",
+        test_ratio: float = 0.3,
+        seed: int = 42,
+        cleaning: dict | None = None,
+        exclude_features: dict[str, list[str]] | None = None,
+        gpu: bool = False,
+        force: bool = False,
+        verbose: bool = False,
 ) -> None:
     """
     Trains FOLD-RM models for every label in `schema` on the merged dataset.
@@ -254,8 +256,8 @@ def train_fold_rm(
         strategy: Key of STRATEGIES ("one_vs_rest", "multiclass", "ordinal"
             or "ordinal_count").
         ratio: FOLD-RM exception ratio hyperparameter.
-        split: "date" holds out whole days (falls back to "row" when the
-            dataset has no date column); "row" is a per-label stratified split.
+        split: "date" holds out whole days; "row" is a per-label stratified
+            split.
         test_ratio: Fraction of days (or rows) held out for testing.
         seed: Seed for the split.
         cleaning: Options of cleaning.FoldRmCleaner (min_support,
@@ -298,6 +300,7 @@ def train_fold_rm(
         current["snap"] = True
 
     logger.info("Starting FOLD-RM training")
+    print(schema)
     for target in schema["labels"]:
         excluded = tuple((exclude_features or {}).get(target, []))
         target_schema = {
