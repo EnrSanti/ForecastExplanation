@@ -131,12 +131,11 @@ reported as a compass octave.
 |------------------|---------------------------------------------|
 | `timestamp`      | Hourly timestamp                            |
 | `height`         | Pressure level                              |
-| `lat`            | City latitude                               |
-| `lon`            | City longitude                              |
+| `city`           | City name                                   |
 | `wind_direction` | Vector angle, clockwise rotation, 0 North   |
 | `wind_speed`     | Mean wind speed (m/s)                       |
 
-#### `cloud.txt`
+#### `cloud_segments.txt`
 
 Cloud segments detected by TOBAC that overlap each city. One row per cloud–city intersection, per height and hour.
 Coverage is the percentage of the city's radius covered by the cloud.
@@ -150,7 +149,7 @@ Coverage is the percentage of the city's radius covered by the cloud.
 | `city`      | City name                                                 |
 | `%covered`  | Percentage of the city's radius area covered by the cloud |
 
-#### `heat.txt`
+#### `temp.txt`
 
 Mean temperature within a 3 km radius of each city, per height and hour.
 
@@ -158,11 +157,10 @@ Mean temperature within a 3 km radius of each city, per height and hour.
 |---------------|----------------------|
 | `timestamp`   | Hourly timestamp     |
 | `height`      | Pressure level       |
-| `lat`         | City latitude        |
-| `lon`         | City longitude       |
-| `temperature` | Mean temperature (K) |
+| `city`        | City name            |
+| `temp`        | Mean temperature (K) |
 
-#### `heat_fronts.txt`
+#### `temp_fronts.txt`
 
 Temperature fronts detected by TOBAC, with their physical temperature and city membership.
 
@@ -173,10 +171,10 @@ Temperature fronts detected by TOBAC, with their physical temperature and city m
 | `front_id`             | TOBAC blob ID                                           |
 | `area`                 | Front area (km²)                                        |
 | `cities`               | Comma-separated list of cities inside the front         |
-| `temperature_inside`   | Mean temperature inside the front (K)                   |
-| `temperature_outside`  | Mean temperature outside all fronts, background only (K)|
+| `temp_inside`          | Mean temperature inside the front (K)                   |
+| `temp_outside`         | Mean temperature outside all fronts, background only (K)|
 
-#### `cloud_cover.txt`
+#### `cloud.txt`
 
 Mean CERRA cloud cover within a 3 km radius of each city, per height and hour, whether or not TOBAC segmented a
 cloud there.
@@ -185,8 +183,7 @@ cloud there.
 |-------------|---------------------|
 | `timestamp` | Hourly timestamp    |
 | `height`    | Pressure level      |
-| `lat`       | City latitude       |
-| `lon`       | City longitude      |
+| `city`      | City name           |
 | `cloud`     | Mean cloud cover (%) |
 
 #### `humidity.txt`
@@ -197,8 +194,7 @@ Mean relative humidity within a 3 km radius of each city, per height and hour.
 |-------------|----------------------------|
 | `timestamp` | Hourly timestamp           |
 | `height`    | Pressure level             |
-| `lat`       | City latitude              |
-| `lon`       | City longitude             |
+| `city`      | City name                  |
 | `humidity`  | Mean relative humidity (%) |
 
 #### `humidity_fronts.txt`
@@ -215,7 +211,7 @@ Humidity fronts detected by TOBAC, with their physical humidity and city members
 | `humidity_inside`    | Mean relative humidity inside the front (%)                    |
 | `humidity_outside`   | Mean relative humidity outside all fronts, background only (%) |
 
-#### `front_fronts.txt`, `warmadv_fronts.txt`, `tefall_fronts.txt`, `terise_fronts.txt`
+#### `front.txt`, `warmadv.txt`, `tefall.txt`, `terise.txt`
 
 No TOBAC: per city (mean within `city_radius`), height (850/700/500) and hour, from `raw_front`, `raw_tadv` and
 `raw_te_change`. Thresholds in `reasoning/main.py` (`FRONT_PHENOMENA`): front 7/5/3 K/100 km, warmadv 0.3 K/h,
@@ -234,19 +230,19 @@ tefall / terise -/+ 1.95/1.65/1.5 K.
 
 ## Step 4 — Ground Truth Generation
 
-Extracts the official weather forecast from ARPA FVG XML (or PDF fallback) files for the day before each target date,
+Extracts the official weather forecast from ARPA FVG XML files for the day before each target date,
 producing a structured JSON with per-city forecast descriptions.
 
 ### Input
 
-- XML forecast files in `./xmls/` (preferred), or PDF fallback
+- XML forecast files in `./xmls/`
 
 ### Output
 
 **Path:** `{run}/{date}/gt.json`
 
-A JSON object keyed by date, mapping each city to its forecast fields (e.g. `PIOGGIA_DESCRIZIONE`,
-`CIELO_DESCRIZIONE`).
+A JSON object mapping each zone to its forecast fields (`CIELO_DESCRIZIONE`, `PIOGGIA_DESCRIZIONE`,
+`TEMPORALE_DESCRIZIONE`; `false` when the bulletin leaves it empty).
 
 ---
 
@@ -259,13 +255,13 @@ suitable for downstream ML models. Currently the only translator is `FoldRmTrans
 
 - `{run}/{date}/gt.json` (from Step 4)
 - `{run}/{date}/reasoning/winds.txt` (from Step 3)
-- `{run}/{date}/reasoning/cloud.txt` (from Step 3)
-- `{run}/{date}/reasoning/heat.txt` (from Step 3)
+- `{run}/{date}/reasoning/cloud_segments.txt` (from Step 3)
+- `{run}/{date}/reasoning/temp.txt` (from Step 3)
 - `{run}/{date}/reasoning/humidity.txt` (from Step 3)
-- `{run}/{date}/reasoning/cloud_cover.txt` (from Step 3)
-- `{run}/{date}/reasoning/heat_fronts.txt` (from Step 3)
+- `{run}/{date}/reasoning/cloud.txt` (from Step 3)
+- `{run}/{date}/reasoning/temp_fronts.txt` (from Step 3)
 - `{run}/{date}/reasoning/humidity_fronts.txt` (from Step 3)
-- `{run}/{date}/reasoning/{front,warmadv,tefall,terise}_fronts.txt` (from Step 3)
+- `{run}/{date}/reasoning/{front,warmadv,tefall,terise}.txt` (from Step 3)
 
 ### Output
 
@@ -306,7 +302,7 @@ One row per city. Per-hour, per-level values are grouped before being written ou
 | `instab_te850_500`                                    | Max theta-e 850 − 500 hPa (K), > 0 unstable                                                                                   |
 | `region_*`                                            | `rh850`, `rh700`, `sat700_hours`, `south850`, `cloud_mid`, `te850_tend` pooled over all the cities, same for every row of the day |
 
-`f` is one of `humidity_fronts` (RH < 60%), `temperature_fronts` (warmest areas), with `g` in low/medium/high, or
+`f` is one of `humidity_fronts` (RH < 60%), `temp_fronts` (warmest areas), with `g` in low/medium/high, or
 `front`, `warmadv`, `tefall`, `terise` (thresholds, no segments), with `g` in low (850) / medium (700/500).
 
 After all requested dates are translated, the per-day CSVs are concatenated into a single merged dataset at

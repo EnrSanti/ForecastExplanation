@@ -186,7 +186,9 @@ def _run_tobac_single_day_single_phenomenon(
 
         if x := [s[1] for s in segments_all if s[1] is not None]:
             seg_da = xr.concat(x, dim="time")
-            segmentations_list.append(seg_da.rename(folder_key))
+        else:  # nothing detected all day: an all-background mask
+            seg_da = xr.zeros_like(referenced_data, dtype=int)
+        segmentations_list.append(seg_da.rename(folder_key))
 
         if save_images:
             from features_detection.plotting import generate_all_plots

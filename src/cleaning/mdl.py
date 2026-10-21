@@ -197,7 +197,7 @@ def snap_step(name: str) -> float:
         return 5000.0
     if n.startswith(("humidity", "rh", "region_rh", "cloud", "coverage")):
         return 5.0
-    if n.startswith("temperature_fronts_value"):
+    if n.startswith("temp_fronts_value"):
         return 0.5
     if n.startswith(("temperature", "te850_mean", "lapse")):
         return 1.0

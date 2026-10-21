@@ -32,42 +32,17 @@ def _text(el: ET.Element | None) -> str | None:
     return t or None
 
 
-def _element_to_dict(el: ET.Element) -> dict:
-    return {child.tag.lower(): _text(child) for child in el}
-
-
-def _iso_date(valid_date: str | None) -> str | None:
-    """Converts 'DD-MM-YYYY' (the bulletin's format) to 'YYYY-MM-DD'."""
-    if not valid_date:
-        return None
-    day, month, year = valid_date.split("-")
-    return f"{year}-{month}-{day}"
-
-
-def _zone_name(zone_raw: dict) -> str:
-    description = zone_raw.get("descrizione") or ""
-    return description.replace("_", " ").strip()
-
-
 def xml_extract(target_date: date) -> dict:
-    xml_path = f"xmls/PW{target_date.strftime('%Y%m%d')}.xml"
-    tree = ET.parse(xml_path)
-    root = tree.getroot()
+    root = ET.parse(f"xmls/PW{target_date:%Y%m%d}.xml").getroot()
     deadline = root.find("previsioni/scadenze/scadenza[@id='1']")
-    iso_date = _iso_date(deadline.get("data_validita"))
     a_zones = {}
     for zone_el in deadline.findall("zone/zona"):
-        name = zone_el.get("nome")
-
-        if name not in A_ZONES:
+        if zone_el.get("nome") not in A_ZONES:
             continue
-
-        data = _element_to_dict(zone_el)
-        data["descrizione"] = zone_el.get("descrizione")
-
-        a_zones[_zone_name(data)] = {k: data.get(k.lower()) or False for k in KEYS}
+        name = zone_el.get("descrizione").replace("_", " ")
+        a_zones[name] = {k: _text(zone_el.find(k)) or False for k in KEYS}
 
     if len(a_zones) != 9:
         logger.warning(f"Expected 9 zones, found {len(a_zones)}")
 
-    return {iso_date: a_zones}
+    return a_zones

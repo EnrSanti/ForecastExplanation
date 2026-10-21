@@ -18,7 +18,7 @@ METRICS_FILE = "metrics.json"
 
 
 def stratified_split(
-        data: list[list], test_ratio: float, seed: int
+    data: list[list], test_ratio: float, seed: int
 ) -> tuple[list[list], list[list]]:
     rng = random.Random(seed)
     by_label = defaultdict(list)
@@ -36,7 +36,7 @@ def stratified_split(
 
 
 def date_split(
-        data: list[list], dates: list[str], test_ratio: float, seed: int
+    data: list[list], dates: list[str], test_ratio: float, seed: int
 ) -> tuple[list[list], list[list]]:
     """Holds out whole days, so rows of the same day (one per location, sharing
     the same weather situation) never end up on both sides of the split."""
@@ -115,19 +115,19 @@ def _warn_if_stale(target: str, metrics_path: Path, current: dict) -> None:
 
 
 def _train_target(
-        Classifier,
-        dataset_csv: Path,
-        schema: dict[str, list[str]],
-        target: str,
-        target_dir: Path,
-        strategy: str,
-        ratio: float,
-        split: str,
-        test_ratio: float,
-        seed: int,
-        cleaner: BaseCleaner,
-        gpu: bool,
-        verbose: bool,
+    Classifier,
+    dataset_csv: Path,
+    schema: dict[str, list[str]],
+    target: str,
+    target_dir: Path,
+    strategy: str,
+    ratio: float,
+    split: str,
+    test_ratio: float,
+    seed: int,
+    cleaner: BaseCleaner,
+    gpu: bool,
+    verbose: bool,
 ) -> tuple[list[dict], dict | None]:
     loader = Classifier(
         attrs=list(schema["features"]), numeric=list(schema["numeric"]), label=target
@@ -221,20 +221,20 @@ def _train_target(
 
 
 def train_fold_rm(
-        dataset_csv: Path,
-        schema: dict[str, list[str]],
-        output_dir: Path,
-        *,
-        strategy: str = "one_vs_rest",
-        ratio: float = 0.7,
-        split: str = "date",
-        test_ratio: float = 0.3,
-        seed: int = 42,
-        cleaning: dict,
-        exclude_features: dict[str, list[str]],
-        gpu: bool = False,
-        force: bool = False,
-        verbose: bool = False,
+    dataset_csv: Path,
+    schema: dict[str, list[str]],
+    output_dir: Path,
+    *,
+    strategy: str = "one_vs_rest",
+    ratio: float = 0.7,
+    split: str = "date",
+    test_ratio: float = 0.3,
+    seed: int = 42,
+    cleaning: dict,
+    exclude_features: dict[str, list[str]],
+    gpu: bool = False,
+    force: bool = False,
+    verbose: bool = False,
 ) -> None:
     """
     Trains FOLD-RM models for every label in `schema` on the merged dataset.

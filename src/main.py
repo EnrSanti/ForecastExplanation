@@ -134,7 +134,6 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
         days,
         output_path / "days_data",
         output_path / "translated",
-        region,
         force=cfg.forces(Stage.TRANSLATION),
         workers=cfg.workers,
     )
