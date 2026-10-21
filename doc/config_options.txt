@@ -18,7 +18,6 @@ TOP-LEVEL STRUCTURE
 
   run_name:           # Arbitrary name for the run
     region: ...
-    cities: {...}
     dates: [...]
     output_path: path/to/output
     workers: N
@@ -127,12 +126,15 @@ stop_after  (optional, default: learning)
 ------
 
 clean  (optional, default: [])
-  Intermediate data to delete for this run's dates once the run
-  completes successfully (nothing is deleted if the run fails):
+  Intermediate data to delete for this run's dates. 'cut' and
+  'extracted' are deleted once the run completes successfully
+  (nothing is deleted if the run fails):
 
-    grib        downloaded GRIBs in tmp_data/original_CERRA. This
-                folder is shared by every run, so other runs will
-                have to download those days again.
+    grib        downloaded GRIBs in tmp_data/original_CERRA, deleted
+                month by month as soon as all its days are cut
+                (~50 GB per month), kept if the download or the cut
+                fails. This folder is shared by every run, so other
+                runs will have to download those days again.
     cut         region-cut NetCDFs (<output_path>/tmp_data/CERRA_cut)
     extracted   feature maps (<output_path>/tmp_data/extracted_data
                 and clustered_data)

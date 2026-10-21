@@ -7,7 +7,7 @@ from pathlib import Path
 from timeit import default_timer as timer
 
 from cleaning import BaseCleaner, FoldRmCleaner
-from translators.fold_rm import DATE_COLUMN
+from utils import DATE_COLUMN
 
 from .cudatilp import fit_target, load_classifier_cls, save_model, scores
 from .strategies import STRATEGIES, majority_label
@@ -18,7 +18,7 @@ METRICS_FILE = "metrics.json"
 
 
 def stratified_split(
-        data: list[list], test_ratio: float, seed: int
+    data: list[list], test_ratio: float, seed: int
 ) -> tuple[list[list], list[list]]:
     rng = random.Random(seed)
     by_label = defaultdict(list)
@@ -36,7 +36,7 @@ def stratified_split(
 
 
 def date_split(
-        data: list[list], dates: list[str], test_ratio: float, seed: int
+    data: list[list], dates: list[str], test_ratio: float, seed: int
 ) -> tuple[list[list], list[list]]:
     """Holds out whole days, so rows of the same day (one per location, sharing
     the same weather situation) never end up on both sides of the split."""
@@ -114,20 +114,27 @@ def _warn_if_stale(target: str, metrics_path: Path, current: dict) -> None:
         )
 
 
+def _was_skipped(metrics_path: Path) -> bool:
+    try:
+        return json.loads(metrics_path.read_text()).get("combined") is None
+    except OSError, json.JSONDecodeError:
+        return False
+
+
 def _train_target(
-        Classifier,
-        dataset_csv: Path,
-        schema: dict[str, list[str]],
-        target: str,
-        target_dir: Path,
-        strategy: str,
-        ratio: float,
-        split: str,
-        test_ratio: float,
-        seed: int,
-        cleaner: BaseCleaner,
-        gpu: bool,
-        verbose: bool,
+    Classifier,
+    dataset_csv: Path,
+    schema: dict[str, list[str]],
+    target: str,
+    target_dir: Path,
+    strategy: str,
+    ratio: float,
+    split: str,
+    test_ratio: float,
+    seed: int,
+    cleaner: BaseCleaner,
+    gpu: bool,
+    verbose: bool,
 ) -> tuple[list[dict], dict | None]:
     loader = Classifier(
         attrs=list(schema["features"]), numeric=list(schema["numeric"]), label=target
@@ -149,8 +156,10 @@ def _train_target(
     else:
         raise ValueError(f"Unknown split {split!r}")
     logger.info(f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows")
-    if not test:
-        logger.warning(f"FOLD-RM {target}: too few rows for a test split, skipping")
+    if not train or not test:
+        logger.warning(
+            f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows, too few for a split, skipping"
+        )
         return [], None
 
     framing = STRATEGIES[strategy]()
@@ -221,20 +230,20 @@ def _train_target(
 
 
 def train_fold_rm(
-        dataset_csv: Path,
-        schema: dict[str, list[str]],
-        output_dir: Path,
-        *,
-        strategy: str = "one_vs_rest",
-        ratio: float = 0.7,
-        split: str = "date",
-        test_ratio: float = 0.3,
-        seed: int = 42,
-        cleaning: dict,
-        exclude_features: dict[str, list[str]],
-        gpu: bool = False,
-        force: bool = False,
-        verbose: bool = False,
+    dataset_csv: Path,
+    schema: dict[str, list[str]],
+    output_dir: Path,
+    *,
+    strategy: str,
+    ratio: float,
+    split: str,
+    test_ratio: float,
+    seed: int,
+    cleaning: dict,
+    exclude_features: dict[str, list[str]],
+    gpu: bool,
+    force: bool,
+    verbose: bool,
 ) -> None:
     """
     Trains FOLD-RM models for every label in `schema` on the merged dataset.
@@ -269,14 +278,14 @@ def train_fold_rm(
         "split": split,
         "test_ratio": test_ratio,
         "seed": seed,
-        "min_support": cleaning.get("min_support", 0),
-        "min_exception_support": cleaning.get("min_exception_support", 0),
+        "min_support": cleaning["min_support"],
+        "min_exception_support": cleaning["min_exception_support"],
         "gpu": gpu,
     }
     # only when used, so the metrics.json of older runs stay comparable
-    if cleaning.get("mdl_lambda") is not None:
+    if cleaning["mdl_lambda"] is not None:
         current["mdl_lambda"] = cleaning["mdl_lambda"]
-    if cleaning.get("snap"):
+    if cleaning["snap"]:
         current["snap"] = True
 
     logger.info("Starting FOLD-RM training")
@@ -293,7 +302,7 @@ def train_fold_rm(
         }
         target_dir = output_dir / target
         metrics_path = target_dir / METRICS_FILE
-        if not force and metrics_path.exists():
+        if not force and metrics_path.exists() and not _was_skipped(metrics_path):
             logger.info(f"FOLD-RM {target}: already trained, skipping")
             _warn_if_stale(target, metrics_path, target_current)
             continue
@@ -317,6 +326,9 @@ def train_fold_rm(
             gpu,
             verbose,
         )
+        if combined is None:  # not trained: retried on the next run
+            metrics_path.unlink(missing_ok=True)
+            continue
         metrics = {**target_current, "combined": combined, "tasks": results}
         metrics_path.write_text(json.dumps(metrics, indent=2))
     logger.info("FOLD-RM training completed.")

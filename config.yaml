@@ -7,10 +7,10 @@ defaults:
       end: 2026-07-31
   save_images: false
   workers: 12
-  output_path: runs/best
+  output_path: ./runs/best
 
 best_ordinal_count:
-  force: learning
+  force: extraction
   fold_rm:
     strategy: ordinal_count
     ratio: 1.0

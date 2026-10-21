@@ -13,12 +13,9 @@ import learning
 import reasoning
 import translators
 from config import RunConfig, Stage, load_runs
+from utils import LOG_FORMAT, setup_logging
 
-logging.basicConfig(
-    level=logging.ERROR,
-    format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s",
-    force=True,
-)
+logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT, force=True)
 logger = logging.getLogger("ForecastExplanation")
 
 
@@ -36,11 +33,7 @@ def parse_args() -> argparse.Namespace:
         choices=stages,
         help="Recompute this stage and every stage after it, ignoring cached results",
     )
-    parser.add_argument(
-        "--stop-after",
-        choices=stages,
-        help="Last stage to run",
-    )
+    parser.add_argument("--stop-after", choices=stages, help="Last stage to run")
     parser.add_argument(
         "--clean",
         nargs="+",
@@ -134,7 +127,6 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
         days,
         output_path / "days_data",
         output_path / "translated",
-        region,
         force=cfg.forces(Stage.TRANSLATION),
         workers=cfg.workers,
     )
@@ -166,16 +158,16 @@ def main() -> None:
         logger.error(e)
         sys.exit(1)
 
+    failed_runs = []
     for run_name, cfg in runs.items():
-        level = logging.DEBUG if cfg.debug else logging.INFO
-        for name in ("ForecastExplanation", "data_extraction", "features_detection"):
-            logging.getLogger(name).setLevel(level)
+        setup_logging(logging.DEBUG if cfg.debug else logging.INFO)
 
         logger.info(f" --- Starting {run_name} ---")
         try:
             days, failed = run_pipeline(cfg)
         except Exception:
             logger.exception(f"Error running {run_name}")
+            failed_runs.append(run_name)
             continue
 
         if failed:
@@ -183,9 +175,13 @@ def main() -> None:
             logger.warning(f"{len(failed)} day(s) failed: {summary}")
         if not days:
             logger.error(f"No day of {run_name} completed.")
+            failed_runs.append(run_name)
         elif cfg.clean:
             data_extraction.clean_artifacts(days, cfg.output_path, cfg.clean)
         logger.info(f"--- Finished {run_name} ---\n\n")
+    if failed_runs:
+        logger.error(f"Failed run(s): {', '.join(failed_runs)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

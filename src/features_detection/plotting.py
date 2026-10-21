@@ -114,10 +114,7 @@ def print_clouds_center_line(
 
 
 def print_cloud_labels(
-    f_weighted: pd.DataFrame,
-    cell_id: int,
-    region: Region,
-    axs: plt.Axes,
+    f_weighted: pd.DataFrame, cell_id: int, region: Region, axs: plt.Axes
 ):
     """Renders cell ID text annotation near the point natively."""
     if f_weighted.empty or "longitude" not in f_weighted:

@@ -13,7 +13,6 @@ dependencies:
   - matplotlib
   - cartopy
   - ecmwf-datastores-client
-  - requests
   - py-opencv=5.0.0
   - tobac=1.6.4
   - cfgrib=0.9.15.1
@@ -23,4 +22,3 @@ dependencies:
   - h5netcdf
   - h5py
   - python-dotenv
-  - pymupdf
