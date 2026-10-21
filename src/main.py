@@ -13,7 +13,7 @@ import learning
 import reasoning
 import translators
 from config import RunConfig, Stage, load_runs
-from log_config import LOG_FORMAT, setup_logging
+from utils import LOG_FORMAT, setup_logging
 
 logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT, force=True)
 logger = logging.getLogger("ForecastExplanation")

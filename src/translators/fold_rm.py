@@ -10,6 +10,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from utils import DATE_COLUMN
+
 from .translator import BaseTranslator
 
 _PIOGGIA_ENUM = {
@@ -45,7 +47,6 @@ HEIGHT_GROUPS_ORDER = ["low", "medium", "high"]
 TIME_GROUPS_ORDER = ["early_morning", "morning", "afternoon", "evening"]
 
 LABEL_COLUMNS = ["prev_pioggia", "prev_cloud"]
-DATE_COLUMN = "date"
 
 
 def _slugify_city(city: str) -> str:

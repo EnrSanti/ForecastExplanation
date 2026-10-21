@@ -9,21 +9,13 @@ import xarray as xr
 from ecmwf.datastores import Client
 
 from region import Region
+from utils import to_compressed_netcdf
 
 from . import CUT_DATA_DIR
 
 logger = logging.getLogger(__name__)
 
 logging.getLogger("ecmwf.datastores").setLevel(logging.WARNING)
-
-
-def to_compressed_netcdf(ds: xr.Dataset, path: Path) -> None:
-    encoding = {
-        name: {"zlib": True, "complevel": 4}
-        for name, var in ds.data_vars.items()
-        if var.dtype.kind in "fiu"
-    }
-    ds.to_netcdf(path, encoding=encoding)
 
 
 def cut_grib_long_lat(ds: xr.Dataset, coordinates: list[float]) -> xr.Dataset:

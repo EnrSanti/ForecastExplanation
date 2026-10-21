@@ -7,7 +7,7 @@ from pathlib import Path
 from timeit import default_timer as timer
 
 from cleaning import BaseCleaner, FoldRmCleaner
-from translators.fold_rm import DATE_COLUMN
+from utils import DATE_COLUMN
 
 from .cudatilp import fit_target, load_classifier_cls, save_model, scores
 from .strategies import STRATEGIES, majority_label

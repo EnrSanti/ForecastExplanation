@@ -6,12 +6,12 @@ from pathlib import Path
 import xarray as xr
 from tqdm import tqdm
 
-from log_config import worker_pool
 from region import Region
+from utils import haversine, worker_pool
 
 from .fronts import detect_phenomenon, detect_phenomenon_fronts, detect_threshold
 from .segment import detect_clouds, detect_winds
-from .utils import get_heights, haversine
+from .utils import get_heights
 
 logger = logging.getLogger("ForecastExplanation")
 

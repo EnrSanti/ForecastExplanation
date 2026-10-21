@@ -14,8 +14,9 @@ from cartopy.io import shapereader
 from scipy.ndimage import gaussian_filter
 
 from region import Region
+from utils import FOLDERS, LEVELS
 
-from . import FOLDERS, FRONT_LEVELS, LEVELS
+from . import FRONT_LEVELS
 
 logger = logging.getLogger(__name__)
 

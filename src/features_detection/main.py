@@ -11,7 +11,6 @@ from tqdm import tqdm
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from data_extraction import FOLDERS, to_compressed_netcdf
 from features_detection.constants import (
     DT,
     GAP_FRAMES,
@@ -26,8 +25,8 @@ from features_detection.features import (
     track_features,
 )
 from features_detection.utils import build_referenced_data_from_xarray, grid_spacing
-from log_config import worker_pool
 from region import Region
+from utils import FOLDERS, to_compressed_netcdf, worker_pool
 
 logger = logging.getLogger(__name__)
 

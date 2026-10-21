@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .utils import haversine
+from utils import haversine
 
 
 def _safe_nanmean(arr: np.ndarray) -> float:
