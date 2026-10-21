@@ -114,6 +114,13 @@ def _warn_if_stale(target: str, metrics_path: Path, current: dict) -> None:
         )
 
 
+def _was_skipped(metrics_path: Path) -> bool:
+    try:
+        return json.loads(metrics_path.read_text()).get("combined") is None
+    except OSError, json.JSONDecodeError:
+        return False
+
+
 def _train_target(
     Classifier,
     dataset_csv: Path,
@@ -149,8 +156,10 @@ def _train_target(
     else:
         raise ValueError(f"Unknown split {split!r}")
     logger.info(f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows")
-    if not test:
-        logger.warning(f"FOLD-RM {target}: too few rows for a test split, skipping")
+    if not train or not test:
+        logger.warning(
+            f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows, too few for a split, skipping"
+        )
         return [], None
 
     framing = STRATEGIES[strategy]()
@@ -293,7 +302,7 @@ def train_fold_rm(
         }
         target_dir = output_dir / target
         metrics_path = target_dir / METRICS_FILE
-        if not force and metrics_path.exists():
+        if not force and metrics_path.exists() and not _was_skipped(metrics_path):
             logger.info(f"FOLD-RM {target}: already trained, skipping")
             _warn_if_stale(target, metrics_path, target_current)
             continue
@@ -317,6 +326,9 @@ def train_fold_rm(
             gpu,
             verbose,
         )
+        if combined is None:  # not trained: retried on the next run
+            metrics_path.unlink(missing_ok=True)
+            continue
         metrics = {**target_current, "combined": combined, "tasks": results}
         metrics_path.write_text(json.dumps(metrics, indent=2))
     logger.info("FOLD-RM training completed.")
