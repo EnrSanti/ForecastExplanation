@@ -4,13 +4,13 @@ defaults:
     radius: 30
   dates:
     - start: 2023-01-01
-      end: 2026-06-30
+      end: 2026-07-31
   save_images: false
   workers: 12
-  output_path: runs/common
+  output_path: runs/best
 
 best_ordinal_count:
-  force: extraction
+  force: learning
   fold_rm:
     strategy: ordinal_count
     ratio: 1.0
@@ -25,7 +25,7 @@ best_ordinal_count:
     exclude_features:
       prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
     gpu: false
-    output: ../best/ordinal_count
+    output: ./ordinal_count
     
 
 best_ordinal:
@@ -43,7 +43,7 @@ best_ordinal:
       snap: true
     exclude_features:
       prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
-    output: ../best/ordinal
+    output: ./ordinal
     gpu: false
 
 
@@ -60,7 +60,7 @@ best_one_vs_rest:
       min_exception_support: 80
     exclude_features:
       prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
-    output: ../best/one_vs_rest
+    output: ./one_vs_rest
     gpu: false
 
 
@@ -77,5 +77,5 @@ best_multiclass:
       min_exception_support: 80
     exclude_features:
       prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
-    output: ../best/multiclass
+    output: ./multiclass
     gpu: false

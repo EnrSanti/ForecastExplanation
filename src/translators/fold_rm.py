@@ -757,7 +757,8 @@ class FoldRmTranslator(BaseTranslator):
             file_path = input_path / f"{d.strftime(date_format)}.{ext}"
             if file_path.exists():
                 df = pd.read_csv(file_path)
-                df.insert(0, DATE_COLUMN, d.isoformat())
+                date_col = pd.DataFrame({DATE_COLUMN: d.isoformat()}, index=df.index)
+                df = pd.concat([date_col, df], axis=1)
                 dfs.append(df)
             else:
                 self.logger.warning(f"File not found for date {file_path.name}")
