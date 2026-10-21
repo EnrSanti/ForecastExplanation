@@ -162,8 +162,9 @@ def _train_target(
     attrs = loader.attrs  # features + label
 
     if split == "homogeneous":
-        labels = pd.read_csv(dataset_csv, usecols=[target])[target]
-        train, test = homogeneous_split(data, labels, test_ratio, seed)
+        # labels = pd.read_csv(dataset_csv, usecols=[target])[target]
+        # train, test = homogeneous_split(data, labels, test_ratio, seed)
+        logger.error("not implemented")
     elif split == "date":
         dates = _read_column(dataset_csv, DATE_COLUMN)
         train, test = date_split(data, dates, test_ratio, seed)
@@ -272,7 +273,7 @@ def train_fold_rm(
         strategy: Key of STRATEGIES ("one_vs_rest", "multiclass", "ordinal"
             or "ordinal_count").
         ratio: FOLD-RM exception ratio hyperparameter.
-        split: "homogeneous" is sklearn's per-label stratified split; "date"
+        split: "homogeneous" is bho; "date"
             holds out whole days; "row" is a per-label stratified split.
         test_ratio: Fraction of days (or rows) held out for testing.
         seed: Seed for the split.
