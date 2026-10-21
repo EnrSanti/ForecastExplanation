@@ -1,12 +1,10 @@
 import logging
-from concurrent.futures import as_completed
 from datetime import date
 from pathlib import Path
 
 import matplotlib
 import pandas as pd
 import xarray as xr
-from tqdm import tqdm
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -26,7 +24,7 @@ from features_detection.features import (
 )
 from features_detection.utils import build_referenced_data_from_xarray, grid_spacing
 from region import Region
-from utils import FOLDERS, to_compressed_netcdf, worker_pool
+from utils import FOLDERS, run_days, to_compressed_netcdf
 
 logger = logging.getLogger(__name__)
 
@@ -46,33 +44,19 @@ def run_tobac(
 
     logger.info("Starting TOBAC.")
     output_dir.mkdir(parents=True, exist_ok=True)
-    ok = []
-    with worker_pool(workers) as executor:
-        futures = {
-            executor.submit(
-                _run_tobac_single_day,
-                target_date,
-                input_dir,
-                output_dir,
-                region,
-                force=force,
-                save_images=save_images,
-            ): target_date
-            for target_date in dates
-        }
-
-        for future in tqdm(
-            as_completed(futures), total=len(dates), desc="TOBAC Processing"
-        ):
-            target_date = futures[future]
-            try:
-                future.result()
-                ok.append(target_date)
-            except Exception:
-                logger.exception(f"TOBAC failed for {target_date}")
-
+    ok = run_days(
+        _run_tobac_single_day,
+        dates,
+        input_dir,
+        output_dir,
+        region,
+        force=force,
+        save_images=save_images,
+        workers=workers,
+        desc="TOBAC Processing",
+    )
     logger.info("TOBAC runs completed.")
-    return sorted(ok)
+    return ok
 
 
 def _run_tobac_single_day(

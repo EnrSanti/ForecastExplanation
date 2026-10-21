@@ -1,12 +1,9 @@
 import logging
 from abc import ABC, abstractmethod
-from concurrent.futures import as_completed
 from datetime import date
 from pathlib import Path
 
-from tqdm import tqdm
-
-from utils import worker_pool
+from utils import run_days
 
 logger = logging.getLogger("ForecastExplanation")
 
@@ -40,30 +37,15 @@ class BaseTranslator(ABC):
         logger.info("Starting translation")
         output_folder.mkdir(parents=True, exist_ok=True)
 
-        ok = []
-        with worker_pool(workers) as executor:
-            futures = {
-                executor.submit(
-                    self._translate_single_day,
-                    target_date,
-                    input_folder,
-                    output_folder,
-                    force=force,
-                ): target_date
-                for target_date in dates
-            }
-
-            for future in tqdm(
-                as_completed(futures), total=len(dates), desc="Translation"
-            ):
-                target_date = futures[future]
-                try:
-                    future.result()
-                    ok.append(target_date)
-                except Exception:
-                    logger.exception(f"Translation failed for {target_date}")
-
-        ok.sort()
+        ok = run_days(
+            self._translate_single_day,
+            dates,
+            input_folder,
+            output_folder,
+            force=force,
+            workers=workers,
+            desc="Translation",
+        )
         merged = self.merge_into_dataset(ok, output_folder)
         logger.info("Translation completed.")
         return merged, ok

@@ -1,13 +1,11 @@
 import logging
-from concurrent.futures import as_completed
 from datetime import date
 from pathlib import Path
 
 import xarray as xr
-from tqdm import tqdm
 
 from region import Region
-from utils import haversine, worker_pool
+from utils import haversine, run_days
 
 from .fronts import detect_phenomenon, detect_phenomenon_fronts, detect_threshold
 from .segment import detect_clouds, detect_winds
@@ -53,31 +51,18 @@ def reason(
         list[date]: The days processed without errors.
     """
     logger.info("Starting reasoning")
-
-    ok = []
-    with worker_pool(workers) as executor:
-        futures = {
-            executor.submit(
-                _reason_single_day,
-                target_date,
-                input_dir,
-                output_dir,
-                region,
-                force=force,
-            ): target_date
-            for target_date in dates
-        }
-
-        for future in tqdm(as_completed(futures), total=len(dates), desc="Reasoning"):
-            target_date = futures[future]
-            try:
-                future.result()
-                ok.append(target_date)
-            except Exception:
-                logger.exception(f"Reasoning failed for {target_date}")
-
+    ok = run_days(
+        _reason_single_day,
+        dates,
+        input_dir,
+        output_dir,
+        region,
+        force=force,
+        workers=workers,
+        desc="Reasoning",
+    )
     logger.info("Reasoning completed.")
-    return sorted(ok)
+    return ok
 
 
 def _check_variables(

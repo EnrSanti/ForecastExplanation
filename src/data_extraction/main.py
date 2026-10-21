@@ -1,6 +1,5 @@
 import logging
 import shutil
-from concurrent.futures import as_completed
 from datetime import date
 from itertools import groupby
 from pathlib import Path
@@ -12,7 +11,7 @@ import xarray as xr
 from tqdm import tqdm
 
 from region import Region
-from utils import to_compressed_netcdf, worker_pool
+from utils import run_days, to_compressed_netcdf
 
 from . import CLUSTERED_DATA_DIR, CUT_DATA_DIR, DISCRETE_DATA_DIR, RAW_DATA_DIR
 from .clustering import cluster_xarray
@@ -114,34 +113,19 @@ def extract_day(
     workers: int,
 ) -> list[date]:
     logger.info("Starting data extraction...")
-
-    ok = []
-    with worker_pool(workers) as executor:
-        futures = {
-            executor.submit(
-                extract_day_worker,
-                target_date,
-                region,
-                base_path,
-                clustering,
-                force,
-                create_images,
-            ): target_date
-            for target_date in dates
-        }
-
-        for future in tqdm(
-            as_completed(futures), total=len(dates), desc="Data Extraction"
-        ):
-            target_date = futures[future]
-            try:
-                future.result()
-                ok.append(target_date)
-            except Exception:
-                logger.exception(f"Extract failed for {target_date}")
-
+    ok = run_days(
+        extract_day_worker,
+        dates,
+        region,
+        base_path,
+        clustering,
+        force,
+        create_images,
+        workers=workers,
+        desc="Data Extraction",
+    )
     logger.info("Data extraction completed.")
-    return sorted(ok)
+    return ok
 
 
 def cerra_download(

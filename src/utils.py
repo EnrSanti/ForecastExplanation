@@ -1,9 +1,14 @@
 import logging
-from concurrent.futures import ProcessPoolExecutor
+from collections.abc import Callable
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from datetime import date
 from pathlib import Path
 
 import numpy as np
 import xarray as xr
+from tqdm import tqdm
+
+logger = logging.getLogger("ForecastExplanation")
 
 LOG_FORMAT = "%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s"
 PROJECT_LOGGERS = ("ForecastExplanation", "data_extraction", "features_detection")
@@ -25,6 +30,24 @@ def worker_pool(workers: int) -> ProcessPoolExecutor:
     return ProcessPoolExecutor(
         max_workers=workers, initializer=setup_logging, initargs=(level,)
     )
+
+
+def run_days(
+    fn: Callable, dates: list[date], *args, workers: int, desc: str, **kwargs
+) -> list[date]:
+    """Runs fn(day, *args, **kwargs) for every day in a worker pool and returns
+    the days that did not raise, sorted."""
+    ok = []
+    with worker_pool(workers) as executor:
+        futures = {executor.submit(fn, day, *args, **kwargs): day for day in dates}
+        for future in tqdm(as_completed(futures), total=len(dates), desc=desc):
+            day = futures[future]
+            try:
+                future.result()
+                ok.append(day)
+            except Exception:
+                logger.exception(f"{desc} failed for {day}")
+    return sorted(ok)
 
 
 def to_compressed_netcdf(ds: xr.Dataset, path: Path) -> None:
