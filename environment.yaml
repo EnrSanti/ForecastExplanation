@@ -6,17 +6,21 @@ dependencies:
   - python=3.14.7
   - numpy=2.5.2
   - scipy=1.17.1
+  - pandas
   - xarray=2026.7.0
   - scikit-learn=1.9.0
   - numba=0.67.0
+  - matplotlib
+  - cartopy
   - ecmwf-datastores-client
+  - requests
   - py-opencv=5.0.0
   - tobac=1.6.4
   - cfgrib=0.9.15.1
   - tqdm
-  - pyarrow
   - pyyaml
   - pydantic
   - h5netcdf
+  - h5py
   - python-dotenv
   - pymupdf

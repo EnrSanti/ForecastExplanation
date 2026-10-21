@@ -3,9 +3,7 @@ name = "forecastexplanation"
 version = "0.1.0"
 requires-python = ">=3.14"
 dependencies = [
-    "black[jupyter]==26.10.1",
     "cartopy==0.26.0",
-    "cdsapi>=0.7.7",
     "cfgrib>=0.9.15.1",
     "eccodes==2.50.0",
     "h5netcdf>=1.8.1",
@@ -16,17 +14,16 @@ dependencies = [
     "opencv-python>=5.0.0.93",
     "pandas==3.0.6",
     "pandas-stubs==3.0.5.260914",
-    "pyarrow==26.0.0",
     "pydantic==2.14.1",
     "pymupdf==2.0",
     "python-dotenv==1.2.4",
     "pyyaml>=6.0.3",
     "requests>=2.34.2",
     "scipy>=1.18.1",
-    "tobac==1.6.4",
-    "torch==2.14.1",
-    "tqdm==4.70.1",
-    "xarray==2026.9.0",
+    "tobac>=1.6.4",
+    "tqdm>=4.70.1",
+    "xarray>=2026.9.0",
+    "ecmwf-datastores-client>=0.5.3",
 ]
 
 [project.optional-dependencies]
