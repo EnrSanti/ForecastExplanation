@@ -10,8 +10,10 @@ logger = logging.getLogger("ForecastExplanation")
 # 5.5 km apart, the whole area downloaded from the CDS
 _CERRA_EARTH_RADIUS = 6371229.0
 _CERRA_LAT0, _CERRA_LON0 = 50.0, 8.0  # standard parallel, central meridian
-_CERRA_SW_CORNER = (20.292281, -17.485)  # (lat, lon) of the first grid point
-_CERRA_SIDE = 1068 * 5500.0  # metres
+_CERRA_SW_CORNER = (20.292281, -17.485943)  # (lat, lon) of the first grid point
+_CERRA_SPACING = 5500.0  # metres
+_CERRA_SIDE = 1068 * _CERRA_SPACING
+_MIN_SAFE_RADIUS = _CERRA_SPACING / np.sqrt(2) / 1000  # km
 
 
 def _cerra_xy(lat, lon) -> tuple[np.ndarray, np.ndarray]:
@@ -65,8 +67,8 @@ class Region:
         return lat_min <= lat <= lat_max and lon_min <= lon <= lon_max
 
     def _warn_outside(self) -> None:
-        """Warns about the cities get_cities drops and about the part of the
-        region with no CERRA data."""
+        """Warns about the cities get_cities drops, a radius that may hold no
+        grid point and the part of the region with no CERRA data."""
         cities_dict = self.cities if self.cities is not None else CITIES
         outside = [
             city
@@ -76,6 +78,13 @@ class Region:
         if outside:
             logger.warning(
                 f"Cities outside region {self.name} {self.value}, ignored: {outside}"
+            )
+
+        if self.city_radius < _MIN_SAFE_RADIUS:
+            logger.warning(
+                f"Radius {self.city_radius} km is below {_MIN_SAFE_RADIUS:.1f} km "
+                f"(CERRA points are {_CERRA_SPACING / 1000} km apart): a city may "
+                "have no grid point within it, and is then ignored"
             )
 
         lon_min, lon_max, lat_min, lat_max = self.value
