@@ -39,7 +39,12 @@ def xml_extract(target_date: date) -> dict:
     for zone_el in deadline.findall("zone/zona"):
         if zone_el.get("nome") not in A_ZONES:
             continue
-        name = zone_el.get("descrizione").replace("_", " ")
+        name = (zone_el.get("descrizione") or "").replace("_", " ").strip()
+        if not name:
+            logger.warning(
+                f"{target_date}: zone {zone_el.get('nome')} has no name, skipped"
+            )
+            continue
         a_zones[name] = {k: _text(zone_el.find(k)) or False for k in KEYS}
 
     if len(a_zones) != 9:
