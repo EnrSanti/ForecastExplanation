@@ -158,6 +158,7 @@ def main() -> None:
         logger.error(e)
         sys.exit(1)
 
+    failed_runs = []
     for run_name, cfg in runs.items():
         setup_logging(logging.DEBUG if cfg.debug else logging.INFO)
 
@@ -166,6 +167,7 @@ def main() -> None:
             days, failed = run_pipeline(cfg)
         except Exception:
             logger.exception(f"Error running {run_name}")
+            failed_runs.append(run_name)
             continue
 
         if failed:
@@ -173,9 +175,13 @@ def main() -> None:
             logger.warning(f"{len(failed)} day(s) failed: {summary}")
         if not days:
             logger.error(f"No day of {run_name} completed.")
+            failed_runs.append(run_name)
         elif cfg.clean:
             data_extraction.clean_artifacts(days, cfg.output_path, cfg.clean)
         logger.info(f"--- Finished {run_name} ---\n\n")
+    if failed_runs:
+        logger.error(f"Failed run(s): {', '.join(failed_runs)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
