@@ -226,7 +226,6 @@ def _train_target(
         model = Classifier(attrs=attrs, numeric=list(schema["numeric"]), label=target)
         start = timer()
         framing.fit(model, task, task_train, ratio, gpu)
-        # todo model.fit_no_IG_F1(task_train, ratio=ratio) per startegy
         cleaner.clean(model, task_train)
         fit_seconds = timer() - start
 
