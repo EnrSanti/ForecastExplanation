@@ -14,8 +14,6 @@ from abc import ABC, abstractmethod
 from collections import Counter
 from collections.abc import Iterable
 
-from .cudatilp import fit_target
-
 logger = logging.getLogger("ForecastExplanation")
 
 Row = list
@@ -88,15 +86,13 @@ class Multiclass(Strategy):
         return [default if p is None else p for p in predictions["multiclass"]]
 
 
-class Multiclass_no_ig(Strategy):
-    def tasks(self, train: list[Row], test: list[Row]) -> Iterable[Task]:
-        yield "multiclass_no_ig", train, test
+class MulticlassNoIG(Multiclass):
 
-    def combine(
-        self, predictions: dict[str, list], train: list[Row], n: int
-    ) -> list[str]:
-        default = majority_label(train)
-        return [default if p is None else p for p in predictions["multiclass_no_ig"]]
+    def fit(self, model, task: str, train: list[Row], ratio: float, gpu: bool) -> None:
+        if gpu:
+            logger.warning(f"FOLD-RM {task}: no gpu implementation, using CPU")
+        model.fit_no_IG_F1(train, ratio=ratio)
+
 
 
 class Ordinal(Strategy):
@@ -106,8 +102,8 @@ class Ordinal(Strategy):
     def fit(self, model, task: str, train: list[Row], ratio: float, gpu: bool) -> None:
         """Rules only for `task` (label >= c), so no rule firing means < c."""
         if gpu:
-            logger.warning(f"FOLD-RM {task}: trained on CPU, ignoring gpu")
-        fit_target(model, train, task, ratio)
+            logger.warning(f"FOLD-RM {task}: no gpu implementation, using CPU")
+        model.fit_target(train, task, ratio=ratio)
 
     def default_of(self, task: str, train: list[Row]) -> str:
         other = {d[-1] for d in train} - {task}
@@ -155,5 +151,5 @@ STRATEGIES: dict[str, type[Strategy]] = {
     "multiclass": Multiclass,
     "ordinal": Ordinal,
     "ordinal_count": OrdinalCount,
-    "multiclass_no_ig": Multiclass_no_ig,
+    "multiclass_no_ig": MulticlassNoIG,
 }
