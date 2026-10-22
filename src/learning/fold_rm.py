@@ -3,6 +3,7 @@ import itertools
 import json
 import logging
 import random
+import warnings
 from collections import defaultdict
 from fractions import Fraction
 from pathlib import Path
@@ -70,16 +71,21 @@ def homogeneous_split(
     )
     labels = [row[-1] for row in data]
     try:
-        in_test = {
-            i
-            for _, test_idx in itertools.islice(
-                folds.split(data, labels, groups=dates), fraction.numerator
-            )
-            for i in test_idx
-        }
+        # sklearn warns catch
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            in_test = {
+                i
+                for _, test_idx in itertools.islice(
+                    folds.split(data, labels, groups=dates), fraction.numerator
+                )
+                for i in test_idx
+            }
     except ValueError as e:
         logger.warning(f"FOLD-RM: {e}, skipping")
         return [], []
+    for w in caught:
+        logger.debug(f"FOLD-RM internal warn: {w.message}")
 
     train, test = [], []
     for i, row in enumerate(data):
