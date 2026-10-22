@@ -30,4 +30,3 @@ def scores(Y_hat: list, Y: list, weighted: bool = False):
     from src.common.utils import scores as _scores
 
     return _scores(Y_hat, Y, weighted=weighted)
-

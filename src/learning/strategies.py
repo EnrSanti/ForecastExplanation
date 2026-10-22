@@ -87,12 +87,10 @@ class Multiclass(Strategy):
 
 
 class MulticlassNoIG(Multiclass):
-
     def fit(self, model, task: str, train: list[Row], ratio: float, gpu: bool) -> None:
         if gpu:
             logger.warning(f"FOLD-RM {task}: no gpu implementation, using CPU")
         model.fit_no_IG_F1(train, ratio=ratio)
-
 
 
 class Ordinal(Strategy):
