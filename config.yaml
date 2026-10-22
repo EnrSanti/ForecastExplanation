@@ -10,7 +10,7 @@ defaults:
   output_path: ./runs/best
 
 best_ordinal_count:
-  force: features
+  force: learning
   fold_rm:
     strategy: ordinal_count
     ratio: 1.0
