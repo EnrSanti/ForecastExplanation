@@ -11,24 +11,25 @@ SERGIO (<b>S</b>imlulating <b>E</b>xplanation of <b>R</b>e<b>GIO</b>nal weather 
 To run the framework, clone the repository, change the parameters for the learning task and run docker:
 
 ```bash
-# 1. Clone
-git clone https://github.com/EnrSanti/ForecastExplanation.git
+# 1. Clone (with the CUDatILP submodule)
+git clone --recurse-submodules https://github.com/EnrSanti/ForecastExplanation.git
 cd ./ForecastExplanation
 
 # 2. Configure credentials (CDS API key for CERRA GRIB downloads)
-echo "CDSAPI_URL=https://cds.climate.copernicus.eu/api" >> .env
-echo "CDSAPI_KEY=<your-personal-access-token>" >> .env
+cp .env.example .env   # then set ECMWF_API_KEY
 
 # 3. Edit config.yaml with your desired run(s) (region, dates, flags)
 
-# 4. Build
-docker compose build
-
-# 5. Run
+# 4. Run the published image...
 docker compose up
+
+# ...or build it from the sources
+docker compose -f docker-compose-local.yaml up --build
 ```
 
 A CDS API key is required for CERRA GRIB downloads — see the [CDS API setup guide](https://cds.climate.copernicus.eu/how-to-api) and place your credentials in the file `.env`.
+
+To run without Docker, install [uv](https://docs.astral.sh/uv/) and run `uv sync` then `uv run src/main.py` (`uv sync --extra gpu` for CUDA training). On Linux the ecCodes library comes from the system (e.g. `apt install libeccodes0`), as in the Dockerfile.
 
 ## Training Configuration
 
