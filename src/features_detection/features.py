@@ -71,6 +71,8 @@ def track_features(
                 longitude_name="longitude",
                 memory=memory,
                 method_linking="predict",
+                adaptive_step=0.9,
+                adaptive_stop_multiplier=0.1,
             )
         return trajectories
     except Exception as e:  # noqa: BLE001
