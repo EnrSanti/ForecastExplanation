@@ -15,16 +15,9 @@ def load_classifier_cls():
         )
     try:
         from src.common.foldrm import Classifier
-        from src.common.foldrm_no_ig import Classifier_no_ig
     except ImportError as e:
         raise RuntimeError(f"Could not import CUDatILP Classifier ({e})") from e
-    return {
-        "one_vs_rest": Classifier,
-        "multiclass": Classifier,
-        "ordinal": Classifier,
-        "ordinal_count": Classifier,
-        "multiclass_no_ig": Classifier_no_ig,
-    }
+    return Classifier
 
 
 def save_model(model, path: Path) -> None:
@@ -47,7 +40,7 @@ def fit_target(model, data: list[list], target: str, ratio: float) -> None:
     neg = [d for d in data if d[-1] != target]
     rules = []
     while pos:
-        rule = learn_rule(pos, neg, [], ratio)[0]
+        rule = learn_rule(pos, neg, [], ratio)
         if not rule[1]:
             break
         rest = [d for d in pos if not cover(rule, d)]

@@ -188,14 +188,19 @@ def _train_target(
         model = Classifier(attrs=attrs, numeric=list(schema["numeric"]), label=target)
         positive = framing.target_of(task)
         start = timer()
-        if positive:
+        if positive:  # for everything non ordinal
             if gpu:
                 logger.warning(f"FOLD-RM {target} {task}: trained on CPU, ignoring gpu")
             fit_target(model, task_train, positive, ratio)
         elif gpu:
-            model.fitGPU(task_train, ratio=ratio, verbose=verbose)
+            model.fitGPU(task_train, ratio=ratio)
         else:
-            model.fit(task_train, ratio=ratio, verbose=verbose)
+            if strategy == "multiclass_no_ig":
+                print("training with f1")
+                model.fit_no_IG_F1(task_train, ratio=ratio)
+            else:
+                model.fit(task_train, ratio=ratio)
+
         cleaner.clean(model, task_train)
         fit_seconds = timer() - start
 
@@ -297,7 +302,7 @@ def train_fold_rm(
 
     dataset_csv = Path(dataset_csv)
     output_dir = Path(output_dir)
-    Classifiers = load_classifier_cls()
+    Classifier = load_classifier_cls()
     cleaning = cleaning or {}
     cleaner = FoldRmCleaner(**cleaning)
 
@@ -342,7 +347,7 @@ def train_fold_rm(
             stale.unlink()
 
         results, combined = _train_target(
-            Classifiers[strategy],
+            Classifier,  # [strategy],
             dataset_csv,
             target_schema,
             target,
