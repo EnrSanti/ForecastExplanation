@@ -11,7 +11,6 @@ dependencies = [
     "matplotlib==3.11.2",
     "numba==0.68.0",
     "numpy==2.5.4",
-    "opencv-python>=5.0.0.93",
     "pandas==3.0.6",
     "pandas-stubs==3.0.5.260914",
     "pydantic==2.14.1",
@@ -22,6 +21,8 @@ dependencies = [
     "tqdm>=4.70.1",
     "xarray>=2026.9.0",
     "ecmwf-datastores-client>=0.5.3",
+    "scikit-learn>=1.9.1",
+    "opencv-python-headless>=5.0.0.93",
 ]
 
 [project.optional-dependencies]
