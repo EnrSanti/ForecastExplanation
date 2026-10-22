@@ -100,4 +100,3 @@ class FoldRmCleaner(BaseCleaner):
         if self.snap:
             nodes = snap_thresholds(nodes, rows, y, model.attrs)
         model.rules = [to_rule(n) for n in nodes]
-        model.asp_rules = None  # asp() cache

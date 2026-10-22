@@ -69,10 +69,7 @@ class OneVsRest(Strategy):
     ) -> list[str]:
         prior = Counter(d[-1] for d in train)
         default = majority_label(train)
-        votes = {
-            t.removeprefix("class_").removesuffix("_vs_rest"): p
-            for t, p in predictions.items()
-        }
+        votes = {c: predictions[f"class_{c}_vs_rest"] for c in sorted(prior)}
         out = []
         for i in range(n):
             pos = [c for c, p in votes.items() if p[i] == "pos"]
