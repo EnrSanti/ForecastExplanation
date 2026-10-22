@@ -140,7 +140,6 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
         output_path / cfg.fold_rm.output,
         **cfg.fold_rm.model_dump(exclude={"output"}),
         force=cfg.forces(Stage.LEARNING),
-        verbose=cfg.debug,
     )
     return days, failed
 

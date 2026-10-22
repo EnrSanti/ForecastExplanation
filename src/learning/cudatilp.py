@@ -40,7 +40,7 @@ def fit_target(model, data: list[list], target: str, ratio: float) -> None:
     neg = [d for d in data if d[-1] != target]
     rules = []
     while pos:
-        rule = learn_rule(pos, neg, [], ratio)[0]
+        rule = learn_rule(pos, neg, [], ratio)
         if not rule[1]:
             break
         rest = [d for d in pos if not cover(rule, d)]
