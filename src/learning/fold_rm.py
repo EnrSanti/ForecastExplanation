@@ -186,13 +186,13 @@ def _train_target(
         train, test = stratified_split(data, test_ratio, seed)
     else:
         raise ValueError(f"Unknown split {split!r}")
-    logger.info(f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows")
 
     if not train or not test:
         logger.warning(
             f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows, too few for a split, skipping"
         )
         return [], None
+    logger.info(f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows")
 
     framing = STRATEGIES[strategy]()
     results = []

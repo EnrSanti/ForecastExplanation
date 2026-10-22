@@ -4,6 +4,8 @@ import xarray as xr
 
 from utils import haversine
 
+from .utils import pixel_area_km2
+
 
 def _safe_nanmean(arr: np.ndarray) -> float:
     """nanmean that returns NaN instead of warning on an all-NaN/empty slice."""
@@ -63,8 +65,7 @@ def detect_phenomenon_fronts(
      list of cities inside the area, average {phenomenon} inside the
      front, average {phenomenon} outside all fronts (background only)
     """
-    dxy_m = float(feat_data.attrs["dxy"])
-    area_per_pixel_km2 = (dxy_m / 1000.0) ** 2
+    area_per_pixel_km2 = pixel_area_km2(feat_data)
 
     lats = seg_data.latitude.values
     lons = seg_data.longitude.values
@@ -151,7 +152,7 @@ def detect_threshold(
 
     beyond = sign * value > threshold of the height
     """
-    area_per_pixel_km2 = (float(data.attrs["dxy"]) / 1000.0) ** 2
+    area_per_pixel_km2 = pixel_area_km2(data)
     timestamps = pd.to_datetime(data.time.values).strftime("%Y-%m-%d %H:%M:%S")
 
     records = []

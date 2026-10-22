@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from .utils import pixel_area_km2
+
 
 def detect_winds(
     data: xr.Dataset,
@@ -70,7 +72,7 @@ def detect_clouds(
     city is the city that is covered
     %covered is the % of the city's mask (its radius) covered by the cloud
     """
-    area_per_pixel_km2 = (float(feat_data.attrs["dxy"]) / 1000.0) ** 2
+    area_per_pixel_km2 = pixel_area_km2(feat_data)
 
     timestamps = pd.to_datetime(seg_data.time.values).strftime("%Y-%m-%d %H:%M:%S")
 
