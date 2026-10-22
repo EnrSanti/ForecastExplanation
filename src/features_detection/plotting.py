@@ -114,10 +114,7 @@ def print_clouds_center_line(
 
 
 def print_cloud_labels(
-    f_weighted: pd.DataFrame,
-    cell_id: int,
-    region: Region,
-    axs: plt.Axes,
+    f_weighted: pd.DataFrame, cell_id: int, region: Region, axs: plt.Axes
 ):
     """Renders cell ID text annotation near the point natively."""
     if f_weighted.empty or "longitude" not in f_weighted:
@@ -162,7 +159,6 @@ def generate_all_plots(
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Build tracking info memory mapping
     cell_info_by_frame = {}
     if trajectories is not None and not trajectories.empty:
         frames_by_cell = trajectories.groupby("cell")["frame"].apply(
@@ -196,18 +192,15 @@ def generate_all_plots(
     for i in range(da.sizes["time"]):
         frame_da = da.isel(time=i)
 
-        # Valid time to filename string matching old pipeline format: e.g. ..._20090102_0100_tracked.png
         valid_time_pd = pd.Timestamp(da.time.values[i])
         out_name = f"{da.name}_{valid_time_pd.strftime('%Y%m%d_%H%M')}_tracked.png"
         out_path = output_dir / out_name
 
-        # 10x8 inches matches Cartopy default map size used in old _save_scalar_maps
         fig, axs = plt.subplots(
             figsize=(10, 8), dpi=100, subplot_kw={"projection": ccrs.PlateCarree()}
         )
         axs.set_extent(region.value, crs=ccrs.PlateCarree())
 
-        # Map the underlying values
         vmin, vmax = 0, 1  # features.nc is already normalized 0..1
         axs.pcolormesh(
             frame_da["longitude"],
@@ -220,14 +213,11 @@ def generate_all_plots(
             transform=ccrs.PlateCarree(),
         )
 
-        # Add coastlines and borders natively
         axs.coastlines(resolution="10m", linewidth=1)
         axs.add_feature(cfeature.BORDERS, linewidth=0.8, edgecolor="black")
 
-        # Add cities
         overlay_cities(axs, region)
 
-        # Add tracking data
         info = cell_info_by_frame.get(
             i,
             {
@@ -264,13 +254,11 @@ def generate_all_plots(
             if len(f_weighted["longitude"]) > 0:
                 print_cloud_labels(f_weighted, cell_id, region, axs)
 
-        # Draw Segments
         entry = next((s for s in segments_all if s[0] == i), None)
         if entry is not None:
             _, seg_labels, _ = entry
             if seg_labels is not None:
                 seg_labels2d = seg_labels.isel(time=0)
-                # Plot contours mapping indices back to lat/lon by providing coords
                 axs.contour(
                     seg_labels2d["longitude"],
                     seg_labels2d["latitude"],

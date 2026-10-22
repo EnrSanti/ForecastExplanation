@@ -1,0 +1,9 @@
+# only src, pyproject.toml and uv.lock are needed to build the image
+*
+!src
+!pyproject.toml
+!uv.lock
+!.python-version
+src/**/__pycache__
+src/learning/CUDatILP/data
+src/learning/CUDatILP/.git

@@ -1,37 +1,20 @@
 defaults:
   region:
     name: FVG
-    radius: 10
+    radius: 30
   dates:
     - start: 2023-01-01
-      end: 2026-06-30
+      end: 2026-07-31
   save_images: false
-  workers: 22
-  output_path: /home/esanti/FORECAST/runs/learning_test
-
-
-best_multiclass_no_IG:
-  force: learning
-  fold_rm:
-    strategy: multiclass_no_ig
-    ratio: 4.0
-    split: date
-    test_ratio: 0.3
-    seed: 52
-    cleaning:
-      min_support: 30
-      min_exception_support: 50
-    exclude_features:
-      prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
-    output: ../best/multiclass_no_ig
-    gpu: false
+  workers: 12
+  output_path: ./runs/best
 
 best_ordinal_count:
   force: learning
   fold_rm:
     strategy: ordinal_count
     ratio: 1.0
-    split: date
+    split: homogeneous
     test_ratio: 0.3
     seed: 52
     cleaning:
@@ -42,7 +25,7 @@ best_ordinal_count:
     exclude_features:
       prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
     gpu: false
-    output: ../best/ordinal_count
+    output: ./ordinal_count
     
 
 best_ordinal:
@@ -50,7 +33,7 @@ best_ordinal:
   fold_rm:
     strategy: ordinal
     ratio: 1.0
-    split: date
+    split: homogeneous
     test_ratio: 0.3
     seed: 52
     cleaning:
@@ -60,7 +43,7 @@ best_ordinal:
       snap: true
     exclude_features:
       prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
-    output: ../best/ordinal
+    output: ./ordinal
     gpu: false
 
 
@@ -69,15 +52,15 @@ best_one_vs_rest:
   fold_rm:
     strategy: one_vs_rest
     ratio: 1.0
-    split: date
+    split: homogeneous
     test_ratio: 0.3
     seed: 52
     cleaning:
-      min_support: 30
-      min_exception_support: 50
+      min_support: 40
+      min_exception_support: 80
     exclude_features:
       prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
-    output: ../best/one_vs_rest
+    output: ./one_vs_rest
     gpu: false
 
 
@@ -86,14 +69,13 @@ best_multiclass:
   fold_rm:
     strategy: multiclass
     ratio: 4.0
-    split: date
+    split: homogeneous
     test_ratio: 0.3
     seed: 52
     cleaning:
-      min_support: 30
-      min_exception_support: 50
+      min_support: 40
+      min_exception_support: 80
     exclude_features:
       prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
-    output: ../best/multiclass
+    output: ./multiclass
     gpu: false
-

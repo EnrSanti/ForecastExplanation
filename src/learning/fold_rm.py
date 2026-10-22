@@ -1,28 +1,30 @@
 import csv
+import itertools
 import json
 import logging
 import random
+import warnings
 from collections import defaultdict
+from fractions import Fraction
 from pathlib import Path
 from timeit import default_timer as timer
 
-from cleaning import BaseCleaner, FoldRmCleaner
+from sklearn.model_selection import StratifiedGroupKFold
 
-from .cudatilp import fit_target, load_classifier_cls, save_model, scores
+from cleaning import BaseCleaner, FoldRmCleaner
+from utils import DATE_COLUMN
+
+from .cudatilp import load_classifier_cls, save_model, scores
 from .strategies import STRATEGIES, majority_label
 
 logger = logging.getLogger("ForecastExplanation")
 
 METRICS_FILE = "metrics.json"
-SPLITS = ("date", "row")
 
 
 def stratified_split(
     data: list[list], test_ratio: float, seed: int
 ) -> tuple[list[list], list[list]]:
-    if not 0 < test_ratio < 1:
-        raise ValueError("test_ratio must be between 0 and 1.")
-
     rng = random.Random(seed)
     by_label = defaultdict(list)
     for row in data:
@@ -43,9 +45,6 @@ def date_split(
 ) -> tuple[list[list], list[list]]:
     """Holds out whole days, so rows of the same day (one per location, sharing
     the same weather situation) never end up on both sides of the split."""
-    if not 0 < test_ratio < 1:
-        raise ValueError("test_ratio must be between 0 and 1.")
-
     days = sorted(set(dates))
     random.Random(seed).shuffle(days)
     test_days = set(days[: round(len(days) * test_ratio)])
@@ -56,13 +55,47 @@ def date_split(
     return train, test
 
 
+def homogeneous_split(
+    data: list[list], dates: list[str], test_ratio: float, seed: int
+) -> tuple[list[list], list[list]]:
+    """Holds out whole days like date_split, choosing them so that train and
+    test keep (best effort) the label proportions of the whole dataset"""
+    fraction = Fraction(test_ratio).limit_denominator(20)
+    fraction = min(max(fraction, Fraction(1, 20)), Fraction(19, 20))
+    folds = StratifiedGroupKFold(
+        n_splits=fraction.denominator, shuffle=True, random_state=seed
+    )
+    labels = [row[-1] for row in data]
+    try:
+        # sklearn warns catch
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            in_test = {
+                i
+                for _, test_idx in itertools.islice(
+                    folds.split(data, labels, groups=dates), fraction.numerator
+                )
+                for i in test_idx
+            }
+    except ValueError as e:
+        logger.warning(f"FOLD-RM: {e}, skipping")
+        return [], []
+    for w in caught:
+        logger.debug(f"FOLD-RM internal warn: {w.message}")
+
+    train, test = [], []
+    for i, row in enumerate(data):
+        (test if i in in_test else train).append(row)
+    return train, test
+
+
 def _read_column(path: Path, column: str) -> list[str]:
     with open(path, newline="") as f:
         return [row[column] for row in csv.DictReader(f)]
 
 
 def per_class_scores(Y_hat: list, Y: list) -> dict[str, dict]:
-    """Precision/recall/support of every label"""
+    """Precision/recall/support of every label."""
     result = {}
     for label in sorted(set(Y) | set(Y_hat)):
         tp = sum(1 for y, yh in zip(Y, Y_hat) if y == yh == label)
@@ -141,6 +174,13 @@ def _warn_if_stale(target: str, metrics_path: Path, current: dict) -> None:
         )
 
 
+def _was_skipped(metrics_path: Path) -> bool:
+    try:
+        return json.loads(metrics_path.read_text()).get("combined") is None
+    except OSError, json.JSONDecodeError:
+        return False
+
+
 def _train_target(
     Classifier,
     dataset_csv: Path,
@@ -154,63 +194,44 @@ def _train_target(
     seed: int,
     cleaner: BaseCleaner,
     gpu: bool,
-    verbose: bool,
 ) -> tuple[list[dict], dict | None]:
-    # load_data reads columns in CSV order but names them after `attrs`, so
-    # the features must be passed in header order
     loader = Classifier(
         attrs=list(schema["features"]), numeric=list(schema["numeric"]), label=target
     )
     data = loader.load_data(str(dataset_csv))
     attrs = loader.attrs  # features + label
 
-    if split == "date" and schema.get("date"):
-        dates = _read_column(dataset_csv, schema["date"])
-        if len(dates) != len(data):
-            raise ValueError(f"{dataset_csv}: {len(dates)} dates for {len(data)} rows")
+    if split == "homogeneous":
+        dates = _read_column(dataset_csv, DATE_COLUMN)
+        train, test = homogeneous_split(data, dates, test_ratio, seed)
+    elif split == "date":
+        dates = _read_column(dataset_csv, DATE_COLUMN)
         train, test = date_split(data, dates, test_ratio, seed)
-    else:
-        if split == "date":
-            logger.warning(
-                f"FOLD-RM {target}: no date column in {dataset_csv.name}, "
-                "falling back to a stratified row split"
-            )
+    elif split == "row":
         train, test = stratified_split(data, test_ratio, seed)
-    logger.info(f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows")
-    if not test:
-        logger.warning(f"FOLD-RM {target}: too few rows for a test split, skipping")
+    else:
+        raise ValueError(f"Unknown split {split!r}")
+
+    if not train or not test:
+        logger.warning(
+            f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows, too few for a split, skipping"
+        )
         return [], None
+    logger.info(f"FOLD-RM {target}: {len(train)} train / {len(test)} test rows")
 
     framing = STRATEGIES[strategy]()
     results = []
     raw_on_test = {}
     for task, task_train, task_test in framing.tasks(train, test):
         model = Classifier(attrs=attrs, numeric=list(schema["numeric"]), label=target)
-        positive = framing.target_of(task)
         start = timer()
-        if positive:  # for everything non ordinal
-            if gpu:
-                logger.warning(f"FOLD-RM {target} {task}: trained on CPU, ignoring gpu")
-            fit_target(model, task_train, positive, ratio)
-        elif gpu:
-            model.fitGPU(task_train, ratio=ratio)
-        else:
-            if strategy == "multiclass_no_ig":
-                print("training with f1")
-                model.fit_no_IG_F1(task_train, ratio=ratio)
-            else:
-                model.fit(task_train, ratio=ratio)
-
+        framing.fit(model, task, task_train, ratio, gpu)
+        # todo model.fit_no_IG_F1(task_train, ratio=ratio) per startegy
         cleaner.clean(model, task_train)
         fit_seconds = timer() - start
 
         Y = [d[-1] for d in task_test]
-        # uncovered rows: the other label of the task, or the majority
-        if positive:
-            other = {d[-1] for d in task_train} - {positive}
-            default = other.pop() if other else positive
-        else:
-            default = majority_label(task_train)
+        default = framing.default_of(task, task_train)
         raw = model.predict(task_test)
         raw_on_test[task] = raw
         Y_hat = [default if y is None else y for y in raw]
@@ -223,7 +244,7 @@ def _train_target(
         result = {
             "task": task,
             "accuracy": round(acc, 4),
-            "majority_baseline": round(Y.count(default) / len(Y), 4) if Y else None,
+            "majority_baseline": round(Y.count(default) / len(Y), 4),
             "precision": round(p, 4),
             "recall": round(r, 4),
             "f1": round(f1, 4),
@@ -255,20 +276,19 @@ def _train_target(
 
 
 def train_fold_rm(
-    dataset_csv: str | Path,
+    dataset_csv: Path,
     schema: dict[str, list[str]],
-    output_dir: str | Path,
+    output_dir: Path,
     *,
-    strategy: str = "one_vs_rest",
-    ratio: float = 0.7,
-    split: str = "date",
-    test_ratio: float = 0.3,
-    seed: int = 42,
-    cleaning: dict | None = None,
-    exclude_features: dict[str, list[str]] | None = None,
-    gpu: bool = False,
-    force: bool = False,
-    verbose: bool = False,
+    strategy: str,
+    ratio: float,
+    split: str,
+    test_ratio: float,
+    seed: int,
+    cleaning: dict,
+    exclude_features: dict[str, list[str]],
+    gpu: bool,
+    force: bool,
 ) -> None:
     """
     Trains FOLD-RM models for every label in `schema` on the merged dataset.
@@ -280,30 +300,20 @@ def train_fold_rm(
         strategy: Key of STRATEGIES ("one_vs_rest", "multiclass", "ordinal"
             or "ordinal_count", "multiclass_no_ig").
         ratio: FOLD-RM exception ratio hyperparameter.
-        split: "date" holds out whole days (falls back to "row" when the
-            dataset has no date column); "row" is a per-label stratified split.
+        split: "homogeneous" holds out whole days keeping the label
+            proportions (best effort); "date" holds out random whole days;
+            "row" is a per-label stratified split.
         test_ratio: Fraction of days (or rows) held out for testing.
         seed: Seed for the split.
         cleaning: Options of cleaning.FoldRmCleaner (min_support,
             min_exception_support, mdl_lambda, snap), applied to every model
-            on its training rows; None keeps the rules as learned.
+            on its training rows.
         exclude_features: target -> feature column prefixes left out of its
             models (e.g. the cloud amounts for prev_cloud).
         gpu: Use CUDatILP's CUDA training (fitGPU).
         force: Retrain targets whose metrics already exist.
-        verbose: Print CUDatILP's per-phase timing breakdown to stdout.
     """
-    if split not in SPLITS:
-        raise ValueError(f"Unknown split {split!r}, expected one of {list(SPLITS)}")
-    if strategy not in STRATEGIES:
-        raise ValueError(
-            f"Unknown strategy {strategy!r}, expected one of {list(STRATEGIES)}"
-        )
-
-    dataset_csv = Path(dataset_csv)
-    output_dir = Path(output_dir)
     Classifier = load_classifier_cls()
-    cleaning = cleaning or {}
     cleaner = FoldRmCleaner(**cleaning)
 
     current = {
@@ -313,19 +323,19 @@ def train_fold_rm(
         "split": split,
         "test_ratio": test_ratio,
         "seed": seed,
-        "min_support": cleaning.get("min_support", 0),
-        "min_exception_support": cleaning.get("min_exception_support", 0),
+        "min_support": cleaning["min_support"],
+        "min_exception_support": cleaning["min_exception_support"],
         "gpu": gpu,
     }
     # only when used, so the metrics.json of older runs stay comparable
-    if cleaning.get("mdl_lambda") is not None:
+    if cleaning["mdl_lambda"] is not None:
         current["mdl_lambda"] = cleaning["mdl_lambda"]
-    if cleaning.get("snap"):
+    if cleaning["snap"]:
         current["snap"] = True
 
     logger.info("Starting FOLD-RM training")
     for target in schema["labels"]:
-        excluded = tuple((exclude_features or {}).get(target, []))
+        excluded = tuple(exclude_features.get(target, []))
         target_schema = {
             **schema,
             "features": [c for c in schema["features"] if not c.startswith(excluded)],
@@ -337,7 +347,7 @@ def train_fold_rm(
         }
         target_dir = output_dir / target
         metrics_path = target_dir / METRICS_FILE
-        if not force and metrics_path.exists():
+        if not force and metrics_path.exists() and not _was_skipped(metrics_path):
             logger.info(f"FOLD-RM {target}: already trained, skipping")
             _warn_if_stale(target, metrics_path, target_current)
             continue
@@ -345,9 +355,10 @@ def train_fold_rm(
         # drop models of a previous strategy
         for stale in [*target_dir.glob("*.lp"), *target_dir.glob("*.pkl")]:
             stale.unlink()
+        metrics_path.unlink(missing_ok=True)
 
         results, combined = _train_target(
-            Classifier,  # [strategy],
+            Classifier,
             dataset_csv,
             target_schema,
             target,
@@ -359,8 +370,9 @@ def train_fold_rm(
             seed,
             cleaner,
             gpu,
-            verbose,
         )
+        if combined is None:
+            continue
         metrics = {**target_current, "combined": combined, "tasks": results}
         metrics_path.write_text(json.dumps(metrics, indent=2))
     logger.info("FOLD-RM training completed.")
