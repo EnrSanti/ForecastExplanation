@@ -61,8 +61,10 @@ def homogeneous_split(
     test keep (best effort) the label proportions of the whole dataset.
 
     The days are dealt into n stratified folds and k of them are held out,
-    with k / n the closest fraction to test_ratio (n <= 20)."""
+    with k / n the closest fraction to test_ratio (n <= 20, 0 < k < n)."""
     fraction = Fraction(test_ratio).limit_denominator(20)
+    # test_ratio < 1/40 or > 39/40 would round to 0 or 1: a single fold
+    fraction = min(max(fraction, Fraction(1, 20)), Fraction(19, 20))
     folds = StratifiedGroupKFold(
         n_splits=fraction.denominator, shuffle=True, random_state=seed
     )
@@ -91,7 +93,7 @@ def _read_column(path: Path, column: str) -> list[str]:
 
 
 def per_class_scores(Y_hat: list, Y: list) -> dict[str, dict]:
-    """Precision/recall/support of every label"""
+    """Precision/recall/support of every label."""
     result = {}
     for label in sorted(set(Y) | set(Y_hat)):
         tp = sum(1 for y, yh in zip(Y, Y_hat) if y == yh == label)

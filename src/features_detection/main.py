@@ -137,7 +137,6 @@ def _run_tobac_single_day_single_phenomenon(
             params["smooth"],
         )
 
-        # Feature detection & tracking
         features, features_weighted_points = detect_features(
             referenced_data,
             threshold=threshold,
@@ -154,7 +153,6 @@ def _run_tobac_single_day_single_phenomenon(
             memory=GAP_FRAMES,
         )
 
-        # Segmentation
         segments_all = segment_features(
             features,
             referenced_data,

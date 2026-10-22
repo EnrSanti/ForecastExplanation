@@ -10,6 +10,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveInt,
+    PrivateAttr,
     ValidationError,
     field_validator,
     model_validator,
@@ -146,6 +147,7 @@ class RunConfig(BaseModel):
     stop_after: Stage = Stage.LEARNING
     clean: list[CleanTarget] = []
     fold_rm: FoldRmConfig = FoldRmConfig()
+    _region: Region = PrivateAttr()
 
     @field_validator("dates", mode="before")
     @classmethod
@@ -175,13 +177,13 @@ class RunConfig(BaseModel):
             if bad:
                 raise ValueError(f"region: cities {bad} need a numeric lat and lon")
         try:
-            self.build_region()
+            self._region = Region.from_config(self.region)
         except (KeyError, TypeError) as e:  # e.g. radius: null
             raise ValueError(f"region: invalid value ({e!r})") from e
         return self
 
     def build_region(self) -> Region:
-        return Region.from_config(self.region)
+        return self._region
 
     def forces(self, stage: Stage) -> bool:
         """True if `stage` must be recomputed even when cached results exist."""

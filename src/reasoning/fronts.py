@@ -93,25 +93,21 @@ def detect_phenomenon_fronts(
             seg_frame = seg_arr[t_idx]
             val_frame = raw_arr[t_idx]
 
-            # Find unique front IDs (excluding 0, which is background, and nans)
+            # front ids, 0 and NaN being background
             front_ids = np.unique(seg_frame[~np.isnan(seg_frame)])
             front_ids = [fid for fid in front_ids if fid > 0]
 
-            # Background = not in any front (id 0 or nan), computed once per frame
             background_mask = (seg_frame == 0) | np.isnan(seg_frame)
             avg_val_outside = _safe_nanmean(val_frame[background_mask])
 
             for fid in front_ids:
                 mask = seg_frame == fid
 
-                # Area in pixels
                 pixel_count = np.sum(mask)
                 area_km2 = pixel_count * area_per_pixel_km2
 
-                # Average value inside this front
                 avg_val_inside = _safe_nanmean(val_frame[mask])
 
-                # Cities inside this front
                 cities_inside = []
                 for city_name, idx in city_pixels.items():
                     if seg_frame[idx] == fid:
@@ -160,7 +156,7 @@ def detect_threshold(
         arr = data[f"raw_{field}_at_{h}"].transpose("time", ...).values
         areas = (sign * arr > threshold).sum(axis=(1, 2)) * area_per_pixel_km2
         for name, mask in city_masks.items():
-            values = arr[:, mask].mean(axis=1)
+            values = np.nanmean(arr[:, mask], axis=1, dtype=np.float64)
             for t_idx, timestamp in enumerate(timestamps):
                 records.append(
                     {

@@ -84,14 +84,13 @@ def detect_clouds(
         for t_idx, timestamp in enumerate(timestamps):
             seg_frame = seg_arr[t_idx]
 
-            # Find unique cloud IDs (excluding 0, which is background, and nans)
+            # cloud ids, 0 and NaN being background
             cloud_ids = np.unique(seg_frame[~np.isnan(seg_frame)])
             cloud_ids = [cid for cid in cloud_ids if cid > 0]
 
             for cid in cloud_ids:
                 cloud_mask = seg_frame == cid
 
-                # Area in pixels
                 pixel_count = np.sum(cloud_mask)
                 tot_area = pixel_count * area_per_pixel_km2
 

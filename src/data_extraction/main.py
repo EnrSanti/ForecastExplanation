@@ -167,7 +167,8 @@ def extract(
     create_images: bool,
     workers: int,
     delete_grib: bool,
-) -> list[date]:
+) -> tuple[list[date], list[date]]:
+    """Returns the days cut and, of those, the days extracted."""
     output_path.mkdir(parents=True, exist_ok=True)
     if create_images and not just_cut:
         (output_path / "legends").mkdir(parents=True, exist_ok=True)
@@ -176,9 +177,9 @@ def extract(
     cut_ok = cerra_download(dates, region, output_path, force_cut, delete_grib)
 
     if just_cut:
-        return cut_ok
+        return cut_ok, cut_ok
 
-    return extract_day(
+    return cut_ok, extract_day(
         cut_ok,
         region,
         output_path,

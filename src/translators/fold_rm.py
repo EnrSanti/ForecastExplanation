@@ -136,16 +136,8 @@ def average_by_height_and_time_vector(
     speed_lookup: dict, dir_lookup: dict, round_ndigits: int = 2
 ) -> dict:
     """
-    Groups (city, time, height)-keyed speed+direction lookups into
-    (city, time_group, height_group) and computes the resultant wind
-    vector for each group: decomposes each (speed, direction) pair into
-    u/v components, averages those components within the group, then
-    derives resultant speed (vector magnitude) and resultant direction
-    (vector bearing, snapped to an 8-point compass label) from that same
-    averaged vector — not two independent scalar/circular means.
-
-    Returns a dict keyed the same way as average_by_height_and_time,
-    with each value a dict: {"speed": float, "direction": str}.
+    Like average_by_height_and_time, for wind: the mean u/v vector of each
+    group, as {"speed": its magnitude, "direction": its 8-point compass label}.
     """
     buckets: dict[tuple, list] = defaultdict(list)
     for (city, t, h), speed in sorted(speed_lookup.items()):

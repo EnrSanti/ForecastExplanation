@@ -73,7 +73,7 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
     output_path = cfg.output_path
     failed: dict[date, Stage] = {}
 
-    days = data_extraction.extract(
+    cut, days = data_extraction.extract(
         cfg.dates,
         region,
         output_path=output_path,
@@ -85,7 +85,8 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
         workers=cfg.workers,
         delete_grib="grib" in (cfg.clean or []),
     )
-    days = _keep(Stage.DATA, cfg.dates, days, failed)
+    _keep(Stage.DATA, cfg.dates, cut, failed)
+    days = _keep(Stage.EXTRACTION, cut, days, failed)
     if not days or not cfg.runs(Stage.FEATURES):
         return days, failed
 

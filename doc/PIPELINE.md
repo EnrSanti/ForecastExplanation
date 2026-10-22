@@ -31,7 +31,7 @@ outputs.
 
 ### Output 2 — Extracted Features
 
-**Path:** `tmp_data/imgs_discrete/{date}/features.nc` (or `tmp_data/clustered/...`)
+**Path:** `tmp_data/extracted_data/{date}/features.nc` (or `tmp_data/clustered_data/...`)
 **Dimensions:** `time × y × x` (e.g. `24 × 76 × 63` — time/step flattened into 24 hourly frames)
 
 | Variable                | Description                                         |
@@ -57,11 +57,11 @@ separate output files.
 
 ### Input
 
-- `tmp_data/imgs_discrete/{date}/features.nc` (from Step 1)
+- `tmp_data/extracted_data/{date}/features.nc` (or `tmp_data/clustered_data/...`, from Step 1)
 
 ### Output 1 — Segmentation Masks
 
-**Path:** `{run}/{date}/segmentation.nc`
+**Path:** `{run}/days_data/{date}/segmentation.nc`
 **Dimensions:** `time × y × x` (e.g. `24 × 76 × 63`)
 **Attributes:** `threshold` (e.g. `0.5`)
 
@@ -76,7 +76,7 @@ separate output files.
 
 ### Output 2 — Raw Features
 
-**Path:** `{run}/{date}/features.nc`
+**Path:** `{run}/days_data/{date}/features.nc`
 **Dimensions:** `time × y × x` (e.g. `24 × 76 × 63`)
 **Attributes:** `dxy` — grid spacing in meters, from latitude/longitude (≈ `5490.0`)
 
@@ -93,7 +93,7 @@ separate output files.
 
 ### Output 3 — Trajectories
 
-**Path:** `{run}/{date}/trajectories.nc`
+**Path:** `{run}/days_data/{date}/trajectories.nc`
 **Dimensions:** `index` (e.g. `487` tracked feature points)
 
 | Variable    | Description                         |
@@ -117,12 +117,12 @@ produces tabular `.txt` reports.
 
 ### Input
 
-- `{run}/{date}/segmentation.nc` (blob masks)
-- `{run}/{date}/features.nc` (raw physical values + `dxy` attribute)
+- `{run}/days_data/{date}/segmentation.nc` (blob masks)
+- `{run}/days_data/{date}/features.nc` (raw physical values + `dxy` attribute)
 
 ### Output — TSV Tables
 
-**Path:** `{run}/{date}/reasoning/`
+**Path:** `{run}/days_data/{date}/reasoning/`
 
 Per-city values are taken over the grid points within the city radius (`region.radius` in the config, 20 km by
 default). Cities with no grid point in their radius are left out of the per-city tables.
@@ -242,7 +242,7 @@ producing a structured JSON with per-city forecast descriptions.
 
 ### Output
 
-**Path:** `{run}/{date}/gt.json`
+**Path:** `{run}/days_data/{date}/gt.json`
 
 A JSON object mapping each zone to its forecast fields (`CIELO_DESCRIZIONE`, `PIOGGIA_DESCRIZIONE`,
 `TEMPORALE_DESCRIZIONE`; `false` when the bulletin leaves it empty).
@@ -256,15 +256,15 @@ suitable for downstream ML models. Currently the only translator is `FoldRmTrans
 
 ### Input
 
-- `{run}/{date}/gt.json` (from Step 4)
-- `{run}/{date}/reasoning/winds.txt` (from Step 3)
-- `{run}/{date}/reasoning/cloud_segments.txt` (from Step 3)
-- `{run}/{date}/reasoning/temp.txt` (from Step 3)
-- `{run}/{date}/reasoning/humidity.txt` (from Step 3)
-- `{run}/{date}/reasoning/cloud.txt` (from Step 3)
-- `{run}/{date}/reasoning/temp_fronts.txt` (from Step 3)
-- `{run}/{date}/reasoning/humidity_fronts.txt` (from Step 3)
-- `{run}/{date}/reasoning/{front,warmadv,tefall,terise}.txt` (from Step 3)
+- `{run}/days_data/{date}/gt.json` (from Step 4)
+- `{run}/days_data/{date}/reasoning/winds.txt` (from Step 3)
+- `{run}/days_data/{date}/reasoning/cloud_segments.txt` (from Step 3)
+- `{run}/days_data/{date}/reasoning/temp.txt` (from Step 3)
+- `{run}/days_data/{date}/reasoning/humidity.txt` (from Step 3)
+- `{run}/days_data/{date}/reasoning/cloud.txt` (from Step 3)
+- `{run}/days_data/{date}/reasoning/temp_fronts.txt` (from Step 3)
+- `{run}/days_data/{date}/reasoning/humidity_fronts.txt` (from Step 3)
+- `{run}/days_data/{date}/reasoning/{front,warmadv,tefall,terise}.txt` (from Step 3)
 
 ### Output
 
