@@ -1,18 +1,19 @@
 import csv
+import itertools
 import json
 import logging
 import random
 from collections import defaultdict
+from fractions import Fraction
 from pathlib import Path
 from timeit import default_timer as timer
 
-import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedGroupKFold
 
 from cleaning import BaseCleaner, FoldRmCleaner
 from utils import DATE_COLUMN
 
-from .cudatilp import fit_target, load_classifier_cls, save_model, scores
+from .cudatilp import load_classifier_cls, save_model, scores
 from .strategies import STRATEGIES, majority_label
 
 logger = logging.getLogger("ForecastExplanation")
@@ -54,19 +55,34 @@ def date_split(
 
 
 def homogeneous_split(
-    data: list[list], labels: pd.Series, test_ratio: float, seed: int
+    data: list[list], dates: list[str], test_ratio: float, seed: int
 ) -> tuple[list[list], list[list]]:
+    """Holds out whole days like date_split, choosing them so that train and
+    test keep (best effort) the label proportions of the whole dataset.
+
+    The days are dealt into n stratified folds and k of them are held out,
+    with k / n the closest fraction to test_ratio (n <= 20)."""
+    fraction = Fraction(test_ratio).limit_denominator(20)
+    folds = StratifiedGroupKFold(
+        n_splits=fraction.denominator, shuffle=True, random_state=seed
+    )
+    labels = [row[-1] for row in data]
     try:
-        train_idx, test_idx = train_test_split(
-            range(len(data)),
-            train_size=1 - test_ratio,
-            stratify=labels,
-            random_state=seed,
-        )
-        return [data[i] for i in train_idx], [data[i] for i in test_idx]
+        in_test = {
+            i
+            for _, test_idx in itertools.islice(
+                folds.split(data, labels, groups=dates), fraction.numerator
+            )
+            for i in test_idx
+        }
     except ValueError as e:
         logger.warning(f"FOLD-RM: {e}, skipping")
         return [], []
+
+    train, test = [], []
+    for i, row in enumerate(data):
+        (test if i in in_test else train).append(row)
+    return train, test
 
 
 def _read_column(path: Path, column: str) -> list[str]:
@@ -153,7 +169,6 @@ def _train_target(
     seed: int,
     cleaner: BaseCleaner,
     gpu: bool,
-    verbose: bool,
 ) -> tuple[list[dict], dict | None]:
     loader = Classifier(
         attrs=list(schema["features"]), numeric=list(schema["numeric"]), label=target
@@ -162,9 +177,8 @@ def _train_target(
     attrs = loader.attrs  # features + label
 
     if split == "homogeneous":
-        # labels = pd.read_csv(dataset_csv, usecols=[target])[target]
-        # train, test = homogeneous_split(data, labels, test_ratio, seed)
-        logger.error("not implemented")
+        dates = _read_column(dataset_csv, DATE_COLUMN)
+        train, test = homogeneous_split(data, dates, test_ratio, seed)
     elif split == "date":
         dates = _read_column(dataset_csv, DATE_COLUMN)
         train, test = date_split(data, dates, test_ratio, seed)
@@ -185,25 +199,13 @@ def _train_target(
     raw_on_test = {}
     for task, task_train, task_test in framing.tasks(train, test):
         model = Classifier(attrs=attrs, numeric=list(schema["numeric"]), label=target)
-        positive = framing.target_of(task)
         start = timer()
-        if positive:
-            if gpu:
-                logger.warning(f"FOLD-RM {target} {task}: trained on CPU, ignoring gpu")
-            fit_target(model, task_train, positive, ratio)
-        elif gpu:
-            model.fitGPU(task_train, ratio=ratio, verbose=verbose)
-        else:
-            model.fit(task_train, ratio=ratio, verbose=verbose)
+        framing.fit(model, task, task_train, ratio, gpu)
         cleaner.clean(model, task_train)
         fit_seconds = timer() - start
 
         Y = [d[-1] for d in task_test]
-        if positive:
-            other = {d[-1] for d in task_train} - {positive}
-            default = other.pop() if other else positive
-        else:
-            default = majority_label(task_train)
+        default = framing.default_of(task, task_train)
         raw = model.predict(task_test)
         raw_on_test[task] = raw
         Y_hat = [default if y is None else y for y in raw]
@@ -261,7 +263,6 @@ def train_fold_rm(
     exclude_features: dict[str, list[str]],
     gpu: bool,
     force: bool,
-    verbose: bool,
 ) -> None:
     """
     Trains FOLD-RM models for every label in `schema` on the merged dataset.
@@ -273,8 +274,9 @@ def train_fold_rm(
         strategy: Key of STRATEGIES ("one_vs_rest", "multiclass", "ordinal"
             or "ordinal_count").
         ratio: FOLD-RM exception ratio hyperparameter.
-        split: "homogeneous" is bho; "date"
-            holds out whole days; "row" is a per-label stratified split.
+        split: "homogeneous" holds out whole days keeping the label
+            proportions (best effort); "date" holds out random whole days;
+            "row" is a per-label stratified split.
         test_ratio: Fraction of days (or rows) held out for testing.
         seed: Seed for the split.
         cleaning: Options of cleaning.FoldRmCleaner (min_support,
@@ -284,7 +286,6 @@ def train_fold_rm(
             models (e.g. the cloud amounts for prev_cloud).
         gpu: Use CUDatILP's CUDA training (fitGPU).
         force: Retrain targets whose metrics already exist.
-        verbose: Print CUDatILP's per-phase timing breakdown to stdout.
     """
     Classifier = load_classifier_cls()
     cleaner = FoldRmCleaner(**cleaning)
@@ -325,9 +326,11 @@ def train_fold_rm(
             _warn_if_stale(target, metrics_path, target_current)
             continue
         target_dir.mkdir(parents=True, exist_ok=True)
-        # drop models of a previous strategy
+        # drop models of a previous strategy, and their metrics so that a
+        # crash below doesn't leave them looking trained
         for stale in [*target_dir.glob("*.lp"), *target_dir.glob("*.pkl")]:
             stale.unlink()
+        metrics_path.unlink(missing_ok=True)
 
         results, combined = _train_target(
             Classifier,
@@ -342,10 +345,8 @@ def train_fold_rm(
             seed,
             cleaner,
             gpu,
-            verbose,
         )
         if combined is None:  # not trained: retried on the next run
-            metrics_path.unlink(missing_ok=True)
             continue
         metrics = {**target_current, "combined": combined, "tasks": results}
         metrics_path.write_text(json.dumps(metrics, indent=2))
