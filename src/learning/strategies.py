@@ -5,11 +5,18 @@ FOLD-RM is a one-vs-rest covering loop that takes the most frequent label as
 positive each round. On noisy, imbalanced multi-class targets (prev_cloud has
 5 classes, majority ~28%) `gain()` rejects nearly every literal and the loop
 stops after a couple of rules, leaving most test rows uncovered. Training one
-binary model per class works much better, so OneVsRest is the default.
+binary model per class works much better, an ordinal chain of
+"label >= class" models better still (both targets are ordered scales).
 """
 
+import logging
 from abc import ABC, abstractmethod
+from collections import Counter
 from collections.abc import Iterable
+
+from .cudatilp import fit_target
+
+logger = logging.getLogger("ForecastExplanation")
 
 Row = list
 Task = tuple[str, list[Row], list[Row]]
@@ -21,9 +28,26 @@ def majority_label(data: list[Row]) -> str:
 
 
 class Strategy(ABC):
+    def fit(self, model, task: str, train: list[Row], ratio: float, gpu: bool) -> None:
+        if gpu:
+            model.fitGPU(train, ratio=ratio)
+        else:
+            model.fit(train, ratio=ratio)
+
+    def default_of(self, task: str, train: list[Row]) -> str:
+        """Label of the rows of `task` no rule covers."""
+        return majority_label(train)
+
     @abstractmethod
     def tasks(self, train: list[Row], test: list[Row]) -> Iterable[Task]:
         """Yields (task_name, train, test) triples, one per model to fit."""
+
+    @abstractmethod
+    def combine(
+        self, predictions: dict[str, list], train: list[Row], n: int
+    ) -> list[str]:
+        """Merges the tasks' predictions (None = no rule fired) into one
+        original class per row."""
 
 
 class OneVsRest(Strategy):
@@ -40,13 +64,84 @@ class OneVsRest(Strategy):
                 self.binarize(test, positive),
             )
 
+    def combine(
+        self, predictions: dict[str, list], train: list[Row], n: int
+    ) -> list[str]:
+        prior = Counter(d[-1] for d in train)
+        default = majority_label(train)
+        votes = {c: predictions[f"class_{c}_vs_rest"] for c in sorted(prior)}
+        out = []
+        for i in range(n):
+            pos = [c for c, p in votes.items() if p[i] == "pos"]
+            out.append(max(pos, key=lambda c: prior[c]) if pos else default)
+        return out
+
 
 class Multiclass(Strategy):
     def tasks(self, train: list[Row], test: list[Row]) -> Iterable[Task]:
         yield "multiclass", train, test
 
+    def combine(
+        self, predictions: dict[str, list], train: list[Row], n: int
+    ) -> list[str]:
+        default = majority_label(train)
+        return [default if p is None else p for p in predictions["multiclass"]]
+
+
+class Ordinal(Strategy):
+    """`ge_<c>` models "label >= c"; a row takes the class below the first
+    model that doesn't fire."""
+
+    def fit(self, model, task: str, train: list[Row], ratio: float, gpu: bool) -> None:
+        """Rules only for `task` (label >= c), so no rule firing means < c."""
+        if gpu:
+            logger.warning(f"FOLD-RM {task}: trained on CPU, ignoring gpu")
+        fit_target(model, train, task, ratio)
+
+    def default_of(self, task: str, train: list[Row]) -> str:
+        other = {d[-1] for d in train} - {task}
+        return other.pop() if other else task
+
+    def tasks(self, train: list[Row], test: list[Row]) -> Iterable[Task]:
+        self.classes = sorted({d[-1] for d in train}, key=float)
+        for k, c in enumerate(self.classes[1:], start=1):
+            up = set(self.classes[k:])
+
+            def relabel(data, c=c, up=up):
+                return [
+                    d[:-1] + [f"ge_{c}" if d[-1] in up else f"lt_{c}"] for d in data
+                ]
+
+            yield f"ge_{c}", relabel(train), relabel(test)
+
+    def combine(
+        self, predictions: dict[str, list], train: list[Row], n: int
+    ) -> list[str]:
+        chain = [predictions[f"ge_{c}"] for c in self.classes[1:]]
+        out = []
+        for i in range(n):
+            level = 0
+            while level < len(chain) and chain[level][i] is not None:
+                level += 1
+            out.append(self.classes[level])
+        return out
+
+
+class OrdinalCount(Ordinal):
+    """The `ge_<c>` models of Ordinal; a row takes the class at the number of
+    models that fire, so a `ge_<c>` firing above a lower model that doesn't
+    still counts."""
+
+    def combine(
+        self, predictions: dict[str, list], train: list[Row], n: int
+    ) -> list[str]:
+        chain = [predictions[f"ge_{c}"] for c in self.classes[1:]]
+        return [self.classes[sum(p[i] is not None for p in chain)] for i in range(n)]
+
 
 STRATEGIES: dict[str, type[Strategy]] = {
     "one_vs_rest": OneVsRest,
     "multiclass": Multiclass,
+    "ordinal": Ordinal,
+    "ordinal_count": OrdinalCount,
 }

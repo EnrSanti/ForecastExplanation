@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta
 from enum import StrEnum
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any, Literal
 
@@ -9,6 +10,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveInt,
+    PrivateAttr,
     ValidationError,
     field_validator,
     model_validator,
@@ -19,6 +21,7 @@ from region import Region
 
 class Stage(StrEnum):
     DATA = "data"
+    EXTRACTION = "extraction"
     FEATURES = "features"
     REASONING = "reasoning"
     TRANSLATION = "translation"
@@ -29,7 +32,6 @@ class Stage(StrEnum):
         return list(Stage).index(self)
 
 
-CUT = "cut"
 CleanTarget = Literal["grib", "cut", "extracted"]
 
 
@@ -61,11 +63,21 @@ def parse_dates(dates_entry: list | str | dict | None) -> list[date]:
         if isinstance(item, (datetime, date, str)):
             parsed_dates.add(_parse_date_value(item))
         elif isinstance(item, dict):
+            unknown = set(item) - {"start", "end", "step"}
+            if unknown:
+                raise ValueError(f"Unknown date range keys {sorted(unknown)}")
             start = _parse_date_value(item.get("start"))
             end = _parse_date_value(item.get("end"))
+            if end < start:
+                raise ValueError(f"Date range ends before it starts: {item!r}")
 
             curr = start
             step = item.get("step", 1)
+            # a zero or fractional step would never move past `end`
+            if not isinstance(step, int) or isinstance(step, bool) or step < 1:
+                raise ValueError(
+                    f"Date range step must be a positive integer: {step!r}"
+                )
             while curr <= end:
                 parsed_dates.add(curr)
                 curr += timedelta(days=step)
@@ -75,22 +87,56 @@ def parse_dates(dates_entry: list | str | dict | None) -> list[date]:
     return sorted(parsed_dates)
 
 
+class CleaningConfig(BaseModel):
+    """Options of cleaning.clean_rules, applied to every learned model."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    min_support: int = Field(0, ge=0)
+    min_exception_support: int = Field(0, ge=0)
+    # MDL pruning, lambda per 1000 minority-side training rows (None = off)
+    mdl_lambda: float | None = Field(None, ge=0)
+    # thresholds to round values of their unit
+    snap: bool = False
+
+
 class FoldRmConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    strategy: Literal["one_vs_rest", "multiclass"] = "one_vs_rest"
-    ratio: float = Field(0.7, gt=0, le=1)
-    split: Literal["date", "row"] = "date"
+    strategy: Literal["one_vs_rest", "multiclass", "ordinal", "ordinal_count"] = (
+        "one_vs_rest"
+    )
+    ratio: float = Field(0.7, gt=0)
+    split: Literal["homogeneous", "date", "row"] = "homogeneous"
     test_ratio: float = Field(0.3, gt=0, lt=1)
     seed: int = 42
+    cleaning: CleaningConfig = CleaningConfig()
+    # target -> feature column prefixes left out of its models
+    exclude_features: dict[str, list[str]] = {}
     gpu: bool = False
+    output: str = "fold_rm"
+
+    @model_validator(mode="after")
+    def _check_cleaning(self) -> FoldRmConfig:
+        # one head label per model, as only the ordinal strategies learn
+        uses_rules = self.cleaning.mdl_lambda is not None or self.cleaning.snap
+        if uses_rules and not self.strategy.startswith("ordinal"):
+            raise ValueError("cleaning.mdl_lambda / snap need an ordinal strategy")
+        if self.gpu and find_spec("cupy") is None:
+            raise ValueError("gpu needs cupy, install the `gpu` extra")
+        return self
+
+
+def _is_city(info: Any) -> bool:
+    return isinstance(info, dict) and all(
+        isinstance(info.get(key), (int, float)) for key in ("lat", "lon")
+    )
 
 
 class RunConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     region: str | list[float] | dict[str, Any] = "FVG"
-    cities: dict[str, dict[str, float]] | None = None
     dates: list[date]
     output_path: Path
     workers: PositiveInt = 12
@@ -98,9 +144,10 @@ class RunConfig(BaseModel):
     save_images: bool = False
     debug: bool = False
     force: Stage | None = None
-    stop_after: Stage | Literal["cut"] = Stage.LEARNING
+    stop_after: Stage = Stage.LEARNING
     clean: list[CleanTarget] = []
     fold_rm: FoldRmConfig = FoldRmConfig()
+    _region: Region = PrivateAttr()
 
     @field_validator("dates", mode="before")
     @classmethod
@@ -115,11 +162,28 @@ class RunConfig(BaseModel):
 
     @model_validator(mode="after")
     def _check_region(self) -> RunConfig:
-        self.build_region()
+        if isinstance(self.region, dict):
+            unknown = set(self.region) - {"name", "bounds", "radius", "cities"}
+            if unknown:
+                raise ValueError(f"region: unknown keys {sorted(unknown)}")
+            if {"name", "bounds"} <= set(self.region):
+                raise ValueError("region: set either 'name' or 'bounds', not both")
+            cities = self.region.get("cities")
+            if cities is not None and not isinstance(cities, dict):
+                raise ValueError(
+                    f"region: cities must map each name to its lat and lon, got {cities!r}"
+                )
+            bad = [name for name, info in (cities or {}).items() if not _is_city(info)]
+            if bad:
+                raise ValueError(f"region: cities {bad} need a numeric lat and lon")
+        try:
+            self._region = Region.from_config(self.region)
+        except (KeyError, TypeError) as e:  # e.g. radius: null
+            raise ValueError(f"region: invalid value ({e!r})") from e
         return self
 
     def build_region(self) -> Region:
-        return Region.from_config(self.region, cities=self.cities)
+        return self._region
 
     def forces(self, stage: Stage) -> bool:
         """True if `stage` must be recomputed even when cached results exist."""
@@ -127,17 +191,30 @@ class RunConfig(BaseModel):
 
     def runs(self, stage: Stage) -> bool:
         """True if `stage` is reached before the run stops (see `stop_after`)."""
-        if self.stop_after == CUT:
-            return stage == Stage.DATA
         return stage.order <= self.stop_after.order
 
 
+# replaced whole, not merged: keyed by data (cities, targets) or tuned together
+_REPLACED_KEYS = ("cities", "dates", "cleaning", "exclude_features")
+
+
 def _merge(base: dict, override: dict) -> dict:
-    merged = {**base, **override}
-    if isinstance(base.get("fold_rm"), dict) and isinstance(
-        override.get("fold_rm"), dict
-    ):
-        merged["fold_rm"] = {**base["fold_rm"], **override["fold_rm"]}
+    """Recursive merge, `override` wins. A run's dates, region cities and
+    fold_rm cleaning and exclude_features replace the default ones, and a region
+    name or bounds replaces both the default name and bounds."""
+    merged = {**base}
+    for key, value in override.items():
+        base_value = merged.get(key)
+        if key in _REPLACED_KEYS or not (
+            isinstance(value, dict) and isinstance(base_value, dict)
+        ):
+            merged[key] = value
+            continue
+        if key == "region" and {"name", "bounds"} & set(value):
+            base_value = {
+                k: v for k, v in base_value.items() if k not in ("name", "bounds")
+            }
+        merged[key] = _merge(base_value, value)
     return merged
 
 

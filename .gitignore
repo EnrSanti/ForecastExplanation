@@ -19,4 +19,4 @@ __pycache__/
 # forecast data
 *.xml
 
-weather-env/
+scripts

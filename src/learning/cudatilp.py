@@ -30,3 +30,22 @@ def scores(Y_hat: list, Y: list, weighted: bool = False):
     from src.common.utils import scores as _scores
 
     return _scores(Y_hat, Y, weighted=weighted)
+
+
+def fit_target(model, data: list[list], target: str, ratio: float) -> None:
+    """FOLD-R style: rules only for `target`, other rows predict None."""
+    from src.algos.algo import cover, learn_rule
+
+    pos = [d for d in data if d[-1] == target]
+    neg = [d for d in data if d[-1] != target]
+    rules = []
+    while pos:
+        rule = learn_rule(pos, neg, [], ratio)
+        if not rule[1]:
+            break
+        rest = [d for d in pos if not cover(rule, d)]
+        if len(rest) == len(pos):
+            break
+        pos = rest
+        rules.append(((-1, "==", target), rule[1], rule[2], rule[3]))
+    model.rules = rules

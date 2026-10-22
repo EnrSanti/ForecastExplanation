@@ -18,7 +18,6 @@ TOP-LEVEL STRUCTURE
 
   run_name:           # Arbitrary name for the run
     region: ...
-    cities: {...}
     dates: [...]
     output_path: path/to/output
     workers: N
@@ -26,7 +25,7 @@ TOP-LEVEL STRUCTURE
     save_images: true/false
     debug: true/false
     force: <stage>
-    stop_after: <stage> | cut
+    stop_after: <stage>
     clean: [grib, cut, extracted]
     fold_rm: {...}
 
@@ -37,11 +36,12 @@ PIPELINE STAGES
 
 Stages run in this order; "force" and "stop_after" refer to them:
 
-    data         download + cut GRIBs, build feature maps (+ clustering)
+    data         download + cut GRIBs
+    extraction   build feature maps from the cuts (+ clustering)
     features     TOBAC feature detection and tracking
     reasoning    fronts/segments reasoning and ground truth generation
     translation  FOLD-RM dataset generation
-    learning     FOLD-RM training
+    learning     FOLD-RM training and rule cleaning
 
 Every stage skips days that are already done, unless forced.
 
@@ -108,6 +108,7 @@ force  (optional, default: none)
     force: translation   + regenerate the dataset
     force: reasoning     + reasoning and ground truth
     force: features      + TOBAC
+    force: extraction    + feature maps (tmp_data except CERRA_cut)
     force: data          everything (downloaded GRIBs are still reused)
 
   CLI: --force <stage>
@@ -117,20 +118,23 @@ force  (optional, default: none)
 stop_after  (optional, default: learning)
   Last stage to run.
 
-    stop_after: cut           only download and cut the GRIBs
+    stop_after: data          only download and cut the GRIBs
     stop_after: translation   build the dataset, skip training
 
-  CLI: --stop-after <stage|cut>
+  CLI: --stop-after <stage>
 
 ------
 
 clean  (optional, default: [])
-  Intermediate data to delete for this run's dates once the run
-  completes successfully (nothing is deleted if the run fails):
+  Intermediate data to delete for this run's dates. 'cut' and
+  'extracted' are deleted once the run completes successfully
+  (nothing is deleted if the run fails):
 
-    grib        downloaded GRIBs in tmp_data/original_CERRA. This
-                folder is shared by every run, so other runs will
-                have to download those days again.
+    grib        downloaded GRIBs in tmp_data/original_CERRA, deleted
+                month by month as soon as all its days are cut
+                (~50 GB per month), kept if the download or the cut
+                fails. This folder is shared by every run, so other
+                runs will have to download those days again.
     cut         region-cut NetCDFs (<output_path>/tmp_data/CERRA_cut)
     extracted   feature maps (<output_path>/tmp_data/extracted_data
                 and clustered_data)
@@ -166,12 +170,58 @@ fold_rm  (optional)
   per label (prev_pioggia, prev_cloud), written to <output_path>/fold_rm/.
 
     fold_rm:
-      strategy: one_vs_rest   # or multiclass
-      ratio: 0.7              # FOLD-RM exception ratio, (0, 1]
+      strategy: one_vs_rest   # or multiclass, ordinal, ordinal_count
+      ratio: 0.7              # FOLD-RM exception ratio, > 0
       split: date             # hold out whole days; row = stratified by row
       test_ratio: 0.3         # held-out fraction of days (or rows), (0, 1)
       seed: 42
+      cleaning: {}            # rule cleaning, see below (default: none)
+      exclude_features: {}    # target -> column prefixes left out of its models
       gpu: false              # fitGPU, needs the `gpu` extra (cupy)
+      output: fold_rm         # models folder inside output_path
+
+  exclude_features keeps outcome-restating columns out of a target, e.g.
+  the cloud amounts for prev_cloud:
+
+      exclude_features:
+        prev_cloud: [coverage_clouds, size_cloud, cloud_, region_cloud]
+
+  Runs that share an output_path share its data (nothing is extracted
+  or downloaded twice) but need a different "output" each, or they
+  overwrite each other's models.
+
+  Strategies:
+    one_vs_rest    one FOLD-RM model per class ("class_<c>_vs_rest")
+    multiclass     a single FOLD-RM model over all the classes
+    ordinal        one model per class boundary, "ge_<c>" = the label is at
+                   least c (classes ordered by their code). A row takes
+                   the class below the first model that does not fire.
+    ordinal_count  the models of "ordinal"; a row takes the class at the
+                   number of models that fire (a ge_<c> firing above a
+                   lower model that does not still counts).
+
+  cleaning simplifies every learned model on its training rows, before
+  it is scored (package src/cleaning, FoldRmCleaner):
+
+      cleaning:
+        min_support: 0             # drop rules holding for fewer training rows
+        min_exception_support: 0   # drop exceptions correcting fewer training rows
+        mdl_lambda: null           # MDL pruning, null = off
+        snap: false                # thresholds to round values
+
+    mdl_lambda   rules, exceptions, conditions and interval bounds are
+                 deleted while training errors + lambda * conditions does
+                 not grow; lambda = mdl_lambda per 1000 rows of the model's
+                 minority side, so rare classes are not pruned away.
+    snap         each threshold moves to the round value of its unit
+                 (5 %, 1 K, 1 h, 0.5-1 m/s, 5000 km2) with the fewest
+                 training errors, within 2 steps.
+    mdl_lambda and snap need an ordinal strategy (one head label per
+    model). The order is: support pruning, MDL pruning, snap.
+
+  metrics.json holds per-model scores under "tasks" and, under "combined",
+  the merged prediction over the original classes: accuracy, macro F1,
+  balanced accuracy, per-class scores and the confusion matrix.
 
 
 ------------------------------------------------------
