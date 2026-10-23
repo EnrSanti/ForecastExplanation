@@ -103,9 +103,9 @@ class CleaningConfig(BaseModel):
 class FoldRmConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    strategy: Literal["one_vs_rest", "multiclass", "ordinal", "ordinal_count"] = (
-        "one_vs_rest"
-    )
+    strategy: Literal[
+        "one_vs_rest", "multiclass", "ordinal", "ordinal_count", "multiclass_no_ig"
+    ] = "one_vs_rest"
     ratio: float = Field(0.7, gt=0)
     split: Literal["homogeneous", "date", "row"] = "homogeneous"
     test_ratio: float = Field(0.3, gt=0, lt=1)
