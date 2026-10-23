@@ -9,9 +9,12 @@ binary model per class works much better, an ordinal chain of
 "label >= class" models better still (both targets are ordered scales).
 """
 
+import logging
 from abc import ABC, abstractmethod
 from collections import Counter
 from collections.abc import Iterable
+
+logger = logging.getLogger("ForecastExplanation")
 
 Row = list
 Task = tuple[str, list[Row], list[Row]]
@@ -23,9 +26,15 @@ def majority_label(data: list[Row]) -> str:
 
 
 class Strategy(ABC):
-    def target_of(self, task: str) -> str | None:
-        """Label the rules of `task` are learned for, None = FOLD-RM picks."""
-        return None
+    def fit(self, model, task: str, train: list[Row], ratio: float, gpu: bool) -> None:
+        if gpu:
+            model.fitGPU(train, ratio=ratio)
+        else:
+            model.fit(train, ratio=ratio)
+
+    def default_of(self, task: str, train: list[Row]) -> str:
+        """Label of the rows of `task` no rule covers."""
+        return majority_label(train)
 
     @abstractmethod
     def tasks(self, train: list[Row], test: list[Row]) -> Iterable[Task]:
@@ -58,10 +67,7 @@ class OneVsRest(Strategy):
     ) -> list[str]:
         prior = Counter(d[-1] for d in train)
         default = majority_label(train)
-        votes = {
-            t.removeprefix("class_").removesuffix("_vs_rest"): p
-            for t, p in predictions.items()
-        }
+        votes = {c: predictions[f"class_{c}_vs_rest"] for c in sorted(prior)}
         out = []
         for i in range(n):
             pos = [c for c, p in votes.items() if p[i] == "pos"]
@@ -80,23 +86,26 @@ class Multiclass(Strategy):
         return [default if p is None else p for p in predictions["multiclass"]]
 
 
-class Multiclass_no_ig(Strategy):
-    def tasks(self, train: list[Row], test: list[Row]) -> Iterable[Task]:
-        yield "multiclass_no_ig", train, test
-
-    def combine(
-        self, predictions: dict[str, list], train: list[Row], n: int
-    ) -> list[str]:
-        default = majority_label(train)
-        return [default if p is None else p for p in predictions["multiclass_no_ig"]]
+class MulticlassNoIG(Multiclass):
+    def fit(self, model, task: str, train: list[Row], ratio: float, gpu: bool) -> None:
+        if gpu:
+            logger.warning(f"FOLD-RM {task}: no gpu implementation, using CPU")
+        model.fit_no_IG_F1(train, ratio=ratio)
 
 
 class Ordinal(Strategy):
     """`ge_<c>` models "label >= c"; a row takes the class below the first
     model that doesn't fire."""
 
-    def target_of(self, task: str) -> str:
-        return task
+    def fit(self, model, task: str, train: list[Row], ratio: float, gpu: bool) -> None:
+        """Rules only for `task` (label >= c), so no rule firing means < c."""
+        if gpu:
+            logger.warning(f"FOLD-RM {task}: no gpu implementation, using CPU")
+        model.fit_target(train, task, ratio=ratio)
+
+    def default_of(self, task: str, train: list[Row]) -> str:
+        other = {d[-1] for d in train} - {task}
+        return other.pop() if other else task
 
     def tasks(self, train: list[Row], test: list[Row]) -> Iterable[Task]:
         self.classes = sorted({d[-1] for d in train}, key=float)
@@ -140,5 +149,5 @@ STRATEGIES: dict[str, type[Strategy]] = {
     "multiclass": Multiclass,
     "ordinal": Ordinal,
     "ordinal_count": OrdinalCount,
-    "multiclass_no_ig": Multiclass_no_ig,
+    "multiclass_no_ig": MulticlassNoIG,
 }

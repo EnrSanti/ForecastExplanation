@@ -2,6 +2,7 @@ import logging
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -12,65 +13,74 @@ import xarray as xr
 from cartopy.io import shapereader
 from scipy.ndimage import gaussian_filter
 
-from . import FOLDERS, FRONT_LEVELS, LEVELS, LimitValues, Region
+from region import Region
+from utils import FOLDERS, LEVELS
+
+from . import FRONT_LEVELS
 
 logger = logging.getLogger(__name__)
+
+
+# smallest temperature range (K) an hour is normalized over, per level; the
+# physical range is about 263-311 K at 1000 hPa down to 218-268 K at 300 hPa
+TEMP_MIN_RANGE = {1000: 12.0, 925: 10.0, 850: 9.0, 700: 5.0, 500: 4.0, 300: 3.0}
+# wind speed colour scale (m/s) of the legend images
+WIND_SPEED_LEGEND = {
+    1000: (0, 100),
+    925: (0, 100),
+    850: (0, 100),
+    700: (0, 120),
+    500: (0, 150),
+    300: (0, 200),
+}
 
 
 @dataclass(frozen=True)
 class FeatureSpec:
     var: str
-    # None: raw values only (raw_<prefix>_at_<level>)
-    limits: dict[int, tuple[int | float, int | float]] | None
     prefix: str
-    min_range: dict[int, float] | None = None
+    normalize: Literal["percent", "hourly", "physical"] | None
     change_hours: int | None = None
     levels: list[int] = field(kw_only=True)
 
 
 FEATURE_SPECS: dict[str, FeatureSpec] = {
-    "cloud": FeatureSpec("ccl", LimitValues.CLOUD, "cloud", levels=LEVELS),
-    "temp": FeatureSpec(
-        "t",
-        LimitValues.TEMP,
-        "temp",
-        min_range=LimitValues.TEMP_MIN_RANGE,
-        levels=LEVELS,
-    ),
-    "humidity": FeatureSpec("r", LimitValues.HUMIDITY, "humidity", levels=LEVELS),
-    "wind": FeatureSpec("wind_speed", LimitValues.WIND_SPEED, "wind", levels=LEVELS),
+    "cloud": FeatureSpec("ccl", "cloud", "percent", levels=LEVELS),
+    "temp": FeatureSpec("t", "temp", "hourly", levels=LEVELS),
+    "humidity": FeatureSpec("r", "humidity", "percent", levels=LEVELS),
+    "wind": FeatureSpec("wind_speed", "wind", "physical", levels=LEVELS),
     "wind_direction": FeatureSpec(
-        "wind_direction", LimitValues.WIND_SPEED, "wind_direction", levels=LEVELS
+        "wind_direction", "wind_direction", "physical", levels=LEVELS
     ),
-    "front": FeatureSpec("front", None, "front", levels=FRONT_LEVELS),
-    "tadv": FeatureSpec("tadv", None, "tadv", levels=FRONT_LEVELS),
+    "front": FeatureSpec("front", "front", None, levels=FRONT_LEVELS),
+    "tadv": FeatureSpec("tadv", "tadv", None, levels=FRONT_LEVELS),
     "te_change": FeatureSpec(
-        "theta_e", None, "te_change", change_hours=3, levels=FRONT_LEVELS
+        "theta_e", "te_change", None, change_hours=3, levels=FRONT_LEVELS
     ),
 }
 
-RAW_PREFIXES = ["temp", "humidity"]
+RAW_PREFIXES = ["cloud", "temp", "humidity"]
 FRONT_SMOOTH_PX = 4  # ~22 km on the 5.5 km CERRA grid
 
 LEGEND_SPECS = {
     "cloud": {
         "cmap": "viridis",
-        "limits": LimitValues.CLOUD,
+        "limits": {lvl: (0, 100) for lvl in LEVELS},
         "label": "Cloud cover [%]",
     },
     "temp": {
         "cmap": "OrRd",
-        "limits": {lvl: (0, 1) for lvl in LimitValues.TEMP},
+        "limits": {lvl: (0, 1) for lvl in LEVELS},
         "label": "Relative temperature (0 = coldest point of the hour)",
     },
     "wind": {
         "cmap": "viridis",
-        "limits": LimitValues.WIND_SPEED,
+        "limits": WIND_SPEED_LEGEND,
         "label": "Wind speed [m/s]",
     },
     "humidity": {
         "cmap": "YlGnBu",
-        "limits": LimitValues.HUMIDITY,
+        "limits": {lvl: (0, 100) for lvl in LEVELS},
         "label": "Relative humidity [%]",
     },
 }
@@ -157,9 +167,7 @@ def save_borders_png(output_base: Path, coordinates: Region) -> None:
     ax.add_feature(cfeature.BORDERS, linewidth=0.8, edgecolor="black")
 
     shpfilename = shapereader.natural_earth(
-        resolution="10m",
-        category="cultural",
-        name="admin_1_states_provinces",
+        resolution="10m", category="cultural", name="admin_1_states_provinces"
     )
     reader = shapereader.Reader(shpfilename)
     for record in reader.records():
@@ -206,8 +214,7 @@ def create_legends(output_base: Path) -> None:
 
 def _drop_coords(da: xr.DataArray) -> xr.DataArray:
     return da.drop_vars(
-        ["valid_time", "step", "isobaricInhPa", "number", "surface"],
-        errors="ignore",
+        ["valid_time", "step", "isobaricInhPa", "number", "surface"], errors="ignore"
     )
 
 
@@ -254,22 +261,20 @@ def build_feature_dataarrays(input_path: Path) -> xr.Dataset:
                     change = stacked - stacked.shift(time=spec.change_hours)
                     stacked = change.fillna(0.0)
 
-                if spec.limits is None or spec.prefix in RAW_PREFIXES:
+                if spec.normalize is None or spec.prefix in RAW_PREFIXES:
                     result[f"raw_{name}"] = _drop_coords(stacked)
-                if spec.limits is None:
+                if spec.normalize is None:
                     continue
 
-                if "wind" in spec.prefix:
-                    normalized = stacked.fillna(0.0)
-                elif spec.min_range is not None:
+                if spec.normalize == "physical":
+                    normalized = stacked
+                elif spec.normalize == "hourly":
                     vmin = stacked.min(dim=("y", "x"))
                     vmax = stacked.max(dim=("y", "x"))
-                    vrange = np.maximum(vmax - vmin, spec.min_range[lvl])
-                    normalized = ((stacked - vmin) / vrange).fillna(0.0)
+                    vrange = np.maximum(vmax - vmin, TEMP_MIN_RANGE[lvl])
+                    normalized = (stacked - vmin) / vrange
                 else:
-                    vmin, vmax = spec.limits[lvl]
-                    normalized = ((stacked - vmin) / (vmax - vmin)).clip(0, 1)
-                    normalized = normalized.fillna(0.0)
-                result[name] = _drop_coords(normalized)
+                    normalized = (stacked / 100).clip(0, 1)
+                result[name] = _drop_coords(normalized.fillna(0.0))
 
     return xr.Dataset(result)

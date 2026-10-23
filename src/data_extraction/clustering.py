@@ -32,7 +32,7 @@ def cluster_xarray(data_dict: dict[str, xr.DataArray]) -> xr.Dataset:
             result[folder_name] = da
             continue
 
-        # Cluster each time frame independently (matching current behaviour)
+        # each time frame is clustered independently
         clustered_frames = []
         for t in range(da.sizes["time"]):
             frame = da.isel(time=t).values
@@ -56,7 +56,7 @@ def cluster_xarray(data_dict: dict[str, xr.DataArray]) -> xr.Dataset:
             finite_mask = np.isfinite(frame)
             labels[finite_mask] = km.fit_predict(flat)
 
-            # Order by brightness (value magnitude)
+            # rank the clusters by mean value
             means = [frame[labels == i].mean() for i in range(k)]
             order = sorted(range(k), key=lambda i: means[i])
             step = 1.0 / max(k - 1, 1)
