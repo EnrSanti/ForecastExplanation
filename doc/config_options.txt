@@ -28,6 +28,7 @@ TOP-LEVEL STRUCTURE
     stop_after: <stage>
     clean: [grib, cut, extracted]
     fold_rm: {...}
+    fastLAS: {...}
 
 
 ------------------------------------------------------
@@ -223,7 +224,7 @@ fold_rm  (optional)
   the merged prediction over the original classes: accuracy, macro F1,
   balanced accuracy, per-class scores and the confusion matrix.
 
-
+fastLAS (todo TO ADD DESCRIPTION)
 ------------------------------------------------------
 NOTES
 ------------------------------------------------------

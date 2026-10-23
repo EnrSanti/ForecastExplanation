@@ -127,6 +127,17 @@ class FoldRmConfig(BaseModel):
         return self
 
 
+class FastLASConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    split: Literal["homogeneous", "date", "row"] = "homogeneous"
+    test_ratio: float = Field(0.3, gt=0, lt=1)
+    seed: int = 42
+    # target -> feature column prefixes left out of its models
+    exclude_features: dict[str, list[str]] = {}
+    output: str = "fastLAS"
+
+
 def _is_city(info: Any) -> bool:
     return isinstance(info, dict) and all(
         isinstance(info.get(key), (int, float)) for key in ("lat", "lon")
@@ -146,7 +157,10 @@ class RunConfig(BaseModel):
     force: Stage | None = None
     stop_after: Stage = Stage.LEARNING
     clean: list[CleanTarget] = []
-    fold_rm: FoldRmConfig = FoldRmConfig()
+    fold_rm: FoldRmConfig | None = None
+    fastLAS: FastLASConfig | None = None
+
+    _region: Region = PrivateAttr()
     _region: Region = PrivateAttr()
 
     @field_validator("dates", mode="before")
@@ -192,6 +206,12 @@ class RunConfig(BaseModel):
     def runs(self, stage: Stage) -> bool:
         """True if `stage` is reached before the run stops (see `stop_after`)."""
         return stage.order <= self.stop_after.order
+
+    @model_validator(mode="after")
+    def validate_learning_component(self):
+        if (self.fold_rm is None) == (self.fastLAS is None):
+            raise ValueError("Specify exactly one of 'fold_rm' or 'fastlas'.")
+        return self
 
 
 # replaced whole, not merged: keyed by data (cities, targets) or tuned together
