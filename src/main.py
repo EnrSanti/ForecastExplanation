@@ -124,12 +124,7 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
     if not days or not cfg.runs(Stage.TRANSLATION):
         return days, failed
 
-    # modulare da fare
-
-    # get the not none learner TODO: better
-
     if cfg.fold_rm is not None:
-        print("fold_rm")
         dataset_csv, ok = translators.FoldRmTranslator().translate(
             days,
             output_path / "days_data",
@@ -152,7 +147,6 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
         )
 
     elif cfg.fastLAS is not None:
-        print("fastLAS")
         dataset, ok = translators.FastLasTranslator().translate(
             days,
             output_path / "days_data",
@@ -172,8 +166,6 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
             **cfg.fastLAS.model_dump(exclude={"output"}),
             force=cfg.forces(Stage.LEARNING),
         )
-    else:
-        raise ValueError("No learner configured")
 
     return days, failed
 

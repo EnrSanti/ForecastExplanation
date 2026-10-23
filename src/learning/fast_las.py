@@ -11,10 +11,10 @@ from timeit import default_timer as timer
 
 from sklearn.model_selection import StratifiedGroupKFold
 
-from cleaning import BaseCleaner, FoldRmCleaner
+from cleaning import BaseCleaner
 from utils import DATE_COLUMN
 
-from .cudatilp import load_classifier_cls, save_model, scores
+from .cudatilp import save_model, scores
 from .strategies import STRATEGIES, majority_label
 
 logger = logging.getLogger("ForecastExplanation")
@@ -287,4 +287,3 @@ def train_fastLAS(
     force: bool,
 ) -> None:
     print("FastLAS training is not implemented yet.")
-    pass

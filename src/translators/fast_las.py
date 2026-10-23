@@ -15,18 +15,8 @@ and the learned rules read like
     forecast(V0,overcast,heavy) :- orographic_lift(V0), deep_moisture(V0), location(V0).
 """
 
-import json
-import math
-import re
-import textwrap
 from datetime import date
-from itertools import chain
 from pathlib import Path
-
-import numpy as np
-import pandas as pd
-
-from region import Region
 
 from .translator import BaseTranslator
 
@@ -37,9 +27,7 @@ class FastLasTranslator(BaseTranslator):
     # rule literal: raise it for more (and more specific) rules
     example_penalty = 1
 
-    def translate_day(
-        self, day_input_folder: Path, target_date: date, region: Region
-    ) -> bytes:
+    def translate_day(self, day_input_folder: Path, target_date: date) -> bytes:
         print("translating fastlas")
         return None
 

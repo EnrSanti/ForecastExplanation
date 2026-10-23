@@ -161,7 +161,6 @@ class RunConfig(BaseModel):
     fastLAS: FastLASConfig | None = None
 
     _region: Region = PrivateAttr()
-    _region: Region = PrivateAttr()
 
     @field_validator("dates", mode="before")
     @classmethod
@@ -209,8 +208,14 @@ class RunConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_learning_component(self):
-        if (self.fold_rm is None) == (self.fastLAS is None):
-            raise ValueError("Specify exactly one of 'fold_rm' or 'fastlas'.")
+        if self.fold_rm is not None and self.fastLAS is not None:
+            raise ValueError("specify only one of 'fold_rm' or 'fastLAS'")
+        if (
+            self.fold_rm is None
+            and self.fastLAS is None
+            and self.runs(Stage.TRANSLATION)
+        ):
+            raise ValueError("specify one of 'fold_rm' or 'fastLAS'")
         return self
 
 
