@@ -596,6 +596,11 @@ class FoldRmTranslator(BaseTranslator):
             row += [cloud_total.get((city, tg), "") for tg in total_groups]
             row += [daily[city][c] for c in DAILY_COLUMNS]
             row += [region_daily[c] for c in REGION_COLUMNS]
+
+            # avoid empty value for cuda
+            missing = [c for c, v in zip(header, row) if v == ""]
+            if missing:
+                raise ValueError(f"{city}: no data for {missing}")
             rows.append(round_features(header, row))
 
         buffer = io.StringIO()
