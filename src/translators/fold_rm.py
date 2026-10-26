@@ -69,9 +69,10 @@ def _height_label(height) -> str:
 
 
 def _hour_group(time_label: str) -> str:
-    """'0000'-'0600' -> early_morning, '0700'-'1200' -> morning,
-    '1300'-'1800' -> afternoon, '1900'-'2300' -> evening."""
-    hour = int(time_label[:2])
+    """'0100'-'0600' -> early_morning, '0700'-'1200' -> morning,
+    '1300'-'1800' -> afternoon, '1900'-'2300' and '0000' -> evening.
+    A CERRA day runs from 01:00 to 00:00 of the next day, so '0000' is its end."""
+    hour = int(time_label[:2]) or 24
     if hour <= 6:
         return "early_morning"
     elif hour <= 12:
@@ -595,6 +596,11 @@ class FoldRmTranslator(BaseTranslator):
             row += [cloud_total.get((city, tg), "") for tg in total_groups]
             row += [daily[city][c] for c in DAILY_COLUMNS]
             row += [region_daily[c] for c in REGION_COLUMNS]
+
+            # avoid empty value for cuda
+            missing = [c for c, v in zip(header, row) if v == ""]
+            if missing:
+                raise ValueError(f"{city}: no data for {missing}")
             rows.append(round_features(header, row))
 
         buffer = io.StringIO()

@@ -51,7 +51,7 @@ def cluster_xarray(data_dict: dict[str, xr.DataArray]) -> xr.Dataset:
                 clustered_frames.append(frame)
                 continue
 
-            km = KMeans(n_clusters=k, n_init="auto", algorithm="elkan")
+            km = KMeans(n_clusters=k, n_init="auto", algorithm="elkan", random_state=0)
             labels = np.full(frame.shape, 0, dtype=np.int32)
             finite_mask = np.isfinite(frame)
             labels[finite_mask] = km.fit_predict(flat)
