@@ -18,8 +18,10 @@ import html
 import logging
 import xml.etree.ElementTree as ET
 from datetime import date
+from pathlib import Path
 
 logger = logging.getLogger("ForecastExplanation")
+XML_DIR = Path(__file__).resolve().parents[2] / "xmls"
 
 A_ZONES = [f"A{i}" for i in range(1, 10)]
 KEYS = ["CIELO_DESCRIZIONE", "TEMPORALE_DESCRIZIONE", "PIOGGIA_DESCRIZIONE"]
@@ -33,7 +35,7 @@ def _text(el: ET.Element | None) -> str | None:
 
 
 def xml_extract(target_date: date) -> dict:
-    root = ET.parse(f"xmls/PW{target_date:%Y%m%d}.xml").getroot()
+    root = ET.parse(XML_DIR / f"PW{target_date:%Y%m%d}.xml").getroot()
     deadline = root.find("previsioni/scadenze/scadenza[@id='1']")
     a_zones = {}
     for zone_el in deadline.findall("zone/zona"):
