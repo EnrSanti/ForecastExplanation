@@ -99,17 +99,20 @@ def _smooth_frames(arr: np.ndarray) -> np.ndarray:
 
 
 def _gradient(lat: np.ndarray, lon: np.ndarray) -> Callable:
-    """d/dx, d/dy (per metre) on the lat/lon grid."""
-    # non usiamo np.gradient perché x y cambiano dimensione in metri
-    x = 6.371e6 * np.cos(np.radians(lat.mean())) * np.radians(lon)
-    y = 6.371e6 * np.radians(lat)
-    xj, xi = np.gradient(x)
-    yj, yi = np.gradient(y)
-    det = xi * yj - xj * yi
+    """d/dx, d/dy per metre on the lat/lon grid."""
+    # non usiamo np.gradient perché x y cambiano dimensione in metri:
+    # derivate in lon/lat, poi metri per radiante alla latitudine di ogni punto
+    lam, phi = np.radians(lon), np.radians(lat)
+    lam_j, lam_i = np.gradient(lam)
+    phi_j, phi_i = np.gradient(phi)
+    det = lam_i * phi_j - lam_j * phi_i
+    x_scale = 6.371e6 * np.cos(phi)
 
     def grad(f: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         fj, fi = np.gradient(f, axis=(-2, -1))
-        return (fi * yj - fj * yi) / det, (fj * xi - fi * xj) / det
+        df_dlam = (fi * phi_j - fj * phi_i) / det
+        df_dphi = (fj * lam_i - fi * lam_j) / det
+        return df_dlam / x_scale, df_dphi / 6.371e6
 
     return grad
 

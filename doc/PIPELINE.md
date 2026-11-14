@@ -271,7 +271,7 @@ suitable for downstream ML models. Currently the only translator is `FoldRmTrans
 **Path:** `{run}/translated/{date}.csv`
 
 One row per city. Per-hour, per-level values are grouped before being written out: hours are bucketed into
-`early_morning` (00–06), `morning` (07–12), `afternoon` (13–18), `evening` (19–23), and pressure levels into
+`early_morning` (01–06), `morning` (07–12), `afternoon` (13–18), `evening` (19–23 and the closing 00), and pressure levels into
 `low` (1000/0925/0850), `medium` (0700/0500), `high` (0300). Columns are structured as `{feature}_{time_group}_{height_group}`:
 
 | Column group                                          | Description                                                                                                                   |

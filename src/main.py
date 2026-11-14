@@ -124,24 +124,49 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
     if not days or not cfg.runs(Stage.TRANSLATION):
         return days, failed
 
-    dataset_csv, ok = translators.FoldRmTranslator().translate(
-        days,
-        output_path / "days_data",
-        output_path / "translated",
-        force=cfg.forces(Stage.TRANSLATION),
-        workers=cfg.workers,
-    )
-    days = _keep(Stage.TRANSLATION, days, ok, failed)
-    if not dataset_csv or not cfg.runs(Stage.LEARNING):
-        return days, failed
+    if cfg.fold_rm is not None:
+        dataset_csv, ok = translators.FoldRmTranslator().translate(
+            days,
+            output_path / "days_data",
+            output_path / "translated",
+            force=cfg.forces(Stage.TRANSLATION),
+            workers=cfg.workers,
+        )
 
-    learning.train_fold_rm(
-        dataset_csv,
-        translators.FoldRmTranslator.schema_from_csv(dataset_csv),
-        output_path / cfg.fold_rm.output,
-        **cfg.fold_rm.model_dump(exclude={"output"}),
-        force=cfg.forces(Stage.LEARNING),
-    )
+        days = _keep(Stage.TRANSLATION, days, ok, failed)
+
+        if not dataset_csv or not cfg.runs(Stage.LEARNING):
+            return days, failed
+
+        learning.train_fold_rm(
+            dataset_csv,
+            translators.FoldRmTranslator.schema_from_csv(dataset_csv),
+            output_path / cfg.fold_rm.output,
+            **cfg.fold_rm.model_dump(exclude={"output"}),
+            force=cfg.forces(Stage.LEARNING),
+        )
+
+    elif cfg.fastLAS is not None:
+        dataset, ok = translators.FastLasTranslator().translate(
+            days,
+            output_path / "days_data",
+            output_path / "translated",
+            force=cfg.forces(Stage.TRANSLATION),
+            workers=cfg.workers,
+        )
+
+        days = _keep(Stage.TRANSLATION, days, ok, failed)
+
+        if not dataset or not cfg.runs(Stage.LEARNING):
+            return days, failed
+
+        learning.train_fastLAS(
+            dataset,
+            output_path / cfg.fastLAS.output,
+            **cfg.fastLAS.model_dump(exclude={"output"}),
+            force=cfg.forces(Stage.LEARNING),
+        )
+
     return days, failed
 
 

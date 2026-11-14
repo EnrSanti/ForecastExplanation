@@ -66,7 +66,7 @@ def to_node(rule) -> list:
 
 def to_rule(node: list) -> tuple:
     head, items, ab = node
-    return (head, list(items), [to_rule(e) for e in ab], 0)
+    return head, list(items), [to_rule(e) for e in ab], 0
 
 
 def _mask(node: list, data: Data) -> np.ndarray:
@@ -191,17 +191,19 @@ def mdl_prune(nodes: list, data: Data, y: np.ndarray, lam: float) -> list:
 def snap_step(name: str) -> float:
     """Round step of a feature column, from its name (translator units)."""
     n = name.lower()
+    if n.endswith("_hours") or "_hours_" in n:
+        return 1.0
     if n.startswith("humidity_fronts_value"):
         return 5.0
     if "area" in n or n.startswith("size_cloud"):
         return 5000.0
-    if n.startswith(("humidity", "rh", "region_rh", "cloud", "coverage")):
+    if n.startswith(
+        ("humidity", "rh", "region_rh", "cloud", "coverage", "region_cloud")
+    ):
         return 5.0
     if n.startswith("temp_fronts_value"):
         return 0.5
     if n.startswith(("temperature", "te850_mean", "lapse")):
-        return 1.0
-    if n.endswith("_hours") or "_hours_" in n:
         return 1.0
     if n.startswith("wind_speed"):
         return 1.0 if n.endswith(("medium", "high")) else 0.5
