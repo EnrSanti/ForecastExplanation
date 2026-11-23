@@ -294,7 +294,7 @@ def train_fold_rm(
 
     Args:
         dataset_csv: The merged dataset produced by the translator.
-        schema: {"labels", "features", "categorical", "numeric"} as given by FoldRmTranslator.schema.
+        schema: {"labels", "features", "numeric"} as given by FoldRmTranslator.schema.
         output_dir: Root folder for the learned models.
         strategy: Key of STRATEGIES ("one_vs_rest", "multiclass", "ordinal"
             or "ordinal_count", "multiclass_no_ig").

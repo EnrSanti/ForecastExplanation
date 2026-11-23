@@ -60,8 +60,11 @@ def _lookup_enum(enum: dict, value, city: str, field: str) -> int:
 
 
 def _time_label(timestamp) -> str:
+    """'HHMM'; a CERRA day runs from 01:00 to 00:00 of the next day, so its
+    00:00 is labelled '2400' and hours sort in the day's order."""
     # string slicing: much faster than pd.to_datetime
-    return timestamp[11:13] + timestamp[14:16]
+    hour = timestamp[11:13]
+    return ("24" if hour == "00" else hour) + timestamp[14:16]
 
 
 def _height_label(height) -> str:
@@ -70,9 +73,8 @@ def _height_label(height) -> str:
 
 def _hour_group(time_label: str) -> str:
     """'0100'-'0600' -> early_morning, '0700'-'1200' -> morning,
-    '1300'-'1800' -> afternoon, '1900'-'2300' and '0000' -> evening.
-    A CERRA day runs from 01:00 to 00:00 of the next day, so '0000' is its end."""
-    hour = int(time_label[:2]) or 24
+    '1300'-'1800' -> afternoon, '1900'-'2400' -> evening."""
+    hour = int(time_label[:2])
     if hour <= 6:
         return "early_morning"
     elif hour <= 12:
@@ -117,7 +119,7 @@ def get_compass_direction(degrees: float) -> str:
     return directions[idx]
 
 
-def average_by_height_and_time(lookup: dict, round_ndigits: int = 2) -> dict:
+def average_by_height_and_time(lookup: dict) -> dict:
     """
     Groups a (city, time, height)-keyed lookup into (city, time_group,
     height_group), averaging within each group with an arithmetic mean
@@ -130,12 +132,10 @@ def average_by_height_and_time(lookup: dict, round_ndigits: int = 2) -> dict:
     for (city, t, h), val in sorted(lookup.items()):
         if _is_number(val):
             buckets[(city, _hour_group(t), LEVEL_GROUP_MAP[h])].append(val)
-    return {k: round(sum(v) / len(v), round_ndigits) for k, v in buckets.items()}
+    return {k: round(sum(v) / len(v), 2) for k, v in buckets.items()}
 
 
-def average_by_height_and_time_vector(
-    speed_lookup: dict, dir_lookup: dict, round_ndigits: int = 2
-) -> dict:
+def average_by_height_and_time_vector(speed_lookup: dict, dir_lookup: dict) -> dict:
     """
     Like average_by_height_and_time, for wind: the mean u/v vector of each
     group, as {"speed": its magnitude, "direction": its 8-point compass label}.
@@ -155,7 +155,7 @@ def average_by_height_and_time_vector(
         u_mean = sum(u) / len(u)
         v_mean = sum(v) / len(v)
 
-        resultant_speed = round(math.hypot(u_mean, v_mean), round_ndigits)
+        resultant_speed = round(math.hypot(u_mean, v_mean), 2)
         resultant_deg = math.degrees(math.atan2(u_mean, v_mean)) % 360
         resultant_dir = get_compass_direction(resultant_deg)
 
@@ -164,7 +164,7 @@ def average_by_height_and_time_vector(
     return result
 
 
-def total_cloud_by_time(lookup: dict, round_ndigits: int = 2) -> dict:
+def total_cloud_by_time(lookup: dict) -> dict:
     """Column cloud cover (hourly max over the levels) per (city, time group),
     plus the whole "day"."""
     hourly: dict[tuple, list] = defaultdict(list)
@@ -175,7 +175,7 @@ def total_cloud_by_time(lookup: dict, round_ndigits: int = 2) -> dict:
     for (city, t), vals in hourly.items():
         buckets[(city, _hour_group(t))].append(max(vals))
         buckets[(city, "day")].append(max(vals))
-    return {k: round(sum(v) / len(v), round_ndigits) for k, v in buckets.items()}
+    return {k: round(sum(v) / len(v), 2) for k, v in buckets.items()}
 
 
 DAILY_COLUMNS = [
@@ -222,10 +222,8 @@ def _theta_e(t: float, rh: float, p: float) -> float:
 
 
 def _changes_6h(series: dict[int, float]) -> list[float]:
-    """6-hour changes of an hourly series (hour 0 = end of the day)."""
-    hours = sorted(series, key=lambda h: h or 24)
-    by_order = {h or 24: series[h] for h in hours}
-    return [by_order[h + 6] - by_order[h] for h in by_order if h + 6 in by_order]
+    """6-hour changes of an hourly series (hours 1-24)."""
+    return [series[h + 6] - series[h] for h in sorted(series) if h + 6 in series]
 
 
 def daily_predictors(
@@ -235,7 +233,6 @@ def daily_predictors(
     wind_dir: dict,
     cloud_cover: dict,
     cities: list[str],
-    round_ndigits: int = 2,
 ) -> tuple[dict, dict]:
     """Whole-day predictors per city (saturation, southerly moist flow,
     stability, cloud cover, theta-e) and a few pooled over the cities.
@@ -243,7 +240,7 @@ def daily_predictors(
 
     def hourly(lookup, city, level):
         out = {}
-        for h in range(24):
+        for h in range(1, 25):
             v = lookup.get((city, f"{h:02d}00", level))
             if _is_number(v):
                 out[h] = float(v)
@@ -264,7 +261,7 @@ def daily_predictors(
         values = list(values)
         if not values:
             return ""
-        return round(how(values), round_ndigits)
+        return round(how(values), 2)
 
     def mean(values):
         return sum(values) / len(values)
@@ -339,7 +336,7 @@ def daily_predictors(
         pooled["rh700"] += rh["0700"].values()
         pooled["s850"] += s850.values()
         pooled["mid"] += mid
-        ordered = [te850[h] for h in sorted(te850, key=lambda h: h or 24)]
+        ordered = [te850[h] for h in sorted(te850)]
         if len(ordered) >= 12:
             pooled["te850_tend"].append(mean(ordered[-6:]) - mean(ordered[:6]))
 
@@ -483,15 +480,14 @@ class FoldRmTranslator(BaseTranslator):
 
     @staticmethod
     def schema(header: list[str]) -> dict:
-        """Splits a dataset header into label, feature (header order),
-        categorical and numeric columns."""
+        """Splits a dataset header into label, feature (header order) and
+        numeric columns."""
         categorical = set(CATEGORICAL_COLUMNS)
         non_features = set(LABEL_COLUMNS) | {DATE_COLUMN}
         features = [c for c in header if c not in non_features]
         return {
             "labels": list(LABEL_COLUMNS),
             "features": features,
-            "categorical": [c for c in features if c in categorical],
             "numeric": [c for c in features if c not in categorical],
         }
 
@@ -544,7 +540,7 @@ class FoldRmTranslator(BaseTranslator):
 
         # cloud_segments.txt only has the (city, hour, height) a tobac cloud covers:
         # every other one counts as 0 coverage / size
-        all_hours = [f"{h:02d}00" for h in range(24)]
+        all_hours = [f"{h:02d}00" for h in range(1, 25)]
         heights = sorted({h for _, _, h in cloud_cover})
         for key in itertools.product(cities, all_hours, heights):
             coverage.setdefault(key, 0)
