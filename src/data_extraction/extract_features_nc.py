@@ -251,8 +251,6 @@ def build_feature_dataarrays(input_path: Path) -> xr.Dataset:
                     .rename(frame="time")
                     .assign_coords(time=times)
                 )
-                if not frames:
-                    continue
 
                 yx = frames.get_axis_num(("y", "x"))
                 stacked = frames.isel(time=np.isfinite(frames.values).any(axis=yx))
