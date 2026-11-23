@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -15,7 +17,7 @@ def _safe_nanmean(arr: np.ndarray) -> float:
 def detect_phenomenon(
     data: xr.Dataset,
     city_masks: dict[str, np.ndarray],
-    output_path: str,
+    output_path: Path,
     heights: list[str],
     phenomenon: str,
 ) -> None:
@@ -55,7 +57,7 @@ def detect_phenomenon_fronts(
     seg_data: xr.Dataset,
     feat_data: xr.Dataset,
     cities: list[tuple[str, float | int, float | int]],
-    output_path: str,
+    output_path: Path,
     heights: list[str],
     phenomenon: str,
 ) -> None:
@@ -94,8 +96,9 @@ def detect_phenomenon_fronts(
             val_frame = raw_arr[t_idx]
 
             # front ids, 0 and NaN being background
-            front_ids = np.unique(seg_frame[~np.isnan(seg_frame)])
-            front_ids = [fid for fid in front_ids if fid > 0]
+            front_ids = [
+                fid for fid in np.unique(seg_frame[~np.isnan(seg_frame)]) if fid > 0
+            ]
 
             background_mask = (seg_frame == 0) | np.isnan(seg_frame)
             avg_val_outside = _safe_nanmean(val_frame[background_mask])
@@ -136,7 +139,7 @@ def detect_phenomenon_fronts(
 def detect_threshold(
     data: xr.Dataset,
     city_masks: dict[str, np.ndarray],
-    output_path: str,
+    output_path: Path,
     field: str,
     thresholds: dict[str, float],
     sign: int,

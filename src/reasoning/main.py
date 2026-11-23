@@ -141,7 +141,6 @@ def _reason_single_day(
             seg_ds, feat_ds, city_masks, day_output_dir / "cloud_segments.txt", heights
         )
 
-        # mean raw values around each city
         # raw fields averaged around each city, written to {field}.txt
         for phenomenon in RAW_PREFIXES:
             detect_phenomenon(

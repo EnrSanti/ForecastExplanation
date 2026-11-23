@@ -1,8 +1,8 @@
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TypedDict
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -62,7 +62,14 @@ FEATURE_SPECS: dict[str, FeatureSpec] = {
 RAW_PREFIXES = ["cloud", "temp", "humidity"]
 FRONT_SMOOTH_PX = 4  # ~22 km on the 5.5 km CERRA grid
 
-LEGEND_SPECS = {
+
+class LegendSpec(TypedDict):
+    cmap: str
+    limits: Mapping[int, tuple[float, float]]  # level -> (vmin, vmax)
+    label: str
+
+
+LEGEND_SPECS: dict[str, LegendSpec] = {
     "cloud": {
         "cmap": "viridis",
         "limits": {lvl: (0, 100) for lvl in LEVELS},

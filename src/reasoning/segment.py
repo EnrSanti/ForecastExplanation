@@ -85,8 +85,9 @@ def detect_clouds(
             seg_frame = seg_arr[t_idx]
 
             # cloud ids, 0 and NaN being background
-            cloud_ids = np.unique(seg_frame[~np.isnan(seg_frame)])
-            cloud_ids = [cid for cid in cloud_ids if cid > 0]
+            cloud_ids = [
+                cid for cid in np.unique(seg_frame[~np.isnan(seg_frame)]) if cid > 0
+            ]
 
             for cid in cloud_ids:
                 cloud_mask = seg_frame == cid

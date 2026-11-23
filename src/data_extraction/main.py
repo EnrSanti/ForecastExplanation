@@ -1,5 +1,6 @@
 import logging
 import shutil
+from collections.abc import Sequence
 from datetime import date
 from itertools import groupby
 from pathlib import Path
@@ -55,12 +56,14 @@ def extract_day_worker(
     if clustering and not clustered_nc_path.exists():
         clustered_dir.mkdir(parents=True, exist_ok=True)
         with xr.open_dataset(features_nc_path, engine="h5netcdf") as features_ds:
-            feature_data = {str(name): da for name, da in features_ds.data_vars.items()}
-        clustered_data = cluster_xarray(feature_data)
+            fields = {str(name): da for name, da in features_ds.data_vars.items()}
+        clustered_data = cluster_xarray(fields)
         to_compressed_netcdf(clustered_data, clustered_nc_path)
 
 
-def clean_artifacts(dates: list[date], output_path: Path, targets: list[str]) -> None:
+def clean_artifacts(
+    dates: list[date], output_path: Path, targets: Sequence[str]
+) -> None:
     """Deletes the cut and extracted data; the GRIBs ("grib") are already
     deleted while cutting, see cut_month."""
     for target_date in dates:

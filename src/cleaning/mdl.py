@@ -22,7 +22,7 @@ class Data:
         columns = list(zip(*rows))
         self.raw = columns[:-1]
         self.y = list(columns[-1])
-        self.num = []
+        self.num: list[np.ndarray | None] = []
         for c in self.raw:
             if any(isinstance(v, (int, float)) for v in c):
                 self.num.append(
@@ -30,7 +30,7 @@ class Data:
                 )
             else:
                 self.num.append(None)
-        self.cache = {}
+        self.cache: dict[tuple, np.ndarray] = {}
         self.zeros = np.zeros(self.n, dtype=bool)
 
     def lit(self, item: tuple) -> np.ndarray:
@@ -118,7 +118,7 @@ def _moves(nodes: list) -> list[tuple]:
             n = _get(root, p)
             if p:
                 out.append(("exc", r, p, None))
-            cols = {}
+            cols: dict[int, list[tuple]] = {}
             for it in n[1]:
                 cols.setdefault(it[0], []).append(it)
             if len(cols) > 1:

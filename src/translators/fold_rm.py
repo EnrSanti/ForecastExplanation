@@ -267,7 +267,7 @@ def daily_predictors(
         return sum(values) / len(values)
 
     by_city = {}
-    pooled = defaultdict(list)
+    pooled: defaultdict[str, list[float]] = defaultdict(list)
     for city in cities:
         rh = {
             lvl: hourly(humidity, city, lvl) for lvl in ("0925", "0850", "0700", "0500")

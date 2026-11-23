@@ -60,9 +60,9 @@ def to_compressed_netcdf(ds: xr.Dataset, path: Path) -> None:
 def haversine(
     lat1: float | np.ndarray,
     lon1: float | np.ndarray,
-    lat2: float | np.ndarray,
-    lon2: float | np.ndarray,
-) -> float | np.ndarray:
+    lat2: np.ndarray,
+    lon2: np.ndarray,
+) -> np.ndarray:
     R = 6371.0
     lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
     dlat = lat2 - lat1
