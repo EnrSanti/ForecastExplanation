@@ -273,6 +273,7 @@ def load_runs(
             continue
         data = _merge(_merge(defaults, block), cli_overrides or {})
         data.setdefault("output_path", Path("runs") / name)
+        data["output_path"] = config_path.parent / data["output_path"]
         try:
             runs[name] = RunConfig.model_validate(data)
         except ValidationError as e:

@@ -146,7 +146,7 @@ def cerra_download(
             cut_ok += cut_month(
                 month_dates,
                 region,
-                Path(RAW_DATA_DIR),
+                RAW_DATA_DIR,
                 output_path,
                 force_redo,
                 delete_grib,

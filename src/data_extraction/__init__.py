@@ -1,4 +1,7 @@
-RAW_DATA_DIR: str = "tmp_data/original_CERRA"
+from pathlib import Path
+
+# GRIBs shared by every run, in the repo; the others are under the run's output_path
+RAW_DATA_DIR: Path = Path(__file__).resolve().parents[2] / "tmp_data/original_CERRA"
 CUT_DATA_DIR: str = "tmp_data/CERRA_cut"
 DISCRETE_DATA_DIR: str = "tmp_data/extracted_data"
 CLUSTERED_DATA_DIR: str = "tmp_data/clustered_data"
