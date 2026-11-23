@@ -241,5 +241,6 @@ def snap_thresholds(
                     key = (_errors(_model_mask(nodes, data), y), abs(c - v))
                     if best is None or key < best[0]:
                         best = (key, c)
+                assert best is not None  # for type checker
                 n[1][k] = (j, op, best[1])
     return nodes

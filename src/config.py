@@ -66,8 +66,10 @@ def parse_dates(dates_entry: list | str | dict | None) -> list[date]:
             unknown = set(item) - {"start", "end", "step"}
             if unknown:
                 raise ValueError(f"Unknown date range keys {sorted(unknown)}")
-            start = _parse_date_value(item.get("start"))
-            end = _parse_date_value(item.get("end"))
+            if "start" not in item or "end" not in item:
+                raise ValueError("Date range needs start and end")
+            start = _parse_date_value(item["start"])
+            end = _parse_date_value(item["end"])
             if end < start:
                 raise ValueError(f"Date range ends before it starts: {item!r}")
 
