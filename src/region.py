@@ -14,6 +14,7 @@ _CERRA_SW_CORNER = (20.292281, -17.485943)  # (lat, lon) of the first grid point
 _CERRA_SPACING = 5500.0  # metres
 _CERRA_SIDE = 1068 * _CERRA_SPACING
 _MIN_SAFE_RADIUS = _CERRA_SPACING / np.sqrt(2) / 1000  # km
+_DEFAULT_RADIUS = 20.0  # km around each city
 
 
 def _cerra_xy(lat, lon) -> tuple[np.ndarray, np.ndarray]:
@@ -43,7 +44,7 @@ class Region:
         name: str,
         value: list[float],
         cities: dict | None = None,
-        city_radius: float = 20.0,
+        city_radius: float = _DEFAULT_RADIUS,
     ):
         lon_min, lon_max, lat_min, lat_max = value
         if lon_min >= lon_max or lat_min >= lat_max:
@@ -55,7 +56,7 @@ class Region:
             raise ValueError(f"region: radius must be > 0, got {city_radius}")
         self.name = name
         self.value = value
-        self.cities = cities
+        self.cities = CITIES if cities is None else cities
         self.city_radius = city_radius
         self._warn_outside()
 
@@ -70,10 +71,9 @@ class Region:
         """Warns about the cities get_cities drops, the ones with no ground
         truth, a radius that may hold no grid point and the part of the region
         with no CERRA data."""
-        cities_dict = self.cities if self.cities is not None else CITIES
         outside = [
             city
-            for city, info in cities_dict.items()
+            for city, info in self.cities.items()
             if not self._contains(info["lat"], info["lon"])
         ]
         if outside:
@@ -106,26 +106,15 @@ class Region:
             )
 
     def get_cities(self) -> list[tuple[str, float, float]]:
-        cities_dict = self.cities if self.cities is not None else CITIES
         return [
             (city, info["lat"], info["lon"])
-            for city, info in cities_dict.items()
+            for city, info in self.cities.items()
             if self._contains(info["lat"], info["lon"])
         ]
 
     @classmethod
-    def custom(
-        cls, bounds: list[float], cities: dict | None = None, city_radius: float = 20.0
-    ) -> Region:
-        if len(bounds) != 4:
-            raise ValueError(
-                f"Region bounds must be 4 floats [lon_min, lon_max, lat_min, lat_max], got {bounds}"
-            )
-        return cls("CUSTOM", [float(b) for b in bounds], cities, city_radius)
-
-    @classmethod
     def from_config(
-        cls, value, cities: dict | None = None, city_radius: float = 20.0
+        cls, value, cities: dict | None = None, city_radius: float = _DEFAULT_RADIUS
     ) -> Region:
         if isinstance(value, dict):
             cities = value.get("cities", cities)
@@ -146,11 +135,11 @@ class Region:
                 raise ValueError(
                     f"Unknown region '{name}'. Must be one of {list(_PRESETS.keys())} or a list of 4 floats."
                 )
-            if cities is not None or city_radius != 20.0:
+            if cities is not None or city_radius != _DEFAULT_RADIUS:
                 return cls(preset.name, preset.value, cities, city_radius)
             return preset
         if isinstance(value, list) and len(value) == 4:
-            return cls.custom(value, cities, city_radius)
+            return cls("CUSTOM", [float(b) for b in value], cities, city_radius)
         raise ValueError(
             f"Invalid region: {value}. Must be a string, a list of 4 floats, or a dict."
         )

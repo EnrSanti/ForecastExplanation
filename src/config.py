@@ -88,7 +88,7 @@ def parse_dates(dates_entry: list | str | dict | None) -> list[date]:
 
 
 class CleaningConfig(BaseModel):
-    """Options of cleaning.clean_rules, applied to every learned model."""
+    """Options of cleaning.FoldRmCleaner, applied to every learned model."""
 
     model_config = ConfigDict(extra="forbid")
 

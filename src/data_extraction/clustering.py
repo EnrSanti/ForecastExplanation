@@ -28,7 +28,7 @@ def cluster_xarray(data_dict: dict[str, xr.DataArray]) -> xr.Dataset:
     for folder_name, da in data_dict.items():
         name = folder_name.lower()
         k = next((v for key, v in NUM_CLUSTERS.items() if key in name), None)
-        if name.startswith("raw_") or "wind" in name or k is None:
+        if name.startswith("raw_") or k is None:
             result[folder_name] = da
             continue
 
@@ -36,7 +36,8 @@ def cluster_xarray(data_dict: dict[str, xr.DataArray]) -> xr.Dataset:
         clustered_frames = []
         for t in range(da.sizes["time"]):
             frame = da.isel(time=t).values
-            flat = frame[np.isfinite(frame)].reshape(-1, 1)
+            finite = np.isfinite(frame)
+            flat = frame[finite].reshape(-1, 1)
 
             if flat.size == 0:
                 clustered_frames.append(frame)
@@ -53,8 +54,7 @@ def cluster_xarray(data_dict: dict[str, xr.DataArray]) -> xr.Dataset:
 
             km = KMeans(n_clusters=k, n_init="auto", algorithm="elkan", random_state=0)
             labels = np.full(frame.shape, 0, dtype=np.int32)
-            finite_mask = np.isfinite(frame)
-            labels[finite_mask] = km.fit_predict(flat)
+            labels[finite] = km.fit_predict(flat)
 
             # rank the clusters by mean value
             means = [frame[labels == i].mean() for i in range(k)]
