@@ -254,7 +254,8 @@ def build_feature_dataarrays(input_path: Path) -> xr.Dataset:
                 if not frames:
                     continue
 
-                stacked = frames.isel(time=np.isfinite(frames).any(("y", "x")).values)
+                yx = frames.get_axis_num(("y", "x"))
+                stacked = frames.isel(time=np.isfinite(frames.values).any(axis=yx))
                 if not stacked.sizes["time"]:
                     continue
                 stacked = stacked.sortby("time")
