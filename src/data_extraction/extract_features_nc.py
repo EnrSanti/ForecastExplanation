@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -141,18 +141,21 @@ def _with_front_fields(ds: xr.Dataset) -> xr.Dataset:
     )
 
 
-def _valid_times(coord_var: xr.DataArray) -> Iterator[tuple[int, int, pd.Timestamp]]:
-    for i in range(coord_var.sizes["time"]):
-        base_time = pd.to_datetime(str(coord_var["time"].isel(time=i).values))
-        day_start = base_time.normalize() + pd.Timedelta(hours=1)
-        day_end = day_start + pd.Timedelta(days=1)
+def _valid_times(ds: xr.Dataset) -> tuple[xr.DataArray, xr.DataArray, pd.DatetimeIndex]:
 
-        for j in range(coord_var.sizes["step"]):
-            step_val = int(coord_var["step"].isel(step=j).values)
-            valid_time = base_time + pd.Timedelta(hours=step_val)
+    base = pd.DatetimeIndex(ds["time"].values)
+    steps = pd.to_timedelta(ds["step"].values.astype(int), unit="h")
+    valid = base.values[:, None] + steps.values[None, :]
+    day_start = (base.normalize() + pd.Timedelta(hours=1)).values[:, None]
 
-            if not pd.isna(valid_time) and day_start <= valid_time <= day_end:
-                yield i, j, valid_time
+    keep = (valid >= day_start) & (valid <= day_start + np.timedelta64(1, "D"))
+    ti, sj = np.nonzero(keep)
+
+    return (
+        xr.DataArray(ti, dims="frame"),
+        xr.DataArray(sj, dims="frame"),
+        pd.DatetimeIndex(valid[ti, sj], name="time"),
+    )
 
 
 def create_one_time_images(coordinates: Region, output_base: Path) -> None:
@@ -231,34 +234,29 @@ def build_feature_dataarrays(input_path: Path) -> xr.Dataset:
     with xr.open_dataset(input_path, engine="h5netcdf", decode_cf=False) as ds:
         if "dtype" in ds["step"].attrs:
             del ds["step"].attrs["dtype"]
-        ds = xr.decode_cf(ds)
+        ds = xr.decode_cf(ds).load()
         ds = _with_wind_speed(ds)
         ds = _with_front_fields(ds)
+        ti, sj, times = _valid_times(ds)
 
         result = {}
         for spec in FEATURE_SPECS.values():
             for lvl in spec.levels:
-                level_field = ds[spec.var].sel(isobaricInhPa=lvl)
                 name = spec.prefix + FOLDERS[lvl]
-
-                frames = []
-                times = []
-                for i, j, valid_time in _valid_times(level_field):
-                    frame = level_field.isel(time=i, step=j)
-                    if not np.isfinite(frame).any():
-                        continue
-                    frames.append(frame)
-                    times.append(valid_time)
-
+                frames = (
+                    ds[spec.var]
+                    .sel(isobaricInhPa=lvl)
+                    .isel(time=ti, step=sj)
+                    .drop_vars("time")
+                    .rename(frame="time")
+                    .assign_coords(time=times)
+                )
                 if not frames:
                     continue
 
-                stacked = xr.concat(
-                    frames,
-                    dim=pd.Index(times, name="time"),
-                    coords="minimal",
-                    compat="override",
-                )
+                stacked = frames.isel(time=np.isfinite(frames).any(("y", "x")).values)
+                if not stacked.sizes["time"]:
+                    continue
                 stacked = stacked.sortby("time")
                 if spec.change_hours:
                     change = stacked - stacked.shift(time=spec.change_hours)
