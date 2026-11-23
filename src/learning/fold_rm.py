@@ -30,7 +30,8 @@ def stratified_split(
     for row in data:
         by_label[row[-1]].append(row)
 
-    train, test = [], []
+    train: list[list] = []
+    test: list[list] = []
     for label in sorted(by_label):
         rows = by_label[label]
         rng.shuffle(rows)
@@ -49,7 +50,8 @@ def date_split(
     random.Random(seed).shuffle(days)
     test_days = set(days[: round(len(days) * test_ratio)])
 
-    train, test = [], []
+    train: list[list] = []
+    test: list[list] = []
     for row, day in zip(data, dates):
         (test if day in test_days else train).append(row)
     return train, test
@@ -83,7 +85,8 @@ def homogeneous_split(
     for w in caught:
         logger.debug(f"FOLD-RM internal warn: {w.message}")
 
-    train, test = [], []
+    train: list[list] = []
+    test: list[list] = []
     for i, row in enumerate(data):
         (test if i in in_test else train).append(row)
     return train, test
@@ -294,7 +297,7 @@ def train_fold_rm(
 
     Args:
         dataset_csv: The merged dataset produced by the translator.
-        schema: {"labels", "features", "categorical", "numeric"} as given by FoldRmTranslator.schema.
+        schema: {"labels", "features", "numeric"} as given by FoldRmTranslator.schema.
         output_dir: Root folder for the learned models.
         strategy: Key of STRATEGIES ("one_vs_rest", "multiclass", "ordinal"
             or "ordinal_count", "multiclass_no_ig").

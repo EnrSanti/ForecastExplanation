@@ -9,12 +9,9 @@ binary model per class works much better, an ordinal chain of
 "label >= class" models better still (both targets are ordered scales).
 """
 
-import logging
 from abc import ABC, abstractmethod
 from collections import Counter
 from collections.abc import Iterable
-
-logger = logging.getLogger("ForecastExplanation")
 
 Row = list
 Task = tuple[str, list[Row], list[Row]]
@@ -88,8 +85,6 @@ class Multiclass(Strategy):
 
 class MulticlassNoIG(Multiclass):
     def fit(self, model, task: str, train: list[Row], ratio: float, gpu: bool) -> None:
-        if gpu:
-            logger.warning(f"FOLD-RM {task}: no gpu implementation, using CPU")
         model.fit_no_IG_F1(train, ratio=ratio)
 
 
@@ -99,8 +94,6 @@ class Ordinal(Strategy):
 
     def fit(self, model, task: str, train: list[Row], ratio: float, gpu: bool) -> None:
         """Rules only for `task` (label >= c), so no rule firing means < c."""
-        if gpu:
-            logger.warning(f"FOLD-RM {task}: no gpu implementation, using CPU")
         model.fit_target(train, task, ratio=ratio)
 
     def default_of(self, task: str, train: list[Row]) -> str:

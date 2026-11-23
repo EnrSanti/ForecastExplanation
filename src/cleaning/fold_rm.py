@@ -1,47 +1,50 @@
 import numpy as np
 
 from .cleaner import BaseCleaner
-from .mdl import Data, mdl_prune, snap_thresholds, to_node, to_rule
+from .mdl import Data, _mask, mdl_prune, snap_thresholds, to_node, to_rule
 
 
-def _prune_exceptions(rule, rows, min_support, label, asserts_label=True):
-    from src.algos.algo import evaluate
-
+def _prune_exceptions(rule, rows: Data, within, is_label, min_support, asserts=True):
     head, items, ab, flag = rule
     if not ab:
         return rule
-    body = [d for d in rows if all(evaluate(i, d) for i in items)]
+    body = within.copy()
+    for it in items:
+        body &= rows.lit(it)
+    wrong = body & (is_label != asserts)
     kept = []
     for exception in ab:
         exception = _prune_exceptions(
-            exception, body, min_support, label, not asserts_label
+            exception, rows, body, is_label, min_support, not asserts
         )
-        fixed = sum(
-            1
-            for d in body
-            if evaluate(exception, d) and (d[-1] == label) != asserts_label
-        )
+        fixed = np.count_nonzero(wrong & _mask(to_node(exception), rows))
         if fixed >= min_support:
             kept.append(exception)
     return head, items, kept, flag
 
 
 def prune_rules(
-    model, data: list[list], min_support: int, min_exception_support: int = 0
+    model, rows: Data, min_support: int, min_exception_support: int = 0
 ) -> None:
-    from src.algos.algo import evaluate
+    labels = {}
+
+    def is_label(rule):
+        label = rule[0][2]
+        if label not in labels:
+            labels[label] = np.array([v == label for v in rows.y])
+        return labels[label]
 
     if min_exception_support > 0:
+        everything = np.ones(rows.n, dtype=bool)
         model.rules = [
-            _prune_exceptions(r, data, min_exception_support, r[0][2])
+            _prune_exceptions(r, rows, everything, is_label(r), min_exception_support)
             for r in model.rules
         ]
     if min_support > 0:
         model.rules = [
             r
             for r in model.rules
-            if sum(1 for d in data if d[-1] == r[0][2] and evaluate(r, d))
-            >= min_support
+            if np.count_nonzero(is_label(r) & _mask(to_node(r), rows)) >= min_support
         ]
     model.asp_rules = None  # asp() cache
 
@@ -79,7 +82,10 @@ class FoldRmCleaner(BaseCleaner):
         self.snap = snap
 
     def clean(self, model, data: list[list]) -> None:
-        prune_rules(model, data, self.min_support, self.min_exception_support)
+        if not model.rules:
+            return
+        rows = Data(data)
+        prune_rules(model, rows, self.min_support, self.min_exception_support)
         if not model.rules or (self.mdl_lambda is None and not self.snap):
             return
 
@@ -90,7 +96,6 @@ class FoldRmCleaner(BaseCleaner):
                 f"strategies), got {sorted(heads)}"
             )
         positive = heads.pop()
-        rows = Data(data)
         y = np.array([v == positive for v in rows.y])
         nodes = [to_node(r) for r in model.rules]
         if self.mdl_lambda is not None:

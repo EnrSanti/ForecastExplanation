@@ -66,8 +66,10 @@ def parse_dates(dates_entry: list | str | dict | None) -> list[date]:
             unknown = set(item) - {"start", "end", "step"}
             if unknown:
                 raise ValueError(f"Unknown date range keys {sorted(unknown)}")
-            start = _parse_date_value(item.get("start"))
-            end = _parse_date_value(item.get("end"))
+            if "start" not in item or "end" not in item:
+                raise ValueError("Date range needs start and end")
+            start = _parse_date_value(item["start"])
+            end = _parse_date_value(item["end"])
             if end < start:
                 raise ValueError(f"Date range ends before it starts: {item!r}")
 
@@ -88,7 +90,7 @@ def parse_dates(dates_entry: list | str | dict | None) -> list[date]:
 
 
 class CleaningConfig(BaseModel):
-    """Options of cleaning.clean_rules, applied to every learned model."""
+    """Options of cleaning.FoldRmCleaner, applied to every learned model."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -122,9 +124,22 @@ class FoldRmConfig(BaseModel):
         uses_rules = self.cleaning.mdl_lambda is not None or self.cleaning.snap
         if uses_rules and not self.strategy.startswith("ordinal"):
             raise ValueError("cleaning.mdl_lambda / snap need an ordinal strategy")
+        if self.gpu and self.strategy not in ("one_vs_rest", "multiclass"):
+            raise ValueError(f"strategy {self.strategy} has no gpu implementation")
         if self.gpu and find_spec("cupy") is None:
             raise ValueError("gpu needs cupy, install the `gpu` extra")
         return self
+
+
+class FastLASConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    split: Literal["homogeneous", "date", "row"] = "homogeneous"
+    test_ratio: float = Field(0.3, gt=0, lt=1)
+    seed: int = 42
+    # target -> feature column prefixes left out of its models
+    exclude_features: dict[str, list[str]] = {}
+    output: str = "fastLAS"
 
 
 def _is_city(info: Any) -> bool:
@@ -146,7 +161,9 @@ class RunConfig(BaseModel):
     force: Stage | None = None
     stop_after: Stage = Stage.LEARNING
     clean: list[CleanTarget] = []
-    fold_rm: FoldRmConfig = FoldRmConfig()
+    fold_rm: FoldRmConfig | None = None
+    fastLAS: FastLASConfig | None = None
+
     _region: Region = PrivateAttr()
 
     @field_validator("dates", mode="before")
@@ -192,6 +209,18 @@ class RunConfig(BaseModel):
     def runs(self, stage: Stage) -> bool:
         """True if `stage` is reached before the run stops (see `stop_after`)."""
         return stage.order <= self.stop_after.order
+
+    @model_validator(mode="after")
+    def validate_learning_component(self):
+        if self.fold_rm is not None and self.fastLAS is not None:
+            raise ValueError("specify only one of 'fold_rm' or 'fastLAS'")
+        if (
+            self.fold_rm is None
+            and self.fastLAS is None
+            and self.runs(Stage.TRANSLATION)
+        ):
+            raise ValueError("specify one of 'fold_rm' or 'fastLAS'")
+        return self
 
 
 # replaced whole, not merged: keyed by data (cities, targets) or tuned together
@@ -246,6 +275,7 @@ def load_runs(
             continue
         data = _merge(_merge(defaults, block), cli_overrides or {})
         data.setdefault("output_path", Path("runs") / name)
+        data["output_path"] = config_path.parent / data["output_path"]
         try:
             runs[name] = RunConfig.model_validate(data)
         except ValidationError as e:

@@ -10,7 +10,7 @@ import xarray as xr
 
 matplotlib.use("Agg")
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 logging.getLogger("trackpy").setLevel(logging.WARNING)
 
 
@@ -89,9 +89,9 @@ def segment_features(
     target: str,
     smooth: float,
     dxy: float,
-) -> list[tuple[int, xr.DataArray | None, xr.DataArray | None]]:
+) -> list[tuple[int, xr.DataArray | None, pd.DataFrame | None]]:
     """Performs 2D segmentation for each frame in data_norm."""
-    segments_all = []
+    segments_all: list[tuple[int, xr.DataArray | None, pd.DataFrame | None]] = []
     images_no = len(data_norm.time)
 
     for itime in range(images_no):

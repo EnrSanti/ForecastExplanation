@@ -1,8 +1,8 @@
 import logging
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TypedDict
 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -18,7 +18,7 @@ from utils import FOLDERS, LEVELS
 
 from . import FRONT_LEVELS
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 
 
 # smallest temperature range (K) an hour is normalized over, per level; the
@@ -62,7 +62,14 @@ FEATURE_SPECS: dict[str, FeatureSpec] = {
 RAW_PREFIXES = ["cloud", "temp", "humidity"]
 FRONT_SMOOTH_PX = 4  # ~22 km on the 5.5 km CERRA grid
 
-LEGEND_SPECS = {
+
+class LegendSpec(TypedDict):
+    cmap: str
+    limits: Mapping[int, tuple[float, float]]  # level -> (vmin, vmax)
+    label: str
+
+
+LEGEND_SPECS: dict[str, LegendSpec] = {
     "cloud": {
         "cmap": "viridis",
         "limits": {lvl: (0, 100) for lvl in LEVELS},
@@ -99,17 +106,20 @@ def _smooth_frames(arr: np.ndarray) -> np.ndarray:
 
 
 def _gradient(lat: np.ndarray, lon: np.ndarray) -> Callable:
-    """d/dx, d/dy (per metre) on the lat/lon grid."""
-    # non usiamo np.gradient perché x y cambiano dimensione in metri
-    x = 6.371e6 * np.cos(np.radians(lat.mean())) * np.radians(lon)
-    y = 6.371e6 * np.radians(lat)
-    xj, xi = np.gradient(x)
-    yj, yi = np.gradient(y)
-    det = xi * yj - xj * yi
+    """d/dx, d/dy per metre on the lat/lon grid."""
+    # non usiamo np.gradient perché x y cambiano dimensione in metri:
+    # derivate in lon/lat, poi metri per radiante alla latitudine di ogni punto
+    lam, phi = np.radians(lon), np.radians(lat)
+    lam_j, lam_i = np.gradient(lam)
+    phi_j, phi_i = np.gradient(phi)
+    det = lam_i * phi_j - lam_j * phi_i
+    x_scale = 6.371e6 * np.cos(phi)
 
     def grad(f: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         fj, fi = np.gradient(f, axis=(-2, -1))
-        return (fi * yj - fj * yi) / det, (fj * xi - fi * xj) / det
+        df_dlam = (fi * phi_j - fj * phi_i) / det
+        df_dphi = (fj * lam_i - fi * lam_j) / det
+        return df_dlam / x_scale, df_dphi / 6.371e6
 
     return grad
 
@@ -138,18 +148,21 @@ def _with_front_fields(ds: xr.Dataset) -> xr.Dataset:
     )
 
 
-def _valid_times(coord_var: xr.DataArray) -> Iterator[tuple[int, int, pd.Timestamp]]:
-    for i in range(coord_var.sizes["time"]):
-        base_time = pd.to_datetime(str(coord_var["time"].isel(time=i).values))
-        day_start = base_time.normalize() + pd.Timedelta(hours=1)
-        day_end = day_start + pd.Timedelta(days=1)
+def _valid_times(ds: xr.Dataset) -> tuple[xr.DataArray, xr.DataArray, pd.DatetimeIndex]:
 
-        for j in range(coord_var.sizes["step"]):
-            step_val = int(coord_var["step"].isel(step=j).values)
-            valid_time = base_time + pd.Timedelta(hours=step_val)
+    base = pd.DatetimeIndex(ds["time"].values)
+    steps = pd.to_timedelta(ds["step"].values.astype(int), unit="h")
+    valid = base.values[:, None] + steps.values[None, :]
+    day_start = (base.normalize() + pd.Timedelta(hours=1)).values[:, None]
 
-            if not pd.isna(valid_time) and day_start <= valid_time <= day_end:
-                yield i, j, valid_time
+    keep = (valid >= day_start) & (valid <= day_start + np.timedelta64(1, "D"))
+    ti, sj = np.nonzero(keep)
+
+    return (
+        xr.DataArray(ti, dims="frame"),
+        xr.DataArray(sj, dims="frame"),
+        pd.DatetimeIndex(valid[ti, sj], name="time"),
+    )
 
 
 def create_one_time_images(coordinates: Region, output_base: Path) -> None:
@@ -228,34 +241,28 @@ def build_feature_dataarrays(input_path: Path) -> xr.Dataset:
     with xr.open_dataset(input_path, engine="h5netcdf", decode_cf=False) as ds:
         if "dtype" in ds["step"].attrs:
             del ds["step"].attrs["dtype"]
-        ds = xr.decode_cf(ds)
+        ds = xr.decode_cf(ds).load()
         ds = _with_wind_speed(ds)
         ds = _with_front_fields(ds)
+        ti, sj, times = _valid_times(ds)
 
         result = {}
         for spec in FEATURE_SPECS.values():
             for lvl in spec.levels:
-                level_field = ds[spec.var].sel(isobaricInhPa=lvl)
                 name = spec.prefix + FOLDERS[lvl]
-
-                frames = []
-                times = []
-                for i, j, valid_time in _valid_times(level_field):
-                    frame = level_field.isel(time=i, step=j)
-                    if not np.isfinite(frame).any():
-                        continue
-                    frames.append(frame)
-                    times.append(valid_time)
-
-                if not frames:
-                    continue
-
-                stacked = xr.concat(
-                    frames,
-                    dim=pd.Index(times, name="time"),
-                    coords="minimal",
-                    compat="override",
+                frames = (
+                    ds[spec.var]
+                    .sel(isobaricInhPa=lvl)
+                    .isel(time=ti, step=sj)
+                    .drop_vars("time")
+                    .rename(frame="time")
+                    .assign_coords(time=times)
                 )
+
+                yx = frames.get_axis_num(("y", "x"))
+                stacked = frames.isel(time=np.isfinite(frames.values).any(axis=yx))
+                if not stacked.sizes["time"]:
+                    continue
                 stacked = stacked.sortby("time")
                 if spec.change_hours:
                     change = stacked - stacked.shift(time=spec.change_hours)

@@ -6,7 +6,7 @@ import xarray as xr
 
 from utils import haversine
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 
 
 def grid_spacing(data: xr.Dataset | xr.DataArray) -> float:

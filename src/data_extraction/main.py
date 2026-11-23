@@ -1,5 +1,6 @@
 import logging
 import shutil
+from collections.abc import Sequence
 from datetime import date
 from itertools import groupby
 from pathlib import Path
@@ -18,7 +19,7 @@ from .clustering import cluster_xarray
 from .extract_features_nc import build_feature_dataarrays, create_one_time_images
 from .get_raw_data import cut_month, cut_path
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 
 
 def extract_day_worker(
@@ -55,12 +56,14 @@ def extract_day_worker(
     if clustering and not clustered_nc_path.exists():
         clustered_dir.mkdir(parents=True, exist_ok=True)
         with xr.open_dataset(features_nc_path, engine="h5netcdf") as features_ds:
-            feature_data = {str(name): da for name, da in features_ds.data_vars.items()}
-        clustered_data = cluster_xarray(feature_data)
+            fields = {str(name): da for name, da in features_ds.data_vars.items()}
+        clustered_data = cluster_xarray(fields)
         to_compressed_netcdf(clustered_data, clustered_nc_path)
 
 
-def clean_artifacts(dates: list[date], output_path: Path, targets: list[str]) -> None:
+def clean_artifacts(
+    dates: list[date], output_path: Path, targets: Sequence[str]
+) -> None:
     """Deletes the cut and extracted data; the GRIBs ("grib") are already
     deleted while cutting, see cut_month."""
     for target_date in dates:
@@ -146,7 +149,7 @@ def cerra_download(
             cut_ok += cut_month(
                 month_dates,
                 region,
-                Path(RAW_DATA_DIR),
+                RAW_DATA_DIR,
                 output_path,
                 force_redo,
                 delete_grib,

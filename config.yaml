@@ -10,18 +10,12 @@ defaults:
   output_path: /home/esanti/FORECAST/runs/learning_test
 
 
-best_multiclass_no_IG:
+fastlas_run:
   force: learning
-  fold_rm:
-    strategy: multiclass_no_ig
-    ratio: 4.0
+  fastLAS:
     split: date
     test_ratio: 0.3
     seed: 52
-    cleaning:
-      min_support: 30
-      min_exception_support: 50
     exclude_features:
       prev_cloud: [coverage_clouds, cloud_total_day, cloud_, region_cloud]
-    output: ../best/multiclass_no_ig
-    gpu: false
+    output: ../best/fastLAS

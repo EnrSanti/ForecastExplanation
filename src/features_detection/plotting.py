@@ -1,5 +1,4 @@
 import itertools
-import logging
 from pathlib import Path
 
 import cartopy.crs as ccrs
@@ -10,8 +9,6 @@ import pandas as pd
 import xarray as xr
 
 from region import Region
-
-logger = logging.getLogger(__name__)
 
 
 def overlay_cities(axs: plt.Axes, region: Region):
@@ -51,55 +48,28 @@ def print_clouds_center_line(
     itime: int,
     track: pd.DataFrame,
     axs: plt.Axes,
-    cell_id: int,
-    persisted_cells: set[int],
-    all_frames_for_cell: dict[int, list[int]],
+    frames: list[int],
 ):
-    """Plots cloud centre markers and fading trajectory path natively."""
-
-    if cell_id in persisted_cells:
-        frames_list = all_frames_for_cell.get(int(cell_id), [])
-        if len(frames_list) >= 2:
-            last_frame = frames_list[-2]
-            line = track[(track["frame"] == last_frame) | (track["frame"] == itime)]
-            if not line.empty:
-                axs.plot(
-                    line["longitude"],
-                    line["latitude"],
-                    color="cyan",
-                    linewidth=2.5,
-                    alpha=0.7,
-                    transform=ccrs.PlateCarree(),
-                    path_effects=[
-                        pe.Stroke(linewidth=4, foreground="black"),
-                        pe.Normal(),
-                    ],
-                )
-
-    try:
-        frames = all_frames_for_cell.get(int(cell_id), [])
-        for t0, t1 in itertools.pairwise(frames):
-            line = track[(track["frame"] == t0) | (track["frame"] == t1)]
-            if not line.empty:
-                time_diff = itime - track.iloc[0].frame
-                alpha = 0.3 + 0.7 * (t0 - track.iloc[0].frame) / (
-                    time_diff if time_diff != 0 else 1
-                )
-                alpha = max(0.2, min(1.0, alpha))
-                axs.plot(
-                    line["longitude"],
-                    line["latitude"],
-                    color="cyan",
-                    linewidth=2.5,
-                    alpha=alpha,
-                    transform=ccrs.PlateCarree(),
-                    path_effects=[
-                        pe.Stroke(linewidth=4, foreground="black", alpha=alpha),
-                        pe.Normal(),
-                    ],
-                )
-    except (KeyError, IndexError) as e:
-        logger.debug(f"Failed to draw trail for cell {cell_id}: {e}")
+    """Plots cloud centre markers and the fading trajectory path using the cell's frames up to itime."""
+    for t0, t1 in itertools.pairwise(frames):
+        line = track[(track["frame"] == t0) | (track["frame"] == t1)]
+        time_diff = itime - track.iloc[0].frame
+        alpha = 0.3 + 0.7 * (t0 - track.iloc[0].frame) / (
+            time_diff if time_diff != 0 else 1
+        )
+        alpha = max(0.2, min(1.0, alpha))
+        axs.plot(
+            line["longitude"],
+            line["latitude"],
+            color="cyan",
+            linewidth=2.5,
+            alpha=alpha,
+            transform=ccrs.PlateCarree(),
+            path_effects=[
+                pe.Stroke(linewidth=4, foreground="black", alpha=alpha),
+                pe.Normal(),
+            ],
+        )
 
     if not f_weighted.empty:
         axs.scatter(
@@ -114,7 +84,7 @@ def print_clouds_center_line(
 
 
 def print_cloud_labels(
-    f_weighted: pd.DataFrame, cell_id: int, region: Region, axs: plt.Axes
+    f_weighted: pd.DataFrame, cell_id: object, region: Region, axs: plt.Axes
 ):
     """Renders cell ID text annotation near the point natively."""
     if f_weighted.empty or "longitude" not in f_weighted:
@@ -133,7 +103,7 @@ def print_cloud_labels(
         lon_pos -= 0.02 * lon_span
 
     axs.annotate(
-        str(int(cell_id)),
+        f"{cell_id:.0f}",
         xy=(lon_pos, lat_pos),
         xytext=(0, 10),
         textcoords="offset points",
@@ -159,35 +129,7 @@ def generate_all_plots(
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    cell_info_by_frame = {}
-    if trajectories is not None and not trajectories.empty:
-        frames_by_cell = trajectories.groupby("cell")["frame"].apply(
-            lambda s: sorted(s.unique())
-        )
-
-        for i, frame_traj in trajectories.groupby("frame"):
-            cell_ids = set(frame_traj["cell"].dropna().unique())
-            persisted, new_cells, all_frames_for_cell = set(), set(), {}
-            for cell_id in cell_ids:
-                cell_frames = frames_by_cell.get(cell_id, [])
-                idx = cell_frames.index(i) if i in cell_frames else -1
-                if idx > 0:
-                    persisted.add(cell_id)
-                else:
-                    new_cells.add(cell_id)
-                all_frames_for_cell[int(cell_id)] = cell_frames[: idx + 1]
-
-            cell_info_by_frame[i] = {
-                "cell_ids": cell_ids,
-                "persisted": persisted,
-                "new_cells": new_cells,
-                "all_frames_for_cell": all_frames_for_cell,
-            }
-
-    trajectories_by_cell = {}
-    if trajectories is not None and not trajectories.empty:
-        for cell_id, df in trajectories.groupby("cell"):
-            trajectories_by_cell[cell_id] = df
+    tracks = {} if trajectories is None else dict(tuple(trajectories.groupby("cell")))
 
     for i in range(da.sizes["time"]):
         frame_da = da.isel(time=i)
@@ -218,41 +160,14 @@ def generate_all_plots(
 
         overlay_cities(axs, region)
 
-        info = cell_info_by_frame.get(
-            i,
-            {
-                "cell_ids": set(),
-                "persisted": set(),
-                "new_cells": set(),
-                "all_frames_for_cell": {},
-            },
-        )
-        cell_ids = info["cell_ids"]
-        persisted = info["persisted"]
-        new_cells = info["new_cells"]
-        all_frames_for_cell = info["all_frames_for_cell"]
-
-        for cell_id in cell_ids:
-            track = trajectories_by_cell.get(cell_id, pd.DataFrame())
+        for cell_id, track in tracks.items():
             f_weighted = track[track["frame"] == i]
-
-            printing_symbol, color = (
-                ("^", "white") if cell_id in new_cells else ("x", "red")
-            )
-            print_clouds_center_line(
-                printing_symbol,
-                color,
-                f_weighted,
-                i,
-                track,
-                axs,
-                cell_id,
-                persisted,
-                all_frames_for_cell,
-            )
-
-            if len(f_weighted["longitude"]) > 0:
-                print_cloud_labels(f_weighted, cell_id, region, axs)
+            if f_weighted.empty:
+                continue
+            frames = sorted(f for f in track["frame"].unique() if f <= i)
+            symbol, color = ("^", "white") if len(frames) == 1 else ("x", "red")
+            print_clouds_center_line(symbol, color, f_weighted, i, track, axs, frames)
+            print_cloud_labels(f_weighted, cell_id, region, axs)
 
         entry = next((s for s in segments_all if s[0] == i), None)
         if entry is not None:
@@ -274,5 +189,4 @@ def generate_all_plots(
         fig.canvas.draw()
         bbox = axs.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
         fig.savefig(out_path, dpi=100, bbox_inches=bbox, pad_inches=0, transparent=True)
-        fig.clf()
         plt.close(fig)

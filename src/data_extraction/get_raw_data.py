@@ -9,11 +9,11 @@ import xarray as xr
 from ecmwf.datastores import Client
 
 from region import Region
-from utils import to_compressed_netcdf
+from utils import LEVELS, to_compressed_netcdf
 
 from . import CUT_DATA_DIR
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 
 logging.getLogger("ecmwf.datastores").setLevel(logging.WARNING)
 
@@ -155,7 +155,7 @@ def download_month_grib(dates: list[date], grib_path: Path) -> None:
             "u_component_of_wind",
             "v_component_of_wind",
         ],
-        "pressure_level": ["300", "500", "700", "850", "925", "1000"],
+        "pressure_level": [str(lev) for lev in sorted(LEVELS)],
         "data_type": ["reanalysis"],
         "product_type": ["forecast"],
         "time": [

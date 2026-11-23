@@ -22,7 +22,7 @@ class Data:
         columns = list(zip(*rows))
         self.raw = columns[:-1]
         self.y = list(columns[-1])
-        self.num = []
+        self.num: list[np.ndarray | None] = []
         for c in self.raw:
             if any(isinstance(v, (int, float)) for v in c):
                 self.num.append(
@@ -30,7 +30,7 @@ class Data:
                 )
             else:
                 self.num.append(None)
-        self.cache = {}
+        self.cache: dict[tuple, np.ndarray] = {}
         self.zeros = np.zeros(self.n, dtype=bool)
 
     def lit(self, item: tuple) -> np.ndarray:
@@ -66,7 +66,7 @@ def to_node(rule) -> list:
 
 def to_rule(node: list) -> tuple:
     head, items, ab = node
-    return (head, list(items), [to_rule(e) for e in ab], 0)
+    return head, list(items), [to_rule(e) for e in ab], 0
 
 
 def _mask(node: list, data: Data) -> np.ndarray:
@@ -118,7 +118,7 @@ def _moves(nodes: list) -> list[tuple]:
             n = _get(root, p)
             if p:
                 out.append(("exc", r, p, None))
-            cols = {}
+            cols: dict[int, list[tuple]] = {}
             for it in n[1]:
                 cols.setdefault(it[0], []).append(it)
             if len(cols) > 1:
@@ -191,17 +191,19 @@ def mdl_prune(nodes: list, data: Data, y: np.ndarray, lam: float) -> list:
 def snap_step(name: str) -> float:
     """Round step of a feature column, from its name (translator units)."""
     n = name.lower()
+    if n.endswith("_hours") or "_hours_" in n:
+        return 1.0
     if n.startswith("humidity_fronts_value"):
         return 5.0
     if "area" in n or n.startswith("size_cloud"):
         return 5000.0
-    if n.startswith(("humidity", "rh", "region_rh", "cloud", "coverage")):
+    if n.startswith(
+        ("humidity", "rh", "region_rh", "cloud", "coverage", "region_cloud")
+    ):
         return 5.0
     if n.startswith("temp_fronts_value"):
         return 0.5
     if n.startswith(("temperature", "te850_mean", "lapse")):
-        return 1.0
-    if n.endswith("_hours") or "_hours_" in n:
         return 1.0
     if n.startswith("wind_speed"):
         return 1.0 if n.endswith(("medium", "high")) else 0.5
@@ -239,5 +241,6 @@ def snap_thresholds(
                     key = (_errors(_model_mask(nodes, data), y), abs(c - v))
                     if best is None or key < best[0]:
                         best = (key, c)
+                assert best is not None  # for type checker
                 n[1][k] = (j, op, best[1])
     return nodes

@@ -3,6 +3,7 @@ import logging
 import sys
 from datetime import date
 from pathlib import Path
+from typing import get_args
 
 from dotenv import load_dotenv
 
@@ -12,7 +13,7 @@ import ground_truth
 import learning
 import reasoning
 import translators
-from config import RunConfig, Stage, load_runs
+from config import CleanTarget, RunConfig, Stage, load_runs
 from utils import LOG_FORMAT, setup_logging
 
 logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT, force=True)
@@ -25,7 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--config",
         type=Path,
-        default=Path("config.yaml"),
+        default=Path(__file__).resolve().parents[1] / "config.yaml",
         help="Path to the config YAML file (default: config.yaml)",
     )
     parser.add_argument(
@@ -37,7 +38,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--clean",
         nargs="+",
-        choices=["grib", "cut", "extracted"],
+        choices=get_args(CleanTarget),
         help="Artefacts to delete after the run",
     )
     parser.add_argument(
@@ -124,24 +125,49 @@ def run_pipeline(cfg: RunConfig) -> tuple[list[date], dict[date, Stage]]:
     if not days or not cfg.runs(Stage.TRANSLATION):
         return days, failed
 
-    dataset_csv, ok = translators.FoldRmTranslator().translate(
-        days,
-        output_path / "days_data",
-        output_path / "translated",
-        force=cfg.forces(Stage.TRANSLATION),
-        workers=cfg.workers,
-    )
-    days = _keep(Stage.TRANSLATION, days, ok, failed)
-    if not dataset_csv or not cfg.runs(Stage.LEARNING):
-        return days, failed
+    if cfg.fold_rm is not None:
+        dataset_csv, ok = translators.FoldRmTranslator().translate(
+            days,
+            output_path / "days_data",
+            output_path / "translated",
+            force=cfg.forces(Stage.TRANSLATION),
+            workers=cfg.workers,
+        )
 
-    learning.train_fold_rm(
-        dataset_csv,
-        translators.FoldRmTranslator.schema_from_csv(dataset_csv),
-        output_path / cfg.fold_rm.output,
-        **cfg.fold_rm.model_dump(exclude={"output"}),
-        force=cfg.forces(Stage.LEARNING),
-    )
+        days = _keep(Stage.TRANSLATION, days, ok, failed)
+
+        if not dataset_csv or not cfg.runs(Stage.LEARNING):
+            return days, failed
+
+        learning.train_fold_rm(
+            dataset_csv,
+            translators.FoldRmTranslator.schema_from_csv(dataset_csv),
+            output_path / cfg.fold_rm.output,
+            **cfg.fold_rm.model_dump(exclude={"output"}),
+            force=cfg.forces(Stage.LEARNING),
+        )
+
+    elif cfg.fastLAS is not None:
+        dataset, ok = translators.FastLasTranslator().translate(
+            days,
+            output_path / "days_data",
+            output_path / "translated",
+            force=cfg.forces(Stage.TRANSLATION),
+            workers=cfg.workers,
+        )
+
+        days = _keep(Stage.TRANSLATION, days, ok, failed)
+
+        if not dataset or not cfg.runs(Stage.LEARNING):
+            return days, failed
+
+        learning.train_fastLAS(
+            dataset,
+            output_path / cfg.fastLAS.output,
+            **cfg.fastLAS.model_dump(exclude={"output"}),
+            force=cfg.forces(Stage.LEARNING),
+        )
+
     return days, failed
 
 
