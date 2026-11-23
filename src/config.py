@@ -122,6 +122,8 @@ class FoldRmConfig(BaseModel):
         uses_rules = self.cleaning.mdl_lambda is not None or self.cleaning.snap
         if uses_rules and not self.strategy.startswith("ordinal"):
             raise ValueError("cleaning.mdl_lambda / snap need an ordinal strategy")
+        if self.gpu and self.strategy not in ("one_vs_rest", "multiclass"):
+            raise ValueError(f"strategy {self.strategy} has no gpu implementation")
         if self.gpu and find_spec("cupy") is None:
             raise ValueError("gpu needs cupy, install the `gpu` extra")
         return self
