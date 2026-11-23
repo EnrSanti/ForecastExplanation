@@ -3,6 +3,7 @@ import logging
 import sys
 from datetime import date
 from pathlib import Path
+from typing import get_args
 
 from dotenv import load_dotenv
 
@@ -12,7 +13,7 @@ import ground_truth
 import learning
 import reasoning
 import translators
-from config import RunConfig, Stage, load_runs
+from config import CleanTarget, RunConfig, Stage, load_runs
 from utils import LOG_FORMAT, setup_logging
 
 logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT, force=True)
@@ -37,7 +38,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--clean",
         nargs="+",
-        choices=["grib", "cut", "extracted"],
+        choices=get_args(CleanTarget),
         help="Artefacts to delete after the run",
     )
     parser.add_argument(

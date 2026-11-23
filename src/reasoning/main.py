@@ -4,6 +4,7 @@ from pathlib import Path
 
 import xarray as xr
 
+from data_extraction.extract_features_nc import RAW_PREFIXES
 from region import Region
 from utils import haversine, run_days
 
@@ -13,8 +14,6 @@ from .utils import get_heights
 
 logger = logging.getLogger("ForecastExplanation")
 
-# raw fields averaged around each city, written to {field}.txt
-RAW_FIELDS = ["cloud", "temp", "humidity"]
 # segmented fields of the warmest / driest areas, written to {field}_fronts.txt
 FRONT_FIELDS = ["temp", "humidity"]
 
@@ -72,7 +71,7 @@ def _check_variables(
     heights where every per-height variable is present, and FRONT_PHENOMENA
     restricted to the levels whose raw field is present."""
     seg_fields = ["cloud", *FRONT_FIELDS]
-    feat_fields = ["wind", "wind_direction", *(f"raw_{f}" for f in RAW_FIELDS)]
+    feat_fields = ["wind", "wind_direction", *(f"raw_{f}" for f in RAW_PREFIXES)]
     missing = []
     available = []
     for h in heights:
@@ -143,7 +142,8 @@ def _reason_single_day(
         )
 
         # mean raw values around each city
-        for phenomenon in RAW_FIELDS:
+        # raw fields averaged around each city, written to {field}.txt
+        for phenomenon in RAW_PREFIXES:
             detect_phenomenon(
                 feat_ds,
                 city_masks,
