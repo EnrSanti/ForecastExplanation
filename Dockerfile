@@ -1,7 +1,7 @@
 ARG PYTHON_IMAGE=python:3.14.7-slim-trixie
 
 FROM ${PYTHON_IMAGE} AS builder
-COPY --from=ghcr.io/astral-sh/uv:0.13.4 /uv /bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.9 /uv /bin/uv
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
