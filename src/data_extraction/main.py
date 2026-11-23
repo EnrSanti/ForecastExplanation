@@ -18,7 +18,7 @@ from .clustering import cluster_xarray
 from .extract_features_nc import build_feature_dataarrays, create_one_time_images
 from .get_raw_data import cut_month, cut_path
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 
 
 def extract_day_worker(

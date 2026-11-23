@@ -18,7 +18,7 @@ from utils import FOLDERS, LEVELS
 
 from . import FRONT_LEVELS
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 
 
 # smallest temperature range (K) an hour is normalized over, per level; the

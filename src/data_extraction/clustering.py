@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 from sklearn.cluster import KMeans
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 
 
 # clusters per variable

@@ -13,7 +13,7 @@ from utils import to_compressed_netcdf
 
 from . import CUT_DATA_DIR
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 
 logging.getLogger("ecmwf.datastores").setLevel(logging.WARNING)
 

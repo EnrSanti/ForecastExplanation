@@ -10,7 +10,7 @@ import xarray as xr
 
 matplotlib.use("Agg")
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 logging.getLogger("trackpy").setLevel(logging.WARNING)
 
 

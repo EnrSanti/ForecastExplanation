@@ -26,7 +26,7 @@ from features_detection.utils import build_referenced_data_from_xarray, grid_spa
 from region import Region
 from utils import FOLDERS, run_days, to_compressed_netcdf
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 
 
 def run_tobac(

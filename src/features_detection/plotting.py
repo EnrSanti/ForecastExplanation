@@ -11,7 +11,7 @@ import xarray as xr
 
 from region import Region
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ForecastExplanation")
 
 
 def overlay_cities(axs: plt.Axes, region: Region):
